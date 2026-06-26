@@ -364,7 +364,7 @@
     <div class="err" id="formErr"></div>
     <div class="hint">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#5B7186" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#5B7186" stroke-width="2" stroke-linecap="round"/></svg>
-      Prix, comparables et statistiques : <b>DVF r&#233;el (Cerema)</b> si l'adresse est localis&#233;e (repli d&#233;mo sinon &#8212; voir le badge). Contexte INSEE, tendances et g&#233;orisques : d&#233;mo (branchement &#224; venir).
+      Prix, comparables et statistiques : <b>DVF r&#233;el (Cerema)</b>. Population et g&#233;orisques : <b>r&#233;els</b>. Revenus/ch&#244;mage et tendances de prix : d&#233;mo (cl&#233; d'API INSEE requise). Repli d&#233;mo si l'adresse n'est pas localis&#233;e &#8212; voir le badge.
     </div>
   </section>
 
@@ -422,7 +422,7 @@
 
     <!-- INSEE -->
     <section class="card secondary" style="order:9">
-      <div class="card-head"><div class="step-no">2</div><div><h2>Contexte du quartier<span class="demo-tag">INSEE &#183; d&#233;mo</span></h2><div class="sub">Donn&#233;es socio-d&#233;mographiques de la commune</div></div></div>
+      <div class="card-head"><div class="step-no">2</div><div><h2>Contexte du quartier<span class="demo-tag">Pop. r&#233;elle &#183; reste d&#233;mo</span></h2><div class="sub">Donn&#233;es socio-d&#233;mographiques de la commune</div></div></div>
       <div id="inseeStats"></div>
     </section>
 
@@ -440,7 +440,7 @@
     </section>
 
     <section class="card secondary" style="order:10">
-      <div class="card-head"><div class="step-no">&#128205;</div><div><h2>Localisation & accessibilit&#233;<span class="demo-tag">OSM &#183; G&#233;orisques &#183; d&#233;mo</span></h2></div></div>
+      <div class="card-head"><div class="step-no">&#128205;</div><div><h2>Localisation & accessibilit&#233;<span class="demo-tag">G&#233;orisques r&#233;el &#183; OSM d&#233;mo</span></h2></div></div>
       <div class="loc"><div class="loc-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z" stroke="#fff" stroke-width="2"/><circle cx="12" cy="10" r="2.5" stroke="#fff" stroke-width="2"/></svg></div><div><b id="locAddr">&#8212;</b><div class="coord num" id="locCoord">&#8212;</div></div></div>
       <div id="locStats" style="margin-top:12px"></div>
     </section>
@@ -642,7 +642,7 @@ function updateTypeUI(){const t=state.type;
 
 /* Autocomplete BAN */
 let acTimer=null;
-$("adresse").addEventListener("input",e=>{const q=e.target.value.trim();clearTimeout(acTimer);if(q.length<4){closeAc();return;}acTimer=setTimeout(()=>fetchBan(q),250);});
+$("adresse").addEventListener("input",e=>{const q=e.target.value.trim();state.coord=null;state.live=null;$("cp").value="";$("ville").value="";clearTimeout(acTimer);if(q.length<4){closeAc();return;}acTimer=setTimeout(()=>fetchBan(q),250);});
 function closeAc(){$("acList").classList.remove("open");$("acList").innerHTML="";}
 async function fetchBan(q){try{const r=await fetchT("https://api-adresse.data.gouv.fr/search/?limit=5&q="+encodeURIComponent(q),6000);if(!r.ok)throw 0;const d=await r.json();const list=$("acList");list.innerHTML="";(d.features||[]).forEach(f=>{const p=f.properties,c=f.geometry.coordinates;const div=document.createElement("div");div.className="ac-item";div.innerHTML=`${p.label}<span class="ac-sub">${p.context||""}</span>`;div.addEventListener("click",()=>{$("adresse").value=p.label;$("cp").value=p.postcode||"";$("ville").value=p.city||"";state.coord={lat:c[1],lon:c[0],label:p.label,insee:p.citycode};closeAc();});list.appendChild(div);});list.classList.toggle("open",(d.features||[]).length>0);}catch(_){closeAc();}}
 document.addEventListener("click",e=>{if(!e.target.closest(".ac-wrap"))closeAc();});
@@ -663,7 +663,24 @@ async function dvfFetch(url){
   CORS_PROXIES.forEach(px=>tries.push(one(px+encodeURIComponent(url))));
   try{return await Promise.any(tries);}catch(_){return null;}
 }
-async function geocode(){if(state.coord)return state.coord;const q=(($("adresse").value||"")+" "+($("cp").value||"")+" "+($("ville").value||"")).trim();try{const r=await fetchT("https://api-adresse.data.gouv.fr/search/?limit=1&q="+encodeURIComponent(q),6000);const d=await r.json();const f=(d.features||[])[0];if(f){const pr=f.properties;state.coord={lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0],label:pr.label,insee:pr.citycode};if(pr.postcode&&!$("cp").value)$("cp").value=pr.postcode;if(pr.city&&!$("ville").value)$("ville").value=pr.city;return state.coord;}}catch(_){}return null;}
+// Donnees live complementaires : population (geo.api.gouv.fr, CORS ouvert) + risques naturels (Georisques). Repli silencieux sur la demo si indisponible.
+async function fetchLive(coord){
+  const out={};
+  try{const r=await fetchT("https://geo.api.gouv.fr/communes/"+coord.insee+"?fields=population,nom",6000);if(r.ok){const j=await r.json();if(j&&j.population)out.pop=j.population;}}catch(_){}
+  try{const gr=await dvfFetch("https://georisques.gouv.fr/api/v1/gaspar/risques?code_insee="+coord.insee+"&page=1&page_size=100");
+    if(gr){if(DEBUG)dbg("Georisques brut:\n"+gr.raw.slice(0,600));
+      const arr=extractArr(gr.json),lab=new Set();
+      const scan=o=>{if(!o||typeof o!=="object")return;["libelle_risque_long","libelle_risque","lib_risque_long","libelle"].forEach(k=>{if(typeof o[k]==="string"&&o[k].length<60)lab.add(o[k]);});["risques_detail","risques","risque"].forEach(k=>{const v=o[k];if(Array.isArray(v))v.forEach(scan);else if(v&&typeof v==="object")scan(v);});};
+      arr.forEach(scan);
+      const risks=[...lab].filter(x=>!/aucun/i.test(x));
+      if(risks.length)out.risqueLbl=risks.length+" recens\u00e9(s) : "+risks.slice(0,2).join(", ")+(risks.length>2?"\u2026":"");
+      else if(arr.length)out.risqueLbl="Aucun risque majeur recens\u00e9";
+    }
+  }catch(_){}
+  if(DEBUG)dbg("Live -> pop:"+(out.pop||"n/a")+" | risque:"+(out.risqueLbl||"n/a"));
+  return out;
+}
+async function geocode(){if(state.coord)return state.coord;const q=($("adresse").value||"").trim();try{const r=await fetchT("https://api-adresse.data.gouv.fr/search/?limit=1&q="+encodeURIComponent(q),6000);const d=await r.json();const f=(d.features||[])[0];if(f){const pr=f.properties;state.coord={lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0],label:pr.label,insee:pr.citycode};if(pr.postcode&&!$("cp").value)$("cp").value=pr.postcode;if(pr.city&&!$("ville").value)$("ville").value=pr.city;return state.coord;}}catch(_){}return null;}
 function recVal(o,keys){for(const k of keys){if(o[k]!=null&&o[k]!=="")return o[k];}return null;}
 function median(a){const s=[...a].sort((x,y)=>x-y);const m=Math.floor(s.length/2);return s.length%2?s[m]:(s[m-1]+s[m])/2;}
 function quantile(s,q){if(!s.length)return 0;const pos=(s.length-1)*q,b=Math.floor(pos),rest=pos-b;return s[b+1]!=null?s[b]+rest*(s[b+1]-s[b]):s[b];}
@@ -678,27 +695,36 @@ function dvfStats(pts){
   const yr=clean.map(p=>p.date?+String(p.date).slice(0,4):0).filter(Boolean);
   return {n:clean.length,removed:pts.length-clean.length,clean,mean,med:quantile(cp,0.5),q1:quantile(cp,0.25),q3:quantile(cp,0.75),p10:quantile(cp,0.10),p90:quantile(cp,0.90),sd,min:cp[0]||0,max:cp[cp.length-1]||0,yMin:yr.length?Math.min.apply(null,yr):null,yMax:yr.length?Math.max.apply(null,yr):null};
 }
-async function fetchDvf(coord,type){
-  if(!coord||!coord.insee||type==="terrain")return {pts:null,status:coord&&coord.insee?"skip":"no-conn"};
-  const want=type==="maison"?"maison":"appartement";
-  const url=`${DVF_BASE}?code_insee=${coord.insee}&page_size=500&ordering=-datemut`;
-  const r=await dvfFetch(url);
-  if(!r)return {pts:null,status:"no-conn"};
-  if(DEBUG)dbg("INSEE "+coord.insee+"\nURL "+url+"\nReponse:\n"+r.raw.slice(0,900));
-  const d=r.json;
-  const arr=d.features?d.features.map(f=>f.properties||f):(d.results||d.resultats||(Array.isArray(d)?d:[]));
-  const pts=[];
+function extractArr(d){return d.features?d.features.map(f=>f.properties||f):(d.results||d.resultats||(Array.isArray(d)?d:[]));}
+function parsePts(arr,type){
+  const want=type==="maison"?"maison":"appartement",pts=[];
   arr.forEach(o=>{
     const v=Number(recVal(o,["valeurfonc","valeur_fonciere","valeur"]));
     const typ=String(recVal(o,["libtypbien","libtyploc","type_local"])||"").toLowerCase();
     let s=Number(recVal(o,[want==="maison"?"sbatmai":"sbatapt"]))||Number(recVal(o,["sbati","surface_reelle_bati","surface_bati"]));
     if(!v||!s||s<9)return;
-    const other=want==="maison"?"appartement":"maison";
-    if(typ&&typ.indexOf(other)>=0&&typ.indexOf(want)<0)return; // exclut clairement l'autre type
+    if(typ&&typ.indexOf(want)<0)return; // type present : ne garder que le type voulu (exclut activite, dependance, bien multiple...)
     const ppm=v/s;if(ppm<300||ppm>40000)return;
     pts.push({ppm,surf:s,price:v,rooms:Number(recVal(o,["nbpprinc","nblocapt"]))||null,date:recVal(o,["datemut","date_mutation"])});
   });
-  if(DEBUG)dbg("Ventes exploitables apres filtrage: "+pts.length);
+  return pts;
+}
+async function fetchDvf(coord,type){
+  if(!coord||!coord.insee||type==="terrain")return {pts:null,status:coord&&coord.insee?"skip":"no-conn"};
+  const base=`${DVF_BASE}?code_insee=${coord.insee}&page_size=500`;
+  const r1=await dvfFetch(base);
+  if(!r1)return {pts:null,status:"no-conn"};
+  const d1=r1.json,count=d1.count||0;
+  if(DEBUG)dbg("INSEE "+coord.insee+" - "+count+" mutations\nPage 1: "+r1.raw.slice(0,240));
+  let arr=extractArr(d1);
+  // Donnees triees des plus anciennes aux plus recentes : on recupere aussi les dernieres pages.
+  if(count>500){
+    const last=Math.ceil(count/500),pages=[last,last-1].filter(p=>p>1);
+    const more=await Promise.all(pages.map(p=>dvfFetch(base+"&page="+p)));
+    more.forEach((m,i)=>{if(m){const a=extractArr(m.json);arr=arr.concat(a);if(DEBUG)dbg("Page "+pages[i]+" (recentes): +"+a.length+" lignes");}});
+  }
+  const pts=parsePts(arr,type);
+  if(DEBUG)dbg("Ventes "+type+" exploitables: "+pts.length);
   return pts.length>0?{pts,status:"ok"}:{pts:null,status:"no-data"};
 }
 
@@ -776,7 +802,7 @@ function countUp(el,target,suffix){const reduce=matchMedia("(prefers-reduced-mot
 
 function rng(seed){let x=Math.sin(seed)*10000;return x-Math.floor(x);}
 function renderInsee(r){const d=r.dyn;const sign=x=>(x>=0?"+":"")+x;
-  const stats=[["Revenu m\u00e9dian / habitant",eur(d.revenu)+" /an"],["Taux de pauvret\u00e9",d.pauvrete+" %"],["Part de cadres / CSP+",d.cadres+" %"],["Population",eur0(d.pop)+" hab."],["Variation population (5 ans)",sign(d.popVar5)+" %"],["Croissance des m\u00e9nages (5 ans)",sign(d.menagesVar5)+" %"],["Solde migratoire / an",sign(d.soldeMig)+" \u2030"],["Taux de ch\u00f4mage",d.chomage+" %"],["\u00c9volution des salaires (5 ans)",sign(d.salVar5)+" %"],["Nombre de logements",eur0(d.logements)],["Logements vacants",d.vacance+" %"],["R\u00e9sidences secondaires",d.secondaire+" %"]];
+  const stats=[["Revenu m\u00e9dian / habitant",eur(d.revenu)+" /an"],["Taux de pauvret\u00e9",d.pauvrete+" %"],["Part de cadres / CSP+",d.cadres+" %"],["Population",eur0((state.live&&state.live.pop)||d.pop)+" hab."],["Variation population (5 ans)",sign(d.popVar5)+" %"],["Croissance des m\u00e9nages (5 ans)",sign(d.menagesVar5)+" %"],["Solde migratoire / an",sign(d.soldeMig)+" \u2030"],["Taux de ch\u00f4mage",d.chomage+" %"],["\u00c9volution des salaires (5 ans)",sign(d.salVar5)+" %"],["Nombre de logements",eur0(d.logements)],["Logements vacants",d.vacance+" %"],["R\u00e9sidences secondaires",d.secondaire+" %"]];
   $("inseeStats").innerHTML=stats.map(([l,v])=>`<div class="stat"><span class="sl">${l}</span><span class="sv num">${v}</span></div>`).join("");
 }
 function renderMarket(r){const d=r.dyn;const sign=x=>(x>=0?"+":"")+x;
@@ -805,11 +831,11 @@ function renderMarket(r){const d=r.dyn;const sign=x=>(x>=0?"+":"")+x;
   $("marketStats").innerHTML=html;
 }
 function renderLocStats(r){const d=r.dyn;
-  const stats=[["Temps vers le bassin d'emploi","~ "+d.accessMin+" min en voiture"],["Densit\u00e9 de commerces & services",d.accessMin<12?"\u00c9lev\u00e9e":d.accessMin<25?"Correcte":"Faible"],["Desserte transports en commun",d.accessMin<10?"Tr\u00e8s bonne":d.accessMin<20?"Correcte":"Limit\u00e9e"],["Risque naturel (G\u00e9orisques)",d.risqueLbl]];
+  const stats=[["Temps vers le bassin d'emploi","~ "+d.accessMin+" min en voiture"],["Densit\u00e9 de commerces & services",d.accessMin<12?"\u00c9lev\u00e9e":d.accessMin<25?"Correcte":"Faible"],["Desserte transports en commun",d.accessMin<10?"Tr\u00e8s bonne":d.accessMin<20?"Correcte":"Limit\u00e9e"],["Risque naturel (G\u00e9orisques)",(state.live&&state.live.risqueLbl)||d.risqueLbl]];
   $("locStats").innerHTML=stats.map(([l,v])=>`<div class="stat"><span class="sl">${l}</span><span class="sv num">${v}</span></div>`).join("");
 }
 function genComparables(r){const list=$("compList");list.innerHTML="";const ic=r.type==="maison"?"\u1f3e0":r.type==="terrain"?"\u1f333":"\u1f3e2";
-  if(r.realPts&&r.realPts.length){const sorted=[...r.realPts].sort((a,b)=>Math.abs(a.surf-r.surface)-Math.abs(b.surf-r.surface)).slice(0,6);
+  if(r.realPts&&r.realPts.length){const sorted=[...r.realPts].sort((a,b)=>String(b.date||"").localeCompare(String(a.date||""))).slice(0,6);
     sorted.forEach(p=>{const dt=p.date?String(p.date).slice(0,7).split("-").reverse().join("/"):"";const div=document.createElement("div");div.className="comp";
       div.innerHTML=`<div class="comp-ic">${ic}</div><div class="comp-main"><div class="t">${Math.round(p.surf)} m\u00b2${p.rooms?` \u00b7 ${p.rooms} pi\u00e8ces`:""}</div><div class="s">Vendu ${dt} \u00b7 ${r.city||"secteur"}</div></div><div class="comp-price"><div class="p num">${eur(p.price)}</div><div class="pm num">${eur0(p.ppm)} /m\u00b2</div></div>`;
       list.appendChild(div);});
@@ -827,22 +853,27 @@ function renderDvfStats(r){
   if(!r.realStats||!r.realStats.n){box.style.display="none";box.innerHTML="";return;}
   const s=r.realStats,f=x=>eur0(Math.round(x)),subj=Math.round(r.sqm);
   const lo=s.p10,hi=s.p90,span=(hi-lo)||1,pct=v=>Math.max(0,Math.min(100,((v-lo)/span)*100));
-  const period=s.yMin?(s.yMin===s.yMax?String(s.yMin):s.yMin+"\u2013"+s.yMax):"";
+  const period=s.yMin?(s.yMin===s.yMax?String(s.yMin):s.yMin+"\u2013"+s.yMax):"n/a";
   const where=subj>s.q3?"au-dessus de":subj<s.q1?"en dessous de":"dans";
+  const typeLbl=r.type==="maison"?"maisons":"appartements";
+  const cell=(lbl,val,sub)=>`<div style="background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 11px"><div style="font-size:11px;color:var(--ink-soft);line-height:1.3;margin-bottom:4px">${lbl}</div><div class="num" style="font-size:16px;font-weight:700;color:var(--ink)">${val}</div>${sub?`<div style="font-size:10.5px;color:var(--ink-soft);margin-top:2px">${sub}</div>`:""}</div>`;
   box.style.display="block";
   box.innerHTML=
-   `<div class="stat"><span class="sl">Ventes analys\u00e9es${period?" ("+period+")":""}</span><span class="sv num">${s.n}${s.removed?" \u00b7 "+s.removed+" \u00e9cart\u00e9es":""}</span></div>`+
-   `<div class="stat"><span class="sl">Prix m\u00e9dian observ\u00e9</span><span class="sv num">${f(s.med)} /m\u00b2</span></div>`+
-   `<div class="stat"><span class="sl">Prix moyen</span><span class="sv num">${f(s.mean)} /m\u00b2</span></div>`+
-   `<div class="stat"><span class="sl">Fourchette Q1\u2013Q3 (50 % central)</span><span class="sv num">${f(s.q1)} \u2013 ${f(s.q3)}</span></div>`+
-   `<div class="stat"><span class="sl">\u00c9cart-type</span><span class="sv num">\u00b1 ${f(s.sd)} /m\u00b2</span></div>`+
-   `<div class="stat"><span class="sl">Min \u2013 Max (hors aberrations)</span><span class="sv num">${f(s.min)} \u2013 ${f(s.max)}</span></div>`+
-   `<div style="margin-top:14px"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--ink-soft);margin-bottom:6px"><span class="num">${f(lo)}</span><b style="color:var(--brand-dark)">Votre bien : ${f(subj)} /m\u00b2</b><span class="num">${f(hi)}</span></div>`+
-   `<div style="position:relative;height:10px;border-radius:6px;background:linear-gradient(90deg,#7fe3d4,#f4d35e,#E8742A)">`+
-   `<div style="position:absolute;left:${pct(s.med)}%;top:-3px;width:2px;height:16px;background:var(--ink)"></div>`+
-   `<div style="position:absolute;left:${pct(subj)}%;top:-6px;transform:translateX(-50%);width:14px;height:22px;border-radius:7px;background:var(--brand-dark);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)"></div>`+
+   `<div style="font-weight:700;font-size:14px;margin:2px 0 10px;color:var(--ink)">Statistiques des ventes r\u00e9elles</div>`+
+   `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">`+
+     cell("Ventes analys\u00e9es",String(s.n),period+(s.removed?" \u00b7 "+s.removed+" exclues":""))+
+     cell("Prix m\u00e9dian",f(s.med),"\u20ac/m\u00b2")+
+     cell("Prix moyen",f(s.mean),"\u00e9cart-type \u00b1 "+f(s.sd))+
+     cell("Fourchette 50 % (Q1\u2013Q3)",f(s.q1)+"\u2013"+f(s.q3),"\u20ac/m\u00b2")+
    `</div>`+
-   `<div class="hint" style="margin-top:9px">Votre bien se situe <b>${where}</b> la fourchette du march\u00e9 local. Barre = du 10e au 90e centile des ventes r\u00e9elles ; trait = m\u00e9diane ; pastille = votre bien. Valeurs aberrantes exclues (m\u00e9thode IQR).</div></div>`;
+   `<div style="margin-top:16px"><div style="display:flex;justify-content:space-between;align-items:flex-end;font-size:11px;color:var(--ink-soft);margin-bottom:7px"><span class="num">${f(lo)}</span><b style="color:var(--brand-dark);font-size:12.5px">Votre bien : ${f(subj)} \u20ac/m\u00b2</b><span class="num">${f(hi)}</span></div>`+
+   `<div style="position:relative;height:11px;border-radius:6px;background:linear-gradient(90deg,#7fe3d4,#f4d35e,#E8742A)">`+
+   `<div style="position:absolute;left:${pct(s.med)}%;top:-3px;width:2px;height:17px;background:var(--ink)"></div>`+
+   `<div style="position:absolute;left:${pct(subj)}%;top:-6px;transform:translateX(-50%);width:15px;height:23px;border-radius:8px;background:var(--brand-dark);border:2.5px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.4)"></div>`+
+   `</div>`+
+   `<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--ink-soft);margin-top:5px"><span>10e centile</span><span>m\u00e9diane</span><span>90e centile</span></div>`+
+   `<div class="hint" style="margin-top:10px;line-height:1.5">Votre bien se situe <b>${where}</b> la fourchette du march\u00e9 local (trait fonc\u00e9 = m\u00e9diane, pastille = votre bien).</div>`+
+   `<div style="margin-top:13px;padding:11px 13px;background:var(--brand-tint);border-radius:10px;font-size:11.5px;color:var(--ink-soft);line-height:1.6"><b style="color:var(--ink)">Comment les comparables sont s\u00e9lectionn\u00e9s</b><br>\u2022 M\u00eame type (<b>${typeLbl}</b>), dans la <b>commune</b> ${r.city||""} \u2014 donn\u00e9es DVF/Cerema agr\u00e9g\u00e9es par commune (pas de rayon en m\u00e8tres)<br>\u2022 <b>P\u00e9riode</b> : les ventes les plus r\u00e9centes disponibles (${period})<br>\u2022 <b>Prix/m\u00b2</b> = valeur fonci\u00e8re \u00f7 surface b\u00e2tie ; <b>aberrations exclues</b> (m\u00e9thode IQR de Tukey)<br>\u2022 Liste tri\u00e9e du plus r\u00e9cent au plus ancien</div>`;
 }
 
 /* R\u00e9gimes fiscaux dynamiques */
@@ -947,20 +978,27 @@ function okIcon(){return '<svg width="18" height="18" viewBox="0 0 24 24" fill="
 let lastResult=null;
 async function showResults(){
   const err=$("formErr");const surface=state.type==="terrain"?numv("terrain"):numv("surface");
-  if(!$("cp").value||$("cp").value.length<5){err.textContent="Renseignez un code postal valide (5 chiffres).";err.classList.add("show");$("cp").focus();return;}
+  if(!($("adresse").value||"").trim()){err.textContent="Saisissez l'adresse du bien, puis choisissez une suggestion.";err.classList.add("show");$("adresse").focus();return;}
   if(!surface||surface<=0){err.textContent="Renseignez une surface valide.";err.classList.add("show");return;}
   err.classList.remove("show");
   const btn=$("btnEstim");const oldTxt=btn.textContent;btn.textContent="Recherche des ventes r\u00e9elles\u2026";btn.disabled=true;
   let realBase=null,realPts=null,realStats=null,diag="";
   const coord=await geocode();dbg("Coordonnees BAN: "+JSON.stringify(coord));
+  const livePromise=(coord&&coord.insee)?fetchLive(coord):Promise.resolve({});
   if(!coord){diag="adresse non localis\u00e9e \u2014 v\u00e9rifiez l'adresse et le code postal";}
   else if(state.type==="terrain"){diag="terrain : pas de comparable b\u00e2ti DVF";}
   else{
     const res=await fetchDvf(coord,state.type);
-    if(res.pts&&res.pts.length){realPts=res.pts;realStats=dvfStats(res.pts);realBase=Math.round(realStats.med);}
+    if(res.pts&&res.pts.length){
+      let pts=res.pts;
+      const yrs=pts.map(p=>p.date?+String(p.date).slice(0,4):0).filter(Boolean);
+      if(yrs.length){const ymax=Math.max.apply(null,yrs);const recent=pts.filter(p=>p.date&&+String(p.date).slice(0,4)>=ymax-2);if(recent.length>=8)pts=recent;}
+      realPts=pts;realStats=dvfStats(pts);realBase=Math.round(realStats.med);
+    }
     else if(res.status==="no-conn")diag="sources DVF injoignables \u2014 r\u00e9essayez dans un instant";
     else diag="aucune vente DVF comparable dans le secteur";
   }
+  state.live=await livePromise;
   btn.textContent=oldTxt;btn.disabled=false;
   const r=estimate(realBase);r.realPts=realPts;r.realStats=realStats;r.realCount=realStats?realStats.n:0;lastResult=r;
   const sd=$("srcDot"),st=$("srcTxt");
