@@ -214,11 +214,11 @@
     <div class="card-head"><div class="step-no">1</div><div><h2>Le bien</h2><div class="sub">Plus vous d&#233;taillez, plus l'estimation est pr&#233;cise</div></div></div>
 
     <div class="field ac-wrap">
-      <label class="lbl" for="adresse">Adresse <span class="opt">(facultatif)</span></label>
-      <input class="input" id="adresse" type="text" autocomplete="off" placeholder="12 rue de la Paix, Lyon&#8230;" />
+      <label class="lbl" for="adresse">Adresse du bien <span class="opt">(pour les donnees reelles)</span></label>
+      <input class="input" id="adresse" type="text" autocomplete="off" placeholder="N, rue, ville - puis choisissez une suggestion" />
       <div class="ac-list" id="acList"></div>
     </div>
-    <div class="field"><div class="row">
+    <div class="field" id="cpVilleRow" style="display:none"><div class="row">
       <div><label class="lbl" for="cp">Code postal</label><input class="input num" id="cp" type="text" inputmode="numeric" maxlength="5" placeholder="69002" /></div>
       <div><label class="lbl" for="ville">Ville</label><input class="input" id="ville" type="text" placeholder="Lyon" /></div>
     </div></div>
@@ -364,7 +364,7 @@
     <div class="err" id="formErr"></div>
     <div class="hint">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#5B7186" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#5B7186" stroke-width="2" stroke-linecap="round"/></svg>
-      Prix et comparables : <b>DVF r&#233;el</b> si disponible (repli d&#233;mo sinon &#8212; voir le badge sur le r&#233;sultat). INSEE & observatoires restent en d&#233;mo.
+      Prix, comparables et statistiques : <b>DVF r&#233;el (Cerema)</b> si l'adresse est localis&#233;e (repli d&#233;mo sinon &#8212; voir le badge). Contexte INSEE, tendances et g&#233;orisques : d&#233;mo (branchement &#224; venir).
     </div>
   </section>
 
@@ -434,6 +434,7 @@
 
     <section class="card secondary" style="order:7">
       <div class="card-head"><div class="step-no">4</div><div><h2>Biens comparables<span class="demo-tag" id="compTag">DVF &#183; d&#233;mo</span></h2><div class="sub">Ventes similaires r&#233;centes</div></div></div>
+      <div id="dvfStats" style="display:none;margin-bottom:6px"></div>
       <div id="compList"></div>
       <button id="btnExportComps" style="margin-top:12px;width:100%;padding:11px;border:1.5px solid var(--line);background:#fff;color:var(--brand-dark);border-radius:var(--r-sm);font-weight:600;font-family:var(--body);font-size:13px;cursor:pointer">Exporter les comparables (CSV)</button>
     </section>
@@ -662,13 +663,25 @@ async function dvfFetch(url){
   CORS_PROXIES.forEach(px=>tries.push(one(px+encodeURIComponent(url))));
   try{return await Promise.any(tries);}catch(_){return null;}
 }
-async function geocode(){if(state.coord)return state.coord;const q=(($("adresse").value||"")+" "+($("cp").value||"")+" "+($("ville").value||"")).trim();try{const r=await fetchT("https://api-adresse.data.gouv.fr/search/?limit=1&q="+encodeURIComponent(q),6000);const d=await r.json();const f=(d.features||[])[0];if(f){state.coord={lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0],label:f.properties.label,insee:f.properties.citycode};return state.coord;}}catch(_){}return null;}
+async function geocode(){if(state.coord)return state.coord;const q=(($("adresse").value||"")+" "+($("cp").value||"")+" "+($("ville").value||"")).trim();try{const r=await fetchT("https://api-adresse.data.gouv.fr/search/?limit=1&q="+encodeURIComponent(q),6000);const d=await r.json();const f=(d.features||[])[0];if(f){const pr=f.properties;state.coord={lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0],label:pr.label,insee:pr.citycode};if(pr.postcode&&!$("cp").value)$("cp").value=pr.postcode;if(pr.city&&!$("ville").value)$("ville").value=pr.city;return state.coord;}}catch(_){}return null;}
 function recVal(o,keys){for(const k of keys){if(o[k]!=null&&o[k]!=="")return o[k];}return null;}
 function median(a){const s=[...a].sort((x,y)=>x-y);const m=Math.floor(s.length/2);return s.length%2?s[m]:(s[m-1]+s[m])/2;}
+function quantile(s,q){if(!s.length)return 0;const pos=(s.length-1)*q,b=Math.floor(pos),rest=pos-b;return s[b+1]!=null?s[b]+rest*(s[b+1]-s[b]):s[b];}
+// Statistiques DVF avec exclusion des valeurs aberrantes par methode IQR (Tukey 1,5x)
+function dvfStats(pts){
+  const all=pts.map(p=>p.ppm).sort((a,b)=>a-b);
+  const q1=quantile(all,0.25),q3=quantile(all,0.75),iqr=q3-q1,lo=q1-1.5*iqr,hi=q3+1.5*iqr;
+  const clean=pts.filter(p=>p.ppm>=lo&&p.ppm<=hi);
+  const cp=clean.map(p=>p.ppm).sort((a,b)=>a-b);
+  const mean=cp.length?cp.reduce((s,x)=>s+x,0)/cp.length:0;
+  const sd=cp.length?Math.sqrt(cp.reduce((s,x)=>s+(x-mean)*(x-mean),0)/cp.length):0;
+  const yr=clean.map(p=>p.date?+String(p.date).slice(0,4):0).filter(Boolean);
+  return {n:clean.length,removed:pts.length-clean.length,clean,mean,med:quantile(cp,0.5),q1:quantile(cp,0.25),q3:quantile(cp,0.75),p10:quantile(cp,0.10),p90:quantile(cp,0.90),sd,min:cp[0]||0,max:cp[cp.length-1]||0,yMin:yr.length?Math.min.apply(null,yr):null,yMax:yr.length?Math.max.apply(null,yr):null};
+}
 async function fetchDvf(coord,type){
   if(!coord||!coord.insee||type==="terrain")return {pts:null,status:coord&&coord.insee?"skip":"no-conn"};
   const want=type==="maison"?"maison":"appartement";
-  const url=`${DVF_BASE}?code_insee=${coord.insee}&page_size=500`;
+  const url=`${DVF_BASE}?code_insee=${coord.insee}&page_size=500&ordering=-datemut`;
   const r=await dvfFetch(url);
   if(!r)return {pts:null,status:"no-conn"};
   if(DEBUG)dbg("INSEE "+coord.insee+"\nURL "+url+"\nReponse:\n"+r.raw.slice(0,900));
@@ -737,7 +750,7 @@ function outdoorValue(baseSqmAdj){
   const bM=numv("balconM2"),tM=numv("terrasseM2"),jM=numv("jardinM2");
   if(bM>0){const v=bM*baseSqmAdj*0.35;val+=v;rows.push([`Balcon ${bM} m\u00b2`,v]);}
   if(tM>0){const v=tM*baseSqmAdj*0.45;val+=v;rows.push([`Terrasse ${tM} m\u00b2`,v]);}
-  if(jM>0){const v=jM*baseSqmAdj*0.18;val+=v;rows.push([`Jardin ${jM} m\u00b2`,v]);}
+  if(jM>0){const f=Math.min(jM,300),x=Math.max(0,jM-300);let v=f*baseSqmAdj*0.06+x*baseSqmAdj*0.015;const cap=baseSqmAdj*(numv("surface")||1)*0.30;v=Math.min(v,cap);val+=v;rows.push([`Jardin ${jM} m\u00b2`,v]);}
   return{val,rows};
 }
 function estimate(realBase){
@@ -806,6 +819,30 @@ function genComparables(r){const list=$("compList");list.innerHTML="";const ic=r
     const div=document.createElement("div");div.className="comp";
     div.innerHTML=`<div class="comp-ic">${ic}</div><div class="comp-main"><div class="t">${surf} m\u00b2 \u00b7 ${r.type==="terrain"?"terrain":r.pieces+" pi\u00e8ces"}</div><div class="s">Vendu ${mo} ${yr} \u00b7 ${r.city||"secteur"}</div></div><div class="comp-price"><div class="p num">${eur(p)}</div><div class="pm num">${eur0(sqm)} /m\u00b2</div></div>`;
     list.appendChild(div);}
+}
+
+/* Statistiques DVF reelles + jauge */
+function renderDvfStats(r){
+  const box=$("dvfStats");
+  if(!r.realStats||!r.realStats.n){box.style.display="none";box.innerHTML="";return;}
+  const s=r.realStats,f=x=>eur0(Math.round(x)),subj=Math.round(r.sqm);
+  const lo=s.p10,hi=s.p90,span=(hi-lo)||1,pct=v=>Math.max(0,Math.min(100,((v-lo)/span)*100));
+  const period=s.yMin?(s.yMin===s.yMax?String(s.yMin):s.yMin+"\u2013"+s.yMax):"";
+  const where=subj>s.q3?"au-dessus de":subj<s.q1?"en dessous de":"dans";
+  box.style.display="block";
+  box.innerHTML=
+   `<div class="stat"><span class="sl">Ventes analys\u00e9es${period?" ("+period+")":""}</span><span class="sv num">${s.n}${s.removed?" \u00b7 "+s.removed+" \u00e9cart\u00e9es":""}</span></div>`+
+   `<div class="stat"><span class="sl">Prix m\u00e9dian observ\u00e9</span><span class="sv num">${f(s.med)} /m\u00b2</span></div>`+
+   `<div class="stat"><span class="sl">Prix moyen</span><span class="sv num">${f(s.mean)} /m\u00b2</span></div>`+
+   `<div class="stat"><span class="sl">Fourchette Q1\u2013Q3 (50 % central)</span><span class="sv num">${f(s.q1)} \u2013 ${f(s.q3)}</span></div>`+
+   `<div class="stat"><span class="sl">\u00c9cart-type</span><span class="sv num">\u00b1 ${f(s.sd)} /m\u00b2</span></div>`+
+   `<div class="stat"><span class="sl">Min \u2013 Max (hors aberrations)</span><span class="sv num">${f(s.min)} \u2013 ${f(s.max)}</span></div>`+
+   `<div style="margin-top:14px"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--ink-soft);margin-bottom:6px"><span class="num">${f(lo)}</span><b style="color:var(--brand-dark)">Votre bien : ${f(subj)} /m\u00b2</b><span class="num">${f(hi)}</span></div>`+
+   `<div style="position:relative;height:10px;border-radius:6px;background:linear-gradient(90deg,#7fe3d4,#f4d35e,#E8742A)">`+
+   `<div style="position:absolute;left:${pct(s.med)}%;top:-3px;width:2px;height:16px;background:var(--ink)"></div>`+
+   `<div style="position:absolute;left:${pct(subj)}%;top:-6px;transform:translateX(-50%);width:14px;height:22px;border-radius:7px;background:var(--brand-dark);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)"></div>`+
+   `</div>`+
+   `<div class="hint" style="margin-top:9px">Votre bien se situe <b>${where}</b> la fourchette du march\u00e9 local. Barre = du 10e au 90e centile des ventes r\u00e9elles ; trait = m\u00e9diane ; pastille = votre bien. Valeurs aberrantes exclues (m\u00e9thode IQR).</div></div>`;
 }
 
 /* R\u00e9gimes fiscaux dynamiques */
@@ -914,18 +951,18 @@ async function showResults(){
   if(!surface||surface<=0){err.textContent="Renseignez une surface valide.";err.classList.add("show");return;}
   err.classList.remove("show");
   const btn=$("btnEstim");const oldTxt=btn.textContent;btn.textContent="Recherche des ventes r\u00e9elles\u2026";btn.disabled=true;
-  let realBase=null,realPts=null,diag="";
+  let realBase=null,realPts=null,realStats=null,diag="";
   const coord=await geocode();dbg("Coordonnees BAN: "+JSON.stringify(coord));
   if(!coord){diag="adresse non localis\u00e9e \u2014 v\u00e9rifiez l'adresse et le code postal";}
   else if(state.type==="terrain"){diag="terrain : pas de comparable b\u00e2ti DVF";}
   else{
     const res=await fetchDvf(coord,state.type);
-    if(res.pts&&res.pts.length){realPts=res.pts;realBase=Math.round(median(res.pts.map(p=>p.ppm)));}
+    if(res.pts&&res.pts.length){realPts=res.pts;realStats=dvfStats(res.pts);realBase=Math.round(realStats.med);}
     else if(res.status==="no-conn")diag="sources DVF injoignables \u2014 r\u00e9essayez dans un instant";
     else diag="aucune vente DVF comparable dans le secteur";
   }
   btn.textContent=oldTxt;btn.disabled=false;
-  const r=estimate(realBase);r.realPts=realPts;r.realCount=realPts?realPts.length:0;lastResult=r;
+  const r=estimate(realBase);r.realPts=realPts;r.realStats=realStats;r.realCount=realStats?realStats.n:0;lastResult=r;
   const sd=$("srcDot"),st=$("srcTxt");
   if(realBase){sd.style.background="#7fe3d4";st.textContent=`Donn\u00e9es r\u00e9elles DVF \u00b7 ${r.realCount} ventes`;$("compTag").textContent="DVF \u00b7 r\u00e9el";}
   else{sd.style.background="#E8742A";st.textContent="D\u00e9mo \u00b7 "+diag;$("compTag").textContent="DVF \u00b7 d\u00e9mo";}
@@ -946,7 +983,7 @@ async function showResults(){
   r.rows.forEach(row=>{if(row[2]!=null)addRow(row[0],null,false,row[2]);else addRow(row[0],row[1],true);});
   addRow("Prix /m\u00b2 ajust\u00e9",eur0(r.sqmAdj)+" \u20ac");addRow("\u00d7 Surface",r.surface+" m\u00b2");
   const tot=document.createElement("div");tot.className="bd-row";tot.style.cssText="border-top:1px solid var(--line);margin-top:6px;padding-top:8px;font-weight:700";tot.innerHTML=`<span>= Valeur estim\u00e9e</span><span>${eur(r.price)}</span>`;bd.appendChild(tot);
-  renderInsee(r);renderMarket(r);renderLocStats(r);genComparables(r);
+  renderInsee(r);renderMarket(r);renderLocStats(r);renderDvfStats(r);genComparables(r);
   $("locAddr").textContent=state.coord?.label||(($("ville").value||"")+" "+$("cp").value).trim();
   $("locCoord").textContent=state.coord?`${state.coord.lat.toFixed(4)}, ${state.coord.lon.toFixed(4)} \u00b7 carte interactive dans la version h\u00e9berg\u00e9e`:"Carte interactive disponible dans la version h\u00e9berg\u00e9e";
   const dpeCostHi=renderDpe();
@@ -997,7 +1034,7 @@ const DEP_DMTO={
   "05":0.045,"06":0.045,"07":0.045,"16":0.045,"26":0.045,"27":0.045,"48":0.045,"60":0.045,"65":0.045,"71":0.045,"971":0.045,
   "36":0.038,"976":0.038
 };
-function depFromCP(){const cp=($("cp").value||"").replace(/\D/g,"");return cp.length>=3&&cp.substring(0,2)==="97"?cp.substring(0,3):cp.substring(0,2);}
+function depFromCP(){let cp=($("cp").value||"").replace(/\D/g,"");if(!cp&&state.coord&&state.coord.insee)cp=state.coord.insee;return cp.length>=3&&cp.substring(0,2)==="97"?cp.substring(0,3):cp.substring(0,2);}
 function notaireRate(){
   if(state.neuf==="neuf"&&state.type!=="terrain")return 0.025; // neuf/VEFA : frais r\u00e9duits ~2,5%
   const dep=depFromCP();const depRate=(DEP_DMTO[dep]!=null?DEP_DMTO[dep]:0.05);
