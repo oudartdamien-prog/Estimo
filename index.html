@@ -185,6 +185,8 @@
 .verdict.warn{background:#fef4e6;border-color:#f5d49a;color:#9a6a12}
 .verdict.bad{background:#fdeceb;border-color:#f3b6b0;color:#b23329}
 .verdict .vsub{font:500 13px/1.4 var(--body);margin-top:4px;opacity:.92}
+#results.simple .expert-only{display:none!important}
+#decisionCard{background:linear-gradient(180deg,#fff,#fbfcfd);border:1px solid var(--line)}
 .dash-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:6px}
 @media(max-width:520px){.dash-grid{grid-template-columns:1fr 1fr}}
 .dtile{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:11px}
@@ -287,8 +289,8 @@
         <div class="field">
           <label class="lbl">Espaces ext&#233;rieurs <span class="opt">(surfaces en m&#178;)</span></label>
           <div class="row3" style="margin-bottom:10px">
-            <div><div class="with-unit"><input class="input num" id="balconNb" type="number" min="0" placeholder="1" /><span class="unit">nb</span></div><div class="hint" style="margin-top:5px">Balcons</div></div>
-            <div><div class="with-unit"><input class="input num" id="balconM2" type="number" min="0" placeholder="6" /><span class="unit">m&#178;</span></div><div class="hint" style="margin-top:5px">Surf. balcon</div></div>
+            <div><div class="with-unit"><input class="input num" id="balconNb" type="number" min="0" placeholder="1" /><span class="unit">nb</span></div><div class="hint" style="margin-top:5px">Nb balcons</div></div>
+            <div><div class="with-unit"><input class="input num" id="balconM2" type="number" min="0" placeholder="6" /><span class="unit">m&#178;</span></div><div class="hint" style="margin-top:5px">Surf. totale balcons</div></div>
             <div><div class="with-unit"><input class="input num" id="terrasseM2" type="number" min="0" placeholder="0" /><span class="unit">m&#178;</span></div><div class="hint" style="margin-top:5px">Terrasse</div></div>
           </div>
           <div id="wrapJardin"><div class="with-unit"><input class="input num" id="jardinM2" type="number" min="0" placeholder="0" /><span class="unit">m&#178; jardin</span></div></div>
@@ -311,6 +313,10 @@
             <div><label class="lbl" for="sdb">Salles de bain/d'eau</label><div class="with-unit"><input class="input num" id="sdb" type="number" min="0" placeholder="1" /><span class="unit">nb</span></div></div>
           </div>
         </div>
+        <div class="field"><div class="row">
+          <div><label class="lbl" for="wcSep">WC s&#233;par&#233;s <span class="opt">(un plus)</span></label><div class="with-unit"><input class="input num" id="wcSep" type="number" min="0" placeholder="0" /><span class="unit">nb</span></div></div>
+          <div></div>
+        </div></div>
         <div class="field"><label class="lbl" for="chauffage">Chauffage</label>
           <select class="input" id="chauffage">
             <option value="collectif">Collectif</option>
@@ -369,7 +375,10 @@
   </section>
 
   <!-- R&#201;SULTATS -->
-  <div id="results">
+  <div id="results" class="simple">
+
+    <div id="modeBar" style="order:-1"><div class="seg" id="segMode"><button data-m="simple" class="on">Mode Simple</button><button data-m="expert">Mode Expert</button></div><div class="hint" style="margin-top:6px">Mode Simple : l'essentiel pour d&#233;cider (verdict, prix conseille, negociation, risques). Mode Expert : tous les calculs detailles.</div></div>
+    <section class="card" id="decisionCard" style="order:0"><div id="decisionPanel"></div></section>
 
     <section class="card price-card" style="order:1">
       <div class="pc-eyebrow">Estimation</div>
@@ -519,7 +528,7 @@
       <div class="card-head"><div class="step-no">6</div><div><h2>Simulation de revente</h2><div class="sub">Plus-value, fiscalit&#233; et rendement global</div></div></div>
       <div class="subhead" style="margin-top:0">Hypoth&#232;ses d'&#233;volution annuelle</div>
       <div class="row" style="margin-bottom:10px">
-        <div><label class="lbl" for="holdYears">Dur&#233;e de d&#233;tention</label><select class="input" id="holdYears"><option>5</option><option>10</option><option>15</option><option selected>20</option><option>25</option><option>30</option><option>35</option><option>40</option><option>45</option><option>50</option></select></div>
+        <div><label class="lbl" for="holdYears">Dur&#233;e de d&#233;tention</label><select class="input" id="holdYears"><option>5</option><option>10</option><option>15</option><option>20</option><option>25</option><option>30</option><option>35</option><option>40</option><option>45</option><option selected>50</option></select></div>
         <div><label class="lbl" for="reval">Prix immobilier /an</label><div class="with-unit"><input class="input num" id="reval" type="number" step="0.1" /><span class="unit">%</span></div></div>
       </div>
       <div class="row" style="margin-bottom:6px">
@@ -672,7 +681,7 @@ async function fetchLive(coord){
     if(gr){if(DEBUG)dbg("Georisques brut:\n"+gr.raw.slice(0,400));
       const arr=(gr.json&&gr.json.data)||[];const lab=[];
       arr.forEach(o=>{(o.risques_detail||o.risques||[]).forEach(d2=>{const n=String(d2.num_risque||""),l=d2.libelle_risque_long||d2.libelle_risque;if(l&&n.length<=2&&lab.indexOf(l)<0)lab.push(l);});});
-      if(lab.length)out.risqueLbl=lab.length+" : "+lab.slice(0,3).join(", ")+(lab.length>3?" \u2026":"");
+      if(lab.length)out.risqueLbl=lab.length+" : "+lab.join(", ");
       else if(arr.length)out.risqueLbl="Aucun risque majeur";
     }
   }catch(_){}
@@ -756,7 +765,8 @@ function coefficients(){const rows=[];let m=1;let detail=0;
   let [vv,vl]=vueMap[$("vue").value];if(vv){m*=(1+vv);rows.push([vl,vv]);}detail++;
   const dirs=[["expoN","Nord",-0.02],["expoNE","Nord-Est",-0.01],["expoE","Est",0],["expoSE","Sud-Est",0.02],["expoS","Sud",0.03],["expoSO","Sud-Ouest",0.03],["expoO","Ouest",0.01],["expoNO","Nord-Ouest",-0.01]];
   const exChecked=dirs.filter(d=>{const e=$(d[0]);return e&&e.checked;});
-  if(exChecked.length){const best=Math.max(...exChecked.map(d=>d[2]));const bonus=exChecked.length>=3?0.03:exChecked.length>=2?0.02:0;const xv=best+bonus;m*=(1+xv);rows.push([exChecked.length>=2?`Exposition multi (${exChecked.length} orient.)`:`Exposition ${exChecked[0][1]}`,xv]);}detail++;
+  const traversant=[["expoN","expoS"],["expoE","expoO"],["expoNE","expoSO"],["expoNO","expoSE"]].some(([a,b])=>$(a)&&$(a).checked&&$(b)&&$(b).checked);
+  if(exChecked.length){const best=Math.max(...exChecked.map(d=>d[2]));const multi=exChecked.length>=3?0.03:exChecked.length>=2?0.02:0;const trav=traversant?0.015:0;const xv=best+multi+trav;m*=(1+xv);rows.push([traversant?`Exposition traversante (${exChecked.length} orient.)`:exChecked.length>=2?`Exposition multi (${exChecked.length} orient.)`:`Exposition ${exChecked[0][1]}`,xv]);}detail++;
   const chMap={collectif:[-0.01,"Chauffage collectif"],indiv_gaz:[0,"Chauffage gaz"],indiv_elec:[-0.01,"Chauffage \u00e9lectrique"],pac:[0.02,"Chauffage PAC/r\u00e9cent"]};
   let [cv,cl]=chMap[$("chauffage").value];if(cv){m*=(1+cv);rows.push([cl,cv]);}
   const stMap={standard:[0,"Standard"],bon:[0.03,"Bonnes prestations"],haut:[0.07,"Haut standing"]};
@@ -764,6 +774,7 @@ function coefficients(){const rows=[];let m=1;let detail=0;
   const epMap={avant1948:[0.01,"Avant 1948"],"1949_1974":[-0.02,"1949\u20131974"],"1975_2000":[0,"1975\u20132000"],apres2000:[0.03,"Apr\u00e8s 2000"],neuf:[0.06,"Neuf"]};
   let [ev2,el2]=epMap[$("epoque").value];if(ev2){m*=(1+ev2);rows.push([el2,ev2]);}detail++;
   if(numv("sdb")>=2){m*=1.01;rows.push(["Plusieurs salles d'eau",0.01]);}
+  if(numv("wcSep")>=1){m*=1.005;rows.push(["WC s\u00e9par\u00e9",0.005]);}
   if(state.type==="maison"){
     const miMap={individuelle:[0.03,"Maison individuelle"],un:[0,"Mitoyenne 1 c\u00f4t\u00e9"],deux:[-0.03,"Mitoyenne 2 c\u00f4t\u00e9s"]};
     let [mv,ml]=miMap[$("mitoyen").value];if(mv){m*=(1+mv);rows.push([ml,mv]);}detail++;
@@ -835,8 +846,14 @@ function renderMarket(r){const d=r.dyn;const sign=x=>(x>=0?"+":"")+x;
   $("marketStats").innerHTML=html;
 }
 function renderLocStats(r){const d=r.dyn;
-  const stats=[["Temps vers le bassin d'emploi","~ "+d.accessMin+" min en voiture"],["Densit\u00e9 de commerces & services",d.accessMin<12?"\u00c9lev\u00e9e":d.accessMin<25?"Correcte":"Faible"],["Desserte transports en commun",d.accessMin<10?"Tr\u00e8s bonne":d.accessMin<20?"Correcte":"Limit\u00e9e"],["Risque naturel (G\u00e9orisques)",(state.live&&state.live.risqueLbl)?state.live.risqueLbl+` <span style="color:var(--brand-dark);font-weight:700">r\u00e9el</span>`:d.risqueLbl]];
-  $("locStats").innerHTML=stats.map(([l,v])=>`<div class="stat"><span class="sl">${l}</span><span class="sv num">${v}</span></div>`).join("");
+  const stats=[["Temps vers le bassin d'emploi","~ "+d.accessMin+" min en voiture"],["Densit\u00e9 de commerces & services",d.accessMin<12?"\u00c9lev\u00e9e":d.accessMin<25?"Correcte":"Faible"],["Desserte transports en commun",d.accessMin<10?"Tr\u00e8s bonne":d.accessMin<20?"Correcte":"Limit\u00e9e"]];
+  const risk=(state.live&&state.live.risqueLbl)?state.live.risqueLbl:d.risqueLbl;
+  const isReal=!!(state.live&&state.live.risqueLbl);
+  let html=stats.map(([l,v])=>`<div class="stat"><span class="sl">${l}</span><span class="sv num">${v}</span></div>`).join("");
+  html+=`<div style="padding:10px 0 2px;border-top:1px solid var(--line);margin-top:6px"><div style="font-size:13px;color:var(--ink-soft);margin-bottom:5px">Risques naturels recens\u00e9s (G\u00e9orisques) ${isReal?'<span style="color:var(--brand-dark);font-weight:700">\u00b7 r\u00e9el</span>':'<span style="color:var(--ink-soft)">\u00b7 estim\u00e9</span>'}</div><div style="font-size:13.5px;line-height:1.55;color:var(--ink)">${risk}</div>`;
+  if(state.coord){const la=state.coord.lat,lo2=state.coord.lon;html+=`<div style="margin-top:10px"><iframe title="Carte du bien" src="https://www.openstreetmap.org/export/embed.html?bbox=${(lo2-0.013).toFixed(5)}%2C${(la-0.008).toFixed(5)}%2C${(lo2+0.013).toFixed(5)}%2C${(la+0.008).toFixed(5)}&layer=mapnik&marker=${la.toFixed(5)}%2C${lo2.toFixed(5)}" style="width:100%;height:220px;border:1px solid var(--line);border-radius:10px" loading="lazy"></iframe><div class="hint" style="margin-top:5px">Localisation du bien. Carte des risques d\u00e9taill\u00e9e : <a href="https://www.georisques.gouv.fr/mes-risques/connaitre-les-risques-pres-de-chez-moi" target="_blank" rel="noopener" style="color:var(--brand-dark)">georisques.gouv.fr</a>.</div></div>`;}
+  html+=`</div>`;
+  $("locStats").innerHTML=html;
 }
 function genComparables(r){const list=$("compList");list.innerHTML="";const ic=r.type==="maison"?"\u1f3e0":r.type==="terrain"?"\u1f333":"\u1f3e2";
   if(r.realPts&&r.realPts.length){const sorted=[...r.realPts].sort((a,b)=>String(b.date||"").localeCompare(String(a.date||""))).slice(0,6);
@@ -943,7 +960,12 @@ function updRentVsMkt(){
   if(!ent||!mkt){el.innerHTML="";return;}
   const diff=Math.round((ent/mkt-1)*100);
   const tag=diff===0?'<b>au niveau du march\u00e9</b>':diff>0?`<b style="color:var(--warn)">+${diff} %</b> au-dessus du march\u00e9`:`<b style="color:var(--good)">${diff} %</b> sous le march\u00e9`;
-  el.innerHTML=`March\u00e9 : <b>${eur0(mkt)} \u20ac/mois</b> (${state.mktRentSqm.toFixed(1).replace('.',',')} \u20ac/m\u00b2/mois). Votre loyer : ${tag}.`;
+  const lo=mkt*0.7,hi=mkt*1.3,clamp=v=>Math.max(0,Math.min(100,v)),pos=clamp((ent-lo)/(hi-lo)*100),mpos=clamp((mkt-lo)/(hi-lo)*100);
+  el.innerHTML=`Loyer de march\u00e9 : <b>${eur0(mkt)} \u20ac/mois</b> (${state.mktRentSqm.toFixed(1).replace('.',',')} \u20ac/m\u00b2/mois). Votre loyer : ${tag}.`+
+   `<div style="position:relative;height:9px;border-radius:6px;margin:9px 0 4px;background:linear-gradient(90deg,#7fe3d4,#f4d35e,#E8742A)">`+
+   `<div style="position:absolute;left:${mpos}%;top:-3px;width:2px;height:15px;background:var(--ink)"></div>`+
+   `<div style="position:absolute;left:${pos}%;top:-5px;transform:translateX(-50%);width:13px;height:19px;border-radius:6px;background:var(--brand-dark);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)"></div></div>`+
+   `<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--ink-soft)"><span class="num">${eur0(lo)} \u20ac</span><span>march\u00e9 (trait)</span><span class="num">${eur0(hi)} \u20ac</span></div>`;
 }
 
 function computeAll(r){
@@ -1444,9 +1466,71 @@ function renderProjection(r){
   else{cls="bad";txt="Peu int\u00e9ressant en l'\u00e9tat";}
   vEl.className="verdict "+cls;
   vEl.innerHTML=`${txt}<div class="vsub">VAN ${van>=0?"positive":"n\u00e9gative"} de ${eur(van)} (le projet ${van>=0?"bat":"ne bat pas"} votre taux d'actualisation de ${(rate*100).toFixed(1).replace('.',',')} %). Cash-flow mensuel initial ${cf1/12>=0?"+":""}${eur(cf1/12)}, qui remonte apr\u00e8s la fin du cr\u00e9dit. Revente optimale vers l'an ${opt}.</div>`;
+  renderDecision(r,{van:van,cf1m:cf1/12,gp:gp,bp:bp,apport:apport});
+}
+
+function renderDecision(r,m){
+  const el=$("decisionPanel");if(!el)return;
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const est=r.price||m.bp,bp=m.bp;
+  const sPrix=clamp(60-m.gp*3.3,0,100);
+  const vanR=m.van/Math.max(m.apport,1);
+  const sRent=clamp(55+vanR*45,0,100);
+  const sMarche=r.dyn?r.dyn.score:50;
+  const dpeMap={A:100,B:88,C:72,D:55,E:40,F:22,G:8};
+  const sDpe=dpeMap[state.dpe]!=null?dpeMap[state.dpe]:55;
+  const sCash=clamp(60+m.cf1m*0.08,0,100);
+  const t=(state.live&&state.live.risqueLbl)||"";const rmm=t.match(/^(\d+)/);const nbRisk=rmm?+rmm[1]:0;
+  const sRisk=clamp(100-nbRisk*9,25,100);
+  const score=Math.round(0.25*sPrix+0.28*sRent+0.15*sMarche+0.12*sDpe+0.10*sCash+0.10*sRisk);
+  let cls,verdict;
+  if(score>=75){cls="good";verdict="Excellente opportunit\u00e9";}
+  else if(score>=55){cls="good";verdict="Bon achat";}
+  else if(score>=35){cls="warn";verdict="\u00c0 \u00e9tudier";}
+  else{cls="bad";verdict="\u00c0 \u00e9viter";}
+  const col=cls==="good"?"var(--good)":cls==="warn"?"var(--warn)":"var(--bad)";
+  const negoRoom=sMarche<40?0.08:sMarche<66?0.05:0.03;
+  const prixCible=Math.round(est*(1-negoRoom)/100)*100;
+  const prixMax=Math.round(est/100)*100;
+  const economie=Math.max(0,bp-prixCible);
+  const F=[],W=[],R=[];
+  if(m.gp<-3)F.push(`Prix ${Math.abs(Math.round(m.gp))} % sous la valeur de march\u00e9 estim\u00e9e`);
+  if(m.gp>3)W.push(`Prix ${Math.round(m.gp)} % au-dessus de la valeur de march\u00e9 estim\u00e9e`);
+  if(m.van>0)F.push(`Rentabilit\u00e9 positive : VAN de ${eur0(m.van)} (bat votre taux d'actualisation)`);
+  else W.push(`Rentabilit\u00e9 limite : VAN de ${eur0(m.van)}`);
+  if(m.cf1m>=0)F.push(`Cash-flow mensuel positif (${eur0(m.cf1m)}/mois)`);
+  else W.push(`Cash-flow mensuel n\u00e9gatif (${eur0(m.cf1m)}/mois) \u00e0 financer chaque mois`);
+  if(sDpe>=72)F.push(`Bon DPE (${state.dpe}) : louable sans contrainte, peu de travaux \u00e9nerg\u00e9tiques`);
+  if(sDpe<=22){W.push(`DPE ${state.dpe} : passoire thermique`);R.push(`Restrictions de location (loi Climat) et travaux de r\u00e9novation \u00e0 anticiper`);}
+  if(sMarche>=66)F.push(`March\u00e9 local dynamique (${sMarche}/100)`);
+  if(sMarche<40)W.push(`March\u00e9 local atone (${sMarche}/100) : revente potentiellement plus lente`);
+  if(nbRisk>0)R.push(`${nbRisk} risque(s) naturel(s) recens\u00e9(s) sur la commune \u2014 v\u00e9rifier l'exposition exacte du bien`);
+  if(!R.length)R.push(`Aucun risque naturel majeur signal\u00e9 sur la commune`);
+  const reco=[];
+  if(score>=55)reco.push(`Bien \u00e0 fort int\u00e9r\u00eat. Offre conseill\u00e9e : <b>${eur0(prixCible)}</b> (marge de n\u00e9gociation ~${Math.round(negoRoom*100)} %). Ne pas d\u00e9passer <b>${eur0(prixMax)}</b>.`);
+  else if(score>=35)reco.push(`\u00c0 \u00e9tudier. N\u00e9gociez vers <b>${eur0(prixCible)}</b> pour renforcer la rentabilit\u00e9 ; au-del\u00e0 de <b>${eur0(prixMax)}</b>, l'int\u00e9r\u00eat diminue.`);
+  else reco.push(`En l'\u00e9tat, l'op\u00e9ration est peu favorable. Une baisse vers <b>${eur0(prixCible)}</b> ou moins serait n\u00e9cessaire pour l'envisager.`);
+  if(economie>0)reco.push(`En n\u00e9gociant de ${eur0(bp)} \u00e0 ${eur0(prixCible)}, vous \u00e9conomiseriez <b style="color:var(--good)">${eur0(economie)}</b>.`);
+  const dash=(score/100*226).toFixed(0);
+  const cell=(l,v,c)=>`<div style="background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 10px;text-align:center"><div style="font-size:10px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.3px">${l}</div><div class="num" style="font-size:15px;font-weight:800;margin-top:3px;color:${c||'var(--ink)'}">${v}</div></div>`;
+  const block=(title,arr,c)=>arr.length?`<div style="margin-bottom:9px"><div style="font-size:12px;font-weight:700;color:${c};margin-bottom:4px">${title}</div>${arr.map(x=>`<div style="font-size:13px;line-height:1.5;color:var(--ink);padding-left:14px;position:relative"><span style="position:absolute;left:0;color:${c}">&bull;</span>${x}</div>`).join("")}</div>`:"";
+  el.innerHTML=
+   `<div style="display:flex;align-items:center;gap:15px">`+
+     `<div style="position:relative;flex:0 0 auto;width:82px;height:82px">`+
+       `<svg viewBox="0 0 82 82" width="82" height="82"><circle cx="41" cy="41" r="36" fill="none" stroke="var(--line)" stroke-width="8"/><circle cx="41" cy="41" r="36" fill="none" stroke="${col}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${dash} 226" transform="rotate(-90 41 41)"/></svg>`+
+       `<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center"><div class="num" style="font-size:23px;font-weight:800;color:${col};line-height:1">${score}</div><div style="font-size:9px;color:var(--ink-soft)">/100</div></div>`+
+     `</div>`+
+     `<div style="flex:1;min-width:0"><div style="font-size:10.5px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.5px">Score d'acquisition</div><div style="font-size:19px;font-weight:800;color:${col};line-height:1.15;margin:2px 0 4px">${verdict}</div></div>`+
+   `</div>`+
+   `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin:14px 0 8px">${cell("Valeur march\u00e9",eur0(est))}${cell("Offre conseill\u00e9e",eur0(prixCible),"var(--good)")}${cell("Ne pas d\u00e9passer",eur0(prixMax))}</div>`+
+   `<div style="margin-top:12px">${block("Forces",F,"var(--good)")}${block("Points de vigilance",W,"var(--warn)")}${block("Risques",R,"var(--bad)")}</div>`+
+   `<div style="margin-top:4px;padding:11px 13px;background:#eef4f7;border-radius:10px;font-size:12.5px;line-height:1.55"><b>Recommandation</b><br>${reco.join("<br>")}</div>`;
 }
 
 document.querySelectorAll(".card-head").forEach(h=>h.addEventListener("click",()=>h.parentElement.classList.toggle("is-collapsed")));
+
+[...document.querySelectorAll('#results .card')].forEach(c=>{if(c.id!=='decisionCard'&&!c.classList.contains('price-card'))c.classList.add('expert-only');});
+const segM=$("segMode");if(segM)segM.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{segM.querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on");$("results").classList.toggle("simple",b.dataset.m==="simple");}));
 
 fillRegimes();updateTypeUI();
 </script>
