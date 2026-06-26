@@ -643,37 +643,43 @@ function updateTypeUI(){const t=state.type;
 let acTimer=null;
 $("adresse").addEventListener("input",e=>{const q=e.target.value.trim();clearTimeout(acTimer);if(q.length<4){closeAc();return;}acTimer=setTimeout(()=>fetchBan(q),250);});
 function closeAc(){$("acList").classList.remove("open");$("acList").innerHTML="";}
-async function fetchBan(q){try{const r=await fetch("https://api-adresse.data.gouv.fr/search/?limit=5&q="+encodeURIComponent(q));if(!r.ok)throw 0;const d=await r.json();const list=$("acList");list.innerHTML="";(d.features||[]).forEach(f=>{const p=f.properties,c=f.geometry.coordinates;const div=document.createElement("div");div.className="ac-item";div.innerHTML=`${p.label}<span class="ac-sub">${p.context||""}</span>`;div.addEventListener("click",()=>{$("adresse").value=p.label;$("cp").value=p.postcode||"";$("ville").value=p.city||"";state.coord={lat:c[1],lon:c[0],label:p.label};closeAc();});list.appendChild(div);});list.classList.toggle("open",(d.features||[]).length>0);}catch(_){closeAc();}}
+async function fetchBan(q){try{const r=await fetchT("https://api-adresse.data.gouv.fr/search/?limit=5&q="+encodeURIComponent(q),6000);if(!r.ok)throw 0;const d=await r.json();const list=$("acList");list.innerHTML="";(d.features||[]).forEach(f=>{const p=f.properties,c=f.geometry.coordinates;const div=document.createElement("div");div.className="ac-item";div.innerHTML=`${p.label}<span class="ac-sub">${p.context||""}</span>`;div.addEventListener("click",()=>{$("adresse").value=p.label;$("cp").value=p.postcode||"";$("ville").value=p.city||"";state.coord={lat:c[1],lon:c[0],label:p.label};closeAc();});list.appendChild(div);});list.classList.toggle("open",(d.features||[]).length>0);}catch(_){closeAc();}}
 document.addEventListener("click",e=>{if(!e.target.closest(".ac-wrap"))closeAc();});
 
 /* ===== DVF r\u00e9el (cquest, repli d\u00e9mo) ===== */
 const DVF_PROXY=""; // optionnel : URL d'un proxy perso (Cloudflare Worker) pour une fiabilit\u00e9 maximale
 const DVF_BASE=DVF_PROXY||"https://api.cquest.org/dvf";
 // Relais CORS publics : permettent d'acc\u00e9der \u00e0 DVF depuis une page h\u00e9berg\u00e9e SANS installer de proxy (id\u00e9al sur mobile).
-const CORS_PROXIES=["https://api.allorigins.win/raw?url=","https://corsproxy.io/?url="];
+// Relais CORS. corsproxy.io en t\u00eate : son offre gratuite couvre les domaines github.io (notre h\u00e9bergement).
+const CORS_PROXIES=["https://corsproxy.io/?url=","https://api.allorigins.win/raw?url=","https://api.codetabs.com/v1/proxy/?quest="];
+function fetchT(url,ms){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);return fetch(url,{signal:c.signal}).finally(()=>clearTimeout(t));}
+// Tente la source directe ET tous les relais EN PARALL\u00c8LE : la 1re r\u00e9ponse valide gagne, le tout born\u00e9 par un d\u00e9lai (plus d'attente interminable).
 async function dvfFetch(url){
-  try{const r=await fetch(url);if(r.ok)return r;}catch(_){}            // 1) direct (si l'API renvoie les en-t\u00eates CORS)
-  for(const px of CORS_PROXIES){try{const r=await fetch(px+encodeURIComponent(url));if(r.ok)return r;}catch(_){}} // 2) repli via relais public
-  return null;
+  const tries=[fetchT(url,6000)];
+  CORS_PROXIES.forEach(px=>tries.push(fetchT(px+encodeURIComponent(url),9000)));
+  try{return await Promise.any(tries.map(p=>p.then(r=>{if(r.ok)return r;throw new Error("bad");})));}
+  catch(_){return null;}
 }
-async function geocode(){if(state.coord)return state.coord;const q=(($("adresse").value||"")+" "+($("cp").value||"")+" "+($("ville").value||"")).trim();try{const r=await fetch("https://api-adresse.data.gouv.fr/search/?limit=1&q="+encodeURIComponent(q));const d=await r.json();const f=(d.features||[])[0];if(f){state.coord={lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0],label:f.properties.label};return state.coord;}}catch(_){}return null;}
+async function geocode(){if(state.coord)return state.coord;const q=(($("adresse").value||"")+" "+($("cp").value||"")+" "+($("ville").value||"")).trim();try{const r=await fetchT("https://api-adresse.data.gouv.fr/search/?limit=1&q="+encodeURIComponent(q),6000);const d=await r.json();const f=(d.features||[])[0];if(f){state.coord={lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0],label:f.properties.label};return state.coord;}}catch(_){}return null;}
 function recVal(o,keys){for(const k of keys){if(o[k]!=null&&o[k]!=="")return o[k];}return null;}
 function median(a){const s=[...a].sort((x,y)=>x-y);const m=Math.floor(s.length/2);return s.length%2?s[m]:(s[m-1]+s[m])/2;}
 async function fetchDvf(coord,type){
-  if(!coord||type==="terrain")return null;
+  if(!coord||type==="terrain")return {pts:null,status:"skip"};
   const tl=type==="maison"?"Maison":"Appartement";
+  let connected=false;
   for(const dist of [500,1000,2000]){
-    try{
-      const url=`${DVF_BASE}?lat=${coord.lat}&lon=${coord.lon}&dist=${dist}&type_local=${tl}&nature_mutation=Vente`;
-      const r=await dvfFetch(url);if(!r)continue;const d=await r.json();
-      const arr=d.features?d.features.map(f=>f.properties||f):(d.resultats||(Array.isArray(d)?d:[]));
-      const pts=[];
-      arr.forEach(o=>{const v=Number(recVal(o,["valeur_fonciere","valeurfonc","valeur"]));const s=Number(recVal(o,["surface_reelle_bati","surface_relle_bati","surface_bati","sbati"]));const tlo=recVal(o,["type_local","libtyploc"]);if(!v||!s||s<9)return;if(tlo&&!String(tlo).toLowerCase().startsWith(tl.toLowerCase().slice(0,4)))return;const ppm=v/s;if(ppm<300||ppm>40000)return;pts.push({ppm,surf:s,price:v,rooms:Number(recVal(o,["nombre_pieces_principales","nbpprinc"]))||null,date:recVal(o,["date_mutation","datemut"])});});
-      if(pts.length>=5)return pts;
-      if(dist===2000&&pts.length>0)return pts;
-    }catch(_){}
+    const url=`${DVF_BASE}?lat=${coord.lat}&lon=${coord.lon}&dist=${dist}&type_local=${tl}&nature_mutation=Vente`;
+    const r=await dvfFetch(url);
+    if(!r){if(!connected)return {pts:null,status:"no-conn"};else continue;} // connexion morte au 1er essai \u2192 inutile d'\u00e9largir
+    connected=true;
+    let d;try{d=await r.json();}catch(_){continue;}
+    const arr=d.features?d.features.map(f=>f.properties||f):(d.resultats||(Array.isArray(d)?d:[]));
+    const pts=[];
+    arr.forEach(o=>{const v=Number(recVal(o,["valeur_fonciere","valeurfonc","valeur"]));const s=Number(recVal(o,["surface_reelle_bati","surface_relle_bati","surface_bati","sbati"]));const tlo=recVal(o,["type_local","libtyploc"]);if(!v||!s||s<9)return;if(tlo&&!String(tlo).toLowerCase().startsWith(tl.toLowerCase().slice(0,4)))return;const ppm=v/s;if(ppm<300||ppm>40000)return;pts.push({ppm,surf:s,price:v,rooms:Number(recVal(o,["nombre_pieces_principales","nbpprinc"]))||null,date:recVal(o,["date_mutation","datemut"])});});
+    if(pts.length>=5)return {pts,status:"ok"};
+    if(dist===2000&&pts.length>0)return {pts,status:"ok"};
   }
-  return null;
+  return {pts:null,status:connected?"no-data":"no-conn"};
 }
 
 /* ===== Estimation ===== */
@@ -901,14 +907,21 @@ async function showResults(){
   if(!surface||surface<=0){err.textContent="Renseignez une surface valide.";err.classList.add("show");return;}
   err.classList.remove("show");
   const btn=$("btnEstim");const oldTxt=btn.textContent;btn.textContent="Recherche des ventes r\u00e9elles\u2026";btn.disabled=true;
-  let realBase=null,realPts=null;
+  let realBase=null,realPts=null,diag="";
   const coord=await geocode();
-  if(coord){const pts=await fetchDvf(coord,state.type);if(pts&&pts.length){realPts=pts;realBase=Math.round(median(pts.map(p=>p.ppm)));}}
+  if(!coord){diag="adresse non localis\u00e9e \u2014 v\u00e9rifiez l'adresse et le code postal";}
+  else if(state.type==="terrain"){diag="terrain : pas de comparable b\u00e2ti DVF";}
+  else{
+    const res=await fetchDvf(coord,state.type);
+    if(res.pts&&res.pts.length){realPts=res.pts;realBase=Math.round(median(res.pts.map(p=>p.ppm)));}
+    else if(res.status==="no-conn")diag="sources DVF injoignables \u2014 r\u00e9essayez dans un instant";
+    else diag="aucune vente DVF comparable dans le secteur";
+  }
   btn.textContent=oldTxt;btn.disabled=false;
   const r=estimate(realBase);r.realPts=realPts;r.realCount=realPts?realPts.length:0;lastResult=r;
   const sd=$("srcDot"),st=$("srcTxt");
   if(realBase){sd.style.background="#7fe3d4";st.textContent=`Donn\u00e9es r\u00e9elles DVF \u00b7 ${r.realCount} ventes`;$("compTag").textContent="DVF \u00b7 r\u00e9el";}
-  else{sd.style.background="#E8742A";st.textContent="Estimation d\u00e9mo \u00b7 DVF indisponible";$("compTag").textContent="DVF \u00b7 d\u00e9mo";}
+  else{sd.style.background="#E8742A";st.textContent="D\u00e9mo \u00b7 "+diag;$("compTag").textContent="DVF \u00b7 d\u00e9mo";}
   countUp($("pcPrice"),r.price," \u20ac");
   $("pcMargin").textContent="\u00b1 "+(r.spread*100).toFixed(0)+" %";
   $("pcSqm").textContent=eur0(r.sqm)+" \u20ac";
