@@ -405,6 +405,7 @@
     <section class="card" id="decisionCard" style="order:0"><div id="decisionPanel"></div></section>
     <section class="card expert-only" id="reportCard" style="order:0"><div class="card-head"><div class="step-no">&#128221;</div><div><h2>Rapport d'analyse</h2><div class="sub">Synth&#232;se r&#233;dig&#233;e automatiquement &#224; partir de vos donn&#233;es</div></div></div><div id="reportPanel"></div></section>
     <section class="card expert-only" id="proKpiCard" style="order:4"><div class="card-head"><div class="step-no">&#128202;</div><div><h2>Tableau de bord investisseur</h2><div class="sub">Ratios financiers professionnels &#8212; calcul&#233;s en direct</div></div></div><div id="proKpiPanel"></div></section>
+    <section class="card expert-only" id="fiscalCard" style="order:5"><div class="card-head"><div class="step-no">&#9878;&#65039;</div><div><h2>Comparateur fiscal</h2><div class="sub">Tous les r&#233;gimes compar&#233;s &#8212; recommandation automatique</div></div></div><div id="fiscalPanel"></div></section>
 
     <section class="card price-card" style="order:1">
       <div class="pc-eyebrow">Estimation</div>
@@ -1181,6 +1182,35 @@ function updRentVsMkt(){
    `<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--ink-soft)"><span>\u221230 %</span><span style="color:#0a8f7e;font-weight:700">zone de march\u00e9</span><span>+30 %</span></div>`;
 }
 
+/* ===== Vague 6 : comparateur fiscal des regimes de revenus locatifs ===== */
+function compareRegimes(R,C,I,ins,amort){
+  const t_nm=fiscalTax("nue_micro",R,C,I,ins,amort),t_nr=fiscalTax("nue_reel",R,C,I,ins,amort);
+  const t_mm=fiscalTax("meuble_micro",R,C,I,ins,amort),t_mr=fiscalTax("meuble_reel",R,C,I,ins,amort);
+  const prof=Math.max(0,R-C-I-ins-amort),is=prof<=42500?prof*0.15:42500*0.15+(prof-42500)*0.25,t_is=is+(prof-is)*0.30;
+  return [
+    {k:"nue_micro",lbl:"Location nue \u00b7 micro-foncier",t:t_nm,note:"Abattement 30 %. Simple, sans comptabilit\u00e9. Plafond 15 000 \u20ac/an."},
+    {k:"nue_reel",lbl:"Location nue \u00b7 r\u00e9el (d\u00e9ficit foncier)",t:t_nr,note:"Charges et int\u00e9r\u00eats d\u00e9duits ; d\u00e9ficit imputable sur le revenu global (10 700 \u20ac/an)."},
+    {k:"sci_ir",lbl:"SCI \u00e0 l'IR",t:t_nr,note:"Transparente : imposition identique \u00e0 la location nue au r\u00e9el (\u00e0 votre TMI + PS). Utile pour la transmission."},
+    {k:"meuble_micro",lbl:"LMNP \u00b7 micro-BIC",t:t_mm,note:"Abattement 50 %. Pour petits loyers meubl\u00e9s. Plafond 77 700 \u20ac/an."},
+    {k:"meuble_reel",lbl:"LMNP \u00b7 r\u00e9el (amortissement)",t:t_mr,note:"Amortissement du bien : imp\u00f4t souvent nul plusieurs ann\u00e9es."},
+    {k:"sarl_famille",lbl:"SARL de famille (meubl\u00e9)",t:t_mr,note:"Meubl\u00e9 en soci\u00e9t\u00e9, IR transparent : fiscalit\u00e9 proche du LMNP r\u00e9el, cadre soci\u00e9taire."},
+    {k:"sci_is",lbl:"SCI \u00e0 l'IS",t:t_is,note:"IS 15/25 % puis flat tax 30 % si distribution. Amortissement \u2192 imp\u00f4t annuel faible, MAIS plus-value de cession tax\u00e9e \u00e0 l'IS sur la valeur amortie (souvent d\u00e9favorable en revente)."}
+  ];
+}
+function renderFiscalCompare(r){
+  const el=$("fiscalPanel");if(!el)return;
+  const R=numv("iRent")*12,C=numv("iTaxe")+numv("iCopro")+numv("iPno")+numv("iDivers"),taux=numv("iTaux")/100,bp=numv("prixAchat")||r.price;
+  const apport=numv("iApport"),coutTotal=bp+bp*notaireRate()+numv("iTravaux")+numv("iDossier")+numv("iGarantie");
+  const emprunt=Math.max(0,coutTotal-apport),I=emprunt*taux,ins=emprunt*(numv("iAssur")/100),amort=bp*0.85/30+700;
+  const list=compareRegimes(R,C,I,ins,amort).sort((a,b)=>a.t-b.t);
+  const best=list[0],worst=list[list.length-1],span=Math.max(1,worst.t-best.t),cur=$("regime")?$("regime").value:"",eco=worst.t-best.t;
+  const fmt=v=>v<-0.5?"\u2212 "+eur0(-v):eur0(v);
+  const row=(o,i)=>{const isBest=i===0,color=isBest?"var(--good)":o.t<=best.t+span*0.34?"var(--warn)":"var(--bad)";
+    return `<div style="margin-top:9px;padding:9px 11px;border-radius:10px;background:${isBest?'#eaf6ef':'var(--bg)'};border-left:4px solid ${color}"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><span style="font-weight:700;font-size:12.5px;color:var(--ink)">${o.lbl}${isBest?' <span style="font-size:9px;color:#0a8f7e;font-weight:800">&#9733; OPTIMAL</span>':''}${o.k===cur?' <span style="font-size:9px;color:var(--brand-dark)">(actuel)</span>':''}</span><span class="num" style="font-weight:800;font-size:13px;color:${color};white-space:nowrap">${fmt(o.t)}/an</span></div><div style="font-size:10px;color:var(--ink-soft);line-height:1.4;margin-top:3px">${o.note}</div></div>`;};
+  el.innerHTML=`<div style="padding:11px 13px;background:#eaf6ef;border-radius:11px;border-left:4px solid var(--good)"><div style="font-weight:800;color:#0a8f7e;font-size:13.5px">R\u00e9gime conseill\u00e9 : ${best.lbl}</div><div style="font-size:12px;color:var(--ink);margin-top:3px;line-height:1.5">Imp\u00f4t locatif annuel le plus faible (${best.t<-0.5?"gain de "+eur0(-best.t):eur0(best.t)+" /an"})${eco>100?", soit environ "+eur0(eco)+" d'\u00e9conomie/an vs le r\u00e9gime le moins favorable":""}.</div></div>`+
+    list.map(row).join("")+
+    `<div class="hint" style="margin-top:11px">Comparaison de l'<b>imp\u00f4t annuel</b> sur les revenus locatifs (m\u00eames loyers, charges et int\u00e9r\u00eats). Les r\u00e9gimes \u00e0 <b>amortissement</b> (LMNP r\u00e9el, SARL famille, SCI IS) minimisent l'imp\u00f4t annuel mais le r\u00e9int\u00e8grent \u00e0 la <b>plus-value de cession</b> : sur longue d\u00e9tention avec revente, comparez le co\u00fbt total, pas seulement l'annuel. Pinel, Denormandie, Malraux, Monuments Historiques et holding (li\u00e9s \u00e0 un investissement sp\u00e9cifique) seront ajout\u00e9s s\u00e9par\u00e9ment. Indicatif \u2014 \u00e0 valider avec un expert-comptable.</div>`;
+}
 /* ===== Vague 5 : tableau de bord investisseur (ratios financiers pro) ===== */
 function renderProKpis(r,f){
   const el=$("proKpiPanel");if(!el)return;
@@ -1196,7 +1226,7 @@ function renderProKpis(r,f){
   const tiles=[
     tile("Cap Rate",pct(cap),col(cap,6,4),"Revenu net / prix. R\u00e9f. &#8805; 6 %"),
     tile("Yield on Cost",pct(yoc),col(yoc,6,4),"Revenu net / co\u00fbt total (travaux inclus)"),
-    tile("Cash-on-Cash",coc!=null?pct(coc):"n/a",coc!=null?col(coc,4,0):S,coc!=null?"Cash-flow avant imp\u00f4t / apport":"Achat comptant"),
+    tile("Cash-on-Cash",coc!=null?pct(coc):"n/a",coc!=null?col(coc,4,0):S,coc!=null?"Cash-flow avant imp\u00f4t / apport":(f.emprunt>0?"Apport nul (100 % financ\u00e9)":"Achat comptant")),
     tile("DSCR",dscr!=null?dscr.toFixed(2).replace('.',','):"n/a",dscr!=null?col(dscr,1.2,1):S,dscr!=null?"Revenu net / annuit\u00e9s. Banque &#8805; 1,2":"Sans emprunt"),
     tile("LTV",pct(ltv),colLow(ltv,70,85),"Emprunt / valeur. &lt; 70 % confortable"),
     tile("TRI",pct(tri*100),tri>=P.rate?G:tri>=0?W:Bd,"Rendement interne du projet"),
@@ -1268,6 +1298,7 @@ function computeAll(r){
   if(Math.abs(gp)<0.5)gapEl.innerHTML=`Identique \u00e0 l'estimation de l'outil (${eur(r.price)}).`;
   else gapEl.innerHTML=`<b style="color:${gp>0?'var(--bad)':'var(--good)'}">${gp>0?'+':''}${gp.toFixed(1)} %</b> ${gp>0?'au-dessus':'en dessous'} de la valeur estim\u00e9e (${eur(r.price)}).`;
   renderProKpis(r,{rentY:rentY,charges:charges,bp:bp,coutTotal:coutTotal,emprunt:emprunt,mensuTot:mensuTot,apport:apport});
+  renderFiscalCompare(r);
 }
 function setMetric(el,txt,val,isCash){el.textContent=txt;el.classList.remove("good","warn","bad");if(isCash){el.classList.add(val>=0?"good":"bad");return;}el.classList.add(val>=5.5?"good":val>=3.5?"warn":"bad");}
 
@@ -1512,8 +1543,9 @@ function computeResale(r){
   const rentY=numv("iRent")*12;const charges=numv("iTaxe")+numv("iCopro")+numv("iPno")+numv("iDivers");
   const taxLoc=fiscalTax(reg,rentY,charges,emprunt*taux,emprunt*(numv("iAssur")/100),bp*0.85/30+700);
   let mensTot=0;if(duree>0&&emprunt>0){const im=taux/12,n=duree*12;mensTot=(im>0?emprunt*im/(1-Math.pow(1+im,-n)):emprunt/n)+emprunt*(numv("iAssur")/100)/12;}
-  const cfAnnuel=(rentY-charges-taxLoc)-mensTot*12;const apportInit=apport||1;const gain=cfAnnuel*years+(net-apport);const rend=gain/apportInit/years*100;
-  const el=$("rvRend");el.textContent=(rend>=0?"+":"")+rend.toFixed(1)+" %";el.classList.remove("good","warn","bad");el.classList.add(rend>=6?"good":rend>=2?"warn":"bad");
+  const cfAnnuel=(rentY-charges-taxLoc)-mensTot*12;const gain=cfAnnuel*years+(net-apport);const el=$("rvRend");el.classList.remove("good","warn","bad");
+  if(apport>0){const rend=gain/apport/years*100;el.textContent=(rend>=0?"+":"")+rend.toFixed(1)+" %";el.classList.add(rend>=6?"good":rend>=2?"warn":"bad");}
+  else{el.textContent="n/a (apport nul)";el.classList.add("warn");}
   const lb=$("rvLmnp");
   if(reg==="meuble_reel"){lb.style.display="flex";lb.className="banner warn";lb.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 3 2 20h20L12 3Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 10v4M12 17v.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>LMNP r\u00e9el : amortissements r\u00e9int\u00e9gr\u00e9s \u00e0 la plus-value ('+eur(amortReint)+'), selon la r\u00e8gle r\u00e9cente \u2014 \u00e0 confirmer.</span>';}
   else lb.style.display="none";
