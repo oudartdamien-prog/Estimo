@@ -403,6 +403,8 @@
 
     <div id="modeBar" style="order:-1"><div class="seg" id="segMode"><button data-m="simple" class="on">Mode Simple</button><button data-m="expert">Mode Expert</button></div><div class="hint" style="margin-top:6px">Mode Simple : l'essentiel pour d&#233;cider (verdict, prix conseille, negociation, risques). Mode Expert : tous les calculs detailles.</div></div>
     <section class="card" id="decisionCard" style="order:0"><div id="decisionPanel"></div></section>
+    <section class="card expert-only" id="reportCard" style="order:0"><div class="card-head"><div class="step-no">&#128221;</div><div><h2>Rapport d'analyse</h2><div class="sub">Synth&#232;se r&#233;dig&#233;e automatiquement &#224; partir de vos donn&#233;es</div></div></div><div id="reportPanel"></div></section>
+    <section class="card expert-only" id="proKpiCard" style="order:4"><div class="card-head"><div class="step-no">&#128202;</div><div><h2>Tableau de bord investisseur</h2><div class="sub">Ratios financiers professionnels &#8212; calcul&#233;s en direct</div></div></div><div id="proKpiPanel"></div></section>
 
     <section class="card price-card" style="order:1">
       <div class="pc-eyebrow">Estimation</div>
@@ -925,6 +927,17 @@ function renderConfBreak(c){
   const col=v=>v>=66?"#7fe3d4":v>=40?"#F2D31C":"#f0a07a";
   el.innerHTML=c.factors.map(f=>`<div style="margin-top:7px"><div style="display:flex;justify-content:space-between;font-size:11px;color:#bcd2dd"><span>${f[0]} <span style="opacity:.6">${f[2]}</span></span><span class="num" style="color:${col(f[1])};font-weight:700">${f[1]}</span></div><div style="height:5px;border-radius:4px;background:rgba(255,255,255,.13);overflow:hidden;margin-top:2px"><div style="height:100%;width:${f[1]}%;background:${col(f[1])}"></div></div></div>`).join("");
 }
+/* ===== Donnees reelles : loyer ancre au prix DVF + tendance de prix calculee sur DVF ===== */
+function mktRentSqm(sqmBase){const y=Math.max(0.032,Math.min(0.075,0.082-sqmBase*9e-6));return +(sqmBase*y/12).toFixed(1);}
+function dvfTrend(pts){
+  if(!pts||pts.length<10)return null;
+  const byY={};pts.forEach(p=>{const y=p.date?+String(p.date).slice(0,4):0;if(y&&p.ppm>0)(byY[y]=byY[y]||[]).push(p.ppm);});
+  const med=a=>{const s=[...a].sort((x,z)=>x-z),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2;};
+  const ys=Object.keys(byY).map(Number).filter(y=>byY[y].length>=4).sort((a,b)=>a-b);
+  if(ys.length<2)return null;
+  const last=ys[ys.length-1],prev=ys[ys.length-2],first=ys[0];
+  return{evo12:+((med(byY[last])/med(byY[prev])-1)*100).toFixed(1),evoTot:+((med(byY[last])/med(byY[first])-1)*100).toFixed(0),span:last-first,fromY:first,toY:last};
+}
 function baseSqm(city,cp,type){const cn=norm(city);const dep=cp?cp.substring(0,2):null;let base,conf;
   if(type==="terrain"){let apt=CITY_APT[cn]||DEPT_APT[dep]||NAT_APT;return{sqm:Math.round(apt*0.14),conf:CITY_APT[cn]?"moyenne":"faible"};}
   if(CITY_APT[cn]){base=CITY_APT[cn];conf="\u00e9lev\u00e9e";}else if(dep&&DEPT_APT[dep]){base=DEPT_APT[dep];conf="moyenne";}else{base=NAT_APT;conf="faible";}
@@ -1008,10 +1021,10 @@ function renderMarket(r){const d=r.dyn;const sign=x=>(x>=0?"+":"")+x;
   const cap=mtCapacity(1000,RATE20/100,20),capUp=mtCapacity(1000,(RATE20+1)/100,20);const effet=Math.round((1-capUp/cap)*100);
   const mois=(d.ratioOV*12).toFixed(0);
   let html=`<div class="stat"><span class="sl">Prix m\u00e9dian secteur (DVF/notaires)</span><span class="sv num">${eur0(r.sqmBase)} /m\u00b2</span></div>`+
-    `<div class="stat"><span class="sl">\u00c9volution prix 12 mois</span><span class="sv num ${cls}">${arr} ${Math.abs(d.evo12)} %</span></div>`+
-    `<div class="stat"><span class="sl">\u00c9volution sur 5 ans</span><span class="sv num">${sign(d.evo5)} %</span></div>`+
-    `<div class="stat"><span class="sl">Indice Notaires-INSEE (1 an)</span><span class="sv num ${ncls}">${sign(d.notairesEvo)} %</span></div>`+
-    `<div class="stat"><span class="sl">Loyer de march\u00e9</span><span class="sv num">${d.loyerM2.toFixed(1).replace('.',',')} \u20ac/m\u00b2/mois</span></div>`+
+    `<div class="stat"><span class="sl">\u00c9volution prix 12 mois${d.trendReal?' <span style="color:var(--brand-dark);font-weight:700;font-size:9px">r\u00e9el</span>':''}</span><span class="sv num ${cls}">${arr} ${Math.abs(d.evo12)} %</span></div>`+
+    `<div class="stat"><span class="sl">\u00c9volution sur ${d.trendReal?d.evoSpan:5} ans${d.trendReal?' <span style="color:var(--brand-dark);font-weight:700;font-size:9px">r\u00e9el</span>':''}</span><span class="sv num">${sign(d.evo5)} %</span></div>`+
+    `<div class="stat"><span class="sl">${d.trendReal?"Tendance DVF (1 an)":"Indice Notaires-INSEE (1 an)"}</span><span class="sv num ${ncls}">${sign(d.notairesEvo)} %</span></div>`+
+    `<div class="stat"><span class="sl">Loyer de march\u00e9${d.rentReal?' <span style="color:var(--brand-dark);font-weight:700;font-size:9px">ancr\u00e9 DVF</span>':''}</span><span class="sv num">${d.loyerM2.toFixed(1).replace('.',',')} \u20ac/m\u00b2/mois</span></div>`+
     `<div class="stat"><span class="sl">Rendement locatif brut de march\u00e9</span><span class="sv num">${d.rendementMarche.toFixed(1).replace('.',',')} %</span></div>`+
     `<div class="stat"><span class="sl">Stock d'annonces en vente</span><span class="sv num">${eur0(d.stockAnnonces)}</span></div>`+
     `<div class="stat"><span class="sl">Ratio offre / ventes</span><span class="sv num">${d.ratioOV.toFixed(2).replace('.',',')} \u00b7 ${mois} mois</span></div>`+
@@ -1098,11 +1111,20 @@ function renderScatter(r){
   const pBig=pc(all.filter(p=>p.surf>ssurf).length),pExp=pc(all.filter(p=>p.price>sprice).length);
   const sx=mx(ssurf).toFixed(1),sy=my(sprice).toFixed(1);
   const dots=pts.map(p=>`<circle cx="${mx(p.surf).toFixed(1)}" cy="${my(p.price).toFixed(1)}" r="2.5" fill="#0FB39E" fill-opacity=".4"/>`).join("");
+  // Regression lineaire prix ~ surface (OLS) sur toutes les ventes
+  let _rsx=0,_rsy=0,_rsxy=0,_rsxx=0;all.forEach(p=>{_rsx+=p.surf;_rsy+=p.price;_rsxy+=p.surf*p.price;_rsxx+=p.surf*p.surf;});
+  const _rn=all.length,_rden=_rn*_rsxx-_rsx*_rsx;
+  const regSlope=_rden!==0?(_rn*_rsxy-_rsx*_rsy)/_rden:0,regInt=(_rsy-regSlope*_rsx)/_rn;
+  let _ssr=0,_sst=0,regMae=0;const _ym=_rsy/_rn;
+  all.forEach(p=>{const pr=regSlope*p.surf+regInt;_ssr+=(p.price-pr)*(p.price-pr);_sst+=(p.price-_ym)*(p.price-_ym);regMae+=Math.abs(p.price-pr);});
+  regMae/=_rn;const regR2=_sst>0?Math.max(0,1-_ssr/_sst):0;
+  const regLine=`<line x1="${mx(xmin).toFixed(1)}" y1="${my(regSlope*xmin+regInt).toFixed(1)}" x2="${mx(xmax).toFixed(1)}" y2="${my(regSlope*xmax+regInt).toFixed(1)}" stroke="#E8742A" stroke-width="2" clip-path="url(#scClip)"/>`;
   const k=v=>v>=1e6?(v/1e6).toFixed(1).replace('.',',')+"M":Math.round(v/1000)+"k";
   const qlab=(x,y,anc,t)=>`<text x="${x}" y="${y}" font-size="8.5" text-anchor="${anc}" fill="var(--ink-soft)">${t}</text>`;
   box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block">`+
+    `<defs><clipPath id="scClip"><rect x="${L}" y="${T}" width="${Rr-L}" height="${B-T}"/></clipPath></defs>`+
     `<rect x="${L}" y="${T}" width="${Rr-L}" height="${B-T}" fill="var(--bg)" stroke="var(--line)"/>`+
-    dots+
+    dots+regLine+
     `<line x1="${sx}" y1="${T}" x2="${sx}" y2="${B}" stroke="var(--brand-dark)" stroke-width="1.3" stroke-dasharray="4 3"/>`+
     `<line x1="${L}" y1="${sy}" x2="${Rr}" y2="${sy}" stroke="var(--brand-dark)" stroke-width="1.3" stroke-dasharray="4 3"/>`+
     `<circle cx="${sx}" cy="${sy}" r="6" fill="var(--brand-dark)" stroke="#fff" stroke-width="2"/>`+
@@ -1116,6 +1138,7 @@ function renderScatter(r){
     `<text x="2" y="${B}" font-size="8" fill="var(--ink-soft)">${k(ymin)}\u20ac</text>`+
     `<text x="${(L+Rr)/2}" y="${B+13}" font-size="8.5" text-anchor="middle" fill="var(--ink-soft)">Surface \u2192   Prix \u2191</text>`+
     `</svg>`+
+    `<div style="margin-top:8px;padding:8px 10px;background:#fff5ef;border-left:3px solid #E8742A;border-radius:0 8px 8px 0;font-size:11.5px;line-height:1.55;color:var(--ink)">Droite de tendance (orange) : <b class="num">Prix &#8776; ${eur0(Math.round(regSlope))} &#8364;/m&#178; &#215; surface ${regInt>=0?"+":"&#8722;"} ${eur0(Math.abs(Math.round(regInt)))} &#8364;</b><br>&#201;cart moyen au mod&#232;le : <b class="num">&#177; ${eur0(Math.round(regMae))} &#8364;</b> &#183; R&#178; <b class="num">${regR2.toFixed(2).replace('.',',')}</b> <span style="color:var(--ink-soft)">(part du prix expliquee par la surface)</span></div>`+
     `<div class="hint" style="margin-top:6px;line-height:1.5"><b style="color:var(--brand-dark)">${pExp}%</b> des ventes sont plus ch\u00e8res que votre prix \u00b7 <b style="color:var(--brand-dark)">${pBig}%</b> portent sur un bien plus grand.</div>`;
 }
 
@@ -1124,7 +1147,7 @@ function fillRegimes(){const sel=$("regime");const opts=state.loc==="nue"?[["nue
 bindSeg("segLoc","loc",()=>{fillRegimes();if(lastResult)computeAll(lastResult);});
 
 function renderRentalDefaults(r){
-  const cn=norm(r.city);const rentSqm=CITY_RENT[cn]||(r.sqmBase*NAT_RENT_FACTOR);
+  const cn=norm(r.city);const rentSqm=CITY_RENT[cn]||mktRentSqm(r.sqmBase);
   state.mktRentSqm=rentSqm;
   const rent=Math.round(rentSqm*r.surface/10)*10;
   $("iRent").value=rent;
@@ -1146,14 +1169,47 @@ function updRentVsMkt(){
   if(!ent||!mkt){el.innerHTML="";return;}
   const diff=Math.round((ent/mkt-1)*100);
   const tag=diff===0?'<b>au niveau du march\u00e9</b>':diff>0?`<b style="color:var(--warn)">+${diff} %</b> au-dessus du march\u00e9`:`<b style="color:var(--good)">${diff} %</b> sous le march\u00e9`;
-  const lo=mkt*0.7,hi=mkt*1.3,clamp=v=>Math.max(0,Math.min(100,v)),pos=clamp((ent-lo)/(hi-lo)*100),mpos=clamp((mkt-lo)/(hi-lo)*100);
-  el.innerHTML=`Loyer de march\u00e9 : <b>${eur0(mkt)} \u20ac/mois</b> (${state.mktRentSqm.toFixed(1).replace('.',',')} \u20ac/m\u00b2/mois). Votre loyer : ${tag}.`+
-   `<div style="position:relative;height:9px;border-radius:6px;margin:9px 0 4px;background:linear-gradient(90deg,#7fe3d4,#f4d35e,#E8742A)">`+
-   `<div style="position:absolute;left:${mpos}%;top:-3px;width:2px;height:15px;background:var(--ink)"></div>`+
-   `<div style="position:absolute;left:${pos}%;top:-5px;transform:translateX(-50%);width:13px;height:19px;border-radius:6px;background:var(--brand-dark);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)"></div></div>`+
-   `<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--ink-soft)"><span class="num">${eur0(lo)} \u20ac</span><span>march\u00e9 (trait)</span><span class="num">${eur0(hi)} \u20ac</span></div>`;
+  const lo=mkt*0.7,hi=mkt*1.3,clamp=v=>Math.max(0,Math.min(100,v)),pos=clamp((ent-lo)/(hi-lo)*100);
+  const zL=clamp((mkt*0.9-lo)/(hi-lo)*100),zR=clamp((mkt*1.1-lo)/(hi-lo)*100);
+  el.innerHTML=`<div style="font-size:12.5px;line-height:1.5;color:var(--ink)">Loyer de march\u00e9 estim\u00e9 : <b>${eur0(mkt)} \u20ac/mois</b> (${state.mktRentSqm.toFixed(1).replace('.',',')} \u20ac/m\u00b2/mois). Votre loyer est ${tag}.</div>`+
+   `<div style="position:relative;height:26px;margin:12px 0 6px">`+
+     `<div style="position:absolute;top:9px;left:0;right:0;height:8px;border-radius:5px;background:var(--line)"></div>`+
+     `<div style="position:absolute;top:9px;left:${zL}%;width:${Math.max(0,zR-zL)}%;height:8px;background:rgba(15,179,158,.35)"></div>`+
+     `<div style="position:absolute;top:4px;left:50%;width:2px;height:18px;background:var(--ink-soft);transform:translateX(-50%)"></div>`+
+     `<div style="position:absolute;top:1px;left:${pos}%;transform:translateX(-50%);width:14px;height:24px;border-radius:5px;background:var(--brand-dark);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3)"></div>`+
+   `</div>`+
+   `<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--ink-soft)"><span>\u221230 %</span><span style="color:#0a8f7e;font-weight:700">zone de march\u00e9</span><span>+30 %</span></div>`;
 }
 
+/* ===== Vague 5 : tableau de bord investisseur (ratios financiers pro) ===== */
+function renderProKpis(r,f){
+  const el=$("proKpiPanel");if(!el)return;
+  const noi=f.rentY-f.charges,debtY=f.mensuTot*12;
+  const cap=f.bp>0?noi/f.bp*100:0,yoc=f.coutTotal>0?noi/f.coutTotal*100:0,ltv=f.bp>0?f.emprunt/f.bp*100:0;
+  const dscr=debtY>0?noi/debtY:null,coc=f.apport>0?(noi-debtY)/f.apport*100:null;
+  const P=projParams(r),b=projCore(P),van=b.van,tri=b.tri;
+  let payback=null;for(let t=1;t<=P.H;t++){if(projCore(Object.assign({},P,{H:t})).van>=0){payback=t;break;}}
+  const G="var(--good)",W="var(--warn)",Bd="var(--bad)",S="var(--ink-soft)";
+  const col=(v,g,w)=>v>=g?G:v>=w?W:Bd,colLow=(v,g,w)=>v<=g?G:v<=w?W:Bd;
+  const pct=v=>v.toFixed(1).replace('.',',')+" %";
+  const tile=(label,val,color,note)=>`<div style="background:var(--bg);border-radius:11px;padding:11px 12px;border-left:4px solid ${color}"><div style="font-size:10px;color:var(--ink-soft);font-weight:700;text-transform:uppercase;letter-spacing:.3px">${label}</div><div class="num" style="font-size:19px;font-weight:800;color:${color};margin:2px 0">${val}</div><div style="font-size:10px;color:var(--ink-soft);line-height:1.35">${note}</div></div>`;
+  const tiles=[
+    tile("Cap Rate",pct(cap),col(cap,6,4),"Revenu net / prix. R\u00e9f. &#8805; 6 %"),
+    tile("Yield on Cost",pct(yoc),col(yoc,6,4),"Revenu net / co\u00fbt total (travaux inclus)"),
+    tile("Cash-on-Cash",coc!=null?pct(coc):"n/a",coc!=null?col(coc,4,0):S,coc!=null?"Cash-flow avant imp\u00f4t / apport":"Achat comptant"),
+    tile("DSCR",dscr!=null?dscr.toFixed(2).replace('.',','):"n/a",dscr!=null?col(dscr,1.2,1):S,dscr!=null?"Revenu net / annuit\u00e9s. Banque &#8805; 1,2":"Sans emprunt"),
+    tile("LTV",pct(ltv),colLow(ltv,70,85),"Emprunt / valeur. &lt; 70 % confortable"),
+    tile("TRI",pct(tri*100),tri>=P.rate?G:tri>=0?W:Bd,"Rendement interne du projet"),
+    tile("VAN",eur0(van),van>=0?G:Bd,P.H+" ans, actualis\u00e9e \u00e0 "+pct(P.rate*100)),
+    tile("D\u00e9lai de r\u00e9cup\u00e9ration",payback?"An "+payback:"&gt; "+P.H+" ans",payback&&payback<=15?G:payback&&payback<=25?W:Bd,"Ann\u00e9e o\u00f9 la VAN devient positive")
+  ];
+  const rs=[-0.01,0,0.01,0.02].map(dt=>({dt,v:projCore(Object.assign({},P,{taux:P.taux+dt})).van}));
+  const chip=o=>`<div style="text-align:center;flex:1"><div style="font-size:10px;color:var(--ink-soft)">${o.dt===0?"actuel":(o.dt>0?"+":"")+(o.dt*100).toFixed(0)+" pt"}</div><div class="num" style="font-size:12.5px;font-weight:800;color:${o.v>=0?G:Bd}">${eur0(o.v)}</div></div>`;
+  el.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">${tiles.join("")}</div>`+
+    `<div style="margin-top:14px;font-size:12px;font-weight:700;color:var(--ink)">Sensibilit\u00e9 au taux d'emprunt (VAN)</div>`+
+    `<div style="display:flex;gap:6px;margin-top:6px;background:var(--bg);border-radius:10px;padding:10px 6px">${rs.map(chip).join("")}</div>`+
+    `<div class="hint" style="margin-top:8px">Ratios calcul\u00e9s en direct sur vos donn\u00e9es et hypoth\u00e8ses. NOI (revenu net d'exploitation) = loyers \u2212 charges, hors cr\u00e9dit et imp\u00f4t. Indicatif.</div>`;
+}
 function computeAll(r){
   const rent=numv("iRent");const rentY=rent*12;$("rentYear").textContent=eur(rentY);
   // encadrement
@@ -1211,6 +1267,7 @@ function computeAll(r){
   const gapEl=$("prixGap");const gp=r.price?(bp-r.price)/r.price*100:0;
   if(Math.abs(gp)<0.5)gapEl.innerHTML=`Identique \u00e0 l'estimation de l'outil (${eur(r.price)}).`;
   else gapEl.innerHTML=`<b style="color:${gp>0?'var(--bad)':'var(--good)'}">${gp>0?'+':''}${gp.toFixed(1)} %</b> ${gp>0?'au-dessus':'en dessous'} de la valeur estim\u00e9e (${eur(r.price)}).`;
+  renderProKpis(r,{rentY:rentY,charges:charges,bp:bp,coutTotal:coutTotal,emprunt:emprunt,mensuTot:mensuTot,apport:apport});
 }
 function setMetric(el,txt,val,isCash){el.textContent=txt;el.classList.remove("good","warn","bad");if(isCash){el.classList.add(val>=0?"good":"bad");return;}el.classList.add(val>=5.5?"good":val>=3.5?"warn":"bad");}
 
@@ -1265,6 +1322,9 @@ async function showResults(){
   state.live=await livePromise;
   btn.textContent=oldTxt;btn.disabled=false;
   const r=estimate(realBase);r.realPts=realPts;r.realStats=realStats;r.realCount=realStats?realStats.n:0;lastResult=r;
+  // Donnees reelles : loyer ancre au prix DVF + tendance de prix calculee sur DVF (remplace la demo)
+  if(realBase){const _rent=CITY_RENT[norm(r.city)]||mktRentSqm(r.sqmBase);r.dyn.loyerM2=_rent;r.dyn.rendementMarche=+(_rent*12/r.sqmBase*100).toFixed(1);r.dyn.rentReal=true;
+    const _tr=dvfTrend(realPts);if(_tr){r.dyn.evo12=_tr.evo12;r.dyn.evo5=_tr.evoTot;r.dyn.notairesEvo=_tr.evo12;r.dyn.evoSpan=_tr.span;r.dyn.trendReal=true;}}
   // Vague 3 : indice de confiance multicritere + fourchette pilotee par la confiance
   const _checks=[numv("surface")>0,numv("chambres")>0,numv("sdb")>0,(state.type!=="appartement"||numv("floorExact")>0),(numv("balconM2")>0||numv("terrasseM2")>0||numv("jardinM2")>0),!!state.coord];
   const _conf=estimationConfidence(realStats,{dyn:r.dyn,nTotal:(realPts?realPts.length:0),attrFilled:_checks.filter(Boolean).length,attrTotal:_checks.length,baseConf:r.conf});
@@ -1713,6 +1773,7 @@ function renderProjection(r){
   vEl.innerHTML=`${txt}<div class="vsub">VAN ${van>=0?"positive":"n\u00e9gative"} de ${eur(van)} (le projet ${van>=0?"bat":"ne bat pas"} votre taux d'actualisation de ${(rate*100).toFixed(1).replace('.',',')} %). Cash-flow mensuel initial ${cf1/12>=0?"+":""}${eur(cf1/12)}, qui remonte apr\u00e8s la fin du cr\u00e9dit. Revente optimale vers l'an ${opt}.</div>`;
   renderDecision(r,{van:van,cf1m:cf1/12,gp:gp,bp:bp,apport:apport});
   renderScenarios(r);
+  renderReport(r);
 }
 /* ===== Coeur de calcul pur reutilisable (memes formules que renderProjection) ===== */
 function projParams(r){
@@ -1743,20 +1804,96 @@ function projCore(p){
 function renderScenarios(r){
   const el=$("scnPanel");if(!el)return;
   const base=projParams(r),b=projCore(base),surf=r.surface||50,mk=o=>projCore(Object.assign({},base,o));
-  const list=[
-    ["R\u00e9f\u00e9rence (vos hypoth\u00e8ses)",b,"Cas central."],
-    ["Taux d'emprunt +1 pt",mk({taux:base.taux+0.01}),"Choc de taux \u00e0 l'achat ou au refinancement."],
-    ["Prix n\u00e9goci\u00e9 -10 %",mk({bp:Math.round(base.bp*0.9/100)*100}),"Effet d'une remise obtenue."],
-    ["March\u00e9 en baisse (-1 pt/an)",mk({reval:base.reval-0.01}),"Revalorisation r\u00e9duite \u00e0 la revente."],
-    ["Vacance locative 1 mois/an",mk({vac:1}),"Environ 8 % de loyers en moins par an."],
-    ["DPE r\u00e9nov\u00e9 (passoire vers D)",mk({rentY:base.rentY*1.08,reval:base.reval+0.003,travaux:base.travaux+surf*400}),"Loyer +8 %, valeur +0,3 pt/an, travaux ~400 \u20ac/m\u00b2."]
-  ];
-  const row=(name,o,sub,isBase)=>{const dVan=o.van-b.van,vc=o.van>=0?"var(--good)":"var(--bad)",dc=Math.abs(dVan)<1?"var(--ink-soft)":dVan>0?"var(--good)":"var(--bad)",dTxt=isBase?"r\u00e9f\u00e9rence":(dVan>=0?"+":"")+eur0(dVan)+" \u20ac";return `<div style="padding:10px 0;border-bottom:1px solid var(--line)"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><div style="font-size:13.5px;font-weight:700;color:var(--ink)">${name}</div><div class="num" style="font-size:14px;font-weight:800;color:${vc};white-space:nowrap">${eur0(o.van)} \u20ac</div></div><div style="display:flex;justify-content:space-between;gap:8px;margin-top:3px;font-size:11.5px;color:var(--ink-soft)"><span>${sub}</span><span style="white-space:nowrap;text-align:right">CF ${o.cf1m>=0?"+":""}${eur0(o.cf1m)}/m \u00b7 <span style="color:${dc};font-weight:700">${dTxt}</span></span></div></div>`;};
+  const scn=[
+    ["Taux d'emprunt +1 pt",mk({taux:base.taux+0.01})],
+    ["Prix n\u00e9goci\u00e9 \u221210 %",mk({bp:Math.round(base.bp*0.9/100)*100})],
+    ["March\u00e9 en baisse (\u22121 pt/an)",mk({reval:base.reval-0.01})],
+    ["Vacance locative 1 mois/an",mk({vac:1})],
+    ["DPE r\u00e9nov\u00e9 (passoire vers D)",mk({rentY:base.rentY*1.08,reval:base.reval+0.003,travaux:base.travaux+surf*400})]
+  ].map(x=>({name:x[0],van:x[1].van,d:x[1].van-b.van}));
+  const maxAbs=Math.max(1,...scn.map(s=>Math.abs(s.d)));
+  scn.sort((a,c)=>Math.abs(c.d)-Math.abs(a.d));
+  const vc=v=>v>=0?"var(--good)":"var(--bad)";
   const st=[mk({taux:base.taux+0.01}),mk({vac:1}),mk({reval:base.reval-0.01})];
-  const resTxt=b.van<0?"Le projet n'est d\u00e9j\u00e0 pas rentable au cas central : la priorit\u00e9 est de n\u00e9gocier le prix d'achat.":st.every(s=>s.van>=0)?"Projet <b style=\"color:var(--good)\">robuste</b> : la VAN reste positive m\u00eame sous choc de taux (+1 pt), de vacance (1 mois/an) et de baisse du march\u00e9.":st.filter(s=>s.van<0).length>=2?"Projet <b style=\"color:var(--bad)\">fragile</b> : plusieurs sc\u00e9narios d\u00e9favorables annulent la rentabilit\u00e9. Renforcez votre marge (prix n\u00e9goci\u00e9, apport, loyer vis\u00e9).":"Projet <b style=\"color:var(--warn)\">sensible</b> : certains al\u00e9as d\u00e9gradent nettement la rentabilit\u00e9. Surveillez surtout le taux et la vacance.";
-  el.innerHTML=list.map((x,i)=>row(x[0],x[1],x[2],i===0)).join("")+`<div style="margin-top:12px;padding:11px 13px;background:#eef4f7;border-radius:10px;font-size:12.5px;line-height:1.55"><b>R\u00e9silience du projet</b><br>${resTxt}</div><div class="hint" style="margin-top:8px">VAN actualis\u00e9e sur ${base.H} ans. Chaque sc\u00e9nario ne modifie qu'un param\u00e8tre (toutes choses \u00e9gales par ailleurs). Mod\u00e8le indicatif.</div>`;
+  const R=b.van<0?["#E8742A","#fdecec","D\u00e9j\u00e0 non rentable au cas central","Avant tout, la priorit\u00e9 est de n\u00e9gocier le prix d'achat \u00e0 la baisse."]
+    :st.every(s=>s.van>=0)?["#0a8f7e","#eaf6ef","Projet robuste","La VAN reste positive m\u00eame sous choc de taux (+1 pt), vacance (1 mois/an) et baisse du march\u00e9."]
+    :st.filter(s=>s.van<0).length>=2?["#E8742A","#fdecec","Projet fragile","Plusieurs sc\u00e9narios d\u00e9favorables annulent la rentabilit\u00e9. Renforcez votre marge (prix, apport, loyer)."]
+    :["#C98A00","#fdf6e3","Projet sensible","Certains al\u00e9as d\u00e9gradent nettement la rentabilit\u00e9. Surveillez surtout le taux et la vacance."];
+  const rows=scn.map(s=>{
+    const w=Math.abs(s.d)/maxAbs*47;
+    const bar=s.d>=0
+      ?`<div style="position:absolute;left:50%;width:${w}%;top:2px;bottom:2px;background:var(--good);border-radius:0 4px 4px 0"></div>`
+      :`<div style="position:absolute;right:50%;width:${w}%;top:2px;bottom:2px;background:var(--bad);border-radius:4px 0 0 4px"></div>`;
+    return `<div style="margin-top:12px"><div style="display:flex;justify-content:space-between;align-items:baseline;font-size:13px"><span style="font-weight:600;color:var(--ink)">${s.name}</span><span style="white-space:nowrap"><b class="num" style="color:${vc(s.van)}">${eur0(s.van)} \u20ac</b> <span class="num" style="font-size:11px;font-weight:700;color:${vc(s.d)}">(${s.d>=0?"+":"\u2212"}${eur0(Math.abs(s.d))})</span></span></div><div style="position:relative;height:14px;margin-top:4px;background:var(--bg);border-radius:5px;overflow:hidden">${bar}<div style="position:absolute;left:50%;top:0;bottom:0;width:2px;background:var(--ink-soft);opacity:.55;transform:translateX(-50%)"></div></div></div>`;
+  }).join("");
+  el.innerHTML=
+    `<div style="padding:12px 14px;background:${R[1]};border-radius:11px;border-left:4px solid ${R[0]}"><div style="font-weight:800;color:${R[0]};font-size:14.5px">${R[2]}</div><div style="font-size:12.5px;color:var(--ink);margin-top:3px;line-height:1.5">${R[3]}</div></div>`+
+    `<div style="display:flex;justify-content:space-between;font-size:12.5px;margin-top:15px;color:var(--ink)"><b>VAN de r\u00e9f\u00e9rence</b><b class="num" style="color:${vc(b.van)}">${eur0(b.van)} \u20ac</b></div>`+
+    `<div style="font-size:11px;color:var(--ink-soft);margin:3px 0 0">Effet de chaque al\u00e9a sur la VAN, tri\u00e9 par impact :</div>`+
+    rows+
+    `<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--ink-soft);margin-top:11px"><span>\u2190 d\u00e9grade la VAN</span><span>r\u00e9f\u00e9rence</span><span>am\u00e9liore \u2192</span></div>`+
+    `<div class="hint" style="margin-top:8px">VAN actualis\u00e9e sur ${base.H} ans. Chaque sc\u00e9nario ne modifie qu'un param\u00e8tre (toutes choses \u00e9gales par ailleurs). Mod\u00e8le indicatif.</div>`;
 }
 
+/* ===== Vague 4 : rapport d'analyse genere automatiquement depuis les donnees calculees ===== */
+function renderReport(r){
+  const el=$("reportPanel");if(!el)return;
+  const d=r.dyn,price=r.price,surf=r.surface,bp=numv("prixAchat")||price;
+  const P=projParams(r),b=projCore(P),van=b.van,cf1m=b.cf1m;
+  const st=[projCore(Object.assign({},P,{taux:P.taux+0.01})),projCore(Object.assign({},P,{vac:1})),projCore(Object.assign({},P,{reval:P.reval-0.01}))];
+  const robuste=van>=0&&st.every(s=>s.van>=0),fragile=st.filter(s=>s.van<0).length>=2;
+  const e=state.enrich||{},attr=(e.air||e.osm||e.schools)?enrichScore(e):null;
+  const dpe=state.dpe,dpeRank="ABCDEFG".indexOf(dpe);
+  const nbRisk=(()=>{const t=(state.live&&state.live.risqueLbl)||"";const m=t.match(/^(\d+)/);return m?+m[1]:0;})();
+  const pctMkt=Math.round((bp/price-1)*100);
+  const yieldB=(state.mktRentSqm&&surf)?+(state.mktRentSqm*12/(bp/surf)*100).toFixed(1):null;
+  const negoRoom=d.score<40?0.08:d.score<66?0.05:0.03,prixCible=Math.round(price*(1-negoRoom)/1000)*1000,economie=Math.max(0,bp-prixCible);
+  const sec=(t,body)=>`<div style="margin-top:14px"><div style="font-weight:800;font-size:13.5px;color:var(--ink);margin-bottom:5px">${t}</div>${body}</div>`;
+  const ul=items=>items.length?`<ul style="margin:0;padding-left:18px;font-size:12.5px;line-height:1.6;color:var(--ink)">${items.map(x=>`<li style="margin-top:3px">${x}</li>`).join("")}</ul>`:`<div style="font-size:12.5px;color:var(--ink-soft)">Rien de notable.</div>`;
+  const resume=`<div style="font-size:12.5px;line-height:1.6;color:var(--ink)">${({appartement:"Appartement",maison:"Maison",terrain:"Terrain"})[r.type]} de <b>${surf} m\u00b2</b>${r.type!=="terrain"?", "+(state.pieces||"?")+" pi\u00e8ces":""} \u00e0 <b>${r.city||"\u2014"}</b>${r.type!=="terrain"?", DPE <b>"+dpe+"</b>":""}. Estim\u00e9 \u00e0 <b class="num">${eur(price)}</b> (${eur0(r.sqm)}/m\u00b2), fourchette ${eur(r.low)}\u2013${eur(r.high)}, indice de confiance <b>${r.confScore||"\u2014"}/100</b>.</div>`;
+  const just=r.realCount?`<div style="font-size:12.5px;line-height:1.6;color:var(--ink)">Estimation appuy\u00e9e sur <b>${r.realCount} ventes DVF comparables</b> (m\u00e9diane ${eur0(r.realStats.west||r.realStats.med)}/m\u00b2 \u00e0 surface proche), pond\u00e9r\u00e9es par similarit\u00e9 de surface et de r\u00e9cence. ${r.confScore>=70?"Confiance \u00e9lev\u00e9e":r.confScore>=45?"Confiance moyenne":"Confiance limit\u00e9e"} (${(r.confFactors||[]).slice(0,2).map(f=>f[0].toLowerCase()+" "+f[1]).join(", ")}).</div>`:`<div style="font-size:12.5px;line-height:1.6;color:var(--ink)">Peu ou pas de ventes DVF comparables : estimation fond\u00e9e sur les prix de r\u00e9f\u00e9rence du secteur (confiance ${r.confScore||"faible"}/100). \u00c0 confirmer.</div>`;
+  const forces=[];
+  if(dpeRank>=0&&dpeRank<=2)forces.push("Bonne performance \u00e9nerg\u00e9tique (DPE "+dpe+") : conforme, peu de travaux \u00e9nergie.");
+  if(attr!=null&&attr>=66)forces.push("Cadre de vie attractif ("+attr+"/100) : services, transports et air favorables.");
+  if(e.osm&&e.osm.transit>=8)forces.push("Tr\u00e8s bonne desserte en transports.");
+  if(nbRisk===0)forces.push("Aucun risque naturel majeur recens\u00e9.");
+  if(pctMkt<=-3)forces.push("Prix envisag\u00e9 "+Math.abs(pctMkt)+" % sous l'estimation : marge \u00e0 l'achat.");
+  if(yieldB&&yieldB>=6)forces.push("Rendement locatif brut attractif (~"+yieldB.toFixed(1).replace('.',',')+" %).");
+  if(van>0)forces.push("Projet rentable sur votre horizon (VAN "+eur0(van)+").");
+  if(d.score>=66)forces.push("March\u00e9 local dynamique.");
+  const faib=[];
+  if(dpeRank>=4)faib.push("DPE "+dpe+" (passoire/quasi) : travaux \u00e9nergie et contraintes locatives \u00e0 pr\u00e9voir.");
+  if(attr!=null&&attr<40)faib.push("Environnement peu favorable ("+attr+"/100) : desserte ou services limit\u00e9s.");
+  if(nbRisk>=3)faib.push(nbRisk+" risques naturels recens\u00e9s sur la commune.");
+  if(pctMkt>=4)faib.push("Prix envisag\u00e9 "+pctMkt+" % au-dessus de l'estimation : risque de surpayer.");
+  if(cf1m<-100)faib.push("Cash-flow n\u00e9gatif (~"+eur0(cf1m)+"/mois) : effort d'\u00e9pargne requis.");
+  if(yieldB&&yieldB<4)faib.push("Rendement brut faible (~"+yieldB.toFixed(1).replace('.',',')+" %).");
+  if(d.score<40)faib.push("March\u00e9 local atone.");
+  if(d.trendReal&&d.evo12<0)faib.push("Prix en recul sur 12 mois ("+d.evo12+" %).");
+  const risks=[];
+  if(state.live&&state.live.risqueLbl&&nbRisk>0)risks.push("G\u00e9orisques : "+state.live.risqueLbl.replace(/^\d+\s*:\s*/,"")+".");
+  if(state.live&&state.live.radon&&state.live.radon.classe>=2)risks.push("Potentiel radon "+state.live.radon.label+" : pr\u00e9voir une bonne ventilation.");
+  if(van<0)risks.push("VAN n\u00e9gative : l'op\u00e9ration d\u00e9truit de la valeur sur l'horizon retenu.");
+  else if(fragile)risks.push("Projet fragile : plusieurs sc\u00e9narios d\u00e9favorables (taux, vacance, baisse) annulent la rentabilit\u00e9.");
+  if(d.trendReal&&d.evo12<-1)risks.push("March\u00e9 baissier : risque de moins-value \u00e0 la revente \u00e0 court terme.");
+  if(!risks.length)risks.push("Pas de risque majeur au-del\u00e0 des al\u00e9as de march\u00e9 habituels.");
+  const pot=[];
+  if(dpeRank>=3)pot.push("R\u00e9novation \u00e9nerg\u00e9tique : meilleur DPE \u2192 loyer et valeur en hausse, sortie du statut de passoire.");
+  if(economie>0)pot.push("N\u00e9gociation : viser "+eur(prixCible)+" pourrait \u00e9conomiser ~"+eur0(economie)+".");
+  if(d.trendReal&&d.evo12>1)pot.push("March\u00e9 porteur (+"+d.evo12+" %/an) : potentiel de plus-value.");
+  if(state.mktRentSqm&&numv("iRent")&&numv("iRent")<state.mktRentSqm*surf*0.95)pot.push("Loyer sous le march\u00e9 : marge de revalorisation locative.");
+  if(!pot.length)pot.push("Optimisation via le r\u00e9gime fiscal et la dur\u00e9e de d\u00e9tention.");
+  const nego=`<div style="font-size:12.5px;line-height:1.6;color:var(--ink)">Prix \u00e0 viser : <b class="num" style="color:var(--brand-dark)">${eur(prixCible)}</b> (~${Math.round(negoRoom*100)} % sous l'estimation)${r.realCount?", appuy\u00e9 par "+r.realCount+" ventes comparables":""}. ${pctMkt>0?"Le prix envisag\u00e9 est "+pctMkt+" % au-dessus de l'estimation. ":""}${economie>0?"\u00c9conomie potentielle vs votre prix : <b>"+eur0(economie)+"</b>.":"Votre prix envisag\u00e9 est d\u00e9j\u00e0 align\u00e9 au prix conseill\u00e9."}</div>`;
+  const reco=[];const reg=$("regime")?$("regime").value:"";
+  if(reg.indexOf("meuble")>=0)reco.push("En meubl\u00e9 (LMNP) au r\u00e9el, l'amortissement neutralise l'imp\u00f4t locatif les premi\u00e8res ann\u00e9es \u2014 coh\u00e9rent avec votre cash-flow.");
+  else reco.push("En location nue, comparez micro-foncier et r\u00e9gime r\u00e9el (le r\u00e9el est souvent gagnant avec int\u00e9r\u00eats d'emprunt + travaux).");
+  if(cf1m<-100)reco.push("S\u00e9curisez une \u00e9pargne pour couvrir l'effort mensuel d'environ "+eur0(cf1m)+".");
+  if(robuste)reco.push("Le projet r\u00e9siste aux principaux al\u00e9as : vous pouvez avancer avec une marge raisonnable.");
+  else if(fragile)reco.push("Avant d'engager : n\u00e9gociez le prix, augmentez l'apport ou visez un meilleur loyer pour s\u00e9curiser la marge.");
+  if(dpeRank>=4)reco.push("Int\u00e9grez le co\u00fbt d'une r\u00e9novation \u00e9nerg\u00e9tique au financement (MaPrimeR\u00e9nov', \u00e9co-PTZ).");
+  reco.push("Confirmez loyer r\u00e9el, charges de copropri\u00e9t\u00e9 et travaux avant toute offre.");
+  el.innerHTML=sec("R\u00e9sum\u00e9 du bien",resume)+sec("Justification de l'estimation",just)+sec("Points forts",ul(forces))+sec("Points faibles",ul(faib))+sec("Risques",ul(risks))+sec("Potentiel",ul(pot))+sec("Argumentaire de n\u00e9gociation",nego)+sec("Recommandations",ul(reco))+`<div class="hint" style="margin-top:12px">Rapport g\u00e9n\u00e9r\u00e9 automatiquement \u00e0 partir des donn\u00e9es calcul\u00e9es (DVF, G\u00e9orisques, enrichissement, projection). Indicatif \u2014 ne remplace pas une expertise.</div>`;
+}
 function renderDecision(r,m){
   const el=$("decisionPanel");if(!el)return;
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
