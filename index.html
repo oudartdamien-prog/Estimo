@@ -80,6 +80,17 @@
   details.acc[open]>summary .chev{transform:rotate(90deg)}
   details.acc[open]>summary{border-bottom:1px solid var(--line)}
   .acc-body{padding:16px 15px}
+  .wstep{display:none}
+  .wstep.on{display:block;animation:wfade .28s ease}
+  @keyframes wfade{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+  .wprog{margin:2px 0 18px}
+  .wprog-bar{height:6px;background:var(--line);border-radius:99px;overflow:hidden}
+  .wprog-bar span{display:block;height:100%;width:33.33%;background:linear-gradient(90deg,var(--brand),var(--brand-dark));border-radius:99px;transition:width .35s cubic-bezier(.4,0,.2,1)}
+  .wprog-txt{font-size:12px;color:var(--ink-soft);margin-top:7px;font-weight:700}
+  .wnav{display:flex;gap:10px;margin:4px 0 0}
+  .wnav button{flex:1;padding:14px;border-radius:14px;border:1.5px solid var(--line);background:#fff;color:var(--ink);font-family:var(--display);font-weight:700;font-size:15px;cursor:pointer;transition:transform .12s,background .15s}
+  .wnav #wNext{flex:2;background:var(--brand-dark);color:#fff;border-color:var(--brand-dark)}
+  .wnav button:active{transform:scale(.98)}
 
   .cta{width:100%;font-family:var(--display);font-weight:700;font-size:16px;color:#fff;background:linear-gradient(135deg,var(--brand),var(--brand-dark));border:none;border-radius:var(--r-sm);padding:16px;cursor:pointer;margin-top:14px;box-shadow:0 8px 18px rgba(15,179,158,.28);transition:.15s}
   .cta:hover{transform:translateY(-1px);box-shadow:0 12px 22px rgba(15,179,158,.34)}
@@ -215,7 +226,9 @@
   <!-- 1 &#183; LE BIEN -->
   <section class="card">
     <div class="card-head"><div class="step-no">1</div><div><h2>Le bien</h2><div class="sub">Plus vous d&#233;taillez, plus l'estimation est pr&#233;cise</div></div></div>
+    <div class="wprog"><div class="wprog-bar"><span id="wprogFill"></span></div><div class="wprog-txt" id="wprogTxt">&#201;tape 1 / 3</div></div>
 
+    <div class="wstep on" data-s="1">
     <div class="field ac-wrap">
       <label class="lbl" for="adresse">Adresse du bien <span class="opt">(pour les donnees reelles)</span></label>
       <input class="input" id="adresse" type="text" autocomplete="off" placeholder="N, rue, ville - puis choisissez une suggestion" />
@@ -225,7 +238,9 @@
       <div><label class="lbl" for="cp">Code postal</label><input class="input num" id="cp" type="text" inputmode="numeric" maxlength="5" placeholder="69002" /></div>
       <div><label class="lbl" for="ville">Ville</label><input class="input" id="ville" type="text" placeholder="Lyon" /></div>
     </div></div>
+    </div>
 
+    <div class="wstep" data-s="2">
     <div class="field"><label class="lbl">Type de bien</label>
       <div class="seg" id="segType"><button data-v="appartement" class="on">Appartement</button><button data-v="maison">Maison</button><button data-v="terrain">Terrain</button></div>
     </div>
@@ -242,6 +257,9 @@
       <div class="seg" id="segPieces"><button data-v="1">1</button><button data-v="2">2</button><button data-v="3" class="on">3</button><button data-v="4">4</button><button data-v="5">5</button><button data-v="6">6+</button></div>
     </div>
 
+    </div>
+
+    <div class="wstep" data-s="3">
     <!-- Caract&#233;ristiques d&#233;taill&#233;es -->
     <details class="acc" id="accCarac">
       <summary><span>Caract&#233;ristiques d&#233;taill&#233;es</span><span class="chev">&#9656;</span></summary>
@@ -367,6 +385,9 @@
       <div class="dpe-seg" id="segDpe"><button data-v="A" class="dpe-a">A</button><button data-v="B" class="dpe-b">B</button><button data-v="C" class="dpe-c">C</button><button data-v="D" class="dpe-d on">D</button><button data-v="E" class="dpe-e">E</button><button data-v="F" class="dpe-f">F</button><button data-v="G" class="dpe-g">G</button></div>
     </div>
 
+    </div>
+
+    <div class="wnav" id="wNav"><button id="wPrev" type="button">Pr&#233;c&#233;dent</button><button id="wNext" type="button">Suivant</button></div>
     <button class="cta" id="btnEstim">Estimer le bien</button>
     <div class="err" id="formErr"></div>
     <div class="hint">
@@ -692,7 +713,12 @@ async function fetchLive(coord){
       else if(arr.length)out.risqueLbl="Aucun risque majeur";
     }
   }catch(_){}
-  if(DEBUG)dbg("Live -> pop:"+(out.pop||"n/a")+" | risque:"+(out.risqueLbl||"n/a"));
+  try{const rd=await dvfFetch("https://georisques.gouv.fr/api/v1/radon?code_insee="+coord.insee);
+    if(rd&&rd.json){const arr=rd.json.data||[];const o=arr[0]||{};const cls=(o.classe_potentiel!=null)?+o.classe_potentiel:null;
+      if(cls)out.radon={classe:cls,label:cls>=3?"\u00e9lev\u00e9":cls===2?"moyen":"faible"};
+      if(DEBUG)dbg("Radon brut:\n"+rd.raw.slice(0,200));}
+  }catch(_){}
+  if(DEBUG)dbg("Live -> pop:"+(out.pop||"n/a")+" | risque:"+(out.risqueLbl||"n/a")+" | radon:"+(out.radon?out.radon.classe:"n/a"));
   return out;
 }
 /* ===== Module Enrichissement : donnees de proximite (API publiques sans cle, CORS direct) ===== */
@@ -745,6 +771,7 @@ function renderEnrich(r){
   const el=$("enrichPanel");if(!el)return;
   if(!state.coord){el.innerHTML="";return;}
   const e=state.enrich;
+  const _le=$("locEstAccess");if(_le)_le.style.display=(e&&e.osm)?"none":"";
   if(!e){el.innerHTML='<div class="hint">Analyse de l\'environnement et de la proximit\u00e9 en cours\u2026</div>';return;}
   const air=e.air,sch=e.schools,osm=e.osm;
   const item=(label,value,sub,color)=>`<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)"><div style="min-width:0"><div style="font-size:13px;color:var(--ink)">${label}</div>${sub?`<div style="font-size:11px;color:var(--ink-soft);margin-top:1px">${sub}</div>`:""}</div><div class="num" style="font-size:14px;font-weight:700;color:${color||"var(--ink)"};white-space:nowrap;text-align:right">${value}</div></div>`;
@@ -921,11 +948,14 @@ function renderMarket(r){const d=r.dyn;const sign=x=>(x>=0?"+":"")+x;
   $("marketStats").innerHTML=html;
 }
 function renderLocStats(r){const d=r.dyn;
-  const stats=[["Temps vers le bassin d'emploi","~ "+d.accessMin+" min en voiture"],["Densit\u00e9 de commerces & services",d.accessMin<12?"\u00c9lev\u00e9e":d.accessMin<25?"Correcte":"Faible"],["Desserte transports en commun",d.accessMin<10?"Tr\u00e8s bonne":d.accessMin<20?"Correcte":"Limit\u00e9e"]];
+  const tag='<span style="color:var(--ink-soft);font-weight:400;font-size:11px">estim\u00e9</span>';
+  const emploi=`<div class="stat"><span class="sl">Temps vers le bassin d'emploi</span><span class="sv num">~ ${d.accessMin} min ${tag}</span></div>`;
+  const estAccess=`<div id="locEstAccess"><div class="stat"><span class="sl">Densit\u00e9 de commerces & services</span><span class="sv num">${d.accessMin<12?"\u00c9lev\u00e9e":d.accessMin<25?"Correcte":"Faible"} ${tag}</span></div><div class="stat"><span class="sl">Desserte transports en commun</span><span class="sv num">${d.accessMin<10?"Tr\u00e8s bonne":d.accessMin<20?"Correcte":"Limit\u00e9e"} ${tag}</span></div></div>`;
   const risk=(state.live&&state.live.risqueLbl)?state.live.risqueLbl:d.risqueLbl;
   const isReal=!!(state.live&&state.live.risqueLbl);
-  let html=stats.map(([l,v])=>`<div class="stat"><span class="sl">${l}</span><span class="sv num">${v}</span></div>`).join("");
-  html+=`<div style="padding:10px 0 2px;border-top:1px solid var(--line);margin-top:6px"><div style="font-size:13px;color:var(--ink-soft);margin-bottom:5px">Risques naturels recens\u00e9s (G\u00e9orisques) ${isReal?'<span style="color:var(--brand-dark);font-weight:700">\u00b7 r\u00e9el</span>':'<span style="color:var(--ink-soft)">\u00b7 estim\u00e9</span>'}</div><div style="font-size:13.5px;line-height:1.55;color:var(--ink)">${risk}</div>`;
+  const radon=(state.live&&state.live.radon)?`<div style="margin-top:8px;font-size:13px;color:var(--ink)">Potentiel radon : <b style="color:${state.live.radon.classe>=3?"var(--bad)":state.live.radon.classe===2?"var(--warn)":"var(--good)"}">${state.live.radon.label}</b> (classe ${state.live.radon.classe}/3, G\u00e9orisques)</div>`:"";
+  let html=emploi+estAccess;
+  html+=`<div style="padding:10px 0 2px;border-top:1px solid var(--line);margin-top:6px"><div style="font-size:13px;color:var(--ink-soft);margin-bottom:5px">Risques naturels recens\u00e9s (G\u00e9orisques) ${isReal?'<span style="color:var(--brand-dark);font-weight:700">\u00b7 r\u00e9el</span>':'<span style="color:var(--ink-soft)">\u00b7 estim\u00e9</span>'}</div><div style="font-size:13.5px;line-height:1.55;color:var(--ink)">${risk}</div>${radon}`;
   if(state.coord){const la=state.coord.lat,lo2=state.coord.lon;html+=`<div style="margin-top:10px"><iframe title="Carte du bien" src="https://www.openstreetmap.org/export/embed.html?bbox=${(lo2-0.013).toFixed(5)}%2C${(la-0.008).toFixed(5)}%2C${(lo2+0.013).toFixed(5)}%2C${(la+0.008).toFixed(5)}&layer=mapnik&marker=${la.toFixed(5)}%2C${lo2.toFixed(5)}" style="width:100%;height:220px;border:1px solid var(--line);border-radius:10px" loading="lazy"></iframe><div class="hint" style="margin-top:5px">Localisation du bien. Carte des risques d\u00e9taill\u00e9e : <a href="https://www.georisques.gouv.fr/mes-risques/connaitre-les-risques-pres-de-chez-moi" target="_blank" rel="noopener" style="color:var(--brand-dark)">georisques.gouv.fr</a>.</div></div>`;}
   html+=`</div>`;
   $("locStats").innerHTML=html;
@@ -1184,6 +1214,39 @@ async function showResults(){
   $("results").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth",block:"start"});
 }
 $("btnEstim").addEventListener("click",showResults);
+/* ===== Assistant par etapes (wizard) \u2014 couche UX, n'affecte ni les champs ni les calculs ===== */
+(function(){
+  const allSteps=[...document.querySelectorAll('.wstep')];
+  if(allSteps.length<2)return;
+  const titles=["Localisation","Caract\u00e9ristiques du bien","\u00c9nergie, \u00e9tat & d\u00e9tails"];
+  let cur=0;
+  const fill=$("wprogFill"),txt=$("wprogTxt"),prev=$("wPrev"),next=$("wNext"),estim=$("btnEstim");
+  const last=()=>state.type==="terrain"?1:allSteps.length-1;
+  function show(scroll){
+    const L=last();if(cur>L)cur=L;if(cur<0)cur=0;
+    allSteps.forEach((s,i)=>s.classList.toggle('on',i===cur));
+    const total=L+1;
+    if(fill)fill.style.width=Math.round((cur+1)/total*100)+"%";
+    if(txt)txt.textContent="\u00c9tape "+(cur+1)+" / "+total+" \u00b7 "+(titles[cur]||"");
+    if(prev)prev.style.display=cur>0?"":"none";
+    const onLast=cur>=L;
+    if(next)next.style.display=onLast?"none":"";
+    if(estim)estim.style.display=onLast?"":"none";
+    if(scroll){const c=allSteps[0].closest('.card');if(c&&c.scrollIntoView)c.scrollIntoView({behavior:(window.matchMedia&&matchMedia("(prefers-reduced-motion:reduce)").matches)?"auto":"smooth",block:"start"});}
+  }
+  function flag(m){const e=$("formErr");if(e){e.textContent=m;e.classList.add("show");}}
+  function clr(){const e=$("formErr");if(e)e.classList.remove("show");}
+  function valid(){
+    if(cur===0&&!(($("adresse").value||"").trim())){flag("Saisissez l'adresse du bien, puis choisissez une suggestion.");return false;}
+    if(cur===1){const s=state.type==="terrain"?numv("terrain"):numv("surface");if(!s||s<=0){flag("Renseignez une surface valide.");return false;}}
+    return true;
+  }
+  if(next)next.addEventListener('click',()=>{if(!valid())return;clr();cur++;show(true);});
+  if(prev)prev.addEventListener('click',()=>{clr();cur=Math.max(0,cur-1);show(true);});
+  const segT=$("segType");if(segT)segT.addEventListener('click',()=>setTimeout(()=>show(false),0));
+  window.__wizShow=show;
+  show(false);
+})();
 ["discRate"].forEach(id=>{$(id).addEventListener("input",()=>{if(lastResult)renderProjection(lastResult);});});
 ["prixAchat","iRent","iTaxe","iCopro","iPno","iDivers","iApport","iTaux","iAssur","iDossier","iGarantie","iDuree","iTravaux","tmi","regime"].forEach(id=>{const h=()=>{if(lastResult){computeAll(lastResult);computeResale(lastResult);renderScatter(lastResult);updRentVsMkt();}};$(id).addEventListener("input",h);$(id).addEventListener("change",h);});
 ["holdYears","reval","fraisVente","gRent","gCharges"].forEach(id=>{$(id).addEventListener("input",()=>{if(lastResult)computeResale(lastResult);});$(id).addEventListener("change",()=>{if(lastResult)computeResale(lastResult);});});
