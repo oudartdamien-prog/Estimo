@@ -488,6 +488,8 @@
       <div class="loc"><div class="loc-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z" stroke="#fff" stroke-width="2"/><circle cx="12" cy="10" r="2.5" stroke="#fff" stroke-width="2"/></svg></div><div><b id="locAddr">&#8212;</b><div class="coord num" id="locCoord">&#8212;</div></div></div>
       <div id="locStats" style="margin-top:12px"></div>
       <div id="enrichPanel" style="margin-top:14px"></div>
+      <div id="mapBox" style="margin-top:14px"></div>
+      <div class="hint" style="margin-top:6px">Carte interactive : bien, transports, &#233;coles et commerces (sources r&#233;elles, cliquables). Bruit, pollution fine, isochrones et heatmap de prix n&#233;cessitent des services cartographiques d&#233;di&#233;s &#8212; non int&#233;gr&#233;s ici. Risques d&#233;taill&#233;s sur <a href="https://www.georisques.gouv.fr" target="_blank" rel="noopener" style="color:var(--brand-dark)">G&#233;orisques</a>.</div>
     </section>
 
     <!-- ANALYSE LOCATIVE -->
@@ -586,6 +588,15 @@
 
     <!-- OP&#201;RATION ACHAT-REVENTE -->
     <section class="card expert-only" style="order:6" id="worksCard"><div class="card-head"><div class="step-no">&#128296;</div><div><h2>Valorisation des travaux</h2><div class="sub">Co&#251;t, dur&#233;e, plus-value et ROI par poste</div></div></div><div id="worksPanel"></div></section>
+    <section class="card" style="order:7" id="reportPdfCard"><div class="card-head"><div class="step-no">&#128196;</div><div><h2>Rapport professionnel (PDF)</h2><div class="sub">Document complet, &#224; votre identit&#233; visuelle</div></div></div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div><label class="lbl" for="repName">Cabinet / pr&#233;parateur</label><input class="input" id="repName" type="text" placeholder="Votre nom ou agence" /></div>
+        <div style="display:flex;gap:10px;align-items:flex-end"><div style="flex:1"><label class="lbl" for="repLogo">Logo (optionnel)</label><input class="input" id="repLogo" type="file" accept="image/*" /></div><div><label class="lbl" for="repColor">Couleur</label><input id="repColor" type="color" value="#0A8C7D" style="width:48px;height:42px;border:1px solid var(--line);border-radius:8px;padding:2px;background:#fff" /></div></div>
+        <img id="repLogoPrev" alt="" style="display:none;max-height:46px;max-width:170px;object-fit:contain" />
+        <button id="btnReport" style="width:100%;padding:12px;border-radius:10px;border:none;background:var(--brand-dark);color:#fff;font-weight:700;font-size:14px;cursor:pointer">G&#233;n&#233;rer le rapport PDF</button>
+        <div class="hint">Ouvre un document imprimable : choisissez &#171; Enregistrer en PDF &#187; dans la fen&#234;tre d'impression. Logo et couleur m&#233;moris&#233;s sur cet appareil.</div>
+      </div>
+    </section>
     <section class="card" style="order:6" id="opCard">
       <div class="card-head"><div class="step-no">8</div><div><h2>Op&#233;ration achat-revente</h2><div class="sub">Prix de revient, marge nette et rentabilit&#233; de l'op&#233;ration</div></div></div>
       <div class="seg" id="segProfil" style="margin-bottom:8px"><button data-v="particulier" class="on">Particulier</button><button data-v="mdb">Marchand de biens</button></div>
@@ -787,12 +798,15 @@ async function enrichAir(lat,lon){
 }
 async function enrichSchools(lat,lon){
   const where=encodeURIComponent("within_distance(position, geom'POINT("+lon+" "+lat+")', 1.5km)");
-  const u="https://data.education.gouv.fr/api/explore/v2.1/catalog/datasets/fr-en-annuaire-education/records?where="+where+"&select=type_etablissement&limit=100";
+  const u="https://data.education.gouv.fr/api/explore/v2.1/catalog/datasets/fr-en-annuaire-education/records?where="+where+"&select=type_etablissement,nom_etablissement,latitude,longitude&limit=100";
   const d=await dvfFetch(u);if(!d)throw 0;const j=d.json;
   const tot=(j.total_count!=null)?j.total_count:((j.results&&j.results.length)||0);
-  const by={ecole:0,college:0,lycee:0};
-  (j.results||[]).forEach(o=>{const t=(o.type_etablissement||"").toLowerCase();if(t.indexOf("cole")>=0)by.ecole++;else if(t.indexOf("oll")>=0)by.college++;else if(t.indexOf("yc")>=0)by.lycee++;});
-  return {total:tot,ecole:by.ecole,college:by.college,lycee:by.lycee};
+  const by={ecole:0,college:0,lycee:0};const pts=[];
+  (j.results||[]).forEach(o=>{const t=(o.type_etablissement||"").toLowerCase();let ty=null;
+    if(t.indexOf("cole")>=0){by.ecole++;ty="ecole";}else if(t.indexOf("oll")>=0){by.college++;ty="college";}else if(t.indexOf("yc")>=0){by.lycee++;ty="lycee";}
+    const la=parseFloat(o.latitude),lo=parseFloat(o.longitude);if(ty&&!isNaN(la)&&!isNaN(lo))pts.push({lat:la,lon:lo,name:o.nom_etablissement||"",type:ty});
+  });
+  return {total:tot,ecole:by.ecole,college:by.college,lycee:by.lycee,pts:pts};
 }
 async function enrichOSM(lat,lon){
   const q="[out:json][timeout:8];("
@@ -800,12 +814,18 @@ async function enrichOSM(lat,lon){
    +'node[highway=bus_stop](around:500,'+lat+','+lon+');'
    +'node[shop](around:600,'+lat+','+lon+');'
    +'node[amenity~"supermarket|pharmacy|bakery|marketplace|restaurant|cafe|school|hospital|doctors"](around:600,'+lat+','+lon+');'
-   +");out tags 250;";
+   +");out tags center 250;";
   const d=await dvfFetch("https://overpass-api.de/api/interpreter?data="+encodeURIComponent(q));
   if(!d)throw 0;const els=(d.json&&d.json.elements)||[];
-  let transit=0,shops=0,food=0,health=0;
-  els.forEach(e=>{const t=e.tags||{};if(t.railway||t.highway==="bus_stop"||t.public_transport)transit++;else if(t.shop||t.amenity==="supermarket"||t.amenity==="marketplace")shops++;else if(t.amenity==="restaurant"||t.amenity==="cafe")food++;else if(t.amenity==="pharmacy"||t.amenity==="hospital"||t.amenity==="doctors")health++;});
-  return {transit:transit,shops:shops,food:food,health:health,total:els.length};
+  let transit=0,shops=0,food=0,health=0;const pts=[];
+  els.forEach(e=>{const t=e.tags||{};let kind=null;
+    if(t.railway||t.highway==="bus_stop"||t.public_transport){transit++;kind="transit";}
+    else if(t.shop||t.amenity==="supermarket"||t.amenity==="marketplace"){shops++;kind="shop";}
+    else if(t.amenity==="restaurant"||t.amenity==="cafe"){food++;kind="food";}
+    else if(t.amenity==="pharmacy"||t.amenity==="hospital"||t.amenity==="doctors"){health++;kind="health";}
+    if(kind){const la=e.lat!=null?e.lat:(e.center&&e.center.lat),lo=e.lon!=null?e.lon:(e.center&&e.center.lon);if(la!=null&&lo!=null&&pts.length<150)pts.push({lat:la,lon:lo,kind:kind,name:t.name||""});}
+  });
+  return {transit:transit,shops:shops,food:food,health:health,total:els.length,pts:pts};
 }
 async function fetchEnrich(coord){
   const lat=coord.lat,lon=coord.lon,out={};
@@ -823,6 +843,51 @@ function enrichScore(e){
   if(e.osm){s+=cl(e.osm.transit*11,0,100)*0.27;w+=0.27;const comm=e.osm.shops+e.osm.food+e.osm.health;s+=cl(comm*5,0,100)*0.20;w+=0.20;}
   const t=(state.live&&state.live.risqueLbl)||"";const m=t.match(/^(\d+)/);const nb=m?+m[1]:0;s+=cl(100-nb*12,30,100)*0.10;w+=0.10;
   if(w<0.2)return null;return Math.round(s/w);
+}
+/* ===== Vague 8 : carte interactive (Leaflet, chargee a la demande, repli si echec) ===== */
+function loadLeaflet(cb){
+  if(window.L){cb();return;}
+  if(window._lflLoading){window._lflCb.push(cb);return;}
+  window._lflLoading=true;window._lflCb=[cb];
+  var css=document.createElement("link");css.rel="stylesheet";css.href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";document.head.appendChild(css);
+  var s=document.createElement("script");s.src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+  s.onload=function(){window._lflLoading=false;(window._lflCb||[]).forEach(function(f){try{f();}catch(_){}});window._lflCb=[];};
+  s.onerror=function(){window._lflLoading=false;var b=document.getElementById("mapBox");if(b)b.innerHTML='<div class="hint">Carte interactive indisponible (Leaflet n\'a pas pu se charger). La carte statique ci-dessus reste disponible.</div>';};
+  document.head.appendChild(s);
+}
+function renderMap(r){
+  var box=$("mapBox");if(!box)return;var c=state.coord;
+  if(!c){box.innerHTML="";return;}
+  loadLeaflet(function(){
+    try{
+      var L=window.L;if(!L)return;
+      if(window._estimoMap){try{window._estimoMap.remove();}catch(_){}}
+      box.innerHTML='<div id="mapChips" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px"></div><div id="leafMap" style="height:300px;border-radius:12px;overflow:hidden;border:1px solid var(--line)"></div>';
+      var map=L.map("leafMap",{scrollWheelZoom:false}).setView([c.lat,c.lon],15);
+      window._estimoMap=map;
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"\u00a9 OpenStreetMap"}).addTo(map);
+      var risk=(state.live&&state.live.risqueLbl)?("<br><span style='color:#E0533D'>Risques : "+state.live.risqueLbl.replace(/^\d+\s*:\s*/,"")+"</span>"):"";
+      L.marker([c.lat,c.lon]).addTo(map).bindPopup("<b>Le bien</b><br>"+(c.label||"")+risk).openPopup();
+      var e=state.enrich||{};
+      function mk(p,color,label){return L.circleMarker([p.lat,p.lon],{radius:6,color:"#fff",weight:1.5,fillColor:color,fillOpacity:.9}).bindPopup(label);}
+      var gT=L.layerGroup(),gE=L.layerGroup(),gC=L.layerGroup();
+      if(e.osm&&e.osm.pts)e.osm.pts.forEach(function(p){
+        if(p.kind==="transit")mk(p,"#2b7fff",(p.name||"Transport")).addTo(gT);
+        else mk(p,"#E8742A",(p.name||"Commerce / service")).addTo(gC);
+      });
+      if(e.schools&&e.schools.pts)e.schools.pts.forEach(function(p){var t={ecole:"\u00c9cole",college:"Coll\u00e8ge",lycee:"Lyc\u00e9e"}[p.type]||"\u00c9cole";mk(p,"#15A66A",(p.name?p.name+" \u2014 "+t:t)).addTo(gE);});
+      gT.addTo(map);gE.addTo(map);gC.addTo(map);
+      var chips=$("mapChips");
+      [["Transports","#2b7fff",gT],["\u00c9coles","#15A66A",gE],["Commerces","#E8742A",gC]].forEach(function(a){
+        var lbl=a[0],col=a[1],g=a[2],cnt=g.getLayers().length;
+        var btn=document.createElement("button");btn.textContent=lbl+" ("+cnt+")";btn.dataset.on="1";
+        btn.style.cssText="padding:5px 11px;border-radius:16px;border:1.5px solid "+col+";background:"+col+";color:#fff;font-size:11.5px;font-weight:700;cursor:pointer";
+        btn.addEventListener("click",function(){if(btn.dataset.on==="1"){map.removeLayer(g);btn.dataset.on="0";btn.style.background="#fff";btn.style.color=col;}else{map.addLayer(g);btn.dataset.on="1";btn.style.background=col;btn.style.color="#fff";}});
+        chips.appendChild(btn);
+      });
+      setTimeout(function(){try{map.invalidateSize();}catch(_){}} ,200);
+    }catch(err){box.innerHTML='<div class="hint">Carte interactive indisponible sur cet appareil.</div>';}
+  });
 }
 function renderEnrich(r){
   const el=$("enrichPanel");if(!el)return;
@@ -1440,7 +1505,8 @@ async function showResults(){
   renderRentalDefaults(r);
   renderResaleDefaults(r);
   renderEnrich(r);
-  enrichPromise.then(e=>{state.enrich=e;if(lastResult===r)renderEnrich(r);}).catch(()=>{state.enrich={};if(lastResult===r)renderEnrich(r);});
+  renderMap(r);
+  enrichPromise.then(e=>{state.enrich=e;if(lastResult===r){renderEnrich(r);renderMap(r);}}).catch(()=>{state.enrich={};if(lastResult===r){renderEnrich(r);renderMap(r);}});
   $("results").classList.add("show");
   $("results").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth",block:"start"});
 }
@@ -1486,6 +1552,11 @@ bindSeg("segStatut","statut",()=>{const nr=state.statut==="nonresident";$("chkEE
 bindSeg("segNeuf","neuf",()=>{if(lastResult){computeAll(lastResult);computeResale(lastResult);}});
 bindSeg("segProfil","profil",()=>{if(lastResult)renderOperation(lastResult);});
 $("btnFiche").addEventListener("click",()=>{if(lastResult)printFiche(lastResult);});
+(function(){try{const lg=localStorage.getItem("estimo_logo");if(lg){repLogoData=lg;if($("repLogoPrev")){$("repLogoPrev").src=lg;$("repLogoPrev").style.display="block";}}const nm=localStorage.getItem("estimo_repname"),cl=localStorage.getItem("estimo_repcolor");if($("repName")&&nm)$("repName").value=nm;if($("repColor")&&cl)$("repColor").value=cl;}catch(_){}})();
+if($("repLogo"))$("repLogo").addEventListener("change",e=>{const f=e.target.files&&e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{repLogoData=rd.result;if($("repLogoPrev")){$("repLogoPrev").src=rd.result;$("repLogoPrev").style.display="block";}try{localStorage.setItem("estimo_logo",rd.result);}catch(_){}};rd.readAsDataURL(f);});
+if($("repName"))$("repName").addEventListener("input",()=>{try{localStorage.setItem("estimo_repname",$("repName").value);}catch(_){}});
+if($("repColor"))$("repColor").addEventListener("input",()=>{try{localStorage.setItem("estimo_repcolor",$("repColor").value);}catch(_){}});
+if($("btnReport"))$("btnReport").addEventListener("click",generateReport);
 $("btnExportComps").addEventListener("click",()=>{if(lastResult)exportComps(lastResult);});
 ["opSellTarget","opDureeMois"].forEach(id=>{$(id).addEventListener("input",()=>{if(lastResult)renderOperation(lastResult);});$(id).addEventListener("change",()=>{if(lastResult)renderOperation(lastResult);});});
 $("segView").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{$("segView").querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on");$("results").classList.toggle("lean",b.dataset.v==="lean");}));
@@ -1762,6 +1833,67 @@ function exportComps(r){
   const blob=new Blob(["\ufeff"+rows.map(x=>x.join(";")).join("\n")],{type:"text/csv;charset=utf-8"});
   const url=URL.createObjectURL(blob),a=document.createElement("a");
   a.href=url;a.download="comparables_"+String(r.city||"secteur").replace(/\s+/g,"_")+".csv";a.click();URL.revokeObjectURL(url);
+}
+/* ===== Vague 9 : rapport professionnel imprimable (PDF) ===== */
+var repLogoData="";
+function buildReportHtml(r,name,color,logo){
+  const $=id=>document.getElementById(id);
+  const grab=id=>{const e=$(id);return e?e.innerHTML:"";};
+  const adresse=($("adresse")&&$("adresse").value)||r.city||"Bien immobilier";
+  const today=new Date().toLocaleDateString("fr-FR",{day:"2-digit",month:"long",year:"numeric"});
+  const P=projParams(r),b=projCore(P);let payback=null;for(let t=1;t<=P.H;t++){if(projCore(Object.assign({},P,{H:t})).van>=0){payback=t;break;}}
+  const metric=(l,v)=>`<div class="kpi"><div class="kl">${l}</div><div class="kv num">${v}</div></div>`;
+  const synthMetrics=metric("Estimation",eur(r.price))+metric("Fourchette",eur(r.low)+" \u2013 "+eur(r.high))+metric("Prix / m\u00b2",eur0(r.sqm))+metric("Confiance",(r.confScore||"\u2014")+"/100")+metric("VAN ("+P.H+" ans)",eur0(b.van))+metric("TRI",(b.tri*100).toFixed(1)+" %")+metric("Cash-flow / mois",eur0(b.cf1m))+metric("D\u00e9lai de r\u00e9cup.",payback?"An "+payback:"> "+P.H+" ans");
+  let comps="";
+  if(r.realPts&&r.realPts.length){const top=[...r.realPts].sort((a,c)=>Math.abs(a.surf-r.surface)-Math.abs(c.surf-r.surface)).slice(0,8);
+    comps='<table class="t"><tr><th>Surface</th><th>Date</th><th>Prix</th><th>\u20ac/m\u00b2</th></tr>'+top.map(p=>`<tr><td>${Math.round(p.surf)} m\u00b2</td><td>${p.date?String(p.date).slice(0,10):""}</td><td>${eur(p.price)}</td><td>${eur0(p.ppm)}</td></tr>`).join("")+'</table>';}
+  const st=r.realStats;
+  const dvfStat=st?`<p>${r.realCount} ventes analys\u00e9es \u00b7 m\u00e9diane ${eur0(st.west||st.med)}/m\u00b2 \u00b7 fourchette Q1\u2013Q3 ${eur0(st.q1)}\u2013${eur0(st.q3)}/m\u00b2.</p>`:"<p>Peu de donn\u00e9es DVF disponibles pour ce secteur.</p>";
+  const live=state.live||{},e=state.enrich||{},attr=(e.air||e.osm||e.schools)?enrichScore(e):null;
+  let risk="<ul>";
+  if(live.risqueLbl)risk+="<li><b>Risques naturels :</b> "+live.risqueLbl.replace(/^\d+\s*:\s*/,"")+"</li>";
+  if(live.radon)risk+="<li><b>Radon :</b> "+live.radon.label+" (classe "+live.radon.classe+"/3)</li>";
+  if(attr!=null)risk+="<li><b>Attractivit\u00e9 locale :</b> "+attr+"/100</li>";
+  if(e.air&&e.air.aqi!=null)risk+="<li><b>Qualit\u00e9 de l'air :</b> AQI "+e.air.aqi+"</li>";
+  risk+="</ul>";
+  const ch=(title,id)=>{const s=grab(id);return s?`<div class="chart"><div class="ct">${title}</div>${s}</div>`:"";};
+  const typeLbl={appartement:"Appartement",maison:"Maison",terrain:"Terrain"}[r.type]||"";
+  return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Rapport \u2014 ${adresse}</title><style>
+:root{--bg:#F6F8FA;--surface:#fff;--ink:#0F2A43;--ink-soft:#5B7186;--line:#E5EAF0;--brand:${color};--brand-dark:${color};--brand-tint:#E6F7F4;--good:#15A66A;--warn:#E8A33D;--bad:#E0533D;--bad-tint:#FBE9E5;--warn-tint:#FBF1DE;}
+*{box-sizing:border-box}body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);margin:0;line-height:1.5;font-size:13px}
+.page{padding:26px 30px;max-width:760px;margin:0 auto}
+.cover{min-height:92vh;display:flex;flex-direction:column;justify-content:center;text-align:center;page-break-after:always}
+.cover img{max-height:64px;max-width:200px;object-fit:contain;margin:0 auto 22px}
+.cover h1{font-size:30px;color:${color};margin:0 0 8px}.cover .addr{font-size:18px;font-weight:600;margin:6px 0}.cover .meta{color:var(--ink-soft);margin-top:18px;font-size:13px}
+h2{font-size:16px;color:${color};border-bottom:2px solid ${color};padding-bottom:5px;margin:0 0 12px}
+section.sec{page-break-before:always;padding-top:6px}section.sec.first{page-break-before:avoid}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.kpi{border:1px solid var(--line);border-radius:9px;padding:9px 11px}.kl{font-size:10px;color:var(--ink-soft);text-transform:uppercase}.kv{font-size:17px;font-weight:800}
+.t{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}.t th{text-align:left;color:var(--ink-soft);font-weight:600;border-bottom:1px solid var(--line);padding:4px 6px}.t td{padding:4px 6px;border-bottom:1px solid #f0f3f6}
+.chart{margin:14px 0}.ct{font-weight:700;font-size:12.5px;margin-bottom:4px;color:var(--ink)}
+.num{font-variant-numeric:tabular-nums}.hint{font-size:10.5px;color:var(--ink-soft);line-height:1.45}
+ul{margin:6px 0;padding-left:18px}li{margin:3px 0}p{margin:6px 0}
+.foot{margin-top:18px;border-top:1px solid var(--line);padding-top:8px;font-size:9.5px;color:#99a4ae}
+@media print{section.sec{page-break-before:always}section.sec.first{page-break-before:avoid}.cover{page-break-after:always}}
+</style></head><body>
+<div class="page cover">${logo?`<img src="${logo}" alt="">`:""}<h1>Rapport d'analyse immobili\u00e8re</h1><div class="addr">${adresse}</div><div>${typeLbl} \u00b7 ${r.surface} m\u00b2</div><div class="meta">${name}<br>${today}</div></div>
+<div class="page"><section class="sec first"><h2>Synth\u00e8se</h2><div class="kpis">${synthMetrics}</div></section>
+<section class="sec first" style="margin-top:18px"><h2>Analyse &amp; recommandations</h2>${grab("reportPanel")}</section></div>
+<div class="page"><section class="sec"><h2>Estimation &amp; comparables</h2>${dvfStat}${ch("Positionnement prix / surface","dvfScatter")}${comps}</section></div>
+<div class="page"><section class="sec"><h2>Analyse financi\u00e8re</h2>${grab("proKpiPanel")}${ch("Cash-flow d'exploitation","chartCF")}${ch("VAN selon l'ann\u00e9e de revente","chartVanYear")}${ch("Patrimoine net","chartEq")}</section></div>
+<div class="page"><section class="sec"><h2>Fiscalit\u00e9</h2>${grab("fiscalPanel")}</section></div>
+<div class="page"><section class="sec"><h2>Risques &amp; environnement</h2>${risk}</section>
+<section class="sec first" style="margin-top:18px"><h2>Annexes &amp; m\u00e9thodologie</h2><p>Estimation par comparaison de ventes r\u00e9elles (DVF/Cerema) pond\u00e9r\u00e9es par similarit\u00e9 de surface et de r\u00e9cence, ajust\u00e9es (DPE, \u00e9tat, \u00e9tage, exposition\u2026). Indice de confiance multicrit\u00e8re. Projection actualis\u00e9e (VAN/TRI) sur ${P.H} ans. Fiscalit\u00e9 et frais indicatifs.</p><p><b>Sources :</b> DVF/Cerema, BAN, G\u00e9orisques (risques, radon), Open-Meteo (air), Annuaire de l'\u00c9ducation nationale, OpenStreetMap.</p><div class="foot">Document g\u00e9n\u00e9r\u00e9 par Estimo le ${today}. Estimation statistique \u00e0 but informatif \u2014 ne constitue ni une expertise immobili\u00e8re, ni un conseil fiscal ou en investissement. Valeurs indicatives \u00e0 confirmer par des professionnels.</div></section></div>
+</body></html>`;
+}
+function generateReport(){
+  const r=lastResult;if(!r){alert("Lancez d'abord une estimation.");return;}
+  const name=($("repName")&&$("repName").value.trim())||"Estimo";
+  const color=($("repColor")&&$("repColor").value)||"#0A8C7D";
+  const html=buildReportHtml(r,name,color,repLogoData);
+  const w=window.open("","_blank");
+  if(!w){alert("Autorisez les fen\u00eatres pop-up pour g\u00e9n\u00e9rer le rapport.");return;}
+  w.document.write(html);w.document.close();setTimeout(()=>{try{w.print();}catch(_){}}, 500);
 }
 function printFiche(r){
   const years=Number($("holdYears").value),reval=numv("reval")/100,travaux=numv("iTravaux");
