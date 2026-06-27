@@ -683,7 +683,7 @@ async function dvfFetch(url){
 // Donnees live complementaires : population (geo.api.gouv.fr, CORS ouvert) + risques naturels (Georisques). Repli silencieux sur la demo si indisponible.
 async function fetchLive(coord){
   const out={};
-  try{const r=await fetchT("https://geo.api.gouv.fr/communes/"+coord.insee+"?fields=population,nom",6000);if(r.ok){const j=await r.json();if(j&&j.population)out.pop=j.population;}}catch(_){}
+  try{const d=await dvfFetch("https://geo.api.gouv.fr/communes/"+coord.insee+"?fields=population,nom");if(d&&d.json&&d.json.population)out.pop=d.json.population;}catch(_){}
   try{const gr=await dvfFetch("https://georisques.gouv.fr/api/v1/gaspar/risques?code_insee="+coord.insee+"&page=1&page_size=100");
     if(gr){if(DEBUG)dbg("Georisques brut:\n"+gr.raw.slice(0,400));
       const arr=(gr.json&&gr.json.data)||[];const lab=[];
@@ -697,15 +697,15 @@ async function fetchLive(coord){
 }
 /* ===== Module Enrichissement : donnees de proximite (API publiques sans cle, CORS direct) ===== */
 async function enrichAir(lat,lon){
-  const u="https://air-quality-api.open-meteo.com/v1/air-quality?latitude="+lat+"&longitude="+lon+"&current=european_aqi,pm2_5,pm10,nitrogen_dioxide";
-  const r=await fetchT(u,7000);if(!r.ok)throw 0;const j=await r.json();const c=(j&&j.current)||{};
+  const d=await dvfFetch("https://air-quality-api.open-meteo.com/v1/air-quality?latitude="+lat+"&longitude="+lon+"&current=european_aqi,pm2_5,pm10,nitrogen_dioxide");
+  if(!d)throw 0;const c=(d.json&&d.json.current)||{};
   if(c.european_aqi==null)throw 0;
   return {aqi:Math.round(c.european_aqi),pm25:c.pm2_5,pm10:c.pm10,no2:c.nitrogen_dioxide};
 }
 async function enrichSchools(lat,lon){
   const where=encodeURIComponent("within_distance(position, geom'POINT("+lon+" "+lat+")', 1.5km)");
   const u="https://data.education.gouv.fr/api/explore/v2.1/catalog/datasets/fr-en-annuaire-education/records?where="+where+"&select=type_etablissement&limit=100";
-  const r=await fetchT(u,8000);if(!r.ok)throw 0;const j=await r.json();
+  const d=await dvfFetch(u);if(!d)throw 0;const j=d.json;
   const tot=(j.total_count!=null)?j.total_count:((j.results&&j.results.length)||0);
   const by={ecole:0,college:0,lycee:0};
   (j.results||[]).forEach(o=>{const t=(o.type_etablissement||"").toLowerCase();if(t.indexOf("cole")>=0)by.ecole++;else if(t.indexOf("oll")>=0)by.college++;else if(t.indexOf("yc")>=0)by.lycee++;});
@@ -718,8 +718,8 @@ async function enrichOSM(lat,lon){
    +'node[shop](around:600,'+lat+','+lon+');'
    +'node[amenity~"supermarket|pharmacy|bakery|marketplace|restaurant|cafe|school|hospital|doctors"](around:600,'+lat+','+lon+');'
    +");out tags 250;";
-  const r=await fetchT("https://overpass-api.de/api/interpreter?data="+encodeURIComponent(q),9000);
-  if(!r.ok)throw 0;const j=await r.json();const els=(j&&j.elements)||[];
+  const d=await dvfFetch("https://overpass-api.de/api/interpreter?data="+encodeURIComponent(q));
+  if(!d)throw 0;const els=(d.json&&d.json.elements)||[];
   let transit=0,shops=0,food=0,health=0;
   els.forEach(e=>{const t=e.tags||{};if(t.railway||t.highway==="bus_stop"||t.public_transport)transit++;else if(t.shop||t.amenity==="supermarket"||t.amenity==="marketplace")shops++;else if(t.amenity==="restaurant"||t.amenity==="cafe")food++;else if(t.amenity==="pharmacy"||t.amenity==="hospital"||t.amenity==="doctors")health++;});
   return {transit:transit,shops:shops,food:food,health:health,total:els.length};
