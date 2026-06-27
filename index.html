@@ -415,6 +415,7 @@
         <div class="gauge-labels"><div>Basse<b class="num" id="gLow">&#8212;</b></div><div class="mid">Estim&#233;e<b class="num" id="gMid">&#8212;</b></div><div class="hi">Haute<b class="num" id="gHigh">&#8212;</b></div></div>
       </div>
       <div class="conf"><span class="dot" id="confDot"></span><span id="confTxt">&#8212;</span></div>
+      <div id="confBreak" class="expert-only" style="margin-top:12px"></div>
       <details class="bd"><summary>D&#233;tail du calcul</summary><div id="bdRows"></div><div class="bd-note">M&#233;thode : prix m&#233;dian /m&#178; du secteur &#215; surface &#215; coefficients, + valorisation des ext&#233;rieurs. Coefficients indicatifs et param&#233;trables.</div></details>
     </section>
 
@@ -885,6 +886,45 @@ async function fetchDvf(coord,type){
 }
 
 /* ===== Estimation ===== */
+/* ===== Vague 3 : moteur de scoring multicritere (base ponderee par similarite + indice de confiance) ===== */
+function similBase(pts,subjSurf,ymax){
+  if(!pts||!pts.length||!(subjSurf>0))return{base:0,nEff:0};
+  let sw=0,sww=0,swp=0;
+  pts.forEach(p=>{
+    const ds=(p.surf-subjSurf)/(0.5*subjSurf),surfW=Math.exp(-ds*ds);
+    const yr=p.date?+String(p.date).slice(0,4):ymax,recW=Math.pow(0.82,Math.max(0,ymax-yr));
+    const w=surfW*recW;sw+=w;sww+=w*w;swp+=w*p.ppm;
+  });
+  if(sw<=0)return{base:0,nEff:0};
+  return{base:swp/sw,nEff:(sw*sw)/sww};
+}
+function estimationConfidence(stats,ctx){
+  const cl=(v,a,b)=>Math.max(a,Math.min(b,v)),yr=new Date().getFullYear();
+  const bc=ctx.baseConf,bcN=bc==="\u00e9lev\u00e9e"?46:bc==="moyenne"?26:10,bcD=bc==="\u00e9lev\u00e9e"?55:bc==="moyenne"?36:16;
+  const n=stats?stats.n:0;
+  const sN=stats?cl(n/25*100,0,100):bcN;
+  const cv=(stats&&stats.mean>0)?stats.sd/stats.mean:0;
+  const sD=stats?cl(100-cv*240,0,100):bcD;
+  const age=(stats&&stats.yMax)?yr-stats.yMax:5;
+  const sR=stats?cl(100-age*22,0,100):35;
+  const dyn=ctx.dyn,vol=cl((ctx.nTotal||0)/300*40,0,40),sL=cl((dyn?dyn.score*0.6:30)+vol,0,100);
+  const sA=cl((ctx.attrFilled/ctx.attrTotal)*100,0,100);
+  const F=[
+    ["Comparables proches",Math.round(sN),stats?(n+" ventes"):"prix de secteur"],
+    ["Coh\u00e9rence des prix",Math.round(sD),stats?(Math.round(cv*100)+" % d'\u00e9cart"):"\u2014"],
+    ["R\u00e9cence des ventes",Math.round(sR),(stats&&stats.yMax)?String(stats.yMax):"\u2014"],
+    ["Liquidit\u00e9 du march\u00e9",Math.round(sL),dyn?dyn.label:"\u2014"],
+    ["Crit\u00e8res renseign\u00e9s",Math.round(sA),ctx.attrFilled+"/"+ctx.attrTotal]
+  ];
+  const W=[0.30,0.22,0.18,0.15,0.15];
+  const score=Math.round(F.reduce((s,f,i)=>s+f[1]*W[i],0));
+  return{score:score,factors:F,label:score>=70?"\u00e9lev\u00e9e":score>=45?"moyenne":"faible"};
+}
+function renderConfBreak(c){
+  const el=$("confBreak");if(!el)return;
+  const col=v=>v>=66?"#7fe3d4":v>=40?"#F2D31C":"#f0a07a";
+  el.innerHTML=c.factors.map(f=>`<div style="margin-top:7px"><div style="display:flex;justify-content:space-between;font-size:11px;color:#bcd2dd"><span>${f[0]} <span style="opacity:.6">${f[2]}</span></span><span class="num" style="color:${col(f[1])};font-weight:700">${f[1]}</span></div><div style="height:5px;border-radius:4px;background:rgba(255,255,255,.13);overflow:hidden;margin-top:2px"><div style="height:100%;width:${f[1]}%;background:${col(f[1])}"></div></div></div>`).join("");
+}
 function baseSqm(city,cp,type){const cn=norm(city);const dep=cp?cp.substring(0,2):null;let base,conf;
   if(type==="terrain"){let apt=CITY_APT[cn]||DEPT_APT[dep]||NAT_APT;return{sqm:Math.round(apt*0.14),conf:CITY_APT[cn]?"moyenne":"faible"};}
   if(CITY_APT[cn]){base=CITY_APT[cn];conf="\u00e9lev\u00e9e";}else if(dep&&DEPT_APT[dep]){base=DEPT_APT[dep];conf="moyenne";}else{base=NAT_APT;conf="faible";}
@@ -1214,7 +1254,10 @@ async function showResults(){
       const surf=numv("surface");let band=res.pts;
       if(surf>0){const b=res.pts.filter(p=>p.surf>=surf*0.55&&p.surf<=surf*1.7);if(b.length>=10)band=b;}
       realStats=dvfStats(band); // surface proche -> prix de reference + stats (comparaison a iso-surface)
-      realBase=realStats.west||Math.round(realStats.med);
+      const _wb=realStats.west||Math.round(realStats.med);
+      const _sb=similBase(realStats.clean,surf,realStats.yMax||(new Date().getFullYear()));
+      const _trust=Math.max(0,Math.min(0.8,_sb.nEff/22));
+      realBase=_sb.base?Math.round(_trust*_sb.base+(1-_trust)*_wb):_wb;
     }
     else if(res.status==="no-conn")diag="sources DVF injoignables \u2014 r\u00e9essayez dans un instant";
     else diag="aucune vente DVF comparable dans le secteur";
@@ -1222,6 +1265,11 @@ async function showResults(){
   state.live=await livePromise;
   btn.textContent=oldTxt;btn.disabled=false;
   const r=estimate(realBase);r.realPts=realPts;r.realStats=realStats;r.realCount=realStats?realStats.n:0;lastResult=r;
+  // Vague 3 : indice de confiance multicritere + fourchette pilotee par la confiance
+  const _checks=[numv("surface")>0,numv("chambres")>0,numv("sdb")>0,(state.type!=="appartement"||numv("floorExact")>0),(numv("balconM2")>0||numv("terrasseM2")>0||numv("jardinM2")>0),!!state.coord];
+  const _conf=estimationConfidence(realStats,{dyn:r.dyn,nTotal:(realPts?realPts.length:0),attrFilled:_checks.filter(Boolean).length,attrTotal:_checks.length,baseConf:r.conf});
+  r.confScore=_conf.score;r.confFactors=_conf.factors;r.confLabel=_conf.label;
+  if(realBase){r.spread=Math.max(0.04,Math.min(0.14,0.135-_conf.score/100*0.095));r.low=r.price*(1-r.spread);r.high=r.price*(1+r.spread);}
   const sd=$("srcDot"),st=$("srcTxt");
   if(realBase){sd.style.background="#7fe3d4";st.textContent=`Donn\u00e9es r\u00e9elles DVF \u00b7 ${r.realCount} ventes`;$("compTag").textContent="DVF \u00b7 r\u00e9el";}
   else{sd.style.background="#E8742A";st.textContent="D\u00e9mo \u00b7 "+diag;$("compTag").textContent="DVF \u00b7 d\u00e9mo";}
@@ -1232,8 +1280,10 @@ async function showResults(){
   $("gLow").textContent=eur(r.low);$("gMid").textContent=eur(r.price);$("gHigh").textContent=eur(r.high);
   // gauge fill width = 2\u00d7spread centr\u00e9
   const w=Math.min(45,r.spread*100*1.6);$("gFill").style.left=(50-w)+"%";$("gFill").style.right=(50-w)+"%";$("gDot").style.left="50%";
-  const cd=$("confDot"),ct=$("confTxt");const cmap={"\u00e9lev\u00e9e":["#7fe3d4","Fiabilit\u00e9 \u00e9lev\u00e9e \u2014 donn\u00e9es locales"],"moyenne":["#F2D31C","Fiabilit\u00e9 moyenne \u2014 moyenne d\u00e9partementale"],"faible":["#E8742A","Fiabilit\u00e9 faible \u2014 moyenne nationale"]};
-  cd.style.background=cmap[r.conf][0];ct.textContent=cmap[r.conf][1];
+  const cd=$("confDot"),ct=$("confTxt");
+  const _cc=r.confScore>=70?"#7fe3d4":r.confScore>=45?"#F2D31C":"#E8742A";
+  cd.style.background=_cc;ct.textContent="Indice de confiance "+r.confScore+"/100 \u00b7 "+r.confLabel;
+  renderConfBreak(_conf);
   // d\u00e9tail \u2014 mod\u00e8le explicable
   const bd=$("bdRows");bd.innerHTML="";
   const note=document.createElement("div");note.className="hint";note.style.margin="0 0 8px";note.innerHTML="Le prix part du prix de r\u00e9f\u00e9rence /m\u00b2 du secteur, ajust\u00e9 par chaque caract\u00e9ristique (effet \u2191 ou \u2193), puis multipli\u00e9 par la surface.";bd.appendChild(note);
