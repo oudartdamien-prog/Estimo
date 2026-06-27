@@ -173,6 +173,7 @@
 .chart-wrap{margin-top:14px}
 .chart-wrap h4{font:700 14px/1.2 var(--body);margin:0 0 2px}
 .chart-wrap .csub{font-size:12px;color:var(--ink-soft);margin-bottom:8px}
+.cinterp{margin-top:9px;padding:9px 12px;background:#f4f8fb;border-left:3px solid var(--brand);border-radius:0 8px 8px 0;font-size:12.5px;line-height:1.55;color:var(--ink)}
 .chart-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink-soft);margin-top:6px}
 .chart-legend span{display:inline-flex;align-items:center;gap:5px}
 .chart-legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
@@ -424,8 +425,8 @@
         <div class="dtile"><div class="dt-l">Cash-flow mensuel (an 1)</div><div class="dt-v" id="dCash">&#8212;</div></div>
         <div class="dtile"><div class="dt-l">Co&#251;t total op&#233;ration</div><div class="dt-v" id="dCout">&#8212;</div></div>
       </div>
-      <div class="chart-wrap"><h4>D&#233;composition du gain (cumul&#233; sur la p&#233;riode)</h4><div class="csub">De l'apport au gain net &#8212; chaque brique ajoute (+) ou retranche (&#8722;)</div><div id="chartWf"></div></div>
-      <div class="chart-wrap"><h4>D&#233;composition actualis&#233;e &#8594; VAN</h4><div class="csub">M&#234;mes briques actualis&#233;es ; le solde final = la VAN</div><div id="chartWfD"></div></div>
+      <div class="chart-wrap"><h4>D&#233;composition du gain (cumul&#233; sur la p&#233;riode)</h4><div class="csub">De l'apport au gain net &#8212; chaque brique ajoute (+) ou retranche (&#8722;)</div><div id="chartWf"></div><div class="cinterp" id="iWf"></div></div>
+      <details class="acc"><summary><span>D&#233;composition actualis&#233;e &#8594; VAN (avanc&#233;)</span><span class="chev">&#9656;</span></summary><div class="acc-body"><div class="csub">M&#234;mes briques que le gain net, mais actualis&#233;es ; le solde final correspond &#224; la VAN.</div><div id="chartWfD"></div></div></details>
       <div class="hint" style="margin-top:10px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#5B7186" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#5B7186" stroke-width="2" stroke-linecap="round"/></svg>Verdict bas&#233; sur la VAN (le projet bat-il votre taux d'actualisation ?), le cash-flow et la valorisation. Indicatif.</div>
     </section>
 
@@ -449,9 +450,10 @@
     </section>
 
     <section class="card secondary" style="order:10">
-      <div class="card-head"><div class="step-no">&#128205;</div><div><h2>Localisation & accessibilit&#233;<span class="demo-tag">G&#233;orisques r&#233;el &#183; acc&#232;s estim&#233;</span></h2></div></div>
+      <div class="card-head"><div class="step-no">&#128205;</div><div><h2>Localisation, environnement &amp; proximit&#233;<span class="demo-tag">Air, &#233;coles, transports &amp; commerces r&#233;els</span></h2></div></div>
       <div class="loc"><div class="loc-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z" stroke="#fff" stroke-width="2"/><circle cx="12" cy="10" r="2.5" stroke="#fff" stroke-width="2"/></svg></div><div><b id="locAddr">&#8212;</b><div class="coord num" id="locCoord">&#8212;</div></div></div>
       <div id="locStats" style="margin-top:12px"></div>
+      <div id="enrichPanel" style="margin-top:14px"></div>
     </section>
 
     <!-- ANALYSE LOCATIVE -->
@@ -601,10 +603,15 @@
       </div>
       <div class="kpis" style="grid-template-columns:1fr 1fr"><div class="kpi"><div class="kl">Point mort actualis&#233;</div><div class="kv" id="pjBep">&#8212;</div></div><div class="kpi"><div class="kl">Dur&#233;e de d&#233;tention optimale</div><div class="kv" id="pjOpt">&#8212;</div></div></div>
       <div class="hint" id="waccDetail" style="margin:2px 0 4px"></div>
-      <div class="chart-wrap"><h4>Cash-flow d'exploitation</h4><div class="csub">Par an (barres) et cumul&#233; (ligne), hors revente</div><div id="chartCF"></div><div class="chart-legend"><span><i style="background:#0FB39E"></i>CF annuel</span><span><i style="background:#0F2A43"></i>CF cumul&#233;</span></div></div>
-      <div class="chart-wrap"><h4>Cash-flow actualis&#233; (VAN)</h4><div class="csub">Flux nets actualis&#233;s et VAN cumul&#233;e &#8212; apport en ann&#233;e 0, revente en derni&#232;re ann&#233;e</div><div id="chartDCF"></div><div class="chart-legend"><span><i style="background:#7FB0E0"></i>Flux actualis&#233;</span><span><i style="background:#0F2A43"></i>VAN cumul&#233;e</span></div></div>
-      <div class="chart-wrap"><h4>VAN selon l'ann&#233;e de revente</h4><div class="csub">Revendre cette ann&#233;e-l&#224; &#8658; quelle VAN ? <b style="color:#0a7a5c">Barre verte</b> = ann&#233;e o&#249; la VAN devient positive (seuil de rentabilit&#233;) ; sommet = dur&#233;e optimale</div><div id="chartVanYear"></div><div class="chart-legend"><span><i style="background:#7A5AF8"></i>VAN si revente l'ann&#233;e N</span><span><i style="background:#0a7a5c"></i>Seuil VAN positive</span></div></div><div class="csub">Valeur du bien vs capital restant d&#251;</div><div id="chartEq"></div><div class="chart-legend"><span><i style="background:#0FB39E"></i>Valeur du bien</span><span><i style="background:#E0402E"></i>Capital restant d&#251;</span></div></div>
+      <div class="chart-wrap"><h4>Cash-flow d'exploitation</h4><div class="csub">Par an (barres) et cumul&#233; (ligne), hors revente</div><div id="chartCF"></div><div class="chart-legend"><span><i style="background:#0FB39E"></i>CF annuel</span><span><i style="background:#0F2A43"></i>CF cumul&#233;</span></div><div class="cinterp" id="iCF"></div></div>
+      <details class="acc"><summary><span>Cash-flow actualis&#233; (avanc&#233;)</span><span class="chev">&#9656;</span></summary><div class="acc-body"><div class="csub">M&#234;mes flux que ci-dessus mais actualis&#233;s (ramen&#233;s &#224; aujourd'hui) ; la ligne cumule la VAN. Apport en ann&#233;e 0, revente en derni&#232;re ann&#233;e.</div><div id="chartDCF"></div><div class="chart-legend"><span><i style="background:#7FB0E0"></i>Flux actualis&#233;</span><span><i style="background:#0F2A43"></i>VAN cumul&#233;e</span></div></div></details>
+      <div class="chart-wrap"><h4>VAN selon l'ann&#233;e de revente</h4><div class="csub">Revendre cette ann&#233;e-l&#224; &#8658; quelle VAN ? <b style="color:#0a7a5c">Barre verte</b> = ann&#233;e o&#249; la VAN devient positive (seuil de rentabilit&#233;) ; sommet = dur&#233;e optimale</div><div id="chartVanYear"></div><div class="chart-legend"><span><i style="background:#7A5AF8"></i>VAN si revente l'ann&#233;e N</span><span><i style="background:#0a7a5c"></i>Seuil VAN positive</span></div><div class="cinterp" id="iVan"></div></div><div class="csub">Valeur du bien vs capital restant d&#251;</div><div id="chartEq"></div><div class="chart-legend"><span><i style="background:#0FB39E"></i>Valeur du bien</span><span><i style="background:#E0402E"></i>Capital restant d&#251;</span></div><div class="cinterp" id="iEq"></div></div>
       <div class="hint" style="margin-top:10px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#5B7186" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#5B7186" stroke-width="2" stroke-linecap="round"/></svg>Hypoth&#232;ses : cash-flow d'exploitation suppos&#233; stable, revalorisation annuelle constante, fiscalit&#233; de l'ann&#233;e 1 reconduite. La VAN > 0 signifie que le projet bat votre co&#251;t du capital. Mod&#232;le indicatif.</div>
+    </section>
+
+    <section class="card expert-only" id="scnCard" style="order:6">
+      <div class="card-head"><div class="step-no">9</div><div><h2>Simulations de sc&#233;narios</h2><div class="sub">Stress test : comment la VAN r&#233;siste aux al&#233;as (taux, prix, march&#233;, vacance, DPE)</div></div></div>
+      <div id="scnPanel"></div>
     </section>
 
     <footer class="disc">Estimo &#8212; estimation indicative &#224; but informatif, ne constitue pas une expertise immobili&#232;re.<br/>Marge d'erreur affich&#233;e selon la qualit&#233; des donn&#233;es et la pr&#233;cision des informations saisies. Calendrier DPE selon la loi Climat et R&#233;silience (dates indicatives).</footer>
@@ -628,7 +635,7 @@ const eur0=n=>Math.round(n).toLocaleString("fr-FR");
 const norm=s=>(s||"").toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/^st /,"saint-");
 const numv=id=>Number($(id).value)||0;
 
-const state={type:"appartement",pieces:3,dpe:"D",ges:"D",loc:"nue",statut:"resident",neuf:"ancien",profil:"particulier",coord:null,live:null,mktRentSqm:0};
+const state={type:"appartement",pieces:3,dpe:"D",ges:"D",loc:"nue",statut:"resident",neuf:"ancien",profil:"particulier",coord:null,live:null,enrich:null,mktRentSqm:0};
 
 /* Segmented */
 function bindSeg(wrapId,key,cb){const w=$(wrapId);w.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{w.querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on");state[key]=isNaN(b.dataset.v)?b.dataset.v:Number(b.dataset.v);if(cb)cb();}));}
@@ -687,6 +694,74 @@ async function fetchLive(coord){
   }catch(_){}
   if(DEBUG)dbg("Live -> pop:"+(out.pop||"n/a")+" | risque:"+(out.risqueLbl||"n/a"));
   return out;
+}
+/* ===== Module Enrichissement : donnees de proximite (API publiques sans cle, CORS direct) ===== */
+async function enrichAir(lat,lon){
+  const u="https://air-quality-api.open-meteo.com/v1/air-quality?latitude="+lat+"&longitude="+lon+"&current=european_aqi,pm2_5,pm10,nitrogen_dioxide";
+  const r=await fetchT(u,7000);if(!r.ok)throw 0;const j=await r.json();const c=(j&&j.current)||{};
+  if(c.european_aqi==null)throw 0;
+  return {aqi:Math.round(c.european_aqi),pm25:c.pm2_5,pm10:c.pm10,no2:c.nitrogen_dioxide};
+}
+async function enrichSchools(lat,lon){
+  const where=encodeURIComponent("within_distance(position, geom'POINT("+lon+" "+lat+")', 1.5km)");
+  const u="https://data.education.gouv.fr/api/explore/v2.1/catalog/datasets/fr-en-annuaire-education/records?where="+where+"&select=type_etablissement&limit=100";
+  const r=await fetchT(u,8000);if(!r.ok)throw 0;const j=await r.json();
+  const tot=(j.total_count!=null)?j.total_count:((j.results&&j.results.length)||0);
+  const by={ecole:0,college:0,lycee:0};
+  (j.results||[]).forEach(o=>{const t=(o.type_etablissement||"").toLowerCase();if(t.indexOf("cole")>=0)by.ecole++;else if(t.indexOf("oll")>=0)by.college++;else if(t.indexOf("yc")>=0)by.lycee++;});
+  return {total:tot,ecole:by.ecole,college:by.college,lycee:by.lycee};
+}
+async function enrichOSM(lat,lon){
+  const q="[out:json][timeout:8];("
+   +'node[railway~"station|halt|tram_stop|subway_entrance"](around:1000,'+lat+','+lon+');'
+   +'node[highway=bus_stop](around:500,'+lat+','+lon+');'
+   +'node[shop](around:600,'+lat+','+lon+');'
+   +'node[amenity~"supermarket|pharmacy|bakery|marketplace|restaurant|cafe|school|hospital|doctors"](around:600,'+lat+','+lon+');'
+   +");out tags 250;";
+  const r=await fetchT("https://overpass-api.de/api/interpreter?data="+encodeURIComponent(q),9000);
+  if(!r.ok)throw 0;const j=await r.json();const els=(j&&j.elements)||[];
+  let transit=0,shops=0,food=0,health=0;
+  els.forEach(e=>{const t=e.tags||{};if(t.railway||t.highway==="bus_stop"||t.public_transport)transit++;else if(t.shop||t.amenity==="supermarket"||t.amenity==="marketplace")shops++;else if(t.amenity==="restaurant"||t.amenity==="cafe")food++;else if(t.amenity==="pharmacy"||t.amenity==="hospital"||t.amenity==="doctors")health++;});
+  return {transit:transit,shops:shops,food:food,health:health,total:els.length};
+}
+async function fetchEnrich(coord){
+  const lat=coord.lat,lon=coord.lon,out={};
+  const res=await Promise.allSettled([enrichAir(lat,lon),enrichSchools(lat,lon),enrichOSM(lat,lon)]);
+  if(res[0].status==="fulfilled")out.air=res[0].value;
+  if(res[1].status==="fulfilled")out.schools=res[1].value;
+  if(res[2].status==="fulfilled")out.osm=res[2].value;
+  if(DEBUG)dbg("Enrich -> air:"+(out.air?out.air.aqi:"x")+" | ecoles:"+(out.schools?out.schools.total:"x")+" | osm transit/shops:"+(out.osm?out.osm.transit+"/"+out.osm.shops:"x")+"\n"+["air","schools","osm"].map((n,i)=>n+":"+(res[i].status==="fulfilled"?"OK":"ECHEC")).join(" | "));
+  return out;
+}
+function enrichScore(e){
+  let s=0,w=0;const cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+  if(e.air){const a=e.air.aqi;s+=cl(100-(a-15)*1.4,0,100)*0.25;w+=0.25;}
+  if(e.schools){s+=cl(e.schools.total*16,0,100)*0.18;w+=0.18;}
+  if(e.osm){s+=cl(e.osm.transit*11,0,100)*0.27;w+=0.27;const comm=e.osm.shops+e.osm.food+e.osm.health;s+=cl(comm*5,0,100)*0.20;w+=0.20;}
+  const t=(state.live&&state.live.risqueLbl)||"";const m=t.match(/^(\d+)/);const nb=m?+m[1]:0;s+=cl(100-nb*12,30,100)*0.10;w+=0.10;
+  if(w<0.2)return null;return Math.round(s/w);
+}
+function renderEnrich(r){
+  const el=$("enrichPanel");if(!el)return;
+  if(!state.coord){el.innerHTML="";return;}
+  const e=state.enrich;
+  if(!e){el.innerHTML='<div class="hint">Analyse de l\'environnement et de la proximit\u00e9 en cours\u2026</div>';return;}
+  const air=e.air,sch=e.schools,osm=e.osm;
+  const item=(label,value,sub,color)=>`<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)"><div style="min-width:0"><div style="font-size:13px;color:var(--ink)">${label}</div>${sub?`<div style="font-size:11px;color:var(--ink-soft);margin-top:1px">${sub}</div>`:""}</div><div class="num" style="font-size:14px;font-weight:700;color:${color||"var(--ink)"};white-space:nowrap;text-align:right">${value}</div></div>`;
+  let html=`<div style="font-size:13px;font-weight:700;color:var(--ink-soft);margin-bottom:4px">Environnement &amp; proximit\u00e9 <span style="color:var(--brand-dark)">\u00b7 r\u00e9el</span></div>`;
+  if(air){const a=air.aqi,lab=a<=20?["Tr\u00e8s bonne","var(--good)"]:a<=40?["Bonne","var(--good)"]:a<=60?["Moyenne","var(--warn)"]:a<=80?["M\u00e9diocre","var(--warn)"]:["Mauvaise","var(--bad)"];
+    html+=item("Qualit\u00e9 de l'air",lab[0]+" \u00b7 AQI "+a,"PM2.5 "+Math.round(air.pm25)+" \u00b7 PM10 "+Math.round(air.pm10)+" \u00b7 NO\u2082 "+Math.round(air.no2)+" \u00b5g/m\u00b3",lab[1]);}
+  if(sch){const parts=[];if(sch.ecole)parts.push(sch.ecole+" \u00e9cole"+(sch.ecole>1?"s":""));if(sch.college)parts.push(sch.college+" coll\u00e8ge"+(sch.college>1?"s":""));if(sch.lycee)parts.push(sch.lycee+" lyc\u00e9e"+(sch.lycee>1?"s":""));
+    html+=item("\u00c9coles (&lt; 1,5 km)",sch.total,parts.join(" \u00b7 ")||"\u00e9tablissements scolaires",sch.total>0?"var(--good)":"var(--ink-soft)");}
+  if(osm){html+=item("Transports (&lt; 1 km)",osm.transit,osm.transit>=8?"tr\u00e8s bien desservi":osm.transit>=3?"correctement desservi":osm.transit>0?"desserte limit\u00e9e":"peu de transports",osm.transit>=3?"var(--good)":osm.transit>0?"var(--warn)":"var(--bad)");
+    const comm=osm.shops+osm.food+osm.health;
+    html+=item("Commerces &amp; services (&lt; 600 m)",comm,osm.shops+" commerces \u00b7 "+osm.food+" caf\u00e9s/restos \u00b7 "+osm.health+" sant\u00e9",comm>=15?"var(--good)":comm>=5?"var(--warn)":"var(--bad)");}
+  if(!air&&!sch&&!osm){el.innerHTML='<div class="hint">Donn\u00e9es de proximit\u00e9 momentan\u00e9ment indisponibles (sources publiques surcharg\u00e9es). R\u00e9essayez dans un instant.</div>';return;}
+  const attr=enrichScore(e);
+  if(attr!=null){const ac=attr>=66?"var(--good)":attr>=40?"var(--warn)":"var(--bad)";
+    html+=`<div style="margin-top:12px;padding:11px 13px;background:#eef4f7;border-radius:10px;font-size:12.5px;line-height:1.5"><div style="display:flex;justify-content:space-between;align-items:center"><b>Attractivit\u00e9 locale</b><span class="num" style="font-weight:800;color:${ac}">${attr}/100</span></div><div style="margin-top:4px;color:var(--ink-soft)">${attr>=66?"Cadre de vie favorable : bons services de proximit\u00e9 et air plut\u00f4t sain.":attr>=40?"Cadre de vie correct ; quelques points \u00e0 v\u00e9rifier sur place.":"Desserte ou environnement limit\u00e9s : \u00e0 confronter \u00e0 une visite."}</div></div>`;}
+  html+=`<div class="hint" style="margin-top:8px">Sources : Open-Meteo (air), Annuaire de l'\u00c9ducation nationale (\u00e9coles), OpenStreetMap (transports/commerces). Comptages dans un rayon proche, indicatifs.</div>`;
+  el.innerHTML=html;
 }
 async function geocode(){if(state.coord)return state.coord;const q=($("adresse").value||"").trim();try{const r=await fetchT("https://api-adresse.data.gouv.fr/search/?limit=1&q="+encodeURIComponent(q),6000);const d=await r.json();const f=(d.features||[])[0];if(f){const pr=f.properties;state.coord={lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0],label:pr.label,insee:pr.citycode};if(pr.postcode&&!$("cp").value)$("cp").value=pr.postcode;if(pr.city&&!$("ville").value)$("ville").value=pr.city;return state.coord;}}catch(_){}return null;}
 function recVal(o,keys){for(const k of keys){if(o[k]!=null&&o[k]!=="")return o[k];}return null;}
@@ -1058,6 +1133,7 @@ async function showResults(){
   let realBase=null,realPts=null,realStats=null,diag="";
   const coord=await geocode();dbg("Coordonnees BAN: "+JSON.stringify(coord));
   const livePromise=(coord&&coord.insee)?fetchLive(coord):Promise.resolve({});
+  state.enrich=null;const enrichPromise=coord?fetchEnrich(coord):Promise.resolve(null);
   if(!coord){diag="adresse non localis\u00e9e \u2014 v\u00e9rifiez l'adresse saisie et choisissez une suggestion";}
   else if(state.type==="terrain"){diag="terrain : pas de comparable b\u00e2ti DVF";}
   else{
@@ -1102,6 +1178,8 @@ async function showResults(){
   $("iTravaux").value=dpeCostHi>0?Math.round(dpeCostHi*0.8/1000)*1000:0; // suggestion travaux \u2248 80% du haut de fourchette
   renderRentalDefaults(r);
   renderResaleDefaults(r);
+  renderEnrich(r);
+  enrichPromise.then(e=>{state.enrich=e;if(lastResult===r)renderEnrich(r);}).catch(()=>{state.enrich={};if(lastResult===r)renderEnrich(r);});
   $("results").classList.add("show");
   $("results").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth",block:"start"});
 }
@@ -1439,6 +1517,19 @@ function renderProjection(r){
   const kH=Math.pow(1+rate,H);
   const wfd=[["Apport",-apport],["Loyers",dLoy],["Charges",-dCha],["Cr\u00e9dit pay\u00e9",-dPay],["Revente",sellH/kH],["Frais vente",-fraisH/kH],["Capital d\u00fb",-crdH/kH],["IRA",-iraH/kH],["Imp\u00f4ts",-(dTax+impotPV/kH)]];
   $("chartWfD").innerHTML=waterfallSVG(wfd,{fmt:v=>eur0(v),totalLabel:"VAN"});
+  // ===== Lectures automatiques des graphiques (langage naturel) =====
+  const _setI=(id,h)=>{const e=$(id);if(e)e.innerHTML=h;};
+  const _cf1=cfArr[0],_cumH=cfCum[H-1];
+  _setI("iCF",_cf1>=0
+    ?`Le bien <b>s'autofinance d\u00e8s la 1re ann\u00e9e</b> : cash-flow positif d'environ ${eur0(_cf1/12)} \u20ac/mois. Sur ${H} ans, l'exploitation cumule ${eur0(_cumH)} \u20ac.`
+    :`Pendant le cr\u00e9dit, le bien ne s'autofinance pas : il faut ajouter environ <b>${eur0(-_cf1/12)} \u20ac/mois</b> de votre poche. ${cfPos>=0?`Il devient autofinanc\u00e9 \u00e0 partir de l'an ${cfPos+1}.`:`Il reste \u00e0 votre charge sur toute la dur\u00e9e projet\u00e9e.`} Cumul d'exploitation sur ${H} ans : ${eur0(_cumH)} \u20ac.`);
+  _setI("iVan",`Revendre trop t\u00f4t fait perdre de l'argent (frais d'achat et fiscalit\u00e9 pas encore amortis). ${vanPos?`Le projet devient rentable \u00e0 partir de <b>l'an ${vanPos}</b>`:`Le projet ne devient pas rentable avant 50 ans dans ces hypoth\u00e8ses`}, et l'ann\u00e9e de revente la plus avantageuse est <b>l'an ${opt}</b>. \u00c0 votre horizon de ${H} ans, la VAN est de <b>${eur(van)}</b>.`);
+  const _eqH=valS[H-1]-crdS[H-1];
+  _setI("iEq",`Vous remboursez le cr\u00e9dit pendant que le bien se revalorise.${duree>0&&duree<H?` Le pr\u00eat est sold\u00e9 en l'an ${duree}, ensuite le bien est d\u00e9tenu sans dette.`:``} Votre <b>patrimoine net sur ce bien</b> (valeur estim\u00e9e moins capital restant d\u00fb) atteint environ <b>${eur0(_eqH)} \u20ac</b> \u00e0 l'an ${H}.`);
+  const _gain=wf.reduce((s,e)=>s+e[1],0),_mult=apport>0?(_gain/apport):0;
+  _setI("iWf",_gain>=0
+    ?`Sur ${H} ans, votre apport de <b>${eur0(apport)} \u20ac</b> se transforme en un <b>gain net de ${eur0(_gain)} \u20ac</b> apr\u00e8s revente, frais et imp\u00f4ts${apport>0?`, soit environ <b>${(1+_mult).toFixed(1).replace('.',',')} fois</b> votre mise`:``}.`
+    :`Sur ${H} ans, l'op\u00e9ration d\u00e9gage une <b>perte nette de ${eur0(-_gain)} \u20ac</b> sur votre apport de ${eur0(apport)} \u20ac (revente, frais et imp\u00f4ts inclus).`);
   // tuiles
   const gp=r.price?(bp-r.price)/r.price*100:0;const dPrixEl=$("dPrix");
   if(Math.abs(gp)<2){dPrixEl.textContent="Au prix du march\u00e9";dPrixEl.className="dt-v neu";}
@@ -1467,6 +1558,49 @@ function renderProjection(r){
   vEl.className="verdict "+cls;
   vEl.innerHTML=`${txt}<div class="vsub">VAN ${van>=0?"positive":"n\u00e9gative"} de ${eur(van)} (le projet ${van>=0?"bat":"ne bat pas"} votre taux d'actualisation de ${(rate*100).toFixed(1).replace('.',',')} %). Cash-flow mensuel initial ${cf1/12>=0?"+":""}${eur(cf1/12)}, qui remonte apr\u00e8s la fin du cr\u00e9dit. Revente optimale vers l'an ${opt}.</div>`;
   renderDecision(r,{van:van,cf1m:cf1/12,gp:gp,bp:bp,apport:apport});
+  renderScenarios(r);
+}
+/* ===== Coeur de calcul pur reutilisable (memes formules que renderProjection) ===== */
+function projParams(r){
+  const bp=numv("prixAchat")||r.price;
+  const mkt=r.dyn?(r.dyn.score<40?0.004:r.dyn.score<66?0.002:0):0.002,rsk=r.dyn?r.dyn.risque*0.0015:0.0015;
+  const autoRate=OAT10/100+0.006+mkt+rsk,over=numv("discRate")>0;
+  return {bp:bp,apport:numv("iApport"),taux:numv("iTaux")/100,assur:numv("iAssur")/100,duree:Number($("iDuree").value),reg:$("regime").value,rentY:numv("iRent")*12,charges:numv("iTaxe")+numv("iCopro")+numv("iPno")+numv("iDivers"),reval:numv("reval")/100,fv:numv("fraisVente")/100,gRent:numv("gRent")/100,gCharges:numv("gCharges")/100,H:Number($("holdYears").value),travaux:numv("iTravaux"),dossier:numv("iDossier"),garantie:numv("iGarantie"),vac:0,rate:over?numv("discRate")/100:autoRate};
+}
+function projCore(p){
+  const notaire=p.bp*notaireRate(),cout=p.bp+notaire+p.travaux+p.dossier+p.garantie;
+  const emprunt=Math.max(0,cout-p.apport),im=p.taux/12,nm=p.duree*12;
+  const mens=(p.duree>0&&emprunt>0)?(im>0?emprunt*im/(1-Math.pow(1+im,-nm)):emprunt/nm):0,ps=psRate();
+  const crdAt=t=>{if(p.duree<=0||emprunt<=0)return 0;const k=Math.min(t*12,nm);return Math.max(0,im>0?emprunt*Math.pow(1+im,k)-mens*(Math.pow(1+im,k)-1)/im:emprunt-mens*k);};
+  const cfArr=[];
+  for(let t=1;t<=50;t++){
+    const rY=p.rentY*Math.pow(1+p.gRent,t-1)*(1-p.vac/12),chY=p.charges*Math.pow(1+p.gCharges,t-1);
+    const intY=(t<=p.duree)?Math.max(0,mens*12-(crdAt(t-1)-crdAt(t))):0;
+    const insY=(t<=p.duree)?emprunt*p.assur:0,payY=(t<=p.duree)?(mens*12+emprunt*p.assur):0;
+    const amY=(p.reg==="meuble_reel"&&t<=30)?(p.bp*0.85/30+700):0;
+    cfArr.push(rY-chY-fiscalTax(p.reg,rY,chY,intY,insY,amY)-payY);
+  }
+  const iraAt=s=>{const crd=crdAt(s);return crd>0?Math.min(crd*p.taux*0.5,crd*0.03):0;};
+  const netResaleAt=s=>{const sell=p.bp*Math.pow(1+p.reval,s),fr=sell*p.fv;let acq=p.bp+notaire+(s>5?p.bp*0.15:0);if(p.reg==="meuble_reel")acq-=Math.min(p.bp*0.85,(p.bp*0.85/30+700)*s);const pvB=Math.max(0,sell-fr-acq),impot=pvB*(1-abatIR(s))*0.19+pvB*(1-abatPS(s))*ps+surtaxePV(pvB*(1-abatIR(s)));return sell-fr-impot-crdAt(s)-iraAt(s);};
+  const flows=[-p.apport];let van=-p.apport;
+  for(let t=1;t<=p.H;t++){let flow=cfArr[t-1];if(t===p.H)flow+=netResaleAt(p.H);flows.push(flow);van+=flow/Math.pow(1+p.rate,t);}
+  return {van:van,cf1m:cfArr[0]/12,tri:irr(flows)};
+}
+function renderScenarios(r){
+  const el=$("scnPanel");if(!el)return;
+  const base=projParams(r),b=projCore(base),surf=r.surface||50,mk=o=>projCore(Object.assign({},base,o));
+  const list=[
+    ["R\u00e9f\u00e9rence (vos hypoth\u00e8ses)",b,"Cas central."],
+    ["Taux d'emprunt +1 pt",mk({taux:base.taux+0.01}),"Choc de taux \u00e0 l'achat ou au refinancement."],
+    ["Prix n\u00e9goci\u00e9 -10 %",mk({bp:Math.round(base.bp*0.9/100)*100}),"Effet d'une remise obtenue."],
+    ["March\u00e9 en baisse (-1 pt/an)",mk({reval:base.reval-0.01}),"Revalorisation r\u00e9duite \u00e0 la revente."],
+    ["Vacance locative 1 mois/an",mk({vac:1}),"Environ 8 % de loyers en moins par an."],
+    ["DPE r\u00e9nov\u00e9 (passoire vers D)",mk({rentY:base.rentY*1.08,reval:base.reval+0.003,travaux:base.travaux+surf*400}),"Loyer +8 %, valeur +0,3 pt/an, travaux ~400 \u20ac/m\u00b2."]
+  ];
+  const row=(name,o,sub,isBase)=>{const dVan=o.van-b.van,vc=o.van>=0?"var(--good)":"var(--bad)",dc=Math.abs(dVan)<1?"var(--ink-soft)":dVan>0?"var(--good)":"var(--bad)",dTxt=isBase?"r\u00e9f\u00e9rence":(dVan>=0?"+":"")+eur0(dVan)+" \u20ac";return `<div style="padding:10px 0;border-bottom:1px solid var(--line)"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><div style="font-size:13.5px;font-weight:700;color:var(--ink)">${name}</div><div class="num" style="font-size:14px;font-weight:800;color:${vc};white-space:nowrap">${eur0(o.van)} \u20ac</div></div><div style="display:flex;justify-content:space-between;gap:8px;margin-top:3px;font-size:11.5px;color:var(--ink-soft)"><span>${sub}</span><span style="white-space:nowrap;text-align:right">CF ${o.cf1m>=0?"+":""}${eur0(o.cf1m)}/m \u00b7 <span style="color:${dc};font-weight:700">${dTxt}</span></span></div></div>`;};
+  const st=[mk({taux:base.taux+0.01}),mk({vac:1}),mk({reval:base.reval-0.01})];
+  const resTxt=b.van<0?"Le projet n'est d\u00e9j\u00e0 pas rentable au cas central : la priorit\u00e9 est de n\u00e9gocier le prix d'achat.":st.every(s=>s.van>=0)?"Projet <b style=\"color:var(--good)\">robuste</b> : la VAN reste positive m\u00eame sous choc de taux (+1 pt), de vacance (1 mois/an) et de baisse du march\u00e9.":st.filter(s=>s.van<0).length>=2?"Projet <b style=\"color:var(--bad)\">fragile</b> : plusieurs sc\u00e9narios d\u00e9favorables annulent la rentabilit\u00e9. Renforcez votre marge (prix n\u00e9goci\u00e9, apport, loyer vis\u00e9).":"Projet <b style=\"color:var(--warn)\">sensible</b> : certains al\u00e9as d\u00e9gradent nettement la rentabilit\u00e9. Surveillez surtout le taux et la vacance.";
+  el.innerHTML=list.map((x,i)=>row(x[0],x[1],x[2],i===0)).join("")+`<div style="margin-top:12px;padding:11px 13px;background:#eef4f7;border-radius:10px;font-size:12.5px;line-height:1.55"><b>R\u00e9silience du projet</b><br>${resTxt}</div><div class="hint" style="margin-top:8px">VAN actualis\u00e9e sur ${base.H} ans. Chaque sc\u00e9nario ne modifie qu'un param\u00e8tre (toutes choses \u00e9gales par ailleurs). Mod\u00e8le indicatif.</div>`;
 }
 
 function renderDecision(r,m){
@@ -1511,6 +1645,7 @@ function renderDecision(r,m){
   else if(score>=35)reco.push(`\u00c0 \u00e9tudier. N\u00e9gociez vers <b>${eur0(prixCible)}</b> pour renforcer la rentabilit\u00e9 ; au-del\u00e0 de <b>${eur0(prixMax)}</b>, l'int\u00e9r\u00eat diminue.`);
   else reco.push(`En l'\u00e9tat, l'op\u00e9ration est peu favorable. Une baisse vers <b>${eur0(prixCible)}</b> ou moins serait n\u00e9cessaire pour l'envisager.`);
   if(economie>0)reco.push(`En n\u00e9gociant de ${eur0(bp)} \u00e0 ${eur0(prixCible)}, vous \u00e9conomiseriez <b style="color:var(--good)">${eur0(economie)}</b>.`);
+  try{const _p=projParams(r),_b=projCore(_p),_s=[projCore(Object.assign({},_p,{taux:_p.taux+0.01})),projCore(Object.assign({},_p,{vac:1})),projCore(Object.assign({},_p,{reval:_p.reval-0.01}))];if(_b.van>=0){if(_s.every(x=>x.van>=0))reco.push(`Projet <b style="color:var(--good)">robuste</b> face aux al\u00e9as (taux +1 pt, vacance, march\u00e9 en baisse).`);else if(_s.filter(x=>x.van<0).length>=2)reco.push(`Projet <b style="color:var(--bad)">fragile</b> : plusieurs sc\u00e9narios d\u00e9favorables annulent la rentabilit\u00e9 (voir Sc\u00e9narios).`);else reco.push(`Projet <b style="color:var(--warn)">sensible</b> au taux et \u00e0 la vacance (voir Sc\u00e9narios).`);}}catch(e){}
   const dash=(score/100*226).toFixed(0);
   const cell=(l,v,c)=>`<div style="background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 10px;text-align:center"><div style="font-size:10px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.3px">${l}</div><div class="num" style="font-size:15px;font-weight:800;margin-top:3px;color:${c||'var(--ink)'}">${v}</div></div>`;
   const block=(title,arr,c)=>arr.length?`<div style="margin-bottom:9px"><div style="font-size:12px;font-weight:700;color:${c};margin-bottom:4px">${title}</div>${arr.map(x=>`<div style="font-size:13px;line-height:1.5;color:var(--ink);padding-left:14px;position:relative"><span style="position:absolute;left:0;color:${c}">&bull;</span>${x}</div>`).join("")}</div>`:"";
