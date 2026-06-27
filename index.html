@@ -91,6 +91,7 @@
   .wnav button{flex:1;padding:14px;border-radius:14px;border:1.5px solid var(--line);background:#fff;color:var(--ink);font-family:var(--display);font-weight:700;font-size:15px;cursor:pointer;transition:transform .12s,background .15s}
   .wnav #wNext{flex:2;background:var(--brand-dark);color:#fff;border-color:var(--brand-dark)}
   .wnav button:active{transform:scale(.98)}
+  .autofill-note{margin-top:10px;padding:10px 12px;background:#eaf5ee;border:1px solid #cfe9d8;border-radius:10px;font-size:12.5px;line-height:1.5;color:#1f6b3f}
 
   .cta{width:100%;font-family:var(--display);font-weight:700;font-size:16px;color:#fff;background:linear-gradient(135deg,var(--brand),var(--brand-dark));border:none;border-radius:var(--r-sm);padding:16px;cursor:pointer;margin-top:14px;box-shadow:0 8px 18px rgba(15,179,158,.28);transition:.15s}
   .cta:hover{transform:translateY(-1px);box-shadow:0 12px 22px rgba(15,179,158,.34)}
@@ -234,6 +235,7 @@
       <input class="input" id="adresse" type="text" autocomplete="off" placeholder="N, rue, ville - puis choisissez une suggestion" />
       <div class="ac-list" id="acList"></div>
     </div>
+    <div id="autofillNote" class="autofill-note" style="display:none"></div>
     <div class="field" id="cpVilleRow" style="display:none"><div class="row">
       <div><label class="lbl" for="cp">Code postal</label><input class="input num" id="cp" type="text" inputmode="numeric" maxlength="5" placeholder="69002" /></div>
       <div><label class="lbl" for="ville">Ville</label><input class="input" id="ville" type="text" placeholder="Lyon" /></div>
@@ -682,7 +684,46 @@ function updateTypeUI(){const t=state.type;
 let acTimer=null;
 $("adresse").addEventListener("input",e=>{const q=e.target.value.trim();state.coord=null;state.live=null;$("cp").value="";$("ville").value="";clearTimeout(acTimer);if(q.length<4){closeAc();return;}acTimer=setTimeout(()=>fetchBan(q),250);});
 function closeAc(){$("acList").classList.remove("open");$("acList").innerHTML="";}
-async function fetchBan(q){try{const r=await fetchT("https://api-adresse.data.gouv.fr/search/?limit=5&q="+encodeURIComponent(q),6000);if(!r.ok)throw 0;const d=await r.json();const list=$("acList");list.innerHTML="";(d.features||[]).forEach(f=>{const p=f.properties,c=f.geometry.coordinates;const div=document.createElement("div");div.className="ac-item";div.innerHTML=`${p.label}<span class="ac-sub">${p.context||""}</span>`;div.addEventListener("click",()=>{$("adresse").value=p.label;$("cp").value=p.postcode||"";$("ville").value=p.city||"";state.coord={lat:c[1],lon:c[0],label:p.label,insee:p.citycode};closeAc();});list.appendChild(div);});list.classList.toggle("open",(d.features||[]).length>0);}catch(_){closeAc();}}
+async function fetchBan(q){try{const r=await fetchT("https://api-adresse.data.gouv.fr/search/?limit=5&q="+encodeURIComponent(q),6000);if(!r.ok)throw 0;const d=await r.json();const list=$("acList");list.innerHTML="";(d.features||[]).forEach(f=>{const p=f.properties,c=f.geometry.coordinates;const div=document.createElement("div");div.className="ac-item";div.innerHTML=`${p.label}<span class="ac-sub">${p.context||""}</span>`;div.addEventListener("click",()=>{$("adresse").value=p.label;$("cp").value=p.postcode||"";$("ville").value=p.city||"";state.coord={lat:c[1],lon:c[0],label:p.label,insee:p.citycode};closeAc();autoFillFromAddress(state.coord);});list.appendChild(div);});list.classList.toggle("open",(d.features||[]).length>0);}catch(_){closeAc();}}
+/* ===== Vague 2 : auto-remplissage depuis donnees publiques (ADEME DPE + altitude), pre-rempli & modifiable ===== */
+function _afTouch(){if(!window._afApplying)state._energyTouched=true;}
+(function(){["segDpe","segGes"].forEach(id=>{const el=$(id);if(el)el.addEventListener("click",_afTouch);});const e=$("epoque");if(e)e.addEventListener("change",_afTouch);})();
+async function autoFillFromAddress(coord){
+  if(!coord)return;
+  state._energyTouched=false;
+  const nb=$("autofillNote");if(nb)nb.style.display="none";
+  // Altitude (Open-Meteo elevation)
+  try{const al=await dvfFetch("https://api.open-meteo.com/v1/elevation?latitude="+coord.lat+"&longitude="+coord.lon);
+    if(al&&al.json&&al.json.elevation&&al.json.elevation.length){coord.alt=Math.round(al.json.elevation[0]);const lc=$("locCoord");if(lc&&state.coord===coord&&lc.textContent&&lc.textContent.indexOf("alt.")<0&&/\d/.test(lc.textContent))lc.textContent=lc.textContent.replace(" \u00b7 carte"," \u00b7 alt. "+coord.alt+" m \u00b7 carte");}
+  }catch(_){}
+  // DPE ADEME le plus recent a proximite
+  try{
+    const sel=encodeURIComponent("etiquette_dpe,etiquette_ges,annee_construction,type_batiment,date_etablissement_dpe,surface_habitable_logement,adresse_ban");
+    const url="https://data.ademe.fr/data-fair/api/v1/datasets/dpe-v2-logements-existants/lines?geo_distance="+coord.lon+","+coord.lat+",150m&size=1&sort=-date_etablissement_dpe&select="+sel;
+    const d=await dvfFetch(url);
+    if(DEBUG&&d&&d.raw)dbg("ADEME brut:\n"+d.raw.slice(0,280));
+    const rows=(d&&d.json&&(d.json.results||d.json.data))||[];const o=rows[0];
+    if(o)autofillApply(o);
+    else if(DEBUG)dbg("ADEME DPE: aucun resultat a 150m");
+  }catch(_){ if(DEBUG)dbg("ADEME DPE: echec relais"); }
+}
+function autofillApply(o){
+  if(state._energyTouched)return; // ne jamais ecraser une saisie de l'utilisateur
+  const done=[],V="ABCDEFG";
+  const dpe=String(o.etiquette_dpe||o.classe_consommation_energie||"").toUpperCase().trim();
+  const ges=String(o.etiquette_ges||o.classe_estimation_ges||"").toUpperCase().trim();
+  const an=parseInt(o.annee_construction,10)||0;
+  window._afApplying=true;
+  if(dpe&&V.indexOf(dpe)>=0){const b=document.querySelector('#segDpe button[data-v="'+dpe+'"]');if(b){b.click();done.push("DPE "+dpe);}}
+  if(ges&&V.indexOf(ges)>=0){const b=document.querySelector('#segGes button[data-v="'+ges+'"]');if(b){b.click();done.push("GES "+ges);}}
+  if(an>1700){const yr=new Date().getFullYear();const ep=an<1949?"avant1948":an<=1974?"1949_1974":an<=2000?"1975_2000":(yr-an<5?"neuf":"apres2000");const e=$("epoque");if(e){e.value=ep;done.push("construction "+an);}}
+  window._afApplying=false;
+  if(done.length){
+    const dt=o.date_etablissement_dpe?(" du "+String(o.date_etablissement_dpe).slice(0,10)):"";
+    const note=$("autofillNote");if(note){note.textContent="\u2139\ufe0f Pre-rempli depuis un DPE public proche"+dt+" : "+done.join(", ")+". Verifiez et corrigez si besoin.";note.style.display="";}
+    if(DEBUG)dbg("Autofill applique: "+done.join(", "));
+  }
+}
 document.addEventListener("click",e=>{if(!e.target.closest(".ac-wrap"))closeAc();});
 
 /* ===== DVF r\u00e9el (cquest, repli d\u00e9mo) ===== */
@@ -1203,7 +1244,7 @@ async function showResults(){
   const tot=document.createElement("div");tot.className="bd-row";tot.style.cssText="border-top:1px solid var(--line);margin-top:6px;padding-top:8px;font-weight:700";tot.innerHTML=`<span>= Valeur estim\u00e9e</span><span>${eur(r.price)}</span>`;bd.appendChild(tot);
   renderInsee(r);renderMarket(r);renderLocStats(r);renderDvfStats(r);genComparables(r);
   $("locAddr").textContent=state.coord?.label||(($("ville").value||"")+" "+$("cp").value).trim();
-  $("locCoord").textContent=state.coord?`${state.coord.lat.toFixed(4)}, ${state.coord.lon.toFixed(4)} \u00b7 carte interactive dans la version h\u00e9berg\u00e9e`:"Carte interactive disponible dans la version h\u00e9berg\u00e9e";
+  $("locCoord").textContent=state.coord?`${state.coord.lat.toFixed(4)}, ${state.coord.lon.toFixed(4)}${state.coord.alt!=null?" \u00b7 alt. "+state.coord.alt+" m":""} \u00b7 carte interactive dans la version h\u00e9berg\u00e9e`:"Carte interactive disponible dans la version h\u00e9berg\u00e9e";
   const dpeCostHi=renderDpe();
   $("iTravaux").value=dpeCostHi>0?Math.round(dpeCostHi*0.8/1000)*1000:0; // suggestion travaux \u2248 80% du haut de fourchette
   renderRentalDefaults(r);
