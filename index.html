@@ -406,6 +406,13 @@
     <section class="card expert-only" id="reportCard" style="order:0"><div class="card-head"><div class="step-no">&#128221;</div><div><h2>Rapport d'analyse</h2><div class="sub">Synth&#232;se r&#233;dig&#233;e automatiquement &#224; partir de vos donn&#233;es</div></div></div><div id="reportPanel"></div></section>
     <section class="card expert-only" id="proKpiCard" style="order:4"><div class="card-head"><div class="step-no">&#128202;</div><div><h2>Tableau de bord investisseur</h2><div class="sub">Ratios financiers professionnels &#8212; calcul&#233;s en direct</div></div></div><div id="proKpiPanel"></div></section>
     <section class="card expert-only" id="fiscalCard" style="order:5"><div class="card-head"><div class="step-no">&#9878;&#65039;</div><div><h2>Comparateur fiscal</h2><div class="sub">Tous les r&#233;gimes compar&#233;s &#8212; recommandation automatique</div></div></div><div id="fiscalPanel"></div></section>
+    <section class="card expert-only" id="dispositifCard" style="order:5"><div class="card-head"><div class="step-no">&#127963;&#65039;</div><div><h2>Dispositifs de d&#233;fiscalisation</h2><div class="sub">Pinel, Denormandie, Malraux, Monuments Historiques, holding</div></div></div>
+      <div><label class="lbl" for="dispositif">Dispositif</label><select class="input" id="dispositif"><option value="none">Aucun (droit commun)</option><option value="pinel">Pinel (neuf, 2024)</option><option value="pinelplus">Pinel+ (neuf, qualit&#233;)</option><option value="denormandie">Denormandie (ancien + travaux)</option><option value="malraux">Malraux (restauration SPR)</option><option value="mh">Monuments Historiques</option><option value="holding">Holding (structuration)</option></select></div>
+      <div id="dispoTravauxRow" style="display:none;margin-top:10px"><label class="lbl" for="dispoTravaux">Montant des travaux</label><div class="with-unit"><input class="input num" id="dispoTravaux" type="number" min="0" /><span class="unit">&#8364;</span></div></div>
+      <div id="dispoDureeRow" style="display:none;margin-top:10px"><label class="lbl" for="dispoDuree">Engagement de location</label><select class="input" id="dispoDuree"><option value="6">6 ans</option><option value="9" selected>9 ans</option><option value="12">12 ans</option></select></div>
+      <div id="dispoZoneRow" style="display:none;margin-top:10px"><label class="lbl" for="dispoZone">Secteur (Malraux)</label><select class="input" id="dispoZone"><option value="0.30">PSMV / secteur sauvegard&#233; (30 %)</option><option value="0.22">PVAP / autre SPR (22 %)</option></select></div>
+      <div id="dispoResult"></div>
+    </section>
 
     <section class="card price-card" style="order:1">
       <div class="pc-eyebrow">Estimation</div>
@@ -578,11 +585,13 @@
     </section>
 
     <!-- OP&#201;RATION ACHAT-REVENTE -->
+    <section class="card expert-only" style="order:6" id="worksCard"><div class="card-head"><div class="step-no">&#128296;</div><div><h2>Valorisation des travaux</h2><div class="sub">Co&#251;t, dur&#233;e, plus-value et ROI par poste</div></div></div><div id="worksPanel"></div></section>
     <section class="card" style="order:6" id="opCard">
       <div class="card-head"><div class="step-no">8</div><div><h2>Op&#233;ration achat-revente</h2><div class="sub">Prix de revient, marge nette et rentabilit&#233; de l'op&#233;ration</div></div></div>
       <div class="seg" id="segProfil" style="margin-bottom:8px"><button data-v="particulier" class="on">Particulier</button><button data-v="mdb">Marchand de biens</button></div>
       <div class="hint" id="opProfilNote" style="margin-bottom:12px"></div>
       <div class="field" style="margin-bottom:14px"><label class="lbl" for="opSellTarget">Prix de revente vis&#233; (post-travaux) &#8212; optionnel</label><input class="input num" id="opSellTarget" type="number" min="0" placeholder="vide = projection par l'appr&#233;ciation du march&#233;" /></div>
+      <div class="field" id="opDureeRow" style="margin-bottom:14px"><label class="lbl" for="opDureeMois">Dur&#233;e de l'op&#233;ration (marchand de biens)</label><div class="with-unit"><input class="input num" id="opDureeMois" type="number" min="1" value="12" /><span class="unit">mois</span></div></div>
 
       <div class="subhead" style="margin-top:0">Prix de revient</div>
       <div class="line-item"><span class="li-l">Prix d'achat</span><span class="num" id="opAchat">&#8212;</span></div>
@@ -595,7 +604,10 @@
       <div class="subhead">Revente</div>
       <div class="line-item"><span class="li-l">Prix de revente projet&#233;</span><span class="num" id="opRevente">&#8212;</span></div>
       <div class="line-item"><span class="li-l">Frais de vente</span><span class="num" id="opFraisVente">&#8212;</span></div>
-      <div class="line-item"><span class="li-l" id="opFiscLabel">Fiscalit&#233; &#224; la revente</span><span class="num" id="opFisc">&#8212;</span></div>
+      <div class="line-item total"><span>Marge brute de l'op&#233;ration</span><span class="num" id="opMargeBrute">&#8212;</span></div>
+      <div class="line-item" id="opTvaRow" style="display:none"><span class="li-l">TVA sur marge (20 %)</span><span class="num" id="opTva">&#8212;</span></div>
+      <div class="line-item" id="opIsRow" style="display:none"><span class="li-l">IS (15 / 25 %)</span><span class="num" id="opIs">&#8212;</span></div>
+      <div class="line-item" id="opPvRow"><span class="li-l" id="opFiscLabel">Fiscalit&#233; &#224; la revente</span><span class="num" id="opFisc">&#8212;</span></div>
       <div class="line-item total"><span>Marge nette de l'op&#233;ration</span><span class="num" id="opMarge">&#8212;</span></div>
 
       <div class="metric" style="margin-top:14px"><div class="ml">Taux de marge (marge / prix de revient)</div><div class="mv" id="opTaux" style="font-size:22px">&#8212;</div><div class="mh" id="opTauxH">rentabilit&#233; de l'op&#233;ration</div></div>
@@ -1162,6 +1174,7 @@ function renderRentalDefaults(r){
   fillRegimes();
   computeAll(r);
   updRentVsMkt();
+  renderWorks();
 }
 function updRentVsMkt(){
   const r=lastResult,el=$("rentVsMkt");if(!el)return;
@@ -1182,6 +1195,41 @@ function updRentVsMkt(){
    `<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--ink-soft)"><span>\u221230 %</span><span style="color:#0a8f7e;font-weight:700">zone de march\u00e9</span><span>+30 %</span></div>`;
 }
 
+/* ===== Vague 6 : dispositifs de defiscalisation (Pinel, Denormandie, Malraux, MH, holding) ===== */
+function renderDispositif(){
+  const r=lastResult,el=$("dispoResult");if(!r||!el)return;
+  const d=$("dispositif").value,bp=numv("prixAchat")||r.price,surf=r.surface||1;
+  const tmi=margRate()||0.30,trav=numv("dispoTravaux"),duree=Number($("dispoDuree").value)||9;
+  $("dispoTravauxRow").style.display=(d==="denormandie"||d==="malraux"||d==="mh")?"":"none";
+  $("dispoDureeRow").style.display=(d==="pinel"||d==="pinelplus"||d==="denormandie")?"":"none";
+  $("dispoZoneRow").style.display=(d==="malraux")?"":"none";
+  const box=(title,total,annual,years,cond,warn)=>`<div style="margin-top:10px;padding:12px 13px;background:#eef7f3;border-radius:11px;border-left:4px solid var(--good)"><div style="font-weight:800;color:#0a8f7e;font-size:13.5px">${title}</div><div style="display:flex;gap:18px;margin-top:6px;flex-wrap:wrap"><div><div style="font-size:10px;color:var(--ink-soft);text-transform:uppercase">Avantage total</div><div class="num" style="font-size:20px;font-weight:800;color:#0a8f7e">${eur0(total)}</div></div><div><div style="font-size:10px;color:var(--ink-soft);text-transform:uppercase">Par an${years?" (~"+years+" ans)":""}</div><div class="num" style="font-size:20px;font-weight:800;color:var(--ink)">${eur0(annual)}</div></div></div></div><div style="margin-top:9px;font-size:11.5px;color:var(--ink);line-height:1.55"><b>Conditions cl\u00e9s :</b><ul style="margin:4px 0 0;padding-left:18px">${cond.map(c=>`<li style="margin-top:2px">${c}</li>`).join("")}</ul></div><div class="hint" style="margin-top:8px">${warn}</div>`;
+  if(d==="none"){el.innerHTML='<div class="hint" style="margin-top:8px">S\u00e9lectionnez un dispositif pour estimer l\'avantage fiscal. Calculs indicatifs supposant l\'\u00e9ligibilit\u00e9 remplie.</div>';return;}
+  if(d==="pinel"||d==="pinelplus"){
+    const base=Math.min(bp,300000,5500*surf),rates=d==="pinelplus"?{6:0.12,9:0.18,12:0.21}:{6:0.09,9:0.12,12:0.14};
+    const total=base*rates[duree],annual=total/duree;
+    el.innerHTML=box((d==="pinelplus"?"Pinel+ ":"Pinel ")+duree+" ans \u2014 r\u00e9duction d'imp\u00f4t",total,annual,duree,
+      ["Logement neuf ou VEFA, zone A, A bis ou B1","Engagement de location "+duree+" ans (nu, r\u00e9sidence principale)","Plafonds de loyer et de ressources du locataire","Base : min(prix, 300 000 \u20ac, 5 500 \u20ac/m\u00b2) = "+eur0(base),(d==="pinelplus"?"Taux Pinel+ (crit\u00e8res de qualit\u00e9 requis) : 12 / 18 / 21 %":"Taux 2024 : 9 / 12 / 14 % sur 6 / 9 / 12 ans")],
+      "<b>Pinel cl\u00f4tur\u00e9 pour toute nouvelle acquisition depuis le 31/12/2024.</b> Bar\u00e8me indicatif \u2014 \u00e0 confirmer.");
+  } else if(d==="denormandie"){
+    const base=Math.min(bp+trav,300000,5500*surf),rates={6:0.12,9:0.18,12:0.21},total=base*rates[duree],annual=total/duree,wOk=trav>=(bp+trav)*0.25;
+    el.innerHTML=box("Denormandie "+duree+" ans \u2014 r\u00e9duction d'imp\u00f4t",total,annual,duree,
+      ["Logement ancien \u00e0 r\u00e9nover, commune \u00e9ligible (ORT / Action C\u0153ur de Ville)","Travaux &#8805; 25 % du co\u00fbt total "+(wOk?"(rempli)":"<b style='color:var(--bad)'>(non rempli : "+(bp+trav>0?Math.round(trav/(bp+trav)*100):0)+" %)</b>"),"Engagement "+duree+" ans, plafonds loyer/ressources","Base : min(prix + travaux, 300 000 \u20ac, 5 500 \u20ac/m\u00b2) = "+eur0(base)],
+      "M\u00eames taux que le Pinel classique (12 / 18 / 21 %). Prorog\u00e9 jusqu'en 2027. Indicatif \u2014 \u00e0 confirmer.");
+  } else if(d==="malraux"){
+    const zone=Number($("dispoZone").value)||0.30,capTot=Math.min(trav,400000),total=capTot*zone,years=Math.max(1,Math.ceil(capTot/100000)),annual=total/years;
+    el.innerHTML=box("Malraux \u2014 r\u00e9duction d'imp\u00f4t sur les travaux",total,annual,years,
+      ["Immeuble en Site Patrimonial Remarquable, restauration compl\u00e8te sous ABF","Taux "+Math.round(zone*100)+" % "+(zone===0.30?"(SPR avec PSMV / secteur sauvegard\u00e9)":"(SPR avec PVAP)"),"Travaux plafonn\u00e9s \u00e0 400 000 \u20ac sur 4 ans (retenu : "+eur0(capTot)+")","Engagement de location 9 ans (nu, r\u00e9sidence principale)"],
+      "R\u00e9duction imput\u00e9e l'ann\u00e9e de paiement des travaux. Hors plafonnement global des niches fiscales. Indicatif \u2014 \u00e0 confirmer.");
+  } else if(d==="mh"){
+    const saving=trav*tmi;
+    el.innerHTML=box("Monuments Historiques \u2014 \u00e9conomie d'imp\u00f4t",saving,saving,1,
+      ["Immeuble class\u00e9 ou inscrit aux Monuments Historiques","Travaux et int\u00e9r\u00eats d\u00e9ductibles \u00e0 100 % du revenu global, sans plafond","\u00c9conomie &#8776; travaux ("+eur0(trav)+") &#215; taux marginal ("+Math.round(tmi*100)+" %)","R\u00e9gime sp\u00e9cifique selon que le bien est lou\u00e9 ou non"],
+      "Tr\u00e8s efficace \u00e0 TMI \u00e9lev\u00e9e : l'avantage est l'imp\u00f4t \u00e9vit\u00e9 sur le revenu global. Indicatif \u2014 \u00e0 valider avec un conseil sp\u00e9cialis\u00e9.");
+  } else if(d==="holding"){
+    el.innerHTML=`<div style="margin-top:10px;padding:12px 13px;background:var(--bg);border-radius:11px;border-left:4px solid var(--brand-dark)"><div style="font-weight:800;color:var(--brand-dark);font-size:13.5px">Holding patrimoniale \u2014 outil de structuration</div><div style="font-size:12px;color:var(--ink);line-height:1.6;margin-top:5px">Une holding (SAS/SARL) d\u00e9tenant vos soci\u00e9t\u00e9s (SCI, SARL de famille) n'est pas un dispositif de d\u00e9fiscalisation, mais un cadre d'optimisation :</div><ul style="margin:6px 0 0;padding-left:18px;font-size:11.5px;color:var(--ink);line-height:1.6"><li><b>R\u00e9gime m\u00e8re-fille</b> : 95 % des dividendes remont\u00e9s exon\u00e9r\u00e9s d'IS</li><li><b>Int\u00e9gration fiscale</b> (d\u00e9tention &#8805; 95 %) : compensation des r\u00e9sultats du groupe</li><li><b>Effet de levier</b> : la holding emprunte, rembours\u00e9e par les dividendes des filiales</li><li><b>Report d'imposition</b> (apport-cession, art. 150-0 B ter) \u00e0 la transmission</li></ul></div><div class="hint" style="margin-top:8px">Pertinent pour un patrimoine important multi-biens. \u00c0 faire valider par un avocat fiscaliste. Pas de chiffrage automatique (d\u00e9pend de la structure globale).</div>`;
+  }
+}
 /* ===== Vague 6 : comparateur fiscal des regimes de revenus locatifs ===== */
 function compareRegimes(R,C,I,ins,amort){
   const t_nm=fiscalTax("nue_micro",R,C,I,ins,amort),t_nr=fiscalTax("nue_reel",R,C,I,ins,amort);
@@ -1299,6 +1347,7 @@ function computeAll(r){
   else gapEl.innerHTML=`<b style="color:${gp>0?'var(--bad)':'var(--good)'}">${gp>0?'+':''}${gp.toFixed(1)} %</b> ${gp>0?'au-dessus':'en dessous'} de la valeur estim\u00e9e (${eur(r.price)}).`;
   renderProKpis(r,{rentY:rentY,charges:charges,bp:bp,coutTotal:coutTotal,emprunt:emprunt,mensuTot:mensuTot,apport:apport});
   renderFiscalCompare(r);
+  renderDispositif();
 }
 function setMetric(el,txt,val,isCash){el.textContent=txt;el.classList.remove("good","warn","bad");if(isCash){el.classList.add(val>=0?"good":"bad");return;}el.classList.add(val>=5.5?"good":val>=3.5?"warn":"bad");}
 
@@ -1431,13 +1480,14 @@ $("btnEstim").addEventListener("click",showResults);
 })();
 ["discRate"].forEach(id=>{$(id).addEventListener("input",()=>{if(lastResult)renderProjection(lastResult);});});
 ["prixAchat","iRent","iTaxe","iCopro","iPno","iDivers","iApport","iTaux","iAssur","iDossier","iGarantie","iDuree","iTravaux","tmi","regime"].forEach(id=>{const h=()=>{if(lastResult){computeAll(lastResult);computeResale(lastResult);renderScatter(lastResult);updRentVsMkt();}};$(id).addEventListener("input",h);$(id).addEventListener("change",h);});
+["dispositif","dispoTravaux","dispoDuree","dispoZone"].forEach(id=>{const e=$(id);if(e){e.addEventListener("input",renderDispositif);e.addEventListener("change",renderDispositif);}});
 ["holdYears","reval","fraisVente","gRent","gCharges"].forEach(id=>{$(id).addEventListener("input",()=>{if(lastResult)computeResale(lastResult);});$(id).addEventListener("change",()=>{if(lastResult)computeResale(lastResult);});});
 bindSeg("segStatut","statut",()=>{const nr=state.statut==="nonresident";$("chkEEE").style.display=nr?"flex":"none";$("tmi").style.display=nr?"none":"";$("tmiNR").style.display=nr?"block":"none";$("tmiLabel").textContent=nr?"Imposition (non-r\u00e9sident)":"Tranche d'imp\u00f4t (TMI)";$("tmiNote").style.display=nr?"block":"none";if(lastResult){computeAll(lastResult);computeResale(lastResult);}});
 bindSeg("segNeuf","neuf",()=>{if(lastResult){computeAll(lastResult);computeResale(lastResult);}});
 bindSeg("segProfil","profil",()=>{if(lastResult)renderOperation(lastResult);});
 $("btnFiche").addEventListener("click",()=>{if(lastResult)printFiche(lastResult);});
 $("btnExportComps").addEventListener("click",()=>{if(lastResult)exportComps(lastResult);});
-["opSellTarget"].forEach(id=>{$(id).addEventListener("input",()=>{if(lastResult)renderOperation(lastResult);});$(id).addEventListener("change",()=>{if(lastResult)renderOperation(lastResult);});});
+["opSellTarget","opDureeMois"].forEach(id=>{$(id).addEventListener("input",()=>{if(lastResult)renderOperation(lastResult);});$(id).addEventListener("change",()=>{if(lastResult)renderOperation(lastResult);});});
 $("segView").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{$("segView").querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on");$("results").classList.toggle("lean",b.dataset.v==="lean");}));
 $("eee").addEventListener("change",()=>{if(lastResult){computeAll(lastResult);computeResale(lastResult);}});
 $("buyChips").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{if(!lastResult)return;const pct=Number(b.dataset.pct);$("prixAchat").value=Math.round(lastResult.price*(1+pct/100));computeAll(lastResult);computeResale(lastResult);renderScatter(lastResult);}));
@@ -1581,6 +1631,38 @@ function waterfallSVG(items,opts){const W=340,Ht=214,pl=8,pr=8,pt=10,pb=52,iw=W-
   [...items.map(it=>it[0]),opts.totalLabel||"Solde"].forEach((l,i)=>{s+=`<text x="${cx(i).toFixed(1)}" y="${Ht-30}" text-anchor="end" font-size="8" fill="#6b7a89" transform="rotate(-42 ${cx(i).toFixed(1)} ${Ht-30})">${l}</text>`;});
   return s+"</svg>";
 }
+/* ===== Vague 7 : valorisation des travaux (cout, duree, plus-value, ROI par poste) ===== */
+var WORKS_POSTES=[
+  {id:"peinture",lbl:"Peinture / rafra\u00eechissement",c:function(s){return s*35;},d:2,rec:1.6},
+  {id:"sols",lbl:"Sols (parquet, carrelage)",c:function(s){return s*55;},d:2,rec:1.2},
+  {id:"cuisine",lbl:"Cuisine \u00e9quip\u00e9e",c:function(s){return 9000;},d:2,rec:1.1},
+  {id:"sdb",lbl:"Salle de bain",c:function(s){return 7000;},d:2,rec:1.05},
+  {id:"elec",lbl:"\u00c9lectricit\u00e9 (mise aux normes)",c:function(s){return s*90;},d:2,rec:0.75},
+  {id:"plomb",lbl:"Plomberie",c:function(s){return s*60;},d:1.5,rec:0.75},
+  {id:"isol",lbl:"Isolation + DPE",c:function(s){return s*85;},d:2,rec:1.3},
+  {id:"menui",lbl:"Menuiseries (double vitrage)",c:function(s){return s*120;},d:1.5,rec:1.1},
+  {id:"chauff",lbl:"Chauffage (PAC / chaudi\u00e8re)",c:function(s){return 11000;},d:1,rec:0.9},
+  {id:"staging",lbl:"Home staging",c:function(s){return s*25;},d:1,rec:2.0}
+];
+var worksSel={};
+function renderWorks(){
+  var r=lastResult,el=$("worksPanel");if(!r||!el)return;
+  var S=r.surface||50;
+  var list=WORKS_POSTES.map(function(p){var cost=Math.round(p.c(S)/100)*100,on=!!worksSel[p.id];
+    return '<label class="works-item" data-id="'+p.id+'" style="display:flex;justify-content:space-between;align-items:center;padding:9px 11px;border:1.5px solid '+(on?'var(--brand-dark)':'var(--line)')+';border-radius:10px;background:'+(on?'#eef7f5':'var(--bg)')+';cursor:pointer"><span style="display:flex;align-items:center;gap:9px"><input type="checkbox" '+(on?'checked':'')+' style="accent-color:var(--brand-dark);width:17px;height:17px"><span style="font-size:12.5px;color:var(--ink)">'+p.lbl+'</span></span><span class="num" style="font-size:12px;font-weight:700;color:var(--ink-soft)">'+eur0(cost)+'</span></label>';}).join("");
+  var cost=0,val=0,dur=0;WORKS_POSTES.forEach(function(p){if(worksSel[p.id]){var c=Math.round(p.c(S)/100)*100;cost+=c;val+=c*p.rec;dur+=p.d;}});
+  var duree=cost>0?Math.round(1+dur*0.6):0,pv=val-cost,roi=cost>0?pv/cost*100:0;
+  var sum;
+  if(cost>0){
+    var cells=[["Co\u00fbt total des travaux",eur0(cost),"var(--ink)"],["Dur\u00e9e estim\u00e9e",duree+" sem.","var(--ink)"],["Plus-value g\u00e9n\u00e9r\u00e9e",(pv>=0?"+":"")+eur0(pv),pv>=0?"var(--good)":"var(--bad)"],["ROI des travaux",(roi>=0?"+":"")+roi.toFixed(0)+" %",roi>=50?"var(--good)":roi>=0?"var(--warn)":"var(--bad)"]];
+    sum='<div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:9px">'+cells.map(function(t){return '<div style="background:var(--bg);border-radius:10px;padding:9px 11px"><div style="font-size:10px;color:var(--ink-soft);text-transform:uppercase">'+t[0]+'</div><div class="num" style="font-size:17px;font-weight:800;color:'+t[2]+'">'+t[1]+'</div></div>';}).join("")+'</div>'+
+      '<div style="margin-top:10px"><button id="worksApply" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--brand-dark);background:#fff;color:var(--brand-dark);font-weight:700;font-size:13px;cursor:pointer">Reporter '+eur0(cost)+' dans \u00ab Travaux \u00e0 financer \u00bb</button></div>'+
+      '<div class="hint" style="margin-top:8px">Co\u00fbts indicatifs (fourchettes de march\u00e9 ajust\u00e9es \u00e0 la surface). \u00ab Plus-value g\u00e9n\u00e9r\u00e9e \u00bb = part du co\u00fbt r\u00e9cup\u00e9r\u00e9e \u00e0 la revente (taux de r\u00e9cup\u00e9ration par poste : peinture/home staging \u00e9lev\u00e9s, \u00e9lectricit\u00e9/plomberie plus faibles). Le r\u00e9sultat r\u00e9el d\u00e9pend du march\u00e9 local et de l\'\u00e9tat initial. Mod\u00e8le indicatif.</div>';
+  } else sum='<div class="hint" style="margin-top:12px">Cochez les postes de travaux pr\u00e9vus pour estimer le budget, la dur\u00e9e, la plus-value et le ROI.</div>';
+  el.innerHTML='<div style="display:flex;flex-direction:column;gap:6px">'+list+'</div>'+sum;
+  el.querySelectorAll('input[type=checkbox]').forEach(function(cb){cb.addEventListener("change",function(){worksSel[cb.closest('.works-item').dataset.id]=cb.checked;renderWorks();});});
+  var ap=$("worksApply");if(ap)ap.addEventListener("click",function(){$("iTravaux").value=cost;if(lastResult){computeAll(lastResult);computeResale(lastResult);}});
+}
 /* ===== Op\u00e9ration achat-revente (particulier OU marchand de biens) ===== */
 function notaireRateMdB(years){
   if(years>5)return notaireRate(); // engagement de revente sous 5 ans rompu \u2192 droits pleins
@@ -1592,33 +1674,34 @@ function opCalc(r,sellPrice,works){
   const years=Number($("holdYears").value);
   const fv=numv("fraisVente")/100;
   const profil=state.profil;
+  const opYears=profil==="mdb"?(numv("opDureeMois")||12)/12:years;
   const duree=Number($("iDuree").value),taux=numv("iTaux")/100,apport=numv("iApport");
   const chargesAn=numv("iTaxe")+numv("iCopro")+numv("iPno")+numv("iDivers");
   const acqRate=profil==="mdb"?notaireRateMdB(years):notaireRate();
   const fraisAcq=bp*acqRate;
   const fraisVente=sellPrice*fv;
-  const chargesDet=chargesAn*years;
+  const chargesDet=chargesAn*opYears;
   let portage=0;
   if(duree>0){
     const coutTotal=bp+fraisAcq+works+numv("iDossier")+numv("iGarantie");
     const emprunt=Math.max(0,coutTotal-apport);
     if(emprunt>0){
-      const im=taux/12,n=duree*12,k=Math.min(years*12,n);
+      const im=taux/12,n=duree*12,k=Math.min(opYears*12,n);
       const mens=im>0?emprunt*im/(1-Math.pow(1+im,-n)):emprunt/n;
       const crdK=Math.max(0,im>0?emprunt*Math.pow(1+im,k)-mens*(Math.pow(1+im,k)-1)/im:emprunt-mens*k);
       const interets=mens*k-(emprunt-crdK); // int\u00e9r\u00eats effectivement pay\u00e9s sur la p\u00e9riode
-      const assur=emprunt*(numv("iAssur")/100)*years;
+      const assur=emprunt*(numv("iAssur")/100)*opYears;
       const ira=crdK>0?Math.min(crdK*taux*0.5,crdK*0.03):0;
       portage=interets+assur+ira;
     }
   }
   const prixRevient=bp+fraisAcq+works+chargesDet+portage;
-  let fisc=0,fiscLabel="";
+  let fisc=0,fiscLabel="",tva=0,isMdb=0;
   if(profil==="mdb"){
-    const tva=Math.max(0,sellPrice-bp)*(0.20/1.20); // TVA sur la marge (marge TTC)
+    tva=Math.max(0,sellPrice-bp)*(0.20/1.20); // TVA sur la marge (marge TTC)
     const resAvIS=sellPrice-fraisVente-prixRevient-tva;
-    const isR=resAvIS<=0?0:(resAvIS<=42500?resAvIS*0.15:42500*0.15+(resAvIS-42500)*0.25); // IS 15%/25%
-    fisc=tva+isR;fiscLabel="TVA sur marge + IS";
+    isMdb=resAvIS<=0?0:(resAvIS<=42500?resAvIS*0.15:42500*0.15+(resAvIS-42500)*0.25); // IS 15%/25%
+    fisc=tva+isMdb;fiscLabel="TVA sur marge + IS";
   }else{
     const notaireP=bp*notaireRate(),forfait=years>5?bp*0.15:0;
     let acqCorr=bp+notaireP+forfait;
@@ -1629,8 +1712,8 @@ function opCalc(r,sellPrice,works){
     fisc=pvB*(1-aIR)*0.19+pvB*(1-aPS)*ps+surtaxePV(pvB*(1-aIR));fiscLabel="Plus-value des particuliers";
   }
   const marge=sellPrice-fraisVente-fisc-prixRevient;
-  return{bp,fraisAcq,acqRate,works,chargesDet,portage,prixRevient,sellPrice,fraisVente,fisc,fiscLabel,marge,
-         tauxMarge:prixRevient>0?marge/prixRevient*100:0,apport,years};
+  return{bp,fraisAcq,acqRate,works,chargesDet,portage,prixRevient,sellPrice,fraisVente,fisc,fiscLabel,marge,tva,isMdb,margeBrute:sellPrice-fraisVente-prixRevient,
+         tauxMarge:prixRevient>0?marge/prixRevient*100:0,apport,years,opYears};
 }
 function margeColor(t){return t>=15?"#0a7a5c":t>=7?"#b4541f":"#c0392b";}
 function renderOperation(r){
@@ -1648,12 +1731,17 @@ function renderOperation(r){
   $("opFraisVente").textContent="\u2212 "+eur(o.fraisVente);
   $("opFiscLabel").textContent=o.fiscLabel;
   $("opFisc").textContent="\u2212 "+eur(o.fisc);
+  $("opMargeBrute").textContent=(o.margeBrute>=0?"+ ":"\u2212 ")+eur(Math.abs(o.margeBrute));
+  const _mdb=state.profil==="mdb";
+  $("opTvaRow").style.display=_mdb?"":"none";$("opIsRow").style.display=_mdb?"":"none";$("opPvRow").style.display=_mdb?"none":"";
+  if(_mdb){$("opTva").textContent="\u2212 "+eur(o.tva);$("opIs").textContent="\u2212 "+eur(o.isMdb);}
   $("opMarge").textContent=(o.marge>=0?"+ ":"\u2212 ")+eur(Math.abs(o.marge));
   const tEl=$("opTaux");tEl.textContent=(o.tauxMarge>=0?"+":"")+o.tauxMarge.toFixed(1)+" %";
   tEl.classList.remove("good","warn","bad");tEl.classList.add(o.tauxMarge>=15?"good":o.tauxMarge>=7?"warn":"bad");
   let h="rentabilit\u00e9 de l'op\u00e9ration";
-  if(o.apport>0&&years>0)h="rentabilit\u00e9 de l'op\u00e9ration \u00b7 ~"+(o.marge/o.apport*100/years).toFixed(0)+" %/an sur apport";
+  if(o.apport>0&&o.opYears>0)h="rentabilit\u00e9 \u00b7 ~"+(o.marge/o.apport*100/o.opYears).toFixed(0)+" %/an sur apport"+(state.profil==="mdb"?" ("+(o.opYears*12).toFixed(0)+" mois)":"");
   $("opTauxH").textContent=h;
+  $("opDureeRow").style.display=state.profil==="mdb"?"":"none";
   // sc\u00e9narios
   const pess=opCalc(r,sell*0.90,travaux*1.15),opt=opCalc(r,sell*1.10,travaux*0.90);
   const c=(v,col)=>`<td style="padding:7px 6px;text-align:right;font-weight:700;color:${col}">${v}</td>`;
@@ -1663,7 +1751,7 @@ function renderOperation(r){
     <tr><td style="padding:7px 6px;color:var(--ink-soft)">Marge nette</td>${c(eur0(pess.marge),pess.marge>=0?"#0a7a5c":"#c0392b")}${c(eur0(o.marge),o.marge>=0?"#0a7a5c":"#c0392b")}${c(eur0(opt.marge),opt.marge>=0?"#0a7a5c":"#c0392b")}</tr>
     <tr><td style="padding:7px 6px;color:var(--ink-soft)">Taux de marge</td>${c(pess.tauxMarge.toFixed(0)+" %",margeColor(pess.tauxMarge))}${c(o.tauxMarge.toFixed(0)+" %",margeColor(o.tauxMarge))}${c(opt.tauxMarge.toFixed(0)+" %",margeColor(opt.tauxMarge))}</tr>
   </table>`;
-  if(state.profil==="mdb")$("opProfilNote").innerHTML="<b>Marchand de biens</b> : acquisition \u00e0 droits r\u00e9duits (engagement de revente sous 5 ans, art. 1115 CGI), <b>TVA sur la marge 20 %</b> et <b>IS</b> (15 % jusqu'\u00e0 42 500 \u20ac, 25 % au-del\u00e0), sans abattement de dur\u00e9e. Hypoth\u00e8ses indicatives \u2014 \u00e0 adapter au montage (SCI/SAS, TVA sur prix total dans le neuf\u2026).";
+  if(state.profil==="mdb")$("opProfilNote").innerHTML="<b>Marchand de biens</b> : acquisition \u00e0 droits r\u00e9duits (engagement de revente sous 5 ans, art. 1115 CGI), <b>TVA sur la marge 20 %</b> et <b>IS</b> (15 % jusqu'\u00e0 42 500 \u20ac, 25 % au-del\u00e0), sans abattement de dur\u00e9e. <b>Holding</b> : remont\u00e9e des marges via le r\u00e9gime m\u00e8re-fille (95 % exon\u00e9r\u00e9) pour r\u00e9investir sans frottement. Hypoth\u00e8ses indicatives \u2014 \u00e0 adapter au montage (SCI/SAS, TVA sur prix total dans le neuf\u2026).";
   else $("opProfilNote").innerHTML="<b>Particulier</b> : plus-value des particuliers avec abattements pour dur\u00e9e. Attention : une revente rapide (< 6 ans) est lourdement tax\u00e9e (peu ou pas d'abattement).";
 }
 function exportComps(r){
