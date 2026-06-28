@@ -409,6 +409,8 @@
     <div id="modeBar" style="order:-1"><div class="seg" id="segMode"><button data-m="simple" class="on">Mode Simple</button><button data-m="expert">Mode Expert</button></div><div class="hint" style="margin-top:6px">Mode Simple : l'essentiel pour d&#233;cider (verdict, prix conseille, negociation, risques). Mode Expert : tous les calculs detailles.</div></div>
     <section class="card" id="decisionCard" style="order:0"><div id="decisionPanel"></div></section>
     <section class="card expert-only" id="reportCard" style="order:0"><div class="card-head"><div class="step-no">&#128221;</div><div><h2>Rapport d'analyse</h2><div class="sub">Synth&#232;se r&#233;dig&#233;e automatiquement &#224; partir de vos donn&#233;es</div></div></div><div id="reportPanel"></div></section>
+    <section class="card expert-only" id="formationCard" style="order:3"><div class="card-head"><div class="step-no">&#128269;</div><div><h2>Fiabilit&#233; & formation du prix</h2><div class="sub">Fourchettes probabilistes, fiabilit&#233; des donn&#233;es et explication d&#233;taill&#233;e</div></div></div><div id="formationPanel"></div></section>
+    <section class="card expert-only" id="enginesCard" style="order:3"><div class="card-head"><div class="step-no">&#129518;</div><div><h2>Estimation multi-mod&#232;les</h2><div class="sub">Plusieurs moteurs combin&#233;s par leur niveau de confiance</div></div></div><div id="enginesPanel"></div></section>
     <section class="card expert-only" id="bienIndicesCard" style="order:3"><div class="card-head"><div class="step-no">&#10024;</div><div><h2>Profil & indices du bien</h2><div class="sub">Qualit&#233;, raret&#233;, attractivit&#233; &#233;motionnelle et profil acheteur</div></div></div><div id="bienIndicesPanel"></div></section>
     <section class="card expert-only" id="proKpiCard" style="order:4"><div class="card-head"><div class="step-no">&#128202;</div><div><h2>Tableau de bord investisseur</h2><div class="sub">Ratios financiers professionnels &#8212; calcul&#233;s en direct</div></div></div><div id="proKpiPanel"></div></section>
     <section class="card expert-only" id="fiscalCard" style="order:5"><div class="card-head"><div class="step-no">&#9878;&#65039;</div><div><h2>Comparateur fiscal</h2><div class="sub">Tous les r&#233;gimes compar&#233;s &#8212; recommandation automatique</div></div></div><div id="fiscalPanel"></div></section>
@@ -973,6 +975,27 @@ async function fetchDvf(coord,type){
 
 /* ===== Estimation ===== */
 /* ===== Vague 3 : moteur de scoring multicritere (base ponderee par similarite + indice de confiance) ===== */
+// ===== Vague 4 : moteurs d'estimation independants combines par confiance =====
+function estimationEngines(pts,surf,stats){
+  const year=new Date().getFullYear();
+  const clean=(pts||[]).filter(p=>p.surf>0&&p.ppm>0);
+  if(clean.length<3||!stats)return{base:stats?Math.round(stats.med):null,engines:[],nEff:0,top:[]};
+  const engines=[];
+  // E1 : comparables SCORES (multicritere : proximite de surface + recence de vente)
+  const score=p=>{const sr=Math.log((p.surf||surf)/surf);const ss=Math.exp(-(sr*sr)/(2*0.20*0.20));const age=Math.max(0,year-(p.date?+String(p.date).slice(0,4):year));const rs=Math.exp(-age/4.5);return Math.pow(ss,1.2)*Math.pow(rs,0.8);};
+  let sw=0,swp=0,sw2=0;const scored=clean.map(p=>{const s=score(p);sw+=s;swp+=s*p.ppm;sw2+=s*s;return{p,s};}).sort((a,b)=>b.s-a.s);
+  const e1=sw>0?swp/sw:stats.med,nEff=sw>0?(sw*sw)/sw2:0;
+  engines.push({key:"comp",label:"Comparables scor\u00e9s",ppm:Math.round(e1),w:Math.min(1,nEff/14),detail:nEff.toFixed(1)+" ventes \u00e9quiv."});
+  // E2 : regression statistique OLS (surface -> prix)
+  let n=clean.length,sx=0,sy=0,sxx=0,sxy=0;clean.forEach(p=>{const x=p.surf,y=p.price||p.ppm*p.surf;sx+=x;sy+=y;sxx+=x*x;sxy+=x*y;});
+  const den=n*sxx-sx*sx;
+  if(den!==0){const slope=(n*sxy-sx*sy)/den,intc=(sy-slope*sx)/n,pred=slope*surf+intc;if(pred>0){const ybar=sy/n;let ssr=0,sst=0;clean.forEach(p=>{const y=p.price||p.ppm*p.surf,yh=slope*p.surf+intc;ssr+=(y-yh)*(y-yh);sst+=(y-ybar)*(y-ybar);});const r2=sst>0?Math.max(0,1-ssr/sst):0;engines.push({key:"reg",label:"R\u00e9gression statistique",ppm:Math.round(pred/surf),w:r2*Math.min(1,n/30),detail:"R\u00b2 "+r2.toFixed(2)});}}
+  // E3 : mediane ponderee par la recence (robuste)
+  engines.push({key:"rec",label:"M\u00e9diane (r\u00e9cence)",ppm:Math.round(stats.west||stats.med),w:0.5,detail:"robuste"});
+  let W=0,B=0;engines.forEach(e=>{W+=e.w;B+=e.w*e.ppm;});
+  const base=W>0?Math.round(B/W):Math.round(stats.med);
+  return{base,engines,nEff,top:scored.slice(0,6).map(x=>x.p)};
+}
 function similBase(pts,subjSurf,ymax){
   if(!pts||!pts.length||!(subjSurf>0))return{base:0,nEff:0};
   let sw=0,sww=0,swp=0;
@@ -1347,6 +1370,98 @@ function renderFiscalCompare(r){
     `<div class="hint" style="margin-top:11px">Comparaison de l'<b>imp\u00f4t annuel</b> sur les revenus locatifs (m\u00eames loyers, charges et int\u00e9r\u00eats). Les r\u00e9gimes \u00e0 <b>amortissement</b> (LMNP r\u00e9el, SARL famille, SCI IS) minimisent l'imp\u00f4t annuel mais le r\u00e9int\u00e8grent \u00e0 la <b>plus-value de cession</b> : sur longue d\u00e9tention avec revente, comparez le co\u00fbt total, pas seulement l'annuel. Pinel, Denormandie, Malraux, Monuments Historiques et holding (li\u00e9s \u00e0 un investissement sp\u00e9cifique) seront ajout\u00e9s s\u00e9par\u00e9ment. Indicatif \u2014 \u00e0 valider avec un expert-comptable.</div>`;
 }
 /* ===== Vague 5 : tableau de bord investisseur (ratios financiers pro) ===== */
+// ===== Vague 3 : geolocalisation valorisante + dynamique de marche =====
+// ===== Vague 5 : estimation probabiliste + indice de fiabilite + explication de la formation du prix =====
+function priceIntervals(r){
+  const sp=r.spread||0.13,P=r.price||0,sigma=sp/1.282; // la fourchette affichee = bande ~80%
+  const mk=z=>({low:Math.round(P*(1-z*sigma)),high:Math.round(P*(1+z*sigma))});
+  return{sigma,p50:mk(0.674),p80:mk(1.282),p95:mk(1.96)};
+}
+function reliabilityIndex(r){
+  const stats=r.realStats,eng=r.engines||[],year=new Date().getFullYear(),cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+  if(!r.real||!stats)return{score:35,label:"Indicative",pillars:[],note:"Estimation sur r\u00e9f\u00e9rences g\u00e9n\u00e9riques : aucune vente DVF exploitable dans le secteur."};
+  const nq=cl((stats.n||0)/40,0,1);
+  let agree=1;if(eng.length>=2){const ps=eng.map(e=>e.ppm),mn=Math.min.apply(null,ps),mx=Math.max.apply(null,ps),md=(mn+mx)/2;agree=cl(1-(mx-mn)/(md||1)/0.15,0,1);}
+  const reg=eng.find(e=>e.key==="reg"),r2=reg?cl(parseFloat(reg.detail.replace(/[^0-9.]/g,""))||0,0,1):0.3;
+  const qual=cl(agree*0.6+r2*0.4,0,1);
+  const ages=(r.realPts||[]).map(p=>year-(p.date?+String(p.date).slice(0,4):year)).filter(a=>a>=0);
+  const avgAge=ages.length?ages.reduce((s,a)=>s+a,0)/ages.length:5,rec=cl(1-avgAge/6,0,1);
+  const surfs=(r.realPts||[]).map(p=>p.surf).filter(x=>x>0),sd=r.surface||60,near=surfs.length?surfs.filter(x=>x>=sd*0.7&&x<=sd*1.4).length/surfs.length:0.4,prox=cl(near,0,1);
+  const pillars=[["Quantit\u00e9",nq,(stats.n||0)+" ventes DVF"],["Qualit\u00e9",qual,"accord moteurs "+Math.round(agree*100)+"% \u00b7 R\u00b2 "+r2.toFixed(2)],["R\u00e9cence",rec,"\u00e2ge moyen "+avgAge.toFixed(1)+" an(s)"],["Proximit\u00e9",prox,Math.round(near*100)+"% \u00e0 surface proche"]];
+  const score=Math.round((nq*0.30+qual*0.30+rec*0.22+prox*0.18)*100);
+  return{score,label:score>=75?"\u00c9lev\u00e9e":score>=55?"Correcte":score>=40?"Mod\u00e9r\u00e9e":"Faible",pillars};
+}
+function priceFormation(r){
+  const surf=r.surface||1,L0=Math.round((r.sqmBase||0)*surf),odVal=Math.round(((r.econSurface||surf)-surf)*(r.sqmAdj||0)),charac=Math.round(((r.sqmAdj||0)-(r.sqmBase||0))*surf);
+  const pxHed=r.pxHedonic!=null?r.pxHedonic:Math.round((r.sqmAdj||0)*surf+odVal),capDelta=Math.round(pxHed-(Math.round((r.sqmAdj||0)*surf)+odVal));
+  const ix=r.indexAdj||{tot:0,qA:0,eA:0,rA:0},baseI=r.basePrice||pxHed,idxDelta=Math.round(baseI-pxHed);
+  const dyn=r.dynAdj||{adj:0},dynDelta=Math.round(baseI*dyn.adj),afterDyn=Math.round(baseI*(1+dyn.adj));
+  const geo=r.geoAdj||{adj:0},geoDelta=Math.round((r.price||afterDyn)-afterDyn);
+  const pct=v=>L0?(v/L0*100):0,lines=[];
+  lines.push({k:"base",label:"Valeur de march\u00e9 de base",eur:L0,pct:100,note:eur0(r.sqmBase||0)+" \u20ac/m\u00b2 (multi-mod\u00e8les) \u00d7 "+surf+" m\u00b2"});
+  if(charac)lines.push({k:"carac",label:"Caract\u00e9ristiques du bien",eur:charac,pct:pct(charac),note:"\u00c9tat, DPE, \u00e9tage, exposition, standing\u2026 (effets contextuels)",sub:(r.rows||[]).filter(x=>x[1]&&Math.abs(x[1])>=0.005).map(x=>[x[0],(x[1]>0?"+":"")+(x[1]*100).toFixed(1)+" %"])});
+  if(odVal)lines.push({k:"ext",label:"Surface \u00e9conomique (ext\u00e9rieurs)",eur:odVal,pct:pct(odVal),note:"Balcon / terrasse / jardin en \u00e9quivalent surface habitable"});
+  if(capDelta)lines.push({k:"cap",label:"Garde-fou march\u00e9 (\u00b125 % DVF)",eur:capDelta,pct:pct(capDelta),note:"Bornage de l'estimation autour des ventes r\u00e9elles"});
+  if(idxDelta){const sub=[];if(ix.qA)sub.push(["Qualit\u00e9",(ix.qA>0?"+":"")+(ix.qA*100).toFixed(1)+" %"]);if(ix.eA)sub.push(["Coup de c\u0153ur","+"+(ix.eA*100).toFixed(1)+" %"]);if(ix.rA)sub.push(["Raret\u00e9","+"+(ix.rA*100).toFixed(1)+" %"]);lines.push({k:"idx",label:"Indices qualit\u00e9 / raret\u00e9 / \u00e9motion",eur:idxDelta,pct:pct(idxDelta),note:"Primes non lin\u00e9aires (excellence, raret\u00e9, coup de c\u0153ur)",sub});}
+  if(dynDelta)lines.push({k:"dyn",label:"Dynamique de march\u00e9",eur:dynDelta,pct:pct(dynDelta),note:(dyn.real?"Tendance r\u00e9elle DVF":"Tendance")+" \u2014 momentum prospectif"});
+  if(geoDelta)lines.push({k:"geo",label:"Micro-localisation",eur:geoDelta,pct:pct(geoDelta),note:"Transports, \u00e9coles, commerces, air, risques (au sein de la commune)"});
+  lines.push({k:"final",label:"Estimation finale",eur:r.price,pct:pct(r.price),final:true,note:eur0(r.sqm||0)+" \u20ac/m\u00b2"});
+  return lines;
+}
+function renderPriceFormation(r){
+  const el=$("formationPanel");if(!el||!r)return;
+  const iv=priceIntervals(r),rel=reliabilityIndex(r),lines=priceFormation(r);
+  const band=(lab,o,col,prob)=>`<div style="margin-bottom:7px"><div style="display:flex;justify-content:space-between;font-size:11.5px"><span style="font-weight:700;color:${col}">${lab} <span style="color:var(--ink-soft);font-weight:600">(${prob})</span></span><span class="num" style="color:var(--ink)">${eur0(o.low)} \u2013 ${eur0(o.high)} \u20ac</span></div></div>`;
+  const A=`<div style="font-size:12px;font-weight:800;color:var(--ink);margin-bottom:7px">Fourchette probabiliste</div>`+band("50 % central",iv.p50,"#0a8f7e","1 chance sur 2")+band("80 %",iv.p80,"var(--brand-dark)","8 sur 10")+band("95 %",iv.p95,"var(--ink-soft)","quasi certain")+`<div class="hint" style="margin:2px 0 0">Probabilit\u00e9 que le prix de vente r\u00e9el tombe dans chaque fourchette, selon la dispersion du march\u00e9 et la fiabilit\u00e9 des donn\u00e9es.</div>`;
+  let B;if(rel.pillars.length){const bar=p=>`<div style="height:6px;border-radius:4px;background:var(--line);overflow:hidden;margin-top:3px"><div style="height:100%;width:${Math.round(p[1]*100)}%;background:${p[1]>=0.66?'var(--good)':p[1]>=0.4?'var(--warn)':'var(--bad)'}"></div></div>`,relC=rel.score>=70?"var(--good)":rel.score>=50?"var(--warn)":"var(--bad)";
+    B=`<div style="border-top:1px solid var(--line);margin-top:13px;padding-top:13px"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px"><span style="font-size:12px;font-weight:800;color:var(--ink)">Fiabilit\u00e9 de l'estimation</span><span class="num" style="font-size:16px;font-weight:800;color:${relC}">${rel.score}/100 \u00b7 ${rel.label}</span></div>`+rel.pillars.map(p=>`<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:11.5px"><span style="font-weight:700;color:var(--ink)">${p[0]}</span><span style="color:var(--ink-soft)">${p[2]}</span></div>${bar(p)}</div>`).join("")+`<div class="hint" style="margin-top:2px">Fiabilit\u00e9 fond\u00e9e sur la quantit\u00e9, la qualit\u00e9 (accord des moteurs, R\u00b2), la r\u00e9cence et la proximit\u00e9 des ventes utilis\u00e9es.</div></div>`;
+  } else B=`<div style="border-top:1px solid var(--line);margin-top:13px;padding-top:13px"><div style="font-size:11.5px;color:var(--ink-soft)">${rel.note||""}</div></div>`;
+  const fmtE=v=>(v>0?"+":"")+eur0(v)+" \u20ac",fmtP=v=>(v>0?"+":"")+v.toFixed(1)+" %";
+  const C=`<div style="border-top:1px solid var(--line);margin-top:13px;padding-top:13px"><div style="font-size:12px;font-weight:800;color:var(--ink);margin-bottom:8px">Formation du prix, \u00e9tape par \u00e9tape</div>`+lines.map(l=>{const col=l.final?"var(--brand-dark)":l.eur>=0?"var(--ink)":"var(--bad)";
+      const head=`<div style="display:flex;justify-content:space-between;align-items:baseline;${l.final?'border-top:1px dashed var(--line);padding-top:7px;margin-top:4px':''}"><span style="font-size:12.5px;font-weight:${l.final?800:700};color:${l.final?'var(--brand-dark)':'var(--ink)'}">${l.label}</span><span class="num" style="font-size:13px;font-weight:800;color:${col}">${(l.k==='base'||l.final)?eur0(l.eur)+' \u20ac':fmtE(l.eur)}</span></div>`;
+      const note=l.note?`<div style="font-size:10.5px;color:var(--ink-soft);margin-top:1px">${l.note}${(!l.final&&l.k!=='base')?' \u00b7 '+fmtP(l.pct)+' de la base':''}</div>`:"";
+      const sub=l.sub&&l.sub.length?`<div style="margin:3px 0 0 8px;display:flex;flex-wrap:wrap;gap:4px">`+l.sub.slice(0,8).map(s=>`<span style="font-size:9.5px;color:var(--ink-soft);background:var(--bg);border-radius:6px;padding:2px 6px">${s[0]} ${s[1]}</span>`).join("")+`</div>`:"";
+      return `<div style="margin-bottom:8px">${head}${note}${sub}</div>`;}).join("")+`<div class="hint" style="margin-top:4px">D\u00e9part : valeur de march\u00e9 de base, puis application des ajustements. Montants et pourcentages indicatifs.</div></div>`;
+  el.innerHTML=A+B+C;
+}
+function renderEngines(r){
+  const el=$("enginesPanel");if(!el)return;
+  const eng=r.engines||[];if(!eng.length){el.innerHTML='<div class="hint">Estimation par d\u00e9faut : donn\u00e9es DVF insuffisantes pour le multi-mod\u00e8les.</div>';return;}
+  const tot=eng.reduce((s,x)=>s+x.w,0)||1;
+  const rows=eng.map(e=>{const wp=Math.round(e.w/tot*100);return `<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:12.5px;font-weight:700;color:var(--ink)">${e.label}</span><span class="num" style="font-size:14px;font-weight:800;color:var(--ink)">${eur0(e.ppm)} \u20ac/m\u00b2</span></div><div style="display:flex;align-items:center;gap:8px;margin-top:4px"><div style="flex:1;height:7px;border-radius:5px;background:var(--line);overflow:hidden"><div style="height:100%;width:${wp}%;background:var(--brand-dark)"></div></div><span style="font-size:10.5px;color:var(--ink-soft);min-width:88px;text-align:right">poids ${wp}% \u00b7 ${e.detail}</span></div></div>`;}).join("");
+  el.innerHTML=rows+
+    `<div style="margin-top:6px;display:flex;justify-content:space-between;align-items:center;padding:11px 13px;background:var(--brand-tint);border-radius:11px"><div><div style="font-size:11px;color:var(--ink-soft);text-transform:uppercase;font-weight:700">Base retenue (moyenne pond\u00e9r\u00e9e)</div><div style="font-size:10.5px;color:var(--ink-soft)">avant ajustements propres au bien</div></div><div class="num" style="font-size:18px;font-weight:800;color:var(--brand-dark)">${eur0(r.engineBase||r.sqmBase)} \u20ac/m\u00b2</div></div>`+
+    `<div class="hint" style="margin-top:8px">Moteurs ind\u00e9pendants (comparables scor\u00e9s, r\u00e9gression statistique, m\u00e9diane pond\u00e9r\u00e9e par la r\u00e9cence) combin\u00e9s par leur niveau de confiance. Le moteur h\u00e9donique (caract\u00e9ristiques), les indices qualit\u00e9/raret\u00e9 et la dynamique de march\u00e9 personnalisent ensuite cette base. Indicatif.</div>`;
+}
+// ===== Vague 3 : geolocalisation valorisante + dynamique de marche =====
+function geoValue(r){
+  const e=state.enrich;if(!e||!Object.keys(e).length)return{adj:0,score:null,rows:[]};
+  const sc=enrichScore(e);const rows=[];let adj=0;
+  // Micro-localisation reelle (transports, ecoles, commerces, air, risques) : differencie le bien AU SEIN de la commune (non capte par la mediane DVF communale)
+  if(sc!=null){adj=Math.max(-0.06,Math.min(0.07,(sc-60)/100*0.16));rows.push(["Micro-localisation",sc,adj]);}
+  // Radon reel : non inclus dans le score, decote si potentiel eleve
+  const radon=(state.live&&state.live.radon)||0;
+  if(radon>=3){adj-=0.015;rows.push(["Potentiel radon \u00e9lev\u00e9",null,-0.015]);}
+  adj=Math.max(-0.08,Math.min(0.08,adj));
+  return{adj,score:sc,rows};
+}
+function marketDynamicsAdjust(r){
+  const dyn=r.dyn||{};const trend=dyn.trendReal?(dyn.evo12||0):0;
+  // Momentum : fraction prospective de la tendance REELLE DVF (le niveau est deja capte par les ventes recentes -> demi-poids, borne)
+  let adj=Math.max(-2.5,Math.min(2.5,trend))/100*0.5;adj=Math.max(-0.025,Math.min(0.025,adj));
+  return{adj,trend,real:!!dyn.trendReal};
+}
+function applyGeoDyn(r){
+  if(!r.basePrice)return;const oldPrice=r.price;
+  r.geoAdj=geoValue(r);if(!r.dynAdj)r.dynAdj=marketDynamicsAdjust(r);
+  r.price=Math.round(r.basePrice*(1+r.dynAdj.adj)*(1+r.geoAdj.adj));
+  r.sqm=Math.round(r.price/(r.surface||1));r.low=r.price*(1-r.spread);r.high=r.price*(1+r.spread);
+  if($("pcPrice"))countUp($("pcPrice"),r.price," \u20ac");
+  if($("pcSqm"))$("pcSqm").textContent=eur0(r.sqm)+" \u20ac";
+  if($("gLow"))$("gLow").textContent=eur(r.low);if($("gMid"))$("gMid").textContent=eur(r.price);if($("gHigh"))$("gHigh").textContent=eur(r.high);
+  const pa=$("prixAchat");if(pa&&Math.round(parseFloat(pa.value)||0)===Math.round(oldPrice))pa.value=Math.round(r.price);
+  if(lastResult===r){computeAll(r);computeResale(r);renderBienIndices(r);renderPriceFormation(r);renderMarket(r);renderScatter(r);}
+}
 // ===== Vague 2 : indices synthetiques du bien (qualite, emotionnel, rarete, profil acheteur) =====
 function buyerProfile(r){
   const t=r.type,s=r.surface||60,premium=!!(r.ctx&&r.ctx.premium);
@@ -1398,12 +1513,16 @@ function renderBienIndices(r){
   const gauge=(label,val,color,note)=>`<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:12.5px;font-weight:700;color:var(--ink)">${label}</span><span class="num" style="font-size:16px;font-weight:800;color:${color}">${val}<span style="font-size:11px;color:var(--ink-soft)">/100</span></span></div><div style="height:8px;border-radius:5px;background:var(--line);margin-top:5px;overflow:hidden"><div style="height:100%;width:${val}%;background:${color}"></div></div><div style="font-size:10.5px;color:var(--ink-soft);margin-top:3px">${note}</div></div>`;
   const qC=idx.quality>=75?"var(--good)":idx.quality>=45?"var(--brand-dark)":"var(--warn)",eC=idx.emotional>=65?"#b8458f":"var(--brand-dark)",rC=idx.rarity>=60?"#c2761a":"var(--ink-soft)";
   const impact=Math.round(r.price-r.price/(1+iv.tot));
+  let ctxRows="";
+  if(r.geoAdj&&r.geoAdj.score!=null)ctxRows+=`<div style="display:flex;justify-content:space-between;font-size:11.5px;padding:3px 0"><span style="color:var(--ink)">Micro-localisation <span style="color:var(--ink-soft)">(${r.geoAdj.score}/100)</span></span><span class="num" style="font-weight:700;color:${r.geoAdj.adj>=0?'var(--good)':'var(--bad)'}">${r.geoAdj.adj>0?'+':''}${(r.geoAdj.adj*100).toFixed(1)} %</span></div>`;
+  if(r.dynAdj&&r.dynAdj.adj)ctxRows+=`<div style="display:flex;justify-content:space-between;font-size:11.5px;padding:3px 0"><span style="color:var(--ink)">Dynamique de march\u00e9 ${r.dynAdj.real?'<span style="color:#0a8f7e">(tendance r\u00e9elle)</span>':''}</span><span class="num" style="font-weight:700;color:${r.dynAdj.adj>=0?'var(--good)':'var(--bad)'}">${r.dynAdj.adj>0?'+':''}${(r.dynAdj.adj*100).toFixed(1)} %</span></div>`;
+  const ctxBlock=ctxRows?`<div style="margin-top:10px;padding:9px 13px;background:var(--bg);border-radius:11px"><div style="font-size:11px;color:var(--ink-soft);text-transform:uppercase;font-weight:700;margin-bottom:3px">Ajustements localisation & march\u00e9</div>${ctxRows}</div>`:"";
   el.innerHTML=gauge("Qualit\u00e9 du bien",idx.quality,qC,"Condition, performance \u00e9nerg\u00e9tique, prestations et confort.")+
     gauge("Attractivit\u00e9 \u00e9motionnelle",idx.emotional,eC,"Coup de c\u0153ur : vue, luminosit\u00e9, cachet, ext\u00e9rieurs.")+
     gauge("Raret\u00e9 sur le march\u00e9 local",idx.rarity,rC,(idx.rsig&&idx.rsig.length?"Atouts rares : "+idx.rsig.join(", ")+".":"Bien courant sur son secteur."))+
     `<div style="margin-top:4px;padding:11px 13px;background:var(--brand-tint);border-radius:11px"><div style="font-size:11px;color:var(--ink-soft);text-transform:uppercase;font-weight:700">Profil acheteur majoritaire</div><div style="font-size:13.5px;font-weight:800;color:var(--brand-dark);margin:2px 0">${idx.buyer.label}</div><div style="font-size:11.5px;color:var(--ink);line-height:1.5">${idx.buyer.desc}</div></div>`+
     `<div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;padding:10px 13px;background:var(--bg);border-radius:11px"><div><div style="font-size:11px;color:var(--ink-soft);text-transform:uppercase;font-weight:700">Impact qualit\u00e9 / raret\u00e9 / \u00e9motion</div><div style="font-size:10.5px;color:var(--ink-soft)">\u00e9motion +${(iv.eA*100).toFixed(1)}% \u00b7 raret\u00e9 +${(iv.rA*100).toFixed(1)}%${iv.qA?" \u00b7 qualit\u00e9 "+(iv.qA>0?"+":"")+(iv.qA*100).toFixed(1)+"%":""}</div></div><div class="num" style="font-size:18px;font-weight:800;color:${iv.tot>=0?"var(--good)":"var(--bad)"}">${iv.tot>0?"+":""}${eur0(impact)} \u20ac</div></div>`+
-    `<div class="hint" style="margin-top:8px">Indices calcul\u00e9s sur les caract\u00e9ristiques du bien et le march\u00e9 local. Conversion non lin\u00e9aire : l'excellence et la raret\u00e9 valent une prime sup\u00e9rieure \u00e0 une simple somme de bonus. Indicatif.</div>`;
+    ctxBlock+`<div class="hint" style="margin-top:8px">Indices calcul\u00e9s sur les caract\u00e9ristiques du bien et le march\u00e9 local, et la dynamique de march\u00e9. Conversion non lin\u00e9aire : l'excellence et la raret\u00e9 valent une prime sup\u00e9rieure \u00e0 une simple somme de bonus. Indicatif.</div>`;
 }
 function renderProKpis(r,f){
   const el=$("proKpiPanel");if(!el)return;
@@ -1527,7 +1646,7 @@ async function showResults(){
   if(!surface||surface<=0){err.textContent="Renseignez une surface valide.";err.classList.add("show");return;}
   err.classList.remove("show");
   const btn=$("btnEstim");const oldTxt=btn.textContent;btn.textContent="Recherche des ventes r\u00e9elles\u2026";btn.disabled=true;
-  let realBase=null,realPts=null,realStats=null,diag="";
+  let realBase=null,realPts=null,realStats=null,diag="",engineData=null;
   const coord=await geocode();dbg("Coordonnees BAN: "+JSON.stringify(coord));
   const livePromise=(coord&&coord.insee)?fetchLive(coord):Promise.resolve({});
   state.enrich=null;const enrichPromise=coord?fetchEnrich(coord):Promise.resolve(null);
@@ -1540,17 +1659,16 @@ async function showResults(){
       const surf=numv("surface");let band=res.pts;
       if(surf>0){const b=res.pts.filter(p=>p.surf>=surf*0.55&&p.surf<=surf*1.7);if(b.length>=10)band=b;}
       realStats=dvfStats(band); // surface proche -> prix de reference + stats (comparaison a iso-surface)
-      const _wb=realStats.west||Math.round(realStats.med);
-      const _sb=similBase(realStats.clean,surf,realStats.yMax||(new Date().getFullYear()));
-      const _trust=Math.max(0,Math.min(0.8,_sb.nEff/22));
-      realBase=_sb.base?Math.round(_trust*_sb.base+(1-_trust)*_wb):_wb;
+      // Vague 4 : base = moyenne ponderee par confiance de plusieurs moteurs (comparables scores, regression, mediane recence)
+      engineData=estimationEngines(realStats.clean,surf,realStats);
+      realBase=engineData.base||realStats.west||Math.round(realStats.med);
     }
     else if(res.status==="no-conn")diag="sources DVF injoignables \u2014 r\u00e9essayez dans un instant";
     else diag="aucune vente DVF comparable dans le secteur";
   }
   state.live=await livePromise;
   btn.textContent=oldTxt;btn.disabled=false;
-  const r=estimate(realBase);r.realPts=realPts;r.realStats=realStats;r.realCount=realStats?realStats.n:0;lastResult=r;
+  const r=estimate(realBase);r.realPts=realPts;r.realStats=realStats;r.realCount=realStats?realStats.n:0;r.engines=engineData?engineData.engines:[];r.engineBase=engineData?engineData.base:realBase;r.engineTop=engineData?engineData.top:[];r.pxHedonic=r.price;lastResult=r;
   // Donnees reelles : loyer ancre au prix DVF + tendance de prix calculee sur DVF (remplace la demo)
   if(realBase){const _rent=CITY_RENT[norm(r.city)]||mktRentSqm(r.sqmBase);r.dyn.loyerM2=_rent;r.dyn.rendementMarche=+(_rent*12/r.sqmBase*100).toFixed(1);r.dyn.rentReal=true;
     const _tr=dvfTrend(realPts);if(_tr){r.dyn.evo12=_tr.evo12;r.dyn.evo5=_tr.evoTot;r.dyn.notairesEvo=_tr.evo12;r.dyn.evoSpan=_tr.span;r.dyn.trendReal=true;}}
@@ -1562,6 +1680,9 @@ async function showResults(){
   // Vague 2 : indices synthetiques du bien -> ajustement de valeur non lineaire borne (qualite/rarete/emotion)
   r.indices=bienIndices(r,realStats);r.indexAdj=indexValueAdjust(r.indices);
   if(r.indexAdj.tot){r.price=Math.round(r.price*(1+r.indexAdj.tot));r.sqm=Math.round(r.price/(r.surface||1));r.low=r.price*(1-r.spread);r.high=r.price*(1+r.spread);}
+  // Vague 3 : prix de base (hedonique + indices) memorise ; ajustement dynamique de marche applique ; la micro-localisation s'applique a l'arrivee de l'enrich (applyGeoDyn)
+  r.basePrice=r.price;r.dynAdj=marketDynamicsAdjust(r);r.geoAdj={adj:0,score:null};
+  if(r.dynAdj.adj){r.price=Math.round(r.basePrice*(1+r.dynAdj.adj));r.sqm=Math.round(r.price/(r.surface||1));r.low=r.price*(1-r.spread);r.high=r.price*(1+r.spread);}
   const sd=$("srcDot"),st=$("srcTxt");
   if(realBase){sd.style.background="#7fe3d4";st.textContent=`Donn\u00e9es r\u00e9elles DVF \u00b7 ${r.realCount} ventes`;$("compTag").textContent="DVF \u00b7 r\u00e9el";}
   else{sd.style.background="#E8742A";st.textContent="D\u00e9mo \u00b7 "+diag;$("compTag").textContent="DVF \u00b7 d\u00e9mo";}
@@ -1584,7 +1705,7 @@ async function showResults(){
   r.rows.forEach(row=>{if(row[2]!=null)addRow(row[0],null,false,row[2]);else addRow(row[0],row[1],true);});
   addRow("Prix /m\u00b2 ajust\u00e9",eur0(r.sqmAdj)+" \u20ac");addRow("\u00d7 Surface",r.surface+" m\u00b2");
   const tot=document.createElement("div");tot.className="bd-row";tot.style.cssText="border-top:1px solid var(--line);margin-top:6px;padding-top:8px;font-weight:700";tot.innerHTML=`<span>= Valeur estim\u00e9e</span><span>${eur(r.price)}</span>`;bd.appendChild(tot);
-  renderInsee(r);renderMarket(r);renderLocStats(r);renderDvfStats(r);genComparables(r);renderBienIndices(r);
+  renderInsee(r);renderMarket(r);renderLocStats(r);renderDvfStats(r);genComparables(r);renderEngines(r);renderBienIndices(r);renderPriceFormation(r);
   $("locAddr").textContent=state.coord?.label||(($("ville").value||"")+" "+$("cp").value).trim();
   $("locCoord").textContent=state.coord?`${state.coord.lat.toFixed(4)}, ${state.coord.lon.toFixed(4)}${state.coord.alt!=null?" \u00b7 alt. "+state.coord.alt+" m":""} \u00b7 carte interactive dans la version h\u00e9berg\u00e9e`:"Carte interactive disponible dans la version h\u00e9berg\u00e9e";
   const dpeCostHi=renderDpe();
@@ -1593,7 +1714,7 @@ async function showResults(){
   renderResaleDefaults(r);
   renderEnrich(r);
   renderMap(r);
-  enrichPromise.then(e=>{state.enrich=e;if(lastResult===r){renderEnrich(r);renderMap(r);}}).catch(()=>{state.enrich={};if(lastResult===r){renderEnrich(r);renderMap(r);}});
+  enrichPromise.then(e=>{state.enrich=e;if(lastResult===r){applyGeoDyn(r);renderEnrich(r);renderMap(r);}}).catch(()=>{state.enrich={};if(lastResult===r){renderEnrich(r);renderMap(r);}});
   $("results").classList.add("show");
   $("results").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth",block:"start"});
 }
