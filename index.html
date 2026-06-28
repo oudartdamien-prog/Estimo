@@ -344,6 +344,11 @@
             <option value="indiv_gaz" selected>Individuel gaz</option>
             <option value="indiv_elec">Individuel &#233;lectrique</option>
             <option value="pac">Pompe &#224; chaleur / r&#233;cent</option>
+            <option value="reversible">Clim r&#233;versible (PAC air/air)</option>
+            <option value="plancher">Plancher chauffant</option>
+            <option value="pellets">Granul&#233;s / pellets</option>
+            <option value="bois">Po&#234;le &#224; bois / insert</option>
+            <option value="fioul">Fioul</option>
           </select>
         </div>
         <div class="field"><label class="lbl">&#201;tiquette climat (GES)</label>
@@ -602,7 +607,7 @@
       <div class="seg" id="segProfil" style="margin-bottom:8px"><button data-v="particulier" class="on">Particulier</button><button data-v="mdb">Marchand de biens</button></div>
       <div class="hint" id="opProfilNote" style="margin-bottom:12px"></div>
       <div class="field" style="margin-bottom:14px"><label class="lbl" for="opSellTarget">Prix de revente vis&#233; (post-travaux) &#8212; optionnel</label><input class="input num" id="opSellTarget" type="number" min="0" placeholder="vide = projection par l'appr&#233;ciation du march&#233;" /></div>
-      <div class="field" id="opDureeRow" style="margin-bottom:14px"><label class="lbl" for="opDureeMois">Dur&#233;e de l'op&#233;ration (marchand de biens)</label><div class="with-unit"><input class="input num" id="opDureeMois" type="number" min="1" value="12" /><span class="unit">mois</span></div></div>
+      <div class="field" id="opDureeRow" style="margin-bottom:14px"><label class="lbl" for="opDureeMois">Dur&#233;e de l'op&#233;ration (revente)</label><div class="with-unit"><input class="input num" id="opDureeMois" type="number" min="1" value="12" /><span class="unit">mois</span></div></div>
 
       <div class="subhead" style="margin-top:0">Prix de revient</div>
       <div class="line-item"><span class="li-l">Prix d'achat</span><span class="num" id="opAchat">&#8212;</span></div>
@@ -1041,8 +1046,8 @@ function coefficients(){const rows=[];let m=1;let detail=0;
   const exChecked=dirs.filter(d=>{const e=$(d[0]);return e&&e.checked;});
   const traversant=[["expoN","expoS"],["expoE","expoO"],["expoNE","expoSO"],["expoNO","expoSE"]].some(([a,b])=>$(a)&&$(a).checked&&$(b)&&$(b).checked);
   if(exChecked.length){const best=Math.max(...exChecked.map(d=>d[2]));const multi=exChecked.length>=3?0.03:exChecked.length>=2?0.02:0;const trav=traversant?0.015:0;const xv=best+multi+trav;m*=(1+xv);rows.push([traversant?`Exposition traversante (${exChecked.length} orient.)`:exChecked.length>=2?`Exposition multi (${exChecked.length} orient.)`:`Exposition ${exChecked[0][1]}`,xv]);}detail++;
-  const chMap={collectif:[-0.01,"Chauffage collectif"],indiv_gaz:[0,"Chauffage gaz"],indiv_elec:[-0.01,"Chauffage \u00e9lectrique"],pac:[0.02,"Chauffage PAC/r\u00e9cent"]};
-  let [cv,cl]=chMap[$("chauffage").value];if(cv){m*=(1+cv);rows.push([cl,cv]);}
+  const chMap={collectif:[-0.01,"Chauffage collectif"],indiv_gaz:[0,"Chauffage gaz"],indiv_elec:[-0.015,"Chauffage \u00e9lectrique"],fioul:[-0.02,"Chauffage fioul"],bois:[0.005,"Po\u00eale \u00e0 bois"],pellets:[0.01,"Chauffage granul\u00e9s"],pac:[0.02,"Chauffage PAC/r\u00e9cent"],reversible:[0.015,"Clim r\u00e9versible"],plancher:[0.015,"Plancher chauffant"]};
+  let [cv,cl]=chMap[$("chauffage").value]||[0,""];if(cv){m*=(1+cv);rows.push([cl,cv]);}
   const stMap={standard:[0,"Standard"],bon:[0.03,"Bonnes prestations"],haut:[0.07,"Haut standing"]};
   let [sv,sl]=stMap[$("standing").value];if(sv){m*=(1+sv);rows.push([sl,sv]);detail++;}
   const epMap={avant1948:[0.01,"Avant 1948"],"1949_1974":[-0.02,"1949\u20131974"],"1975_2000":[0,"1975\u20132000"],apres2000:[0.03,"Apr\u00e8s 2000"],neuf:[0.06,"Neuf"]};
@@ -1076,13 +1081,14 @@ function estimate(realBase){
   const sqmAdj=sqm*mult;
   const od=outdoorValue(sqmAdj);
   const dyn=computeDynamics(city,cp);
-  const price=(sqmAdj*surface+od.val)*(1+dyn.factor);
+  let price=sqmAdj*surface+od.val;
+  if(realBase){const _e=price/surface,_cap=Math.max(realBase*0.75,Math.min(realBase*1.25,_e));price=_cap*surface;}
   const effSqm=price/surface;
   // marge selon confiance + compl\u00e9tude
   let spread=realBase?0.05:conf==="\u00e9lev\u00e9e"?0.06:conf==="moyenne"?0.10:0.14;
   spread=Math.min(0.16,Math.max(0.05,spread-(detail||0)*0.004));
   const allRows=rows.concat(od.rows.map(([l,v])=>[l,null,v]));
-  if(dyn.factor)allRows.push(["Dynamique de march\u00e9 (d\u00e9mo)",dyn.factor]);
+  // dynamique de march\u00e9 : indicateur indicatif, n'ajuste plus l'estimation (purge d\u00e9mo)
   return{price,sqm:effSqm,sqmBase:sqm,sqmAdj,low:price*(1-spread),high:price*(1+spread),spread,conf,rows:allRows,surface,type,city,cp,pieces:state.pieces,real:!!realBase,dyn};
 }
 
@@ -1209,7 +1215,7 @@ function renderScatter(r){
     qlab(Rr-4,T+11,"end",trq+"% +chers +grands")+
     qlab(Rr-4,B-5,"end",brq+"% -chers +grands")+
     qlab(L+4,T+11,"start",tlq+"% +chers -grands")+
-    qlab(L+4,B-5,"start",blq+"% -chers -petits")+
+    qlab(L+4,B-5,"start",blq+"% -chers -grands")+
     `<text x="${Math.min(Rr-46,(+sx)+8)}" y="${Math.max(T+11,(+sy)-8)}" font-size="9" font-weight="700" fill="var(--brand-dark)">Votre bien</text>`+
     qlab(L,B+13,"start",Math.round(xmin)+" m\u00b2")+qlab(Rr,B+13,"end",Math.round(xmax)+" m\u00b2")+
     `<text x="2" y="${T+7}" font-size="8" fill="var(--ink-soft)">${k(ymax)}\u20ac</text>`+
@@ -1250,14 +1256,15 @@ function updRentVsMkt(){
   const tag=diff===0?'<b>au niveau du march\u00e9</b>':diff>0?`<b style="color:var(--warn)">+${diff} %</b> au-dessus du march\u00e9`:`<b style="color:var(--good)">${diff} %</b> sous le march\u00e9`;
   const lo=mkt*0.7,hi=mkt*1.3,clamp=v=>Math.max(0,Math.min(100,v)),pos=clamp((ent-lo)/(hi-lo)*100);
   const zL=clamp((mkt*0.9-lo)/(hi-lo)*100),zR=clamp((mkt*1.1-lo)/(hi-lo)*100);
-  el.innerHTML=`<div style="font-size:12.5px;line-height:1.5;color:var(--ink)">Loyer de march\u00e9 estim\u00e9 : <b>${eur0(mkt)} \u20ac/mois</b> (${state.mktRentSqm.toFixed(1).replace('.',',')} \u20ac/m\u00b2/mois). Votre loyer est ${tag}.</div>`+
-   `<div style="position:relative;height:26px;margin:12px 0 6px">`+
-     `<div style="position:absolute;top:9px;left:0;right:0;height:8px;border-radius:5px;background:var(--line)"></div>`+
-     `<div style="position:absolute;top:9px;left:${zL}%;width:${Math.max(0,zR-zL)}%;height:8px;background:rgba(15,179,158,.35)"></div>`+
-     `<div style="position:absolute;top:4px;left:50%;width:2px;height:18px;background:var(--ink-soft);transform:translateX(-50%)"></div>`+
-     `<div style="position:absolute;top:1px;left:${pos}%;transform:translateX(-50%);width:14px;height:24px;border-radius:5px;background:var(--brand-dark);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3)"></div>`+
+  const gcol=diff===0?"#0a8f7e":diff>0?"var(--warn)":"var(--good)";
+  el.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:4px;padding:9px 11px;background:var(--bg);border-radius:10px"><div><div style="font-size:10px;color:var(--ink-soft);text-transform:uppercase">Loyer de march\u00e9</div><div class="num" style="font-size:16px;font-weight:800;color:var(--ink)">${eur0(mkt)} \u20ac<span style="font-size:11px;color:var(--ink-soft);font-weight:600"> /mois</span></div><div style="font-size:10px;color:var(--ink-soft)">${state.mktRentSqm.toFixed(1).replace('.',',')} \u20ac/m\u00b2/mois</div></div><div style="text-align:right"><div style="font-size:10px;color:var(--ink-soft);text-transform:uppercase">\u00c9cart</div><div class="num" style="font-size:16px;font-weight:800;color:${gcol}">${diff>0?"+":""}${diff} %</div><div style="font-size:10px;color:${gcol}">${diff===0?"au niveau du march\u00e9":diff>0?"au-dessus":"sous le march\u00e9"}</div></div></div>`+
+   `<div style="position:relative;height:28px;margin:12px 0 6px">`+
+     `<div style="position:absolute;top:10px;left:0;right:0;height:8px;border-radius:5px;background:var(--line)"></div>`+
+     `<div style="position:absolute;top:10px;left:${zL}%;width:${Math.max(0,zR-zL)}%;height:8px;background:rgba(15,179,158,.35)"></div>`+
+     `<div style="position:absolute;top:5px;left:50%;width:2px;height:18px;background:var(--ink-soft);transform:translateX(-50%)"></div>`+
+     `<div style="position:absolute;top:-2px;left:${pos}%;transform:translateX(-50%);background:var(--brand-dark);color:#fff;font-size:9.5px;font-weight:800;padding:2px 5px;border-radius:6px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.25)">${eur0(ent)} \u20ac</div>`+
    `</div>`+
-   `<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--ink-soft)"><span>\u221230 %</span><span style="color:#0a8f7e;font-weight:700">zone de march\u00e9</span><span>+30 %</span></div>`;
+   `<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--ink-soft)"><span>\u221230 %</span><span style="color:#0a8f7e;font-weight:700">zone de march\u00e9 (\u00b110 %)</span><span>+30 %</span></div>`;
 }
 
 /* ===== Vague 6 : dispositifs de defiscalisation (Pinel, Denormandie, Malraux, MH, holding) ===== */
@@ -1335,23 +1342,27 @@ function renderProKpis(r,f){
   const G="var(--good)",W="var(--warn)",Bd="var(--bad)",S="var(--ink-soft)";
   const col=(v,g,w)=>v>=g?G:v>=w?W:Bd,colLow=(v,g,w)=>v<=g?G:v<=w?W:Bd;
   const pct=v=>v.toFixed(1).replace('.',',')+" %";
-  const tile=(label,val,color,note)=>`<div style="background:var(--bg);border-radius:11px;padding:11px 12px;border-left:4px solid ${color}"><div style="font-size:10px;color:var(--ink-soft);font-weight:700;text-transform:uppercase;letter-spacing:.3px">${label}</div><div class="num" style="font-size:19px;font-weight:800;color:${color};margin:2px 0">${val}</div><div style="font-size:10px;color:var(--ink-soft);line-height:1.35">${note}</div></div>`;
+  const tile=(label,val,color,note,key)=>`<div data-kpi="${key||''}" style="background:var(--bg);border-radius:11px;padding:11px 12px;border-left:4px solid ${color};cursor:pointer"><div style="font-size:10px;color:var(--ink-soft);font-weight:700;text-transform:uppercase;letter-spacing:.3px">${label}</div><div class="num" style="font-size:19px;font-weight:800;color:${color};margin:2px 0">${val}</div><div style="font-size:10px;color:var(--ink-soft);line-height:1.35">${note}</div><div style="font-size:9px;color:var(--brand-dark);font-weight:700;margin-top:3px">&#9432; explication</div></div>`;
   const tiles=[
-    tile("Cap Rate",pct(cap),col(cap,6,4),"Revenu net / prix. R\u00e9f. &#8805; 6 %"),
-    tile("Yield on Cost",pct(yoc),col(yoc,6,4),"Revenu net / co\u00fbt total (travaux inclus)"),
-    tile("Cash-on-Cash",coc!=null?pct(coc):"n/a",coc!=null?col(coc,4,0):S,coc!=null?"Cash-flow avant imp\u00f4t / apport":(f.emprunt>0?"Apport nul (100 % financ\u00e9)":"Achat comptant")),
-    tile("DSCR",dscr!=null?dscr.toFixed(2).replace('.',','):"n/a",dscr!=null?col(dscr,1.2,1):S,dscr!=null?"Revenu net / annuit\u00e9s. Banque &#8805; 1,2":"Sans emprunt"),
-    tile("LTV",pct(ltv),colLow(ltv,70,85),"Emprunt / valeur. &lt; 70 % confortable"),
-    tile("TRI",pct(tri*100),tri>=P.rate?G:tri>=0?W:Bd,"Rendement interne du projet"),
-    tile("VAN",eur0(van),van>=0?G:Bd,P.H+" ans, actualis\u00e9e \u00e0 "+pct(P.rate*100)),
-    tile("D\u00e9lai de r\u00e9cup\u00e9ration",payback?"An "+payback:"&gt; "+P.H+" ans",payback&&payback<=15?G:payback&&payback<=25?W:Bd,"Ann\u00e9e o\u00f9 la VAN devient positive")
+    tile("Cap Rate",pct(cap),col(cap,6,4),"Revenu net / prix. R\u00e9f. &#8805; 6 %","cap"),
+    tile("Yield on Cost",pct(yoc),col(yoc,6,4),"Revenu net / co\u00fbt total (travaux inclus)","yoc"),
+    tile("Cash-on-Cash",coc!=null?pct(coc):"n/a",coc!=null?col(coc,4,0):S,coc!=null?"Cash-flow avant imp\u00f4t / apport":(f.emprunt>0?"Apport nul (100 % financ\u00e9)":"Achat comptant"),"coc"),
+    tile("DSCR",dscr!=null?dscr.toFixed(2).replace('.',','):"n/a",dscr!=null?col(dscr,1.2,1):S,dscr!=null?"Revenu net / annuit\u00e9s. Banque &#8805; 1,2":"Sans emprunt","dscr"),
+    tile("LTV",pct(ltv),colLow(ltv,70,85),"Emprunt / valeur. &lt; 70 % confortable","ltv"),
+    tile("TRI",pct(tri*100),tri>=P.rate?G:tri>=0?W:Bd,"Rendement interne du projet","tri"),
+    tile("VAN",eur0(van),van>=0?G:Bd,P.H+" ans, actualis\u00e9e \u00e0 "+pct(P.rate*100),"van"),
+    tile("D\u00e9lai de r\u00e9cup\u00e9ration",payback?"An "+payback:"&gt; "+P.H+" ans",payback&&payback<=15?G:payback&&payback<=25?W:Bd,"Ann\u00e9e o\u00f9 la VAN devient positive","payback")
   ];
   const rs=[-0.01,0,0.01,0.02].map(dt=>({dt,v:projCore(Object.assign({},P,{taux:P.taux+dt})).van}));
   const chip=o=>`<div style="text-align:center;flex:1"><div style="font-size:10px;color:var(--ink-soft)">${o.dt===0?"actuel":(o.dt>0?"+":"")+(o.dt*100).toFixed(0)+" pt"}</div><div class="num" style="font-size:12.5px;font-weight:800;color:${o.v>=0?G:Bd}">${eur0(o.v)}</div></div>`;
   el.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">${tiles.join("")}</div>`+
     `<div style="margin-top:14px;font-size:12px;font-weight:700;color:var(--ink)">Sensibilit\u00e9 au taux d'emprunt (VAN)</div>`+
     `<div style="display:flex;gap:6px;margin-top:6px;background:var(--bg);border-radius:10px;padding:10px 6px">${rs.map(chip).join("")}</div>`+
-    `<div class="hint" style="margin-top:8px">Ratios calcul\u00e9s en direct sur vos donn\u00e9es et hypoth\u00e8ses. NOI (revenu net d'exploitation) = loyers \u2212 charges, hors cr\u00e9dit et imp\u00f4t. Indicatif.</div>`;
+    `<div class="hint" style="margin-top:8px">Ratios calcul\u00e9s en direct sur vos donn\u00e9es et hypoth\u00e8ses. NOI (revenu net d'exploitation) = loyers \u2212 charges, hors cr\u00e9dit et imp\u00f4t. Touchez une carte pour son explication.</div>`+
+    `<div id="proKpiDetail" style="margin-top:10px"></div>`;
+  const KPIEXP={cap:["Cap Rate (taux de capitalisation)","NOI (loyers \u2212 charges, hors cr\u00e9dit et imp\u00f4t) \u00f7 prix d'achat. Mesure le rendement intrins\u00e8que du bien, ind\u00e9pendamment du financement. Rep\u00e8res : &#8805; 6 % attractif, 4\u20136 % correct, &lt; 4 % cher. Tr\u00e8s sensible au prix pay\u00e9."],yoc:["Yield on Cost","NOI \u00f7 co\u00fbt total de revient (prix + frais + travaux). M\u00eame logique que le Cap Rate mais apr\u00e8s travaux : indique si la cr\u00e9ation de valeur justifie l'investissement total engag\u00e9."],coc:["Cash-on-Cash","Cash-flow annuel avant imp\u00f4t \u00f7 apport investi. Rendement r\u00e9el de vos fonds propres immobilis\u00e9s. Rep\u00e8re : &#8805; 4 % bon. N\u00e9gatif = effort d'\u00e9pargne mensuel \u00e0 pr\u00e9voir."],dscr:["DSCR (couverture de la dette)","NOI \u00f7 annuit\u00e9s de cr\u00e9dit. Capacit\u00e9 des loyers \u00e0 couvrir le pr\u00eat. Les banques exigent souvent &#8805; 1,2. Sous 1, le loyer ne couvre pas l'\u00e9ch\u00e9ance : effort personnel obligatoire."],ltv:["LTV (Loan To Value)","Montant emprunt\u00e9 \u00f7 valeur du bien. Mesure l'endettement. &lt; 70 % confortable, &gt; 85 % risqu\u00e9 (peu de marge si le march\u00e9 baisse). Au-del\u00e0 de 100 %, vous financez aussi les frais d'acquisition."],tri:["TRI (taux de rentabilit\u00e9 interne)","Taux qui annule la VAN sur l'ensemble des flux (apport, cash-flows, revente). \u00c0 comparer \u00e0 votre taux d'actualisation : TRI sup\u00e9rieur = projet cr\u00e9ateur de valeur."],van:["VAN (valeur actuelle nette)","Somme des flux futurs actualis\u00e9s \u00e0 votre exigence de rendement, moins l'apport. VAN &gt; 0 = le projet rapporte plus que votre exigence. Indicateur de d\u00e9cision principal."],payback:["D\u00e9lai de r\u00e9cup\u00e9ration actualis\u00e9","Ann\u00e9e \u00e0 partir de laquelle la VAN devient positive en cas de revente. Avant, l'op\u00e9ration d\u00e9truit de la valeur (frais et fiscalit\u00e9 pas encore amortis)."]};
+  const dEl=$("proKpiDetail");
+  el.querySelectorAll("[data-kpi]").forEach(t=>{const k=t.getAttribute("data-kpi");if(!k||!KPIEXP[k]||!dEl)return;t.addEventListener("click",()=>{const ex=KPIEXP[k];dEl.innerHTML=`<div style="padding:11px 13px;background:var(--brand-tint);border-radius:11px;border-left:4px solid var(--brand-dark)"><div style="font-weight:800;color:var(--brand-dark);font-size:13px">${ex[0]}</div><div style="font-size:12px;color:var(--ink);line-height:1.55;margin-top:4px">${ex[1]}</div></div>`;});});
 }
 function computeAll(r){
   const rent=numv("iRent");const rentY=rent*12;$("rentYear").textContent=eur(rentY);
@@ -1474,7 +1485,7 @@ async function showResults(){
   const _checks=[numv("surface")>0,numv("chambres")>0,numv("sdb")>0,(state.type!=="appartement"||numv("floorExact")>0),(numv("balconM2")>0||numv("terrasseM2")>0||numv("jardinM2")>0),!!state.coord];
   const _conf=estimationConfidence(realStats,{dyn:r.dyn,nTotal:(realPts?realPts.length:0),attrFilled:_checks.filter(Boolean).length,attrTotal:_checks.length,baseConf:r.conf});
   r.confScore=_conf.score;r.confFactors=_conf.factors;r.confLabel=_conf.label;
-  if(realBase){r.spread=Math.max(0.04,Math.min(0.14,0.135-_conf.score/100*0.095));r.low=r.price*(1-r.spread);r.high=r.price*(1+r.spread);}
+  if(realBase){const _rs=realStats,_riq=(_rs&&_rs.med>0)?(_rs.q3-_rs.q1)/_rs.med:0.3;r.spread=Math.max(0.06,Math.min(0.20,0.045+_riq*0.18+(1-_conf.score/100)*0.04));r.low=r.price*(1-r.spread);r.high=r.price*(1+r.spread);}
   const sd=$("srcDot"),st=$("srcTxt");
   if(realBase){sd.style.background="#7fe3d4";st.textContent=`Donn\u00e9es r\u00e9elles DVF \u00b7 ${r.realCount} ventes`;$("compTag").textContent="DVF \u00b7 r\u00e9el";}
   else{sd.style.background="#E8742A";st.textContent="D\u00e9mo \u00b7 "+diag;$("compTag").textContent="DVF \u00b7 d\u00e9mo";}
@@ -1704,35 +1715,37 @@ function waterfallSVG(items,opts){const W=340,Ht=214,pl=8,pr=8,pt=10,pb=52,iw=W-
 }
 /* ===== Vague 7 : valorisation des travaux (cout, duree, plus-value, ROI par poste) ===== */
 var WORKS_POSTES=[
-  {id:"peinture",lbl:"Peinture / rafra\u00eechissement",c:function(s){return s*35;},d:2,rec:1.6},
-  {id:"sols",lbl:"Sols (parquet, carrelage)",c:function(s){return s*55;},d:2,rec:1.2},
-  {id:"cuisine",lbl:"Cuisine \u00e9quip\u00e9e",c:function(s){return 9000;},d:2,rec:1.1},
-  {id:"sdb",lbl:"Salle de bain",c:function(s){return 7000;},d:2,rec:1.05},
-  {id:"elec",lbl:"\u00c9lectricit\u00e9 (mise aux normes)",c:function(s){return s*90;},d:2,rec:0.75},
-  {id:"plomb",lbl:"Plomberie",c:function(s){return s*60;},d:1.5,rec:0.75},
-  {id:"isol",lbl:"Isolation + DPE",c:function(s){return s*85;},d:2,rec:1.3},
-  {id:"menui",lbl:"Menuiseries (double vitrage)",c:function(s){return s*120;},d:1.5,rec:1.1},
-  {id:"chauff",lbl:"Chauffage (PAC / chaudi\u00e8re)",c:function(s){return 11000;},d:1,rec:0.9},
-  {id:"staging",lbl:"Home staging",c:function(s){return s*25;},d:1,rec:2.0}
+  {id:"peinture",lbl:"Peinture / rafra\u00eechissement",c:function(s){return s*38;},d:2,rec:1.55},
+  {id:"sols",lbl:"Sols (parquet, carrelage)",c:function(s){return s*70;},d:2,rec:1.2},
+  {id:"cuisine",lbl:"Cuisine \u00e9quip\u00e9e",c:function(s){return 10000;},d:2,rec:1.1},
+  {id:"sdb",lbl:"Salle de bain compl\u00e8te",c:function(s){return 9000;},d:2,rec:1.05},
+  {id:"elec",lbl:"\u00c9lectricit\u00e9 (mise aux normes)",c:function(s){return s*100;},d:2.5,rec:0.7},
+  {id:"plomb",lbl:"Plomberie",c:function(s){return s*70;},d:1.5,rec:0.7},
+  {id:"isol",lbl:"Isolation + DPE",c:function(s){return s*90;},d:2,rec:1.35},
+  {id:"menui",lbl:"Menuiseries (double vitrage)",c:function(s){return s*135;},d:1.5,rec:1.15},
+  {id:"chauff",lbl:"Chauffage (PAC air/eau)",c:function(s){return 13000;},d:1,rec:0.9},
+  {id:"staging",lbl:"Home staging",c:function(s){return s*30;},d:1,rec:2.0}
 ];
 var worksSel={};
 function renderWorks(){
   var r=lastResult,el=$("worksPanel");if(!r||!el)return;
   var S=r.surface||50;
-  var list=WORKS_POSTES.map(function(p){var cost=Math.round(p.c(S)/100)*100,on=!!worksSel[p.id];
-    return '<label class="works-item" data-id="'+p.id+'" style="display:flex;justify-content:space-between;align-items:center;padding:9px 11px;border:1.5px solid '+(on?'var(--brand-dark)':'var(--line)')+';border-radius:10px;background:'+(on?'#eef7f5':'var(--bg)')+';cursor:pointer"><span style="display:flex;align-items:center;gap:9px"><input type="checkbox" '+(on?'checked':'')+' style="accent-color:var(--brand-dark);width:17px;height:17px"><span style="font-size:12.5px;color:var(--ink)">'+p.lbl+'</span></span><span class="num" style="font-size:12px;font-weight:700;color:var(--ink-soft)">'+eur0(cost)+'</span></label>';}).join("");
-  var cost=0,val=0,dur=0;WORKS_POSTES.forEach(function(p){if(worksSel[p.id]){var c=Math.round(p.c(S)/100)*100;cost+=c;val+=c*p.rec;dur+=p.d;}});
-  var duree=cost>0?Math.round(1+dur*0.6):0,pv=val-cost,roi=cost>0?pv/cost*100:0;
-  var sum;
-  if(cost>0){
-    var cells=[["Co\u00fbt total des travaux",eur0(cost),"var(--ink)"],["Dur\u00e9e estim\u00e9e",duree+" sem.","var(--ink)"],["Plus-value g\u00e9n\u00e9r\u00e9e",(pv>=0?"+":"")+eur0(pv),pv>=0?"var(--good)":"var(--bad)"],["ROI des travaux",(roi>=0?"+":"")+roi.toFixed(0)+" %",roi>=50?"var(--good)":roi>=0?"var(--warn)":"var(--bad)"]];
-    sum='<div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:9px">'+cells.map(function(t){return '<div style="background:var(--bg);border-radius:10px;padding:9px 11px"><div style="font-size:10px;color:var(--ink-soft);text-transform:uppercase">'+t[0]+'</div><div class="num" style="font-size:17px;font-weight:800;color:'+t[2]+'">'+t[1]+'</div></div>';}).join("")+'</div>'+
-      '<div style="margin-top:10px"><button id="worksApply" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--brand-dark);background:#fff;color:var(--brand-dark);font-weight:700;font-size:13px;cursor:pointer">Reporter '+eur0(cost)+' dans \u00ab Travaux \u00e0 financer \u00bb</button></div>'+
-      '<div class="hint" style="margin-top:8px">Co\u00fbts indicatifs (fourchettes de march\u00e9 ajust\u00e9es \u00e0 la surface). \u00ab Plus-value g\u00e9n\u00e9r\u00e9e \u00bb = part du co\u00fbt r\u00e9cup\u00e9r\u00e9e \u00e0 la revente (taux de r\u00e9cup\u00e9ration par poste : peinture/home staging \u00e9lev\u00e9s, \u00e9lectricit\u00e9/plomberie plus faibles). Le r\u00e9sultat r\u00e9el d\u00e9pend du march\u00e9 local et de l\'\u00e9tat initial. Mod\u00e8le indicatif.</div>';
-  } else sum='<div class="hint" style="margin-top:12px">Cochez les postes de travaux pr\u00e9vus pour estimer le budget, la dur\u00e9e, la plus-value et le ROI.</div>';
-  el.innerHTML='<div style="display:flex;flex-direction:column;gap:6px">'+list+'</div>'+sum;
-  el.querySelectorAll('input[type=checkbox]').forEach(function(cb){cb.addEventListener("change",function(){worksSel[cb.closest('.works-item').dataset.id]=cb.checked;renderWorks();});});
-  var ap=$("worksApply");if(ap)ap.addEventListener("click",function(){$("iTravaux").value=cost;if(lastResult){computeAll(lastResult);computeResale(lastResult);}});
+  var est=function(p){return Math.round(p.c(S)/100)*100;};
+  var costOf=function(p){var w=worksSel[p.id];return (w&&w.cost!=null)?w.cost:est(p);};
+  var list=WORKS_POSTES.map(function(p){var w=worksSel[p.id]||{},on=!!w.on,e=est(p),cv=costOf(p);
+    return '<div class="works-item" data-id="'+p.id+'" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1.5px solid '+(on?'var(--brand-dark)':'var(--line)')+';border-radius:10px;background:'+(on?'#eef7f5':'var(--bg)')+'"><input type="checkbox" class="wchk" '+(on?'checked':'')+' style="accent-color:var(--brand-dark);width:17px;height:17px;flex:none;cursor:pointer"><span style="flex:1;font-size:12px;color:var(--ink);line-height:1.3">'+p.lbl+'<br><span style="font-size:9.5px;color:var(--ink-soft)">estim. '+eur0(e)+'</span></span><span style="display:flex;align-items:center;gap:3px"><input type="number" class="wcost" min="0" value="'+cv+'" style="width:78px;padding:5px 6px;border:1px solid var(--line);border-radius:7px;font-size:12px;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)"><span style="font-size:11px;color:var(--ink-soft)">\u20ac</span></span></div>';}).join("");
+  var tot=function(){var cost=0,val=0,dur=0;WORKS_POSTES.forEach(function(p){var w=worksSel[p.id];if(w&&w.on){var c=costOf(p);cost+=c;val+=c*p.rec;dur+=p.d;}});return{cost:cost,val:val,duree:cost>0?Math.round(1+dur*0.6):0};};
+  var sumHtml=function(){var t=tot(),pv=t.val-t.cost,roi=t.cost>0?pv/t.cost*100:0;
+    if(t.cost<=0)return '<div class="hint" style="margin-top:12px">Cochez les postes pr\u00e9vus pour estimer budget, dur\u00e9e, plus-value et ROI. Chaque montant estim\u00e9 reste librement ajustable.</div>';
+    var cells=[["Co\u00fbt total des travaux",eur0(t.cost),"var(--ink)"],["Dur\u00e9e estim\u00e9e",t.duree+" sem.","var(--ink)"],["Plus-value g\u00e9n\u00e9r\u00e9e",(pv>=0?"+":"")+eur0(pv),pv>=0?"var(--good)":"var(--bad)"],["ROI des travaux",(roi>=0?"+":"")+roi.toFixed(0)+" %",roi>=50?"var(--good)":roi>=0?"var(--warn)":"var(--bad)"]];
+    return '<div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:9px">'+cells.map(function(c){return '<div style="background:var(--bg);border-radius:10px;padding:9px 11px"><div style="font-size:10px;color:var(--ink-soft);text-transform:uppercase">'+c[0]+'</div><div class="num" style="font-size:17px;font-weight:800;color:'+c[2]+'">'+c[1]+'</div></div>';}).join("")+'</div><div style="margin-top:10px"><button id="worksApply" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--brand-dark);background:#fff;color:var(--brand-dark);font-weight:700;font-size:13px;cursor:pointer">Reporter '+eur0(t.cost)+' dans \u00ab Travaux \u00e0 financer \u00bb</button></div><div class="hint" style="margin-top:8px">Montants estim\u00e9s (prix de march\u00e9 2025 ajust\u00e9s \u00e0 la surface), librement modifiables. \u00ab Plus-value g\u00e9n\u00e9r\u00e9e \u00bb = part du co\u00fbt r\u00e9cup\u00e9r\u00e9e \u00e0 la revente (peinture/staging \u00e9lev\u00e9s ; \u00e9lectricit\u00e9/plomberie plus faibles). R\u00e9sultat r\u00e9el selon le march\u00e9 local et l\'\u00e9tat initial. Indicatif.</div>';};
+  var bindApply=function(){var ap=$("worksApply");if(ap)ap.addEventListener("click",function(){$("iTravaux").value=tot().cost;if(lastResult){computeAll(lastResult);computeResale(lastResult);}});};
+  el.innerHTML='<div style="display:flex;flex-direction:column;gap:6px">'+list+'</div><div id="worksSum">'+sumHtml()+'</div>';
+  bindApply();
+  el.querySelectorAll('.works-item').forEach(function(it){var id=it.dataset.id,cb=it.querySelector('.wchk'),ci=it.querySelector('.wcost');
+    cb.addEventListener("change",function(){worksSel[id]=worksSel[id]||{};worksSel[id].on=cb.checked;renderWorks();});
+    ci.addEventListener("input",function(){worksSel[id]=worksSel[id]||{};worksSel[id].cost=(ci.value==="")?null:Math.max(0,Math.round(+ci.value));var sm=$("worksSum");if(sm){sm.innerHTML=sumHtml();bindApply();}});
+  });
 }
 /* ===== Op\u00e9ration achat-revente (particulier OU marchand de biens) ===== */
 function notaireRateMdB(years){
@@ -1745,7 +1758,7 @@ function opCalc(r,sellPrice,works){
   const years=Number($("holdYears").value);
   const fv=numv("fraisVente")/100;
   const profil=state.profil;
-  const opYears=profil==="mdb"?(numv("opDureeMois")||12)/12:years;
+  const opYears=(numv("opDureeMois")||12)/12;
   const duree=Number($("iDuree").value),taux=numv("iTaux")/100,apport=numv("iApport");
   const chargesAn=numv("iTaxe")+numv("iCopro")+numv("iPno")+numv("iDivers");
   const acqRate=profil==="mdb"?notaireRateMdB(years):notaireRate();
@@ -1774,12 +1787,12 @@ function opCalc(r,sellPrice,works){
     isMdb=resAvIS<=0?0:(resAvIS<=42500?resAvIS*0.15:42500*0.15+(resAvIS-42500)*0.25); // IS 15%/25%
     fisc=tva+isMdb;fiscLabel="TVA sur marge + IS";
   }else{
-    const notaireP=bp*notaireRate(),forfait=years>5?bp*0.15:0;
+    const notaireP=bp*notaireRate(),forfait=opYears>5?bp*0.15:0;
     let acqCorr=bp+notaireP+forfait;
     const reg=$("regime").value;
-    if(reg==="meuble_reel")acqCorr-=Math.min(bp*0.85,(bp*0.85/30+700)*years);
+    if(reg==="meuble_reel")acqCorr-=Math.min(bp*0.85,(bp*0.85/30+700)*opYears);
     const pvB=Math.max(0,sellPrice-fraisVente-acqCorr);
-    const aIR=abatIR(years),aPS=abatPS(years),ps=psRate();
+    const aIR=abatIR(opYears),aPS=abatPS(opYears),ps=psRate();
     fisc=pvB*(1-aIR)*0.19+pvB*(1-aPS)*ps+surtaxePV(pvB*(1-aIR));fiscLabel="Plus-value des particuliers";
   }
   const marge=sellPrice-fraisVente-fisc-prixRevient;
@@ -1812,7 +1825,7 @@ function renderOperation(r){
   let h="rentabilit\u00e9 de l'op\u00e9ration";
   if(o.apport>0&&o.opYears>0)h="rentabilit\u00e9 \u00b7 ~"+(o.marge/o.apport*100/o.opYears).toFixed(0)+" %/an sur apport"+(state.profil==="mdb"?" ("+(o.opYears*12).toFixed(0)+" mois)":"");
   $("opTauxH").textContent=h;
-  $("opDureeRow").style.display=state.profil==="mdb"?"":"none";
+  $("opDureeRow").style.display="";
   // sc\u00e9narios
   const pess=opCalc(r,sell*0.90,travaux*1.15),opt=opCalc(r,sell*1.10,travaux*0.90);
   const c=(v,col)=>`<td style="padding:7px 6px;text-align:right;font-weight:700;color:${col}">${v}</td>`;
