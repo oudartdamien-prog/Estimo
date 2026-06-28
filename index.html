@@ -409,6 +409,7 @@
     <div id="modeBar" style="order:-1"><div class="seg" id="segMode"><button data-m="simple" class="on">Mode Simple</button><button data-m="expert">Mode Expert</button></div><div class="hint" style="margin-top:6px">Mode Simple : l'essentiel pour d&#233;cider (verdict, prix conseille, negociation, risques). Mode Expert : tous les calculs detailles.</div></div>
     <section class="card" id="decisionCard" style="order:0"><div id="decisionPanel"></div></section>
     <section class="card expert-only" id="reportCard" style="order:0"><div class="card-head"><div class="step-no">&#128221;</div><div><h2>Rapport d'analyse</h2><div class="sub">Synth&#232;se r&#233;dig&#233;e automatiquement &#224; partir de vos donn&#233;es</div></div></div><div id="reportPanel"></div></section>
+    <section class="card expert-only" id="bienIndicesCard" style="order:3"><div class="card-head"><div class="step-no">&#10024;</div><div><h2>Profil & indices du bien</h2><div class="sub">Qualit&#233;, raret&#233;, attractivit&#233; &#233;motionnelle et profil acheteur</div></div></div><div id="bienIndicesPanel"></div></section>
     <section class="card expert-only" id="proKpiCard" style="order:4"><div class="card-head"><div class="step-no">&#128202;</div><div><h2>Tableau de bord investisseur</h2><div class="sub">Ratios financiers professionnels &#8212; calcul&#233;s en direct</div></div></div><div id="proKpiPanel"></div></section>
     <section class="card expert-only" id="fiscalCard" style="order:5"><div class="card-head"><div class="step-no">&#9878;&#65039;</div><div><h2>Comparateur fiscal</h2><div class="sub">Tous les r&#233;gimes compar&#233;s &#8212; recommandation automatique</div></div></div><div id="fiscalPanel"></div></section>
     <section class="card expert-only" id="dispositifCard" style="order:5"><div class="card-head"><div class="step-no">&#127963;&#65039;</div><div><h2>Dispositifs de d&#233;fiscalisation</h2><div class="sub">Pinel, Denormandie, Malraux, Monuments Historiques, holding</div></div></div>
@@ -1027,29 +1028,39 @@ function baseSqm(city,cp,type){const cn=norm(city);const dep=cp?cp.substring(0,2
   if(type==="maison")base=Math.round(base*HOUSE_FACTOR);
   return{sqm:base,conf};
 }
-function coefficients(){const rows=[];let m=1;let detail=0;
+// === Contexte de marche : derive des donnees reelles (prix DVF + altitude) pour rendre les coefficients dependants du contexte (commune, quartier, climat, standing de zone) ===
+function marketCtx(realBase){
+  const REF=3300;
+  const lvl=(realBase&&realBase>0)?realBase/REF:1;
+  const tier=lvl<0.55?"modeste":lvl<1.05?"moyen":lvl<1.7?"recherche":"premium";
+  const alt=(state.coord&&state.coord.alt!=null)?state.coord.alt:120;
+  return {lvl:lvl,tier:tier,alt:alt,cold:alt>=550,mountain:alt>=900,premium:(tier==="recherche"||tier==="premium"),realBase:realBase||REF,type:state.type};
+}
+function coefficients(ctx){const rows=[];let m=1;let detail=0;
+  ctx=ctx||marketCtx(null);const tier=ctx.tier,cold=ctx.cold,mountain=ctx.mountain,premium=ctx.premium;
   if(state.type==="terrain")return{mult:1,rows,detail:0};
   const etatMap={vetuste:[-0.25,"V\u00e9tuste"],renover:[-0.15,"\u00c0 r\u00e9nover"],correct:[-0.03,"\u00c9tat correct"],bon:[0.05,"Bon \u00e9tat"],renove:[0.10,"R\u00e9nov\u00e9 r\u00e9cemment"],neuf:[0.14,"Neuf / refait"]};
-  let [v,lbl]=etatMap[$("etat").value];m*=(1+v);rows.push([lbl,v]);
-  const dpeMap={A:0.06,B:0.04,C:0.02,D:0,E:-0.03,F:-0.07,G:-0.12};const dv=dpeMap[state.dpe];if(dv){m*=(1+dv);rows.push(["DPE "+state.dpe,dv]);}
+  let [v,lbl]=etatMap[$("etat").value];m*=(1+v);rows.push([lbl,v]);const etatKey=$("etat").value;
+  const dpeMap={A:0.06,B:0.04,C:0.02,D:0,E:-0.03,F:-0.07,G:-0.12};let dv=dpeMap[state.dpe];if(dv!==undefined&&dv!==0){const dpeClim=mountain?1.8:cold?1.45:1,dpeTier=tier==="modeste"?1.2:premium?0.7:1;dv=dv*dpeClim*dpeTier;m*=(1+dv);rows.push(["DPE "+state.dpe,dv]);}
+  if(etatKey==="renove"||etatKey==="neuf"){if(state.dpe==="A"||state.dpe==="B"){m*=1.015;rows.push(["Coh\u00e9rence r\u00e9novation + DPE performant",0.015]);}else if(state.dpe==="F"||state.dpe==="G"){m*=0.98;rows.push(["Incoh\u00e9rence r\u00e9nov\u00e9 / passoire \u00e9nerg\u00e9tique",-0.02]);}}
   const gesMap={A:0.01,B:0.005,C:0,D:0,E:-0.005,F:-0.015,G:-0.02};const gv=gesMap[state.ges];if(gv){m*=(1+gv);rows.push(["GES "+state.ges,gv]);}
   if(state.type==="appartement"){const fe=numv("floorExact"),ft=numv("floorTotal"),asc=$("asc").checked;let ev=0,l="";
     if($("floorExact").value!==""){
       if(fe===0){ev=-0.05;l="Rez-de-chauss\u00e9e";}
       else{ if(!asc&&fe>=3){ev=Math.max(-0.09,-0.015*(fe-2));l=`${fe}\u1d49 sans ascenseur`;} else if(asc&&fe>=4){ev=0.02;l=`${fe}\u1d49 avec ascenseur`;} else {l=`${fe}\u1d49 \u00e9tage`;}
-        if(ft>0&&fe===ft&&ft>=2){ev+=0.03;l=`Dernier \u00e9tage (${fe}\u1d49)`;} }
+        if(ft>0&&fe===ft&&ft>=2){ev+=premium?0.04:0.03;l=`Dernier \u00e9tage (${fe}\u1d49)`;} }
       if(ev){m*=(1+ev);} rows.push([l,ev]); detail++; }
   }
   const vueMap={rue_passante:[-0.03,"Vue rue passante"],rue:[0,"Vue rue"],cour:[0.01,"Vue cour"],visavis:[-0.02,"Vis-\u00e0-vis proche"],degagee:[0.03,"Vue d\u00e9gag\u00e9e"],verdure:[0.05,"Vue verdure/parc"],monument:[0.08,"Vue panoramique"],montagne:[0.06,"Vue montagne"],mer:[0.12,"Vue mer"]};
-  let [vv,vl]=vueMap[$("vue").value];if(vv){m*=(1+vv);rows.push([vl,vv]);}detail++;
+  let [vv,vl]=vueMap[$("vue").value];if(vv>0){const _pv=["degagee","verdure","monument","montagne","mer"].indexOf($("vue").value)>=0;if(_pv&&premium)vv*=1.25;if($("vue").value==="montagne"&&mountain)vv*=1.3;}if(vv){m*=(1+vv);rows.push([vl,vv]);}detail++;
   const dirs=[["expoN","Nord",-0.02],["expoNE","Nord-Est",-0.01],["expoE","Est",0],["expoSE","Sud-Est",0.02],["expoS","Sud",0.03],["expoSO","Sud-Ouest",0.03],["expoO","Ouest",0.01],["expoNO","Nord-Ouest",-0.01]];
   const exChecked=dirs.filter(d=>{const e=$(d[0]);return e&&e.checked;});
   const traversant=[["expoN","expoS"],["expoE","expoO"],["expoNE","expoSO"],["expoNO","expoSE"]].some(([a,b])=>$(a)&&$(a).checked&&$(b)&&$(b).checked);
-  if(exChecked.length){const best=Math.max(...exChecked.map(d=>d[2]));const multi=exChecked.length>=3?0.03:exChecked.length>=2?0.02:0;const trav=traversant?0.015:0;const xv=best+multi+trav;m*=(1+xv);rows.push([traversant?`Exposition traversante (${exChecked.length} orient.)`:exChecked.length>=2?`Exposition multi (${exChecked.length} orient.)`:`Exposition ${exChecked[0][1]}`,xv]);}detail++;
+  if(exChecked.length){let best=Math.max(...exChecked.map(d=>d[2]));if(best>0&&cold)best*=1.4;const multi=exChecked.length>=3?0.03:exChecked.length>=2?0.02:0;const trav=traversant?0.015:0;const xv=best+multi+trav;m*=(1+xv);rows.push([traversant?`Exposition traversante (${exChecked.length} orient.)`:exChecked.length>=2?`Exposition multi (${exChecked.length} orient.)`:`Exposition ${exChecked[0][1]}`,xv]);}detail++;
   const chMap={collectif:[-0.01,"Chauffage collectif"],indiv_gaz:[0,"Chauffage gaz"],indiv_elec:[-0.015,"Chauffage \u00e9lectrique"],fioul:[-0.02,"Chauffage fioul"],bois:[0.005,"Po\u00eale \u00e0 bois"],pellets:[0.01,"Chauffage granul\u00e9s"],pac:[0.02,"Chauffage PAC/r\u00e9cent"],reversible:[0.015,"Clim r\u00e9versible"],plancher:[0.015,"Plancher chauffant"]};
   let [cv,cl]=chMap[$("chauffage").value]||[0,""];if(cv){m*=(1+cv);rows.push([cl,cv]);}
   const stMap={standard:[0,"Standard"],bon:[0.03,"Bonnes prestations"],haut:[0.07,"Haut standing"]};
-  let [sv,sl]=stMap[$("standing").value];if(sv){m*=(1+sv);rows.push([sl,sv]);detail++;}
+  let [sv,sl]=stMap[$("standing").value];if(sv>0){const stTier=premium?1.3:tier==="modeste"?0.5:1;sv*=stTier;}if(sv){m*=(1+sv);rows.push([sl,sv]);detail++;}
   const epMap={avant1948:[0.01,"Avant 1948"],"1949_1974":[-0.02,"1949\u20131974"],"1975_2000":[0,"1975\u20132000"],apres2000:[0.03,"Apr\u00e8s 2000"],neuf:[0.06,"Neuf"]};
   let [ev2,el2]=epMap[$("epoque").value];if(ev2){m*=(1+ev2);rows.push([el2,ev2]);}detail++;
   if(numv("sdb")>=2){m*=1.01;rows.push(["Plusieurs salles d'eau",0.01]);}
@@ -1057,29 +1068,33 @@ function coefficients(){const rows=[];let m=1;let detail=0;
   if(state.type==="maison"){
     const miMap={individuelle:[0.03,"Maison individuelle"],un:[0,"Mitoyenne 1 c\u00f4t\u00e9"],deux:[-0.03,"Mitoyenne 2 c\u00f4t\u00e9s"]};
     let [mv,ml]=miMap[$("mitoyen").value];if(mv){m*=(1+mv);rows.push([ml,mv]);}detail++;
-    if($("piscine").checked){m*=1.04;rows.push(["Piscine",0.04]);}
+    if($("piscine").checked){const pv=mountain?0.02:cold?0.03:0.045;m*=(1+pv);rows.push(["Piscine",pv]);}
     if($("amenageable").checked){m*=1.02;rows.push(["Combles/sous-sol am\u00e9nageables",0.02]);}
   }
-  if($("parking").checked){m*=1.03;rows.push(["Parking / garage",0.03]);}
+  if($("parking").checked){const pk=premium?0.04:tier==="modeste"?0.02:0.03;m*=(1+pk);rows.push(["Parking / garage",pk]);}
   if($("cave").checked){m*=1.01;rows.push(["Cave / cellier",0.01]);}
   return{mult:m,rows,detail};
 }
-function outdoorValue(baseSqmAdj){
+function outdoorValue(baseSqmAdj,ctx){
   if(state.type==="terrain")return{val:0,rows:[]};
+  ctx=ctx||marketCtx(null);const premium=ctx.premium,cold=ctx.cold;
   const rows=[];let val=0;
+  // Surface economique : chaque m2 exterieur converti en equivalent surface habitable, taux dependant du marche local
+  const wB=0.35*(premium?1.15:1)*(cold?0.9:1),wT=0.45*(premium?1.25:1)*(cold?0.85:1),wJ=premium?0.05:0.06;
   const bM=numv("balconM2"),tM=numv("terrasseM2"),jM=numv("jardinM2");
-  if(bM>0){const v=bM*baseSqmAdj*0.35;val+=v;rows.push([`Balcon ${bM} m\u00b2`,v]);}
-  if(tM>0){const v=tM*baseSqmAdj*0.45;val+=v;rows.push([`Terrasse ${tM} m\u00b2`,v]);}
-  if(jM>0){const f=Math.min(jM,300),x=Math.max(0,jM-300);let v=f*baseSqmAdj*0.06+x*baseSqmAdj*0.015;const cap=baseSqmAdj*(numv("surface")||1)*0.30;v=Math.min(v,cap);val+=v;rows.push([`Jardin ${jM} m\u00b2`,v]);}
+  if(bM>0){const v=bM*baseSqmAdj*wB;val+=v;rows.push([`Balcon ${bM} m\u00b2 (\u00e9quiv. surface)`,v]);}
+  if(tM>0){const v=tM*baseSqmAdj*wT;val+=v;rows.push([`Terrasse ${tM} m\u00b2 (\u00e9quiv. surface)`,v]);}
+  if(jM>0){const f=Math.min(jM,300),x=Math.max(0,jM-300);let v=f*baseSqmAdj*wJ+x*baseSqmAdj*0.015;const cap=baseSqmAdj*(numv("surface")||1)*0.30;v=Math.min(v,cap);val+=v;rows.push([`Jardin ${jM} m\u00b2 (\u00e9quiv. surface)`,v]);}
   return{val,rows};
 }
 function estimate(realBase){
   const city=$("ville").value,cp=$("cp").value,type=state.type;
   const surface=type==="terrain"?numv("terrain"):numv("surface");
   const {sqm,conf}=realBase?{sqm:realBase,conf:"\u00e9lev\u00e9e"}:baseSqm(city,cp,type);
-  const {mult,rows,detail}=coefficients();
+  const ctx=marketCtx(realBase);
+  const {mult,rows,detail}=coefficients(ctx);
   const sqmAdj=sqm*mult;
-  const od=outdoorValue(sqmAdj);
+  const od=outdoorValue(sqmAdj,ctx);
   const dyn=computeDynamics(city,cp);
   let price=sqmAdj*surface+od.val;
   if(realBase){const _e=price/surface,_cap=Math.max(realBase*0.75,Math.min(realBase*1.25,_e));price=_cap*surface;}
@@ -1089,7 +1104,7 @@ function estimate(realBase){
   spread=Math.min(0.16,Math.max(0.05,spread-(detail||0)*0.004));
   const allRows=rows.concat(od.rows.map(([l,v])=>[l,null,v]));
   // dynamique de march\u00e9 : indicateur indicatif, n'ajuste plus l'estimation (purge d\u00e9mo)
-  return{price,sqm:effSqm,sqmBase:sqm,sqmAdj,low:price*(1-spread),high:price*(1+spread),spread,conf,rows:allRows,surface,type,city,cp,pieces:state.pieces,real:!!realBase,dyn};
+  return{price,sqm:effSqm,sqmBase:sqm,sqmAdj,low:price*(1-spread),high:price*(1+spread),spread,conf,rows:allRows,surface,type,city,cp,pieces:state.pieces,real:!!realBase,econSurface:surface+(sqmAdj>0?od.val/sqmAdj:0),ctx,dyn};
 }
 
 /* ===== Rendu ===== */
@@ -1332,6 +1347,64 @@ function renderFiscalCompare(r){
     `<div class="hint" style="margin-top:11px">Comparaison de l'<b>imp\u00f4t annuel</b> sur les revenus locatifs (m\u00eames loyers, charges et int\u00e9r\u00eats). Les r\u00e9gimes \u00e0 <b>amortissement</b> (LMNP r\u00e9el, SARL famille, SCI IS) minimisent l'imp\u00f4t annuel mais le r\u00e9int\u00e8grent \u00e0 la <b>plus-value de cession</b> : sur longue d\u00e9tention avec revente, comparez le co\u00fbt total, pas seulement l'annuel. Pinel, Denormandie, Malraux, Monuments Historiques et holding (li\u00e9s \u00e0 un investissement sp\u00e9cifique) seront ajout\u00e9s s\u00e9par\u00e9ment. Indicatif \u2014 \u00e0 valider avec un expert-comptable.</div>`;
 }
 /* ===== Vague 5 : tableau de bord investisseur (ratios financiers pro) ===== */
+// ===== Vague 2 : indices synthetiques du bien (qualite, emotionnel, rarete, profil acheteur) =====
+function buyerProfile(r){
+  const t=r.type,s=r.surface||60,premium=!!(r.ctx&&r.ctx.premium);
+  if(t==="appartement"&&s<=42)return{key:"invest",label:"Investisseurs & primo-acc\u00e9dants",desc:"Studios/T2 : sensibles au rendement, aux charges (DPE) et \u00e0 la proximit\u00e9 des transports."};
+  if(t==="maison"||s>=95)return{key:"famille",label:"Familles",desc:"Grandes surfaces : priorit\u00e9 \u00e0 l'espace, aux ext\u00e9rieurs, au stationnement et aux \u00e9coles."};
+  if(premium&&s>=70)return{key:"aise",label:"Acqu\u00e9reurs ais\u00e9s / secundo-acc\u00e9dants",desc:"Biens de standing : priorit\u00e9 aux prestations, \u00e0 la vue, au cachet et \u00e0 l'emplacement."};
+  return{key:"couple",label:"Jeunes couples & actifs",desc:"Surfaces interm\u00e9diaires : \u00e9quilibre entre confort, \u00e9tat g\u00e9n\u00e9ral et localisation."};
+}
+function bienIndices(r,realStats){
+  const g=id=>document.getElementById(id),nv=id=>{const e=g(id);return e?(parseFloat(e.value)||0):0;},ck=id=>{const e=g(id);return!!(e&&e.checked);};
+  const buyer=buyerProfile(r);
+  const W={invest:{dpe:1.4,exterior:0.6,surface:0.8,prestations:0.7,charme:0.5},famille:{dpe:1.0,exterior:1.5,surface:1.4,prestations:0.9,charme:0.8},aise:{dpe:0.7,exterior:1.1,surface:1.0,prestations:1.5,charme:1.4},couple:{dpe:1.0,exterior:1.0,surface:1.0,prestations:1.0,charme:1.0}}[buyer.key];
+  const etatScore={vetuste:0.1,renover:0.25,correct:0.5,bon:0.7,renove:0.88,neuf:1}[g("etat").value]||0.5;
+  const dpeS={A:1,B:0.86,C:0.72,D:0.55,E:0.4,F:0.22,G:0.08},dpeScore=dpeS[state.dpe]!=null?dpeS[state.dpe]:0.5;
+  const standScore={standard:0.4,bon:0.7,haut:1}[g("standing").value]||0.4;
+  const extScore=Math.min(1,(nv("balconM2")>0?0.3:0)+(nv("terrasseM2")>0?0.5:0)+(nv("jardinM2")>0?0.5:0)+(ck("parking")?0.3:0));
+  const vueWow={mer:1,montagne:0.85,monument:0.85,verdure:0.6,degagee:0.45}[g("vue").value]||0;
+  const lumiere=Math.min(1,["expoS","expoSO","expoSE","expoE","expoO"].filter(d=>ck(d)).length*0.35);
+  const charmeScore=Math.min(1,(g("epoque").value==="avant1948"?0.5:0)+(standScore>0.6?0.3:0)+(vueWow>0.5?0.4:0));
+  const sNorm=Math.min(1,(r.surface||50)/(r.type==="maison"?140:90));
+  let q=(etatScore*0.30+dpeScore*0.22*W.dpe+standScore*0.18*W.prestations+extScore*0.12*W.exterior+sNorm*0.10*W.surface+lumiere*0.08);
+  q=q/(0.30+0.22*W.dpe+0.18*W.prestations+0.12*W.exterior+0.10*W.surface+0.08);
+  const quality=Math.round(Math.max(0,Math.min(1,q))*100);
+  let emo=(vueWow*0.34+lumiere*0.22+charmeScore*0.24*W.charme+extScore*0.20*W.exterior);
+  emo=emo/(0.34+0.22+0.24*W.charme+0.20*W.exterior);
+  const emotional=Math.round(Math.max(0,Math.min(1,emo))*100);
+  let rar=0;const rsig=[];
+  const surfs=(r.realPts||[]).map(p=>p.surf).filter(x=>x>0).sort((a,b)=>a-b);
+  if(surfs.length>=8){const s=r.surface||surfs[Math.floor(surfs.length/2)];const below=surfs.filter(x=>x<s).length/surfs.length;if(Math.abs(below-0.5)*2>0.7){rar+=0.3;rsig.push("surface atypique");}}
+  if(vueWow>=0.85){rar+=0.35;rsig.push("vue exceptionnelle");}
+  if(nv("terrasseM2")>=15){rar+=0.2;rsig.push("grande terrasse");}
+  if(ck("piscine")){rar+=0.2;rsig.push("piscine");}
+  if(g("standing").value==="haut"){rar+=0.2;rsig.push("haut standing");}
+  if(r.type==="appartement"){const fe=nv("floorExact"),ft=nv("floorTotal");if(ft>0&&fe===ft&&ft>=4){rar+=0.15;rsig.push("dernier \u00e9tage \u00e9lev\u00e9");}}
+  const rarity=Math.round(Math.min(1,rar)*100);
+  return{quality,emotional,rarity,buyer,rsig};
+}
+function indexValueAdjust(idx){
+  // Conversion NON LINEAIRE des indices en impact de valorisation (P4), bornee, sans double-comptage avec le moteur hedonique
+  let qA=0;if(idx.quality>=80)qA=0.035*Math.pow((idx.quality-80)/20,1.3);else if(idx.quality<=35)qA=-0.04*Math.pow((35-idx.quality)/35,1.3);
+  const eA=idx.emotional>50?0.05*Math.pow((idx.emotional-50)/50,1.3):0;
+  const rA=idx.rarity>55?0.07*Math.pow((idx.rarity-55)/45,1.35):0;
+  let tot=qA+eA+rA;tot=Math.max(-0.08,Math.min(0.13,tot));
+  return{tot,qA,eA,rA};
+}
+function renderBienIndices(r){
+  const el=$("bienIndicesPanel");if(!el||!r.indices)return;
+  const idx=r.indices,iv=r.indexAdj||{tot:0,qA:0,eA:0,rA:0};
+  const gauge=(label,val,color,note)=>`<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:12.5px;font-weight:700;color:var(--ink)">${label}</span><span class="num" style="font-size:16px;font-weight:800;color:${color}">${val}<span style="font-size:11px;color:var(--ink-soft)">/100</span></span></div><div style="height:8px;border-radius:5px;background:var(--line);margin-top:5px;overflow:hidden"><div style="height:100%;width:${val}%;background:${color}"></div></div><div style="font-size:10.5px;color:var(--ink-soft);margin-top:3px">${note}</div></div>`;
+  const qC=idx.quality>=75?"var(--good)":idx.quality>=45?"var(--brand-dark)":"var(--warn)",eC=idx.emotional>=65?"#b8458f":"var(--brand-dark)",rC=idx.rarity>=60?"#c2761a":"var(--ink-soft)";
+  const impact=Math.round(r.price-r.price/(1+iv.tot));
+  el.innerHTML=gauge("Qualit\u00e9 du bien",idx.quality,qC,"Condition, performance \u00e9nerg\u00e9tique, prestations et confort.")+
+    gauge("Attractivit\u00e9 \u00e9motionnelle",idx.emotional,eC,"Coup de c\u0153ur : vue, luminosit\u00e9, cachet, ext\u00e9rieurs.")+
+    gauge("Raret\u00e9 sur le march\u00e9 local",idx.rarity,rC,(idx.rsig&&idx.rsig.length?"Atouts rares : "+idx.rsig.join(", ")+".":"Bien courant sur son secteur."))+
+    `<div style="margin-top:4px;padding:11px 13px;background:var(--brand-tint);border-radius:11px"><div style="font-size:11px;color:var(--ink-soft);text-transform:uppercase;font-weight:700">Profil acheteur majoritaire</div><div style="font-size:13.5px;font-weight:800;color:var(--brand-dark);margin:2px 0">${idx.buyer.label}</div><div style="font-size:11.5px;color:var(--ink);line-height:1.5">${idx.buyer.desc}</div></div>`+
+    `<div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;padding:10px 13px;background:var(--bg);border-radius:11px"><div><div style="font-size:11px;color:var(--ink-soft);text-transform:uppercase;font-weight:700">Impact qualit\u00e9 / raret\u00e9 / \u00e9motion</div><div style="font-size:10.5px;color:var(--ink-soft)">\u00e9motion +${(iv.eA*100).toFixed(1)}% \u00b7 raret\u00e9 +${(iv.rA*100).toFixed(1)}%${iv.qA?" \u00b7 qualit\u00e9 "+(iv.qA>0?"+":"")+(iv.qA*100).toFixed(1)+"%":""}</div></div><div class="num" style="font-size:18px;font-weight:800;color:${iv.tot>=0?"var(--good)":"var(--bad)"}">${iv.tot>0?"+":""}${eur0(impact)} \u20ac</div></div>`+
+    `<div class="hint" style="margin-top:8px">Indices calcul\u00e9s sur les caract\u00e9ristiques du bien et le march\u00e9 local. Conversion non lin\u00e9aire : l'excellence et la raret\u00e9 valent une prime sup\u00e9rieure \u00e0 une simple somme de bonus. Indicatif.</div>`;
+}
 function renderProKpis(r,f){
   const el=$("proKpiPanel");if(!el)return;
   const noi=f.rentY-f.charges,debtY=f.mensuTot*12;
@@ -1486,6 +1559,9 @@ async function showResults(){
   const _conf=estimationConfidence(realStats,{dyn:r.dyn,nTotal:(realPts?realPts.length:0),attrFilled:_checks.filter(Boolean).length,attrTotal:_checks.length,baseConf:r.conf});
   r.confScore=_conf.score;r.confFactors=_conf.factors;r.confLabel=_conf.label;
   if(realBase){const _rs=realStats,_riq=(_rs&&_rs.med>0)?(_rs.q3-_rs.q1)/_rs.med:0.3;r.spread=Math.max(0.06,Math.min(0.20,0.045+_riq*0.18+(1-_conf.score/100)*0.04));r.low=r.price*(1-r.spread);r.high=r.price*(1+r.spread);}
+  // Vague 2 : indices synthetiques du bien -> ajustement de valeur non lineaire borne (qualite/rarete/emotion)
+  r.indices=bienIndices(r,realStats);r.indexAdj=indexValueAdjust(r.indices);
+  if(r.indexAdj.tot){r.price=Math.round(r.price*(1+r.indexAdj.tot));r.sqm=Math.round(r.price/(r.surface||1));r.low=r.price*(1-r.spread);r.high=r.price*(1+r.spread);}
   const sd=$("srcDot"),st=$("srcTxt");
   if(realBase){sd.style.background="#7fe3d4";st.textContent=`Donn\u00e9es r\u00e9elles DVF \u00b7 ${r.realCount} ventes`;$("compTag").textContent="DVF \u00b7 r\u00e9el";}
   else{sd.style.background="#E8742A";st.textContent="D\u00e9mo \u00b7 "+diag;$("compTag").textContent="DVF \u00b7 d\u00e9mo";}
@@ -1508,7 +1584,7 @@ async function showResults(){
   r.rows.forEach(row=>{if(row[2]!=null)addRow(row[0],null,false,row[2]);else addRow(row[0],row[1],true);});
   addRow("Prix /m\u00b2 ajust\u00e9",eur0(r.sqmAdj)+" \u20ac");addRow("\u00d7 Surface",r.surface+" m\u00b2");
   const tot=document.createElement("div");tot.className="bd-row";tot.style.cssText="border-top:1px solid var(--line);margin-top:6px;padding-top:8px;font-weight:700";tot.innerHTML=`<span>= Valeur estim\u00e9e</span><span>${eur(r.price)}</span>`;bd.appendChild(tot);
-  renderInsee(r);renderMarket(r);renderLocStats(r);renderDvfStats(r);genComparables(r);
+  renderInsee(r);renderMarket(r);renderLocStats(r);renderDvfStats(r);genComparables(r);renderBienIndices(r);
   $("locAddr").textContent=state.coord?.label||(($("ville").value||"")+" "+$("cp").value).trim();
   $("locCoord").textContent=state.coord?`${state.coord.lat.toFixed(4)}, ${state.coord.lon.toFixed(4)}${state.coord.alt!=null?" \u00b7 alt. "+state.coord.alt+" m":""} \u00b7 carte interactive dans la version h\u00e9berg\u00e9e`:"Carte interactive disponible dans la version h\u00e9berg\u00e9e";
   const dpeCostHi=renderDpe();
