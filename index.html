@@ -253,6 +253,7 @@
     <div class="field"><div class="row">
       <div id="wrapSurface"><label class="lbl" for="surface">Surface habitable</label><div class="with-unit"><input class="input num" id="surface" type="number" min="1" placeholder="65" /><span class="unit">m&#178;</span></div></div>
       <div id="wrapTerrain" style="display:none"><label class="lbl" for="terrain">Surface terrain</label><div class="with-unit"><input class="input num" id="terrain" type="number" min="0" placeholder="300" /><span class="unit">m&#178;</span></div></div>
+      <div id="wrapViab" style="display:none;margin-top:8px"><label class="chk"><input type="checkbox" id="viabilise" />Terrain viabilis&#233; (r&#233;seaux raccord&#233;s)</label></div>
     </div></div>
 
     <div class="field" id="wrapPieces"><label class="lbl">Nombre de pi&#232;ces</label>
@@ -710,6 +711,7 @@ $("segGes").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=
 
 function updateTypeUI(){const t=state.type;
   $("wrapTerrain").style.display=(t==="maison"||t==="terrain")?"":"none";
+  $("wrapViab").style.display=(t==="terrain")?"":"none";
   $("wrapSurface").style.display=(t==="terrain")?"none":"";
   ["wrapPieces","wrapEtat","wrapDpe","accCarac"].forEach(id=>$(id).style.display=(t==="terrain")?"none":"");
   $("wrapEtage").style.display=(t==="appartement")?"":"none";
@@ -775,10 +777,12 @@ const CORS_PROXIES=["https://corsproxy.io/?url=","https://api.allorigins.win/raw
 function fetchT(url,ms){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);return fetch(url,{signal:c.signal}).finally(()=>clearTimeout(t));}
 // Tente la source directe ET les relais EN PARALL\u00c8LE, avec d\u00e9lai. Rejette les pages d'erreur HTML (un relais peut r\u00e9pondre 200 avec une page d'erreur).
 async function dvfFetch(url){
-  const one=u=>fetchT(u,9000).then(async r=>{if(!r.ok)throw 0;const t=await r.text();const s=t.trim();if(s[0]!=="{"&&s[0]!=="[")throw 0;return {json:JSON.parse(s),raw:t};});
-  const tries=[one(url)];
-  CORS_PROXIES.forEach(px=>tries.push(one(px+encodeURIComponent(url))));
-  try{return await Promise.any(tries);}catch(_){return null;}
+  const one=u=>fetchT(u,11000).then(async r=>{if(!r.ok)throw 0;const t=await r.text();const s=t.trim();if(s[0]!=="{"&&s[0]!=="[")throw 0;return {json:JSON.parse(s),raw:t};});
+  const attempt=()=>{const tries=[one(url)];CORS_PROXIES.forEach(px=>tries.push(one(px+encodeURIComponent(url))));return Promise.any(tries);};
+  // Reessais automatiques : les relais CORS gratuits peuvent etre lents/instables au 1er appel.
+  // Un seul clic utilisateur declenche jusqu'a 3 tentatives -> evite d'avoir a re-cliquer.
+  for(let i=0;i<3;i++){try{return await attempt();}catch(_){if(i<2)await new Promise(res=>setTimeout(res,450));}}
+  return null;
 }
 // Donnees live complementaires : population (geo.api.gouv.fr, CORS ouvert) + risques naturels (Georisques). Repli silencieux sur la demo si indisponible.
 async function fetchLive(coord){
@@ -960,8 +964,24 @@ function parsePts(arr,type){
   });
   return pts;
 }
+function parsePtsTerrain(arr){
+  // Parsing dedie aux ventes de terrains : valeur + surface PARCELLAIRE (pas de bati significatif).
+  const pts=[];
+  arr.forEach(o=>{
+    const v=Number(recVal(o,["valeurfonc","valeur_fonciere","valeur"]));
+    const bati=Number(recVal(o,["sbati","surface_reelle_bati","surface_bati","sbatapt","sbatmai"]))||0;
+    const st=Number(recVal(o,["sterr","surface_terrain","stier","surfterr","contenance"]))||0;
+    const typ=String(recVal(o,["libtypbien","libtyploc","type_local","nature_culture","natcult"])||"").toLowerCase();
+    if(!v||!st||st<50)return;
+    if(bati>8)return; // exclut les ventes avec du bati -> on veut du terrain nu / a batir
+    if(typ&&/appartement|maison|d\u00e9pendance|dependance|local|commerc/.test(typ))return;
+    const ppm=v/st;if(ppm<5||ppm>3000)return; // fourchette plausible pour du foncier
+    pts.push({ppm,surf:st,price:v,rooms:null,date:recVal(o,["datemut","date_mutation"]),land:true});
+  });
+  return pts;
+}
 async function fetchDvf(coord,type){
-  if(!coord||!coord.insee||type==="terrain")return {pts:null,status:coord&&coord.insee?"skip":"no-conn"};
+  if(!coord||!coord.insee)return {pts:null,status:"no-conn"};
   const base=`${DVF_BASE}?code_insee=${coord.insee}&page_size=500`;
   const r1=await dvfFetch(base);
   if(!r1)return {pts:null,status:"no-conn"};
@@ -975,7 +995,7 @@ async function fetchDvf(coord,type){
     arr=[];more.forEach((m,i)=>{if(m){const a=extractArr(m.json);arr=arr.concat(a);if(DEBUG)dbg("Page "+pages[i]+" : +"+a.length+" lignes");}});
     if(!arr.length)arr=extractArr(r1.json);
   }else arr=extractArr(r1.json);
-  const pts=parsePts(arr,type);
+  const pts=type==="terrain"?parsePtsTerrain(arr):parsePts(arr,type);
   if(DEBUG)dbg("Ventes "+type+" exploitables: "+pts.length);
   return pts.length>0?{pts,status:"ok"}:{pts:null,status:"no-data"};
 }
@@ -1119,13 +1139,52 @@ function outdoorValue(baseSqmAdj,ctx){
   if(jM>0){const f=Math.min(jM,300),x=Math.max(0,jM-300);let v=f*baseSqmAdj*wJ+x*baseSqmAdj*0.015;const cap=baseSqmAdj*(numv("surface")||1)*0.30;v=Math.min(v,cap);val+=v;rows.push([`Jardin ${jM} m\u00b2 (\u00e9quiv. surface)`,v]);}
   return{val,rows};
 }
+// ===== T1 : moteur d'estimation dedie aux terrains (foncier, ajustements marginaux bornes) =====
+function estimateTerrain(realBase,parcelSurf,city,cp){
+  const dyn=computeDynamics(city,cp),ctx=marketCtx(realBase);parcelSurf=parcelSurf||0;
+  // Prix/m2 de terrain : ventes DVF de terrains si disponibles, sinon heuristique transparente.
+  let landSqm,conf,srcNote;
+  if(realBase&&realBase>0){landSqm=realBase;conf="\u00e9lev\u00e9e";srcNote="ventes DVF de terrains du secteur";}
+  else{const b=baseSqm(city,cp,"appartement");landSqm=Math.max(20,Math.round((b.sqm||1800)*0.10));conf="indicative";srcNote="estimation indicative \u2014 ventes de terrains locales indisponibles";}
+  // Constructibilite : zone PLU (auto, W2) -> CES typique -> surface constructible estimee.
+  const plu=(state.ctx2&&state.ctx2.plu)||null,zone=plu&&plu.zone?String(plu.zone):"",z0=zone?zone.charAt(0).toUpperCase():"";
+  const cesMap={U:0.45,A:0.02,N:0.02},ces=z0?(cesMap[z0]!=null?cesMap[z0]:0.35):0.35,buildable=Math.round(parcelSurf*ces);
+  // Ajustements MARGINAUX bornes (approche marginale, pas de coefficients fixes cumulatifs).
+  const adjRows=[];let adj=0;const add=(l,a)=>{if(a){adjRows.push([l,a]);adj+=a;}};
+  if(z0==="U")add("Zone urbaine constructible (PLU "+zone+")",0.08);
+  else if(z0==="A")add("Zone agricole \u2014 constructibilit\u00e9 tr\u00e8s limit\u00e9e (PLU "+zone+")",-0.5);
+  else if(z0==="N")add("Zone naturelle \u2014 constructibilit\u00e9 tr\u00e8s limit\u00e9e (PLU "+zone+")",-0.5);
+  else if(zone)add("Zone \u00e0 urbaniser (PLU "+zone+")",0.03);
+  const via=!!($("viabilise")&&$("viabilise").checked);
+  add(via?"Terrain viabilis\u00e9 (r\u00e9seaux raccord\u00e9s)":"\u00c0 viabiliser (raccordement \u00e0 pr\u00e9voir)",via?0.06:-0.10);
+  const nbR=(function(){const t=(state.live&&state.live.risqueLbl)||"";const m=t.match(/^(\d+)/);return m?+m[1]:0;})();
+  if(nbR>0)add(nbR+" risque(s) naturel(s) recens\u00e9(s)",-Math.min(0.10,nbR*0.02));
+  const alt=(state.coord&&state.coord.alt)||0;if(alt>=800)add("Altitude \u00e9lev\u00e9e ("+Math.round(alt)+" m) \u2014 contraintes possibles",-0.04);
+  adj=Math.max(-0.6,Math.min(0.2,adj)); // bornage global
+  const sqmAdj=Math.round(landSqm*(1+adj)),price=Math.round(sqmAdj*parcelSurf),effSqm=parcelSurf>0?price/parcelSurf:sqmAdj;
+  const spread=realBase?0.12:0.20; // incertitude plus forte sur le foncier
+  const dispRows=adjRows.map(([l,a])=>[l,null,(a>0?"+":"")+(a*100).toFixed(1)+" %"]);
+  dispRows.unshift(["Prix/m\u00b2 terrain de base ("+srcNote+")",null,eur0(landSqm)+" \u20ac/m\u00b2"]);
+  dispRows.push(["Surface constructible estim\u00e9e ("+(zone?"CES "+ces+", zone "+zone:"CES "+ces+" par d\u00e9faut")+")",null,buildable+" m\u00b2"]);
+  return{price,sqm:effSqm,sqmBase:landSqm,sqmAdj,low:Math.round(price*(1-spread)),high:Math.round(price*(1+spread)),spread,conf,rows:dispRows,surface:parcelSurf,type:"terrain",city,cp,pieces:state.pieces,real:!!realBase,econSurface:parcelSurf,ctx,dyn,terrain:{landSqm,buildable,ces,zone,adj,viab:via,srcNote}};
+}
 function estimate(realBase){
   const city=$("ville").value,cp=$("cp").value,type=state.type;
   const surface=type==="terrain"?numv("terrain"):numv("surface");
+  if(type==="terrain")return estimateTerrain(realBase,surface,city,cp);
   const {sqm,conf}=realBase?{sqm:realBase,conf:"\u00e9lev\u00e9e"}:baseSqm(city,cp,type);
   const ctx=marketCtx(realBase);
   const {mult,rows,detail}=coefficients(ctx);
-  const sqmAdj=sqm*mult;
+  let effMult=mult;
+  if(realBase){
+    // Anti-surevaluation : la mediane DVF reflete deja un bien MOYEN, en moyenne equipe.
+    // Les primes de caracteristiques sont donc MARGINALES -> rendements decroissants sur le cumul
+    // (primes non additives) + bornage, pour ne pas empiler des criteres deja presents dans la base.
+    const dev=mult-1,d2=Math.max(-0.32,Math.min(0.20,dev>0?dev*0.65:dev*0.85));
+    effMult=1+d2;
+    if(Math.abs(effMult-mult)>0.004)rows.push(["Ajustement marginal (base DVF, anti-cumul)",effMult-mult]);
+  }
+  const sqmAdj=sqm*effMult;
   const od=outdoorValue(sqmAdj,ctx);
   const dyn=computeDynamics(city,cp);
   let price=sqmAdj*surface+od.val;
@@ -1175,7 +1234,9 @@ function renderMarket(r){const d=r.dyn;const sign=x=>(x>=0?"+":"")+x;
 function renderLocStats(r){const d=r.dyn;
   const tag='<span style="color:var(--ink-soft);font-weight:400;font-size:11px">estim\u00e9</span>';
   const emploi=`<div class="stat"><span class="sl">Temps vers le bassin d'emploi</span><span class="sv num">~ ${d.accessMin} min ${tag}</span></div>`;
-  const estAccess=`<div id="locEstAccess"><div class="stat"><span class="sl">Densit\u00e9 de commerces & services</span><span class="sv num">${d.accessMin<12?"\u00c9lev\u00e9e":d.accessMin<25?"Correcte":"Faible"} ${tag}</span></div><div class="stat"><span class="sl">Desserte transports en commun</span><span class="sv num">${d.accessMin<10?"Tr\u00e8s bonne":d.accessMin<20?"Correcte":"Limit\u00e9e"} ${tag}</span></div></div>`;
+  const _en=(state.enrich&&state.enrich.osm)?state.enrich.osm:null;
+  const _realTag='<span style="color:var(--brand-dark);font-weight:700;font-size:11px">\u00b7 r\u00e9el</span>';
+  const estAccess=_en?(function(){const shops=(_en.shops||0)+(_en.food||0)+(_en.health||0),transit=_en.transit||0;const cLvl=shops>=25?"\u00c9lev\u00e9e":shops>=10?"Correcte":"Faible",tLvl=transit>=20?"Tr\u00e8s bonne":transit>=8?"Correcte":"Limit\u00e9e";return `<div id="locEstAccess"><div class="stat"><span class="sl">Densit\u00e9 de commerces & services</span><span class="sv num">${cLvl} (${shops}) ${_realTag}</span></div><div class="stat"><span class="sl">Desserte transports en commun</span><span class="sv num">${tLvl} (${transit}) ${_realTag}</span></div></div>`;})():`<div id="locEstAccess"><div class="stat"><span class="sl">Densit\u00e9 de commerces & services</span><span class="sv num">${d.accessMin<12?"\u00c9lev\u00e9e":d.accessMin<25?"Correcte":"Faible"} ${tag}</span></div><div class="stat"><span class="sl">Desserte transports en commun</span><span class="sv num">${d.accessMin<10?"Tr\u00e8s bonne":d.accessMin<20?"Correcte":"Limit\u00e9e"} ${tag}</span></div></div>`;
   const risk=(state.live&&state.live.risqueLbl)?state.live.risqueLbl:d.risqueLbl;
   const isReal=!!(state.live&&state.live.risqueLbl);
   const radon=(state.live&&state.live.radon)?`<div style="margin-top:8px;font-size:13px;color:var(--ink)">Potentiel radon : <b style="color:${state.live.radon.classe>=3?"var(--bad)":state.live.radon.classe===2?"var(--warn)":"var(--good)"}">${state.live.radon.label}</b> (classe ${state.live.radon.classe}/3, G\u00e9orisques)</div>`:"";
@@ -1852,7 +1913,7 @@ async function showResults(){
     const res=await fetchDvf(coord,state.type);
     if(res.pts&&res.pts.length){
       realPts=res.pts; // tous les points -> nuage de points
-      const surf=numv("surface");let band=res.pts;
+      const surf=state.type==="terrain"?numv("terrain"):numv("surface");let band=res.pts;
       if(surf>0){const b=res.pts.filter(p=>p.surf>=surf*0.55&&p.surf<=surf*1.7);if(b.length>=10)band=b;}
       realStats=dvfStats(band); // surface proche -> prix de reference + stats (comparaison a iso-surface)
       // Vague 4 : base = moyenne ponderee par confiance de plusieurs moteurs (comparables scores, regression, mediane recence)
@@ -1910,7 +1971,7 @@ async function showResults(){
   renderResaleDefaults(r);
   renderEnrich(r);
   renderMap(r);
-  enrichPromise.then(e=>{state.enrich=e;if(lastResult===r){applyGeoDyn(r);renderEnrich(r);renderMap(r);}}).catch(()=>{state.enrich={};if(lastResult===r){renderEnrich(r);renderMap(r);}});
+  enrichPromise.then(e=>{state.enrich=e;if(lastResult===r){applyGeoDyn(r);renderLocStats(r);renderEnrich(r);renderMap(r);}}).catch(()=>{state.enrich={};if(lastResult===r){renderEnrich(r);renderMap(r);}});
   ctxProm.then(c=>{state.ctx2=c||{};if(lastResult===r)renderContext(r);}).catch(()=>{state.ctx2={};if(lastResult===r)renderContext(r);});
   $("results").classList.add("show");
   $("results").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth",block:"start"});
