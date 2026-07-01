@@ -414,6 +414,8 @@
     <section class="card expert-only" id="bienIndicesCard" style="order:3"><div class="card-head"><div class="step-no">&#10024;</div><div><h2>Profil & indices du bien</h2><div class="sub">Qualit&#233;, raret&#233;, attractivit&#233; &#233;motionnelle et profil acheteur</div></div></div><div id="bienIndicesPanel"></div></section>
     <section class="card expert-only" id="globalCard" style="order:3"><div class="card-head"><div class="step-no">&#127941;</div><div><h2>Note globale du bien</h2><div class="sub">Indice /100 sur 7 dimensions ind&#233;pendantes</div></div></div><div id="globalPanel"></div></section>
     <section class="card expert-only" id="proKpiCard" style="order:4"><div class="card-head"><div class="step-no">&#128202;</div><div><h2>Tableau de bord investisseur</h2><div class="sub">Ratios financiers professionnels &#8212; calcul&#233;s en direct</div></div></div><div id="proKpiPanel"></div></section>
+    <section class="card expert-only" id="negoCard" style="order:5"><div class="card-head"><div class="step-no">&#129309;</div><div><h2>Aide &#224; la n&#233;gociation</h2><div class="sub">Prix cible, offre, marge et probabilit&#233; d'acceptation</div></div></div><div id="negoPanel"></div></section>
+    <section class="card expert-only" id="contextCard" style="order:6"><div class="card-head"><div class="step-no">&#129517;</div><div><h2>Contexte &amp; signaux</h2><div class="sub">Donn&#233;es publiques, indices compl&#233;mentaires et anomalies &#8212; sans impact sur le prix</div></div></div><div id="contextPanel"></div></section>
     <section class="card expert-only" id="fiscalCard" style="order:5"><div class="card-head"><div class="step-no">&#9878;&#65039;</div><div><h2>Comparateur fiscal</h2><div class="sub">Tous les r&#233;gimes compar&#233;s &#8212; recommandation automatique</div></div></div><div id="fiscalPanel"></div></section>
     <section class="card expert-only" id="dispositifCard" style="order:5"><div class="card-head"><div class="step-no">&#127963;&#65039;</div><div><h2>Dispositifs de d&#233;fiscalisation</h2><div class="sub">Pinel, Denormandie, Malraux, Monuments Historiques, holding</div></div></div>
       <div><label class="lbl" for="dispositif">Dispositif</label><select class="input" id="dispositif"><option value="none">Aucun (droit commun)</option><option value="pinel">Pinel (neuf, 2024)</option><option value="pinelplus">Pinel+ (neuf, qualit&#233;)</option><option value="denormandie">Denormandie (ancien + travaux)</option><option value="malraux">Malraux (restauration SPR)</option><option value="mh">Monuments Historiques</option><option value="holding">Holding (structuration)</option></select></div>
@@ -1432,6 +1434,132 @@ function renderPriceFormation(r){
       return `<div style="margin-bottom:8px">${head}${note}${sub}</div>`;}).join("")+`<div class="hint" style="margin-top:4px">D\u00e9part : valeur de march\u00e9 de base, puis application des ajustements. Montants et pourcentages indicatifs.</div></div>`;
   el.innerHTML=A+B+C;
 }
+// ===== Reconciliation ChatGPT x Grok \u2014 W2 : fournisseurs open-data (defensifs, ZERO impact prix) =====
+// Chaque fournisseur REUTILISE dvfFetch (relais CORS existant) et echoue en silence (-> null)
+// sans jamais bloquer le flux. Les resultats alimentent state.ctx2, deja lu par propertyContext.
+// Endpoints 100% gratuits sans cle. A verifier en ?debug sur l'appareil (non testables ici).
+async function provDemo(insee){try{if(!insee)return null;const d=await dvfFetch("https://geo.api.gouv.fr/communes/"+insee+"?fields=population,surface");const j=d.json;if(!j||j.population==null)return null;const km2=j.surface?j.surface/100:null;return{population:j.population,densite:km2?Math.round(j.population/km2):null};}catch(_){return null;}}
+async function provEntreprises(insee){try{if(!insee)return null;const d=await dvfFetch("https://recherche-entreprises.api.gouv.fr/search?code_commune="+insee+"&per_page=1");const j=d.json;if(!j||j.total_results==null)return null;return{total:j.total_results};}catch(_){return null;}}
+async function provPlu(coord){try{if(!coord)return null;const g=encodeURIComponent(JSON.stringify({type:"Point",coordinates:[coord.lon,coord.lat]}));const d=await dvfFetch("https://apicarto.ign.fr/api/gpu/zone-urba?geom="+g);const f=(((d.json||{}).features)||[])[0];if(!f)return null;const p=f.properties||{};const z=p.typezone||null,lib=p.libelle||p.libelong||null;return(z||lib)?{zone:z,libelle:lib}:null;}catch(_){return null;}}
+// Bruit et permis de construire : pas d'API nationale gratuite sans cle fiable a ce jour.
+// Placeholders defensifs prets a brancher des qu'un endpoint public est confirme (aucun appel inutile).
+async function provBruit(_coord){return null;}
+async function provPermis(_insee){return null;}
+// Orchestrateur : tous les fournisseurs en parallele, echecs isoles (allSettled). Renvoie ctx2.
+async function fetchContextProviders(coord){
+  if(!coord)return{};
+  const res=await Promise.allSettled([provDemo(coord.insee),provEntreprises(coord.insee),provPlu(coord),provBruit(coord),provPermis(coord.insee)]);
+  const v=i=>res[i]&&res[i].status==="fulfilled"?res[i].value:null;
+  const ctx={},iris=v(0),ent=v(1),plu=v(2),br=v(3),pm=v(4);
+  if(iris)ctx.iris=iris;if(ent)ctx.sirene=ent;if(plu)ctx.plu=plu;if(br)ctx.bruit=br;if(pm)ctx.permis=pm;
+  return ctx;
+}
+// ===== Reconciliation ChatGPT x Grok \u2014 W1 : socle contextuel (additif, ZERO impact prix) =====
+// Registre CENTRALISE des ponderations FUTURES. Approche Grok (coefficients conservateurs,
+// bornage DVF, interactions) + signaux open-data (approche ChatGPT). TOUTES desactivees par
+// defaut : elles n'influenceront le prix qu'une fois validees statistiquement sur le DVF local.
+// Tant que enabled=false, aucun effet sur le comportement actuel.
+const FUTURE_WEIGHTS={
+  grokCoefConservateur:{label:"Coefficients hedoniques plus conservateurs (etat, DPE, etage, expo, standing, exterieurs)",enabled:false,impact:0,source:"Grok",note:"A calibrer sur regression DVF locale"},
+  grokBorneDVF:{label:"Bornage fort a +8-10 % de la mediane ponderee DVF",enabled:false,impact:0,source:"Grok",note:"Garde-fou +/-25 % deja actif ; resserrement a valider"},
+  grokInteractions:{label:"Interactions / saturations non additives renforcees",enabled:false,impact:0,source:"Grok"},
+  iris:{label:"Attractivite socio-economique (IRIS : revenus, demographie)",enabled:false,impact:0,source:"INSEE"},
+  plu:{label:"Potentiel de valorisation (PLU, constructibilite)",enabled:false,impact:0,source:"ChatGPT"},
+  permis:{label:"Dynamique de construction (permis Sitadel)",enabled:false,impact:0,source:"ChatGPT"},
+  bruit:{label:"Nuisances sonores",enabled:false,impact:0,source:"ChatGPT"},
+  sirene:{label:"Tissu economique local (SIRENE)",enabled:false,impact:0,source:"ChatGPT"}
+};
+// Ajustement prix issu du contexte = somme des SEULES ponderations activees.
+// Renvoie 0 tant que tout est desactive -> prix strictement inchange. Non branche sur le
+// calcul de prix : architecture prete pour une activation future validee (flip de enabled).
+function contextPriceAdjust(){let a=0;for(const k in FUTURE_WEIGHTS){const w=FUTURE_WEIGHTS[k];if(w.enabled)a+=w.impact||0;}return a;}
+// PropertyContext : consolidation EN LECTURE SEULE des signaux deja disponibles + emplacements
+// pour les futurs providers. Aucun effet de bord, aucun calcul de prix.
+function propertyContext(r){
+  const co=state.coord||{},en=state.enrich||{},lv=state.live||{},x2=state.ctx2||{};
+  const src={
+    dvf:(r&&r.realCount)?r.realCount:0,
+    geoloc:co.lat!=null?(/\d/.test(co.label||"")?"adresse":"commune"):null,
+    altitude:co.alt!=null?co.alt:null,
+    air:(en.air&&en.air.aqi!=null)?en.air.aqi:null,
+    ecoles:(en.schools&&en.schools.total!=null)?en.schools.total:null,
+    transports:(en.osm&&en.osm.transit!=null)?en.osm.transit:null,
+    commerces:(en.osm&&en.osm.shops!=null)?en.osm.shops:null,
+    risques:lv.risqueLbl||null,
+    radon:lv.radon!=null?lv.radon:null,
+    iris:x2.iris||null,sirene:x2.sirene||null,plu:x2.plu||null,permis:x2.permis||null,bruit:x2.bruit||null,cadastre:x2.cadastre||null
+  };
+  // Indices complementaires : REUTILISENT globalIndex (aucun recalcul redondant)
+  let gi=null;try{gi=globalIndex(r);}catch(e){}
+  const pk=n=>gi?((gi.subs.find(s=>s[0].indexOf(n)===0)||[])[1]):null;
+  const indices={qualiteVie:pk("Attractivit\u00e9"),liquidite:pk("Facilit\u00e9"),patrimonial:pk("Potentiel patrimonial"),risque:pk("Niveau de risque")};
+  const keys=["dvf","geoloc","air","ecoles","transports","commerces","risques","radon","iris","sirene","plu","permis","bruit"];
+  const present=keys.filter(k=>src[k]!=null&&src[k]!==0&&src[k]!=="").length;
+  return{src,indices,present,richness:Math.round(present/keys.length*100)};
+}
+// Bonus de confiance contextuel : plus de sources independantes concordantes -> confiance accrue.
+// Additif et borne (+8 max), jamais negatif : n'abaisse jamais la confiance existante.
+function contextConfidenceBonus(pc){if(!pc||!pc.src||!pc.src.dvf)return 0;return Math.max(0,Math.min(8,Math.round((pc.present-3)*1.1)));}
+// Detection d'anomalies a partir des SEULES donnees disponibles (aucun appel reseau).
+function contextAnomalies(r,pc){
+  const A=[];if(!r)return A;const st=r.realStats;
+  if(st&&st.med&&r.surface){const gap=Math.round((r.price/r.surface/st.med-1)*100);if(Math.abs(gap)>=15)A.push("Estimation "+(gap>0?gap+" % au-dessus":Math.abs(gap)+" % en dessous")+" de la mediane DVF du secteur ("+eur0(st.med)+" \u20ac/m\u00b2) : a verifier.");}
+  if(st&&st.med){const iq=(st.q3-st.q1)/st.med;if(iq>=0.5)A.push("Forte dispersion des prix DVF (ecart Q1-Q3 "+Math.round(iq*100)+" %) : comparables heterogenes, fiabilite reduite.");}
+  if((r.realCount||0)>0&&(r.realCount||0)<8)A.push("Peu de ventes comparables ("+r.realCount+") : estimation moins robuste.");
+  if(state.dpe==="F"||state.dpe==="G")A.push("Passoire energetique (DPE "+state.dpe+") : decote et contraintes de location a anticiper.");
+  const rel=(function(){try{return reliabilityIndex(r).score;}catch(e){return null;}})();
+  if(rel!=null&&rel<45)A.push("Indice de fiabilite faible ("+rel+"/100) : recouper avec des sources locales.");
+  return A;
+}
+function renderContext(r){
+  const el=$("contextPanel");if(!el||!r)return;
+  const pc=propertyContext(r),bonus=contextConfidenceBonus(pc),an=contextAnomalies(r,pc);
+  const baseConf=r.confScore||(function(){try{return reliabilityIndex(r).score;}catch(e){return null;}})();
+  const enr=baseConf!=null?Math.min(100,baseConf+bonus):null;
+  const srcLabels=[["dvf","Ventes DVF"],["geoloc","Geolocalisation BAN"],["air","Qualite de l'air"],["ecoles","Ecoles"],["transports","Transports"],["commerces","Commerces"],["risques","Risques naturels"],["radon","Radon"],["iris","Demographie"],["sirene","Entreprises"],["plu","PLU"],["bruit","Bruit"],["permis","Permis"]];
+  const chips=srcLabels.filter(s=>pc.src[s[0]]!=null&&pc.src[s[0]]!==0).map(s=>`<span style="display:inline-block;font-size:10.5px;background:var(--brand-tint);color:var(--brand-dark);border-radius:20px;padding:3px 9px;margin:0 4px 4px 0">${s[1]}</span>`).join("");
+  const idx=pc.indices,idxRow=[["Qualite de vie",idx.qualiteVie],["Liquidite",idx.liquidite],["Patrimonial",idx.patrimonial],["Faible risque",idx.risque]].filter(x=>x[1]!=null);
+  const idxHtml=idxRow.length?`<div style="display:flex;gap:7px;margin-top:10px;flex-wrap:wrap">`+idxRow.map(x=>{const c=x[1]>=66?"var(--good)":x[1]>=45?"var(--brand-dark)":x[1]>=30?"var(--warn)":"var(--bad)";return `<div style="flex:1;min-width:68px;background:var(--bg);border-radius:9px;padding:7px 9px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.3px">${x[0]}</div><div class="num" style="font-size:15px;font-weight:800;color:${c}">${x[1]}<span style="font-size:9px;color:var(--ink-soft)">/100</span></div></div>`;}).join("")+`</div>`:"";
+  const confHtml=enr!=null?`<div style="margin-top:10px;padding:9px 12px;background:var(--bg);border-radius:10px;font-size:12px;color:var(--ink)">Confiance de base <b class="num">${baseConf}/100</b>${bonus>0?' + <b class="num" style="color:var(--good)">'+bonus+'</b> pts contextuels ('+pc.present+' sources concordantes) = <b class="num">'+enr+'/100</b>':' (pas de bonus contextuel)'}</div>`:"";
+  const anHtml=an.length?`<div style="margin-top:12px"><div style="font-size:12px;font-weight:800;color:var(--ink);margin-bottom:5px">Signaux &amp; anomalies</div>`+an.map(a=>`<div style="display:flex;gap:7px;font-size:11.5px;color:var(--ink);line-height:1.5;margin-top:4px"><span style="color:var(--warn)">&#9888;</span><span>${a}</span></div>`).join("")+`</div>`:`<div style="margin-top:12px;font-size:11.5px;color:var(--ink-soft)">Aucune anomalie majeure detectee.</div>`;
+  const x2=state.ctx2||{},extra=[];
+  if(x2.iris)extra.push("Population commune : "+eur0(x2.iris.population)+(x2.iris.densite?" ("+eur0(x2.iris.densite)+" hab/km\u00b2)":""));
+  if(x2.sirene)extra.push("Entreprises actives : "+eur0(x2.sirene.total));
+  if(x2.plu&&(x2.plu.libelle||x2.plu.zone))extra.push("Zonage PLU : "+(x2.plu.libelle||x2.plu.zone));
+  const extraHtml=extra.length?`<div style="margin-top:10px;font-size:11.5px;color:var(--ink);line-height:1.7">`+extra.map(e=>`<div>&#8226; ${e}</div>`).join("")+`</div>`:"";
+  el.innerHTML=`<div style="font-size:12px;color:var(--ink-soft);line-height:1.55;margin-bottom:8px">Contexte consolide a partir des sources publiques disponibles. Ces donnees enrichissent la confiance et les analyses, <b>sans modifier le prix</b>.</div><div>${chips||'<span style="font-size:11.5px;color:var(--ink-soft)">Sources en cours de chargement.</span>'}</div>${extraHtml}${idxHtml}${confHtml}${anHtml}<div class="hint" style="margin-top:10px">Richesse des donnees : ${pc.richness} %. De futurs fournisseurs (IRIS, SIRENE, PLU, bruit, permis) enrichiront ce contexte ; tout impact eventuel sur le prix restera desactive tant qu'il n'est pas valide sur le DVF local.</div>`;
+}
+// ===== Prompt 7 : moteur d'aide a la negociation =====
+function negotiation(r){
+  const _aEl=$("askPrice"),ask=(_aEl&&Number(_aEl.value))||numv("prixAchat")||r.price,just=r.price,dyn=r.dyn||{},idx=r.indices||{};
+  const tens=dyn.subTension!=null?Math.max(0,Math.min(1,dyn.subTension/100)):0.5;
+  const rare=(idx.rarity||0)/100,passoire=(state.dpe==="F"||state.dpe==="G");
+  const over=ask>just?(ask-just)/just:0;
+  const buyerPower=Math.max(0.1,Math.min(0.9,0.5-(tens-0.5)*0.6+(passoire?0.12:0)-rare*0.2+Math.min(0.2,over*0.6)));
+  const cible=Math.min(ask,Math.round(just*(1+(tens-0.5)*0.06)));
+  const room=0.04+buyerPower*0.10,offre=Math.round(cible*(1-room));
+  const maxi=Math.max(cible,Math.round(just*(1+(tens>0.6?0.04:0)+(rare>0.6?0.03:0))));
+  const marge=ask>0?(ask-just)/ask:0,gapOffer=ask>0?(ask-offre)/ask:0;
+  const prob=Math.round(Math.max(5,Math.min(95,100-gapOffer*100*(1.1+tens*0.8))));
+  return{ask,just,cible,offre,maxi,marge,buyerPower,prob,tens,over,rare,passoire};
+}
+function negoStrategy(n){
+  if(n.marge>=0.08)return "Prix affich\u00e9 nettement au-dessus de la juste valeur (+"+(n.marge*100).toFixed(0)+" %) : marge de n\u00e9gociation confortable. Ouvrez autour de "+eur0(n.offre)+" \u20ac et visez "+eur0(n.cible)+" \u20ac.";
+  if(n.marge>=0.03)return "Prix affich\u00e9 l\u00e9g\u00e8rement au-dessus de la juste valeur : n\u00e9gociation mod\u00e9r\u00e9e possible. Offre d'ouverture "+eur0(n.offre)+" \u20ac, cible "+eur0(n.cible)+" \u20ac.";
+  if(n.marge>=-0.02)return "Prix affich\u00e9 proche de la juste valeur : peu de marge. "+(n.tens>0.6?"March\u00e9 tendu \u2014 soyez r\u00e9actif et ne sous-offrez pas trop.":"Une offre \u00e0 "+eur0(n.offre)+" \u20ac reste tentable.");
+  return "Prix affich\u00e9 sous la juste valeur : bonne opportunit\u00e9"+(n.rare>0.6?" sur un bien rare":"")+". S\u00e9curisez rapidement, jusqu'\u00e0 "+eur0(n.maxi)+" \u20ac si n\u00e9cessaire.";
+}
+function renderNego(r){
+  const el=$("negoPanel");if(!el||!r)return;
+  const cur=($("askPrice")&&$("askPrice").value)||"";
+  const out=function(){const n=negotiation(r),pc=n.prob>=66?"var(--good)":n.prob>=40?"var(--warn)":"var(--bad)";
+    const rows=[["Prix affich\u00e9",eur(n.ask),"var(--ink)"],["Juste valeur (estimation)",eur(n.just),"var(--brand-dark)"],["Prix cible (transaction r\u00e9aliste)",eur(n.cible),"var(--ink)"],["Premi\u00e8re offre recommand\u00e9e",eur(n.offre),"var(--good)"],["Prix maximum conseill\u00e9",eur(n.maxi),"var(--warn)"]];
+    return rows.map(x=>`<div style="display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--line)"><span style="font-size:12.5px;color:var(--ink)">${x[0]}</span><span class="num" style="font-size:14px;font-weight:800;color:${x[2]}">${x[1]}</span></div>`).join("")+
+      `<div style="display:flex;gap:8px;margin-top:10px"><div style="flex:1;background:var(--bg);border-radius:10px;padding:9px 11px"><div style="font-size:10px;color:var(--ink-soft);text-transform:uppercase">Marge de n\u00e9gociation</div><div class="num" style="font-size:16px;font-weight:800;color:var(--ink)">${(n.marge*100).toFixed(1)} %</div></div><div style="flex:1;background:var(--bg);border-radius:10px;padding:9px 11px"><div style="font-size:10px;color:var(--ink-soft);text-transform:uppercase">Accept. 1\u02b3\u1d49 offre</div><div class="num" style="font-size:16px;font-weight:800;color:${pc}">${n.prob} %</div></div></div>`+
+      `<div style="margin-top:10px;padding:10px 13px;background:var(--brand-tint);border-radius:11px;font-size:12px;color:var(--ink);line-height:1.5">${negoStrategy(n)}</div>`;};
+  el.innerHTML=`<div class="field" style="margin-bottom:10px"><label class="lbl" for="askPrice">Prix affich\u00e9 par le vendeur <span style="font-weight:500;color:var(--ink-soft)">(vide = prix d'achat analys\u00e9)</span></label><div class="with-unit" style="max-width:200px"><input class="input num" id="askPrice" type="number" min="0" placeholder="${eur0(numv("prixAchat")||r.price)}" value="${cur}"/><span class="unit">\u20ac</span></div></div><div id="negoOut">${out()}</div><div class="hint" style="margin-top:8px">Strat\u00e9gie indicative fond\u00e9e sur l'\u00e9cart prix affich\u00e9 / juste valeur, la tension du march\u00e9 local, la raret\u00e9 du bien et son DPE. \u00c0 adapter au contexte.</div>`;
+  const ai=$("askPrice");if(ai)ai.addEventListener("input",function(){const o=$("negoOut");if(o)o.innerHTML=out();});
+}
 // ===== Prompt 8 : indice global du bien /100 (7 sous-scores independants agreges) =====
 function globalIndex(r){
   const g=id=>document.getElementById(id),nv=id=>{const e=g(id);return e?(parseFloat(e.value)||0):0;},ck=id=>{const e=g(id);return!!(e&&e.checked);},cl=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -1526,7 +1654,7 @@ function applyGeoDyn(r){
   if($("pcSqm"))$("pcSqm").textContent=eur0(r.sqm)+" \u20ac";
   if($("gLow"))$("gLow").textContent=eur(r.low);if($("gMid"))$("gMid").textContent=eur(r.price);if($("gHigh"))$("gHigh").textContent=eur(r.high);
   const pa=$("prixAchat");if(pa&&Math.round(parseFloat(pa.value)||0)===Math.round(oldPrice))pa.value=Math.round(r.price);
-  if(lastResult===r){computeAll(r);computeResale(r);renderEstimators(r);renderBienIndices(r);renderGlobalIndex(r);renderPriceFormation(r);renderMarket(r);renderScatter(r);}
+  if(lastResult===r){computeAll(r);computeResale(r);renderEstimators(r);renderBienIndices(r);renderGlobalIndex(r);renderPriceFormation(r);renderContext(r);renderMarket(r);renderScatter(r);}
 }
 // ===== Vague 2 : indices synthetiques du bien (qualite, emotionnel, rarete, profil acheteur) =====
 function buyerProfile(r){
@@ -1682,6 +1810,7 @@ function computeAll(r){
   renderProKpis(r,{rentY:rentY,charges:charges,bp:bp,coutTotal:coutTotal,emprunt:emprunt,mensuTot:mensuTot,apport:apport});
   renderFiscalCompare(r);
   renderDispositif();
+  renderNego(r);
 }
 function setMetric(el,txt,val,isCash){el.textContent=txt;el.classList.remove("good","warn","bad");if(isCash){el.classList.add(val>=0?"good":"bad");return;}el.classList.add(val>=5.5?"good":val>=3.5?"warn":"bad");}
 
@@ -1716,6 +1845,7 @@ async function showResults(){
   const coord=await geocode();dbg("Coordonnees BAN: "+JSON.stringify(coord));
   const livePromise=(coord&&coord.insee)?fetchLive(coord):Promise.resolve({});
   state.enrich=null;const enrichPromise=coord?fetchEnrich(coord):Promise.resolve(null);
+  state.ctx2=null;const ctxProm=coord?fetchContextProviders(coord):Promise.resolve({});
   if(!coord){diag="adresse non localis\u00e9e \u2014 v\u00e9rifiez l'adresse saisie et choisissez une suggestion";}
   else if(state.type==="terrain"){diag="terrain : pas de comparable b\u00e2ti DVF";}
   else{
@@ -1771,7 +1901,7 @@ async function showResults(){
   r.rows.forEach(row=>{if(row[2]!=null)addRow(row[0],null,false,row[2]);else addRow(row[0],row[1],true);});
   addRow("Prix /m\u00b2 ajust\u00e9",eur0(r.sqmAdj)+" \u20ac");addRow("\u00d7 Surface",r.surface+" m\u00b2");
   const tot=document.createElement("div");tot.className="bd-row";tot.style.cssText="border-top:1px solid var(--line);margin-top:6px;padding-top:8px;font-weight:700";tot.innerHTML=`<span>= Valeur estim\u00e9e</span><span>${eur(r.price)}</span>`;bd.appendChild(tot);
-  renderInsee(r);renderMarket(r);renderLocStats(r);renderDvfStats(r);genComparables(r);renderEstimators(r);renderBienIndices(r);renderGlobalIndex(r);renderPriceFormation(r);
+  renderInsee(r);renderMarket(r);renderLocStats(r);renderDvfStats(r);genComparables(r);renderEstimators(r);renderBienIndices(r);renderGlobalIndex(r);renderPriceFormation(r);renderContext(r);
   $("locAddr").textContent=state.coord?.label||(($("ville").value||"")+" "+$("cp").value).trim();
   $("locCoord").textContent=state.coord?`${state.coord.lat.toFixed(4)}, ${state.coord.lon.toFixed(4)}${state.coord.alt!=null?" \u00b7 alt. "+state.coord.alt+" m":""} \u00b7 carte interactive dans la version h\u00e9berg\u00e9e`:"Carte interactive disponible dans la version h\u00e9berg\u00e9e";
   const dpeCostHi=renderDpe();
@@ -1781,6 +1911,7 @@ async function showResults(){
   renderEnrich(r);
   renderMap(r);
   enrichPromise.then(e=>{state.enrich=e;if(lastResult===r){applyGeoDyn(r);renderEnrich(r);renderMap(r);}}).catch(()=>{state.enrich={};if(lastResult===r){renderEnrich(r);renderMap(r);}});
+  ctxProm.then(c=>{state.ctx2=c||{};if(lastResult===r)renderContext(r);}).catch(()=>{state.ctx2={};if(lastResult===r)renderContext(r);});
   $("results").classList.add("show");
   $("results").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth",block:"start"});
 }
@@ -2420,7 +2551,12 @@ function renderReport(r){
   else if(fragile)reco.push("Avant d'engager : n\u00e9gociez le prix, augmentez l'apport ou visez un meilleur loyer pour s\u00e9curiser la marge.");
   if(dpeRank>=4)reco.push("Int\u00e9grez le co\u00fbt d'une r\u00e9novation \u00e9nerg\u00e9tique au financement (MaPrimeR\u00e9nov', \u00e9co-PTZ).");
   reco.push("Confirmez loyer r\u00e9el, charges de copropri\u00e9t\u00e9 et travaux avant toute offre.");
-  el.innerHTML=sec("R\u00e9sum\u00e9 du bien",resume)+sec("Justification de l'estimation",just)+sec("Points forts",ul(forces))+sec("Points faibles",ul(faib))+sec("Risques",ul(risks))+sec("Potentiel",ul(pot))+sec("Argumentaire de n\u00e9gociation",nego)+sec("Recommandations",ul(reco))+`<div class="hint" style="margin-top:12px">Rapport g\u00e9n\u00e9r\u00e9 automatiquement \u00e0 partir des donn\u00e9es calcul\u00e9es (DVF, G\u00e9orisques, enrichissement, projection). Indicatif \u2014 ne remplace pas une expertise.</div>`;
+  const _pf=priceFormation(r),_gi=globalIndex(r),_rel=reliabilityIndex(r);
+  const _base=_pf.find(l=>l.k==="base"),_fin=_pf.find(l=>l.final),_mid=_pf.filter(l=>l.k!=="base"&&!l.final);
+  const _fe=v=>(v>0?"+":(v<0?"-":""))+eur0(Math.abs(v))+" \u20ac";
+  const _decompRows=_mid.map(l=>`<tr><td style="padding:3px 8px 3px 0;font-size:12px;color:var(--ink)">${l.label}</td><td class="num" style="text-align:right;font-size:12px;font-weight:700;color:${l.eur>=0?"var(--ink)":"var(--bad)"};white-space:nowrap">${_fe(l.eur)}</td><td class="num" style="text-align:right;font-size:11px;color:var(--ink-soft);white-space:nowrap;padding-left:8px">${l.pct>0?"+":""}${l.pct} %</td></tr>`).join("");
+  const decomp=`<div style="font-size:12px;color:var(--ink-soft);line-height:1.55;margin-bottom:8px">D\u00e9composition de la valeur estim\u00e9e, facteur par facteur, depuis la valeur de march\u00e9 de base.</div><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse"><tr><td style="padding:3px 8px 3px 0;font-size:12px;color:var(--ink-soft)">${_base?_base.label:"Valeur de base"}</td><td class="num" style="text-align:right;font-size:12px;color:var(--ink-soft)">${eur0(_base?_base.eur:0)} \u20ac</td><td></td></tr>${_decompRows}<tr><td style="padding:6px 8px 0 0;font-size:12.5px;font-weight:800;color:var(--brand-dark);border-top:2px solid var(--line)">${_fin?_fin.label:"Estimation retenue"}</td><td class="num" style="text-align:right;font-size:13px;font-weight:800;color:var(--brand-dark);border-top:2px solid var(--line)">${eur(price)}</td><td style="border-top:2px solid var(--line)"></td></tr></table></div><div style="display:flex;gap:7px;margin-top:9px"><div style="flex:1;background:var(--bg);border-radius:9px;padding:7px 9px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.3px">Note globale</div><div class="num" style="font-size:15px;font-weight:800;color:var(--ink)">${_gi.global}<span style="font-size:9px;color:var(--ink-soft)">/100</span></div></div><div style="flex:1;background:var(--bg);border-radius:9px;padding:7px 9px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.3px">Fiabilit\u00e9</div><div class="num" style="font-size:15px;font-weight:800;color:var(--ink)">${_rel.score}<span style="font-size:9px;color:var(--ink-soft)">/100</span></div></div><div style="flex:1;background:var(--bg);border-radius:9px;padding:7px 9px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.3px">Fourchette</div><div class="num" style="font-size:12.5px;font-weight:800;color:var(--ink)">${eur0(r.low)}\u2013${eur0(r.high)}</div></div></div>`;
+  el.innerHTML=sec("R\u00e9sum\u00e9 du bien",resume)+sec("Justification de l'estimation",just)+sec("D\u00e9composition chiffr\u00e9e de la valeur",decomp)+sec("Points forts",ul(forces))+sec("Points faibles",ul(faib))+sec("Risques",ul(risks))+sec("Potentiel",ul(pot))+sec("Argumentaire de n\u00e9gociation",nego)+sec("Recommandations",ul(reco))+`<div class="hint" style="margin-top:12px">Rapport g\u00e9n\u00e9r\u00e9 automatiquement \u00e0 partir des donn\u00e9es calcul\u00e9es (DVF, G\u00e9orisques, enrichissement, projection). Indicatif \u2014 ne remplace pas une expertise.</div>`;
 }
 function renderDecision(r,m){
   const el=$("decisionPanel");if(!el)return;
