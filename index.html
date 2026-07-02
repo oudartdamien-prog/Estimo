@@ -493,7 +493,7 @@
     </section>
 
     <section class="card secondary" style="order:7">
-      <div class="card-head"><div class="step-no">4</div><div><h2>Biens comparables<span class="demo-tag" id="compTag">DVF &#183; d&#233;mo</span></h2><div class="sub">Ventes similaires r&#233;centes</div></div></div>
+      <div class="card-head"><div class="step-no">4</div><div><h2>Biens comparables<span class="demo-tag" id="compTag">DVF</span></h2><div class="sub">Ventes similaires r&#233;centes</div></div></div>
       <div id="dvfStats" style="display:none;margin-bottom:6px"></div>
       <div id="compList"></div>
       <button id="btnExportComps" style="margin-top:12px;width:100%;padding:11px;border:1.5px solid var(--line);background:#fff;color:var(--brand-dark);border-radius:var(--r-sm);font-weight:600;font-family:var(--body);font-size:13px;cursor:pointer">Exporter les comparables (CSV)</button>
@@ -1026,6 +1026,7 @@ async function fetchDvf(coord,type){
       const gBase=DVF_BASE.replace("/mutations/","/geomutations/")+`?in_bbox=${bbox}&page_size=500`;
       if(DEBUG)dbg("DVF bbox URL: "+gBase);
       const g1=await dvfFetch(gBase);
+      if(!g1&&DEBUG)dbg("DVF bbox: relais KO -> repli commune");
       if(g1&&g1.json){
         const gcount=g1.json.count||0;let garr;
         if(gcount>500){
@@ -1325,19 +1326,20 @@ function renderInsee(r){const d=r.dyn;const sign=x=>(x>=0?"+":"")+x;
   const rb='<span style="color:var(--brand-dark);font-weight:700;font-size:9px;margin-left:3px">r\u00e9el</span>';
   const eb='<span style="color:var(--ink-soft);font-weight:400;font-size:9px;margin-left:3px">estimation</span>';
   const popReal=!!(state.live&&state.live.pop);
+  const na='\u2014 <span style="color:var(--ink-soft);font-weight:400;font-size:9px">n.d.</span>';
   const stats=[
-    ["Revenu m\u00e9dian / habitant",eur(d.revenu)+" /an"+(d.filosofiReal?rb:eb)],
-    ["Taux de pauvret\u00e9",d.pauvrete+" %"+(d.filosofiReal?rb:eb)],
-    ["Part de cadres / CSP+",d.cadres+" %"+(d.filosofiReal?rb:eb)],
-    ["Population",eur0((state.live&&state.live.pop)||d.pop)+" hab."+(popReal?rb:eb)],
-    ["Variation population (5 ans)",sign(d.popVar5)+" %"+eb],
-    ["Croissance des m\u00e9nages (5 ans)",sign(d.menagesVar5)+" %"+eb],
-    ["Solde migratoire / an",sign(d.soldeMig)+" \u2030"+eb],
-    ["Taux de ch\u00f4mage",d.chomage+" %"+(d.filosofiReal?rb:eb)],
-    ["\u00c9volution des salaires (5 ans)",sign(d.salVar5)+" %"+eb],
-    ["Nombre de logements",eur0(d.logements)+(d.logReal?rb:eb)],
-    ["Logements vacants",d.vacance+" %"+eb],
-    ["R\u00e9sidences secondaires",d.secondaire+" %"+eb]
+    ["Revenu m\u00e9dian / habitant",d.filosofiReal?eur(d.revenu)+" /an"+rb:na],
+    ["Taux de pauvret\u00e9",d.filosofiReal?d.pauvrete+" %"+rb:na],
+    ["Part de cadres / CSP+",d.filosofiReal&&d.cadres!=null?d.cadres+" %"+rb:na],
+    ["Population",popReal?eur0(state.live.pop)+" hab."+rb:na],
+    ["Variation population (5 ans)",na],
+    ["Croissance des m\u00e9nages (5 ans)",na],
+    ["Solde migratoire / an",na],
+    ["Taux de ch\u00f4mage",d.filosofiReal&&d.chomage!=null?d.chomage+" %"+rb:na],
+    ["\u00c9volution des salaires (5 ans)",na],
+    ["Nombre de logements",popReal?eur0(d.logements)+eb:na],
+    ["Logements vacants",na],
+    ["R\u00e9sidences secondaires",na]
   ];
   $("inseeStats").innerHTML=stats.map(([l,v])=>`<div class="stat"><span class="sl">${l}</span><span class="sv num">${v}</span></div>`).join("");
 }
@@ -1351,19 +1353,19 @@ function renderMarket(r){const d=r.dyn;const sign=x=>(x>=0?"+":"")+x;
     `<div class="stat"><span class="sl">${d.trendReal?"Tendance DVF (/an, liss\u00e9e)":"Indice Notaires-INSEE (1 an)"}</span><span class="sv num ${ncls}">${sign(d.notairesEvo)} %</span></div>`+
     `<div class="stat"><span class="sl">Loyer de march\u00e9${d.loyerReal?' <span style="color:var(--good);font-weight:700;font-size:9px">r\u00e9el (Carte des loyers)</span>':d.rentReal?' <span style="color:var(--brand-dark);font-weight:700;font-size:9px">ancr\u00e9 DVF</span>':''}</span><span class="sv num">${d.loyerM2.toFixed(1).replace('.',',')} \u20ac/m\u00b2/mois</span></div>`+
     `<div class="stat"><span class="sl">Rendement locatif brut de march\u00e9</span><span class="sv num">${d.rendementMarche.toFixed(1).replace('.',',')} %</span></div>`+
-    `<div class="stat"><span class="sl">Stock d'annonces en vente</span><span class="sv num">${eur0(d.stockAnnonces)}<span style="color:var(--ink-soft);font-size:9px;margin-left:3px">estimation</span></span></div>`+
+    `<div class="stat"><span class="sl">Stock d'annonces en vente</span><span class="sv num">${d.liquiditeReal?eur0(d.stockAnnonces)+'<span style="color:var(--ink-soft);font-size:9px;margin-left:3px">mod\u00e9lis\u00e9 (0,3 % du parc)</span>':'\u2014 <span style="color:var(--ink-soft);font-weight:400;font-size:9px">n.d.</span>'}</span></div>`+
     `<div class="stat"><span class="sl">${d.liquiditeReal?"Transactions DVF /an (typ.)":"Transactions annuelles"}</span><span class="sv num">${eur0(d.txAn)}${d.liquiditeReal?'<span style="color:var(--brand-dark);font-weight:700;font-size:9px;margin-left:3px">r\u00e9el</span>':'<span style="color:var(--ink-soft);font-size:9px;margin-left:3px">estimation</span>'}</span></div>`+
-    `<div class="stat"><span class="sl">Ratio offre / ventes</span><span class="sv num">${d.ratioOV.toFixed(2).replace('.',',')} \u00b7 ${mois} mois<span style="color:var(--ink-soft);font-size:9px;margin-left:3px">${d.liquiditeReal?"estimation":"estimation"}</span></span></div>`+
-    `<div class="stat"><span class="sl">D\u00e9lai de vente m\u00e9dian</span><span class="sv num">${d.delai} jours</span></div>`+
-    `<div class="stat"><span class="sl">Rapport de force</span><span class="sv">${d.ratioOV>8?'March\u00e9 acheteur':d.ratioOV<4?'March\u00e9 vendeur':'March\u00e9 \u00e9quilibr\u00e9'}</span></div>`+
-    `<div class="stat"><span class="sl">Taux cr\u00e9dit moyen (20 ans)</span><span class="sv num">${RATE20.toFixed(2).replace('.',',')} %</span></div>`+
-    `<div class="stat"><span class="sl">Tendance des taux \u00b7 OAT 10a</span><span class="sv">Stable / l\u00e9g. hausse \u00b7 ${OAT10.toFixed(1).replace('.',',')} %</span></div>`+
+    `<div class="stat"><span class="sl">Ratio offre / ventes</span><span class="sv num">${d.liquiditeReal?d.ratioOV.toFixed(2).replace('.',',')+' \u00b7 '+mois+' mois<span style="color:var(--brand-dark);font-weight:700;font-size:9px;margin-left:3px">d\u00e9riv\u00e9 DVF</span>':'\u2014 <span style="color:var(--ink-soft);font-weight:400;font-size:9px">n.d.</span>'}</span></div>`+
+    `<div class="stat"><span class="sl">D\u00e9lai de vente m\u00e9dian</span><span class="sv num">${d.liquiditeReal?d.delai+' jours<span style="color:var(--brand-dark);font-weight:700;font-size:9px;margin-left:3px">d\u00e9riv\u00e9 DVF</span>':'\u2014 <span style="color:var(--ink-soft);font-weight:400;font-size:9px">n.d.</span>'}</span></div>`+
+    `<div class="stat"><span class="sl">Rapport de force</span><span class="sv">${d.liquiditeReal?(d.ratioOV>8?'March\u00e9 acheteur':d.ratioOV<4?'March\u00e9 vendeur':'March\u00e9 \u00e9quilibr\u00e9'):'\u2014 <span style="color:var(--ink-soft);font-weight:400;font-size:9px">n.d.</span>'}</span></div>`+
+    `<div class="stat"><span class="sl">Taux cr\u00e9dit moyen (20 ans)</span><span class="sv num">${RATE20.toFixed(2).replace('.',',')} %<span style="color:var(--ink-soft);font-size:9px;margin-left:3px">hypoth\u00e8se</span></span></div>`+
+    `<div class="stat"><span class="sl">Tendance des taux \u00b7 OAT 10a</span><span class="sv">Stable / l\u00e9g. hausse \u00b7 ${OAT10.toFixed(1).replace('.',',')} %<span style="color:var(--ink-soft);font-size:9px;margin-left:3px">hypoth\u00e8se</span></span></div>`+
     `<div class="stat"><span class="sl">Effet taux sur pouvoir d'achat</span><span class="sv num">+1 pt \u2248 \u2212${effet} %</span></div>`;
   const color=d.score>=66?"var(--good)":d.score>=40?"var(--warn)":"var(--bad)";
   const col=v=>v>=66?"var(--good)":v>=40?"var(--warn)":"var(--bad)";
   const bar=(lbl,v)=>`<div style="margin-top:8px"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--ink-soft);margin-bottom:3px"><span>${lbl}</span><span class="num">${v}</span></div><div style="height:6px;border-radius:5px;background:var(--line);overflow:hidden"><div style="height:100%;width:${v}%;background:${col(v)}"></div></div></div>`;
   html+=`<div style="margin-top:14px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><b>Indice de dynamique du march\u00e9</b><b class="num" style="color:${color}">${d.score}/100 \u00b7 ${d.label}</b></div><div style="height:9px;border-radius:6px;background:var(--line);overflow:hidden"><div style="height:100%;width:${d.score}%;background:${color}"></div></div>`+
-    bar("Demande socio-d\u00e9mo",d.subDemande)+bar("Tension de l'offre",d.subTension)+bar("Contexte macro / taux",d.subMacro)+bar("Cadre de vie & acc\u00e8s",d.subCadre)+
+    bar("Demande socio-d\u00e9mographique",d.subDemande)+bar("Tension de l'offre",d.subTension)+bar("Contexte macro / taux",d.subMacro)+bar("Cadre de vie & acc\u00e8s",d.subCadre)+
     `<div class="hint" style="margin-top:8px">Mod\u00e8le type AVM (10 variables). <b>Poussent le prix \u2191</b> : m\u00e9nages, revenu, loyer, acc\u00e8s emploi. <b>Le tirent \u2193</b> : ch\u00f4mage, stock/ratio offre, d\u00e9lai, risque. Ajustement appliqu\u00e9 \u00e0 l'estimation : <b>${d.factor>=0?'+':''}${(d.factor*100).toFixed(1)} %</b>.</div></div>`;
   $("marketStats").innerHTML=html;
 }
@@ -1388,11 +1390,10 @@ function genComparables(r){const list=$("compList");list.innerHTML="";const ic=r
       div.innerHTML=`<div class="comp-ic">${ic}</div><div class="comp-main"><div class="t">${Math.round(p.surf)} m\u00b2${p.rooms?` \u00b7 ${p.rooms} pi\u00e8ces`:""}</div><div class="s">Vendu ${dt} \u00b7 ${r.city||"secteur"}</div></div><div class="comp-price"><div class="p num">${eur(p.price)}</div><div class="pm num">${eur0(p.ppm)} /m\u00b2</div></div>`;
       list.appendChild(div);});
     return;}
-  const months=["janv.","f\u00e9vr.","mars","avr.","mai","juin","juil.","ao\u00fbt","sept.","oct.","nov.","d\u00e9c."];
-  for(let i=0;i<5;i++){const ds=(Math.random()*0.24-0.12);const sqm=Math.round(r.sqmAdj*(1+ds));const surf=Math.max(15,Math.round(r.surface*(1+(Math.random()*0.3-0.15))));const p=sqm*surf;const mo=months[Math.floor(Math.random()*12)];const yr=Math.random()<0.5?2024:2025;
-    const div=document.createElement("div");div.className="comp";
-    div.innerHTML=`<div class="comp-ic">${ic}</div><div class="comp-main"><div class="t">${surf} m\u00b2 \u00b7 ${r.type==="terrain"?"terrain":r.pieces+" pi\u00e8ces"}</div><div class="s">Vendu ${mo} ${yr} \u00b7 ${r.city||"secteur"}</div></div><div class="comp-price"><div class="p num">${eur(p)}</div><div class="pm num">${eur0(sqm)} /m\u00b2</div></div>`;
-    list.appendChild(div);}
+  // Zero demo : sans ventes DVF reelles, aucun comparable invente n'est affiche.
+  const div=document.createElement("div");div.className="hint";div.style.cssText="padding:14px 4px";
+  div.textContent="Aucune vente DVF r\u00e9cup\u00e9r\u00e9e pour ce secteur \u2014 les comparables ne s'affichent qu'\u00e0 partir de ventes r\u00e9elles.";
+  list.appendChild(div);
 }
 
 /* Statistiques DVF reelles + nuage de points prix/surface */
@@ -2173,7 +2174,7 @@ function setBadge(id,txt,real){const el=$(id);if(!el)return;el.className=real?'r
 function updateBadges(r){
   const d=r&&r.dyn||{};
   // Carte 2 : INSEE / Filosofi
-  setBadge('inseeBadge',d.filosofiReal?'Pop. & Filosofi r\u00e9els':'Pop. r\u00e9elle \u00b7 reste estim\u00e9',!!d.filosofiReal);
+  setBadge('inseeBadge',d.filosofiReal?'Pop. & Filosofi r\u00e9els':(d.popReal?'Pop. r\u00e9elle \u00b7 reste n.d.':'donn\u00e9es n.d.'),!!d.filosofiReal);
   const tR=d.trendReal,lR=d.liquiditeReal,sdR=d.subDemandeReal;
   setBadge('dynTag',tR&&lR&&sdR?'DVF & Filosofi r\u00e9els':tR&&lR?'DVF r\u00e9el \u00b7 demande Filosofi':tR?'tendance DVF r\u00e9elle':lR?'liquidit\u00e9 DVF r\u00e9elle':'observatoire \u00b7 estimation',!!(tR||lR||sdR));
 }
@@ -2233,7 +2234,7 @@ async function showResults(){
   applyFinalDvfCap(r);
   const sd=$("srcDot"),st=$("srcTxt");
   if(realBase){sd.style.background="#7fe3d4";st.textContent=`Donn\u00e9es r\u00e9elles DVF \u00b7 ${r.realCount} ventes \u00b7 ${state.dvfScope==="bbox"?"rayon ~1 km":"commune"}`;$("compTag").textContent="DVF \u00b7 r\u00e9el";}
-  else{sd.style.background="#E8742A";st.textContent="D\u00e9mo \u00b7 "+diag;$("compTag").textContent="DVF \u00b7 d\u00e9mo";}
+  else{sd.style.background="#E8742A";st.textContent="Bar\u00e8me r\u00e9gional \u00b7 sans DVF ("+diag+")";$("compTag").textContent="DVF indisponible";}
   countUp($("pcPrice"),r.price," \u20ac");
   $("pcMargin").textContent="\u00b1 "+(r.spread*100).toFixed(0)+" %";
   $("pcSqm").textContent=eur0(r.sqm)+" \u20ac";
@@ -2582,7 +2583,7 @@ function renderOperation(r){
   else $("opProfilNote").innerHTML="<b>Particulier</b> : plus-value des particuliers avec abattements pour dur\u00e9e. Attention : une revente rapide (< 6 ans) est lourdement tax\u00e9e (peu ou pas d'abattement).";
 }
 function exportComps(r){
-  if(!(r.realPts&&r.realPts.length)){alert("Export des comparables disponible avec les vraies donn\u00e9es DVF (mode d\u00e9mo actuellement).");return;}
+  if(!(r.realPts&&r.realPts.length)){alert("Aucune vente DVF charg\u00e9e \u2014 export disponible uniquement avec des ventes r\u00e9elles.");return;}
   const rows=[["Surface_m2","Pieces","Date","Prix_EUR","Prix_m2_EUR"]];
   [...r.realPts].sort((a,b)=>Math.abs(a.surf-r.surface)-Math.abs(b.surf-r.surface)).slice(0,20)
     .forEach(p=>rows.push([Math.round(p.surf),p.rooms||"",p.date?String(p.date).slice(0,10):"",Math.round(p.price),Math.round(p.ppm)]));
