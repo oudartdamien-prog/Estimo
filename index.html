@@ -1069,10 +1069,19 @@ function dvfTrend(pts){
   if(!pts||pts.length<10)return null;
   const byY={};pts.forEach(p=>{const y=p.date?+String(p.date).slice(0,4):0;if(y&&p.ppm>0)(byY[y]=byY[y]||[]).push(p.ppm);});
   const med=a=>{const s=[...a].sort((x,z)=>x-z),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2;};
-  const ys=Object.keys(byY).map(Number).filter(y=>byY[y].length>=4).sort((a,b)=>a-b);
+  // P2 : seuil releve (>=6 ventes/an) \u2014 une mediane annuelle sur moins est trop sensible au mix
+  const ys=Object.keys(byY).map(Number).filter(y=>byY[y].length>=6).sort((a,b)=>a-b);
   if(ys.length<2)return null;
-  const last=ys[ys.length-1],prev=ys[ys.length-2],first=ys[0];
-  return{evo12:+((med(byY[last])/med(byY[prev])-1)*100).toFixed(1),evoTot:+((med(byY[last])/med(byY[first])-1)*100).toFixed(0),span:last-first,fromY:first,toY:last};
+  const first=ys[0],last=ys[ys.length-1],span=Math.max(1,last-first);
+  // P2 : taux annuel LISSE = regression log-lineaire des medianes annuelles, ponderee par le
+  // volume de ventes (plafonne a 60) -> insensible au bruit d'une seule annee, coherent avec
+  // l'evolution totale (l'ancien calcul derniere/avant-derniere annee donnait des artefacts).
+  let sw=0,sx=0,sy=0,sxx=0,sxy=0;
+  ys.forEach(y=>{const w=Math.min(byY[y].length,60),ly=Math.log(med(byY[y]));sw+=w;sx+=w*y;sy+=w*ly;sxx+=w*y*y;sxy+=w*y*ly;});
+  const den=sw*sxx-sx*sx;
+  let perYear=den!==0?(Math.exp((sw*sxy-sx*sy)/den)-1)*100:(Math.pow(med(byY[last])/med(byY[first]),1/span)-1)*100;
+  perYear=Math.max(-8,Math.min(8,perYear)); // bornage : au-dela, artefact plus probable qu'un vrai marche
+  return{evo12:+perYear.toFixed(1),evoTot:+((med(byY[last])/med(byY[first])-1)*100).toFixed(0),span,fromY:first,toY:last,nYears:ys.length,smoothed:true};
 }
 function baseSqm(city,cp,type){const cn=norm(city);const dep=cp?cp.substring(0,2):null;let base,conf;
   if(type==="terrain"){let apt=CITY_APT[cn]||DEPT_APT[dep]||NAT_APT;return{sqm:Math.round(apt*0.14),conf:CITY_APT[cn]?"moyenne":"faible"};}
@@ -1127,7 +1136,7 @@ function coefficients(ctx){const rows=[];let m=1;let detail=0;
   if($("cave").checked){m*=1.01;rows.push(["Cave / cellier",0.01]);}
   return{mult:m,rows,detail};
 }
-function outdoorValue(baseSqmAdj,ctx){
+function outdoorValue(baseSqmAdj,ctx,realMode){
   if(state.type==="terrain")return{val:0,rows:[]};
   ctx=ctx||marketCtx(null);const premium=ctx.premium,cold=ctx.cold;
   const rows=[];let val=0;
@@ -1136,7 +1145,18 @@ function outdoorValue(baseSqmAdj,ctx){
   const bM=numv("balconM2"),tM=numv("terrasseM2"),jM=numv("jardinM2");
   if(bM>0){const v=bM*baseSqmAdj*wB;val+=v;rows.push([`Balcon ${bM} m\u00b2 (\u00e9quiv. surface)`,v]);}
   if(tM>0){const v=tM*baseSqmAdj*wT;val+=v;rows.push([`Terrasse ${tM} m\u00b2 (\u00e9quiv. surface)`,v]);}
-  if(jM>0){const f=Math.min(jM,300),x=Math.max(0,jM-300);let v=f*baseSqmAdj*wJ+x*baseSqmAdj*0.015;const cap=baseSqmAdj*(numv("surface")||1)*0.30;v=Math.min(v,cap);val+=v;rows.push([`Jardin ${jM} m\u00b2 (\u00e9quiv. surface)`,v]);}
+  if(jM>0){
+    if(realMode&&state.type==="maison"){
+      // Anti-double-comptage : les prix DVF des maisons INCLUENT deja le terrain.
+      // Seul l'excedent au-dela d'un jardin typique local (~400 m2) est valorise, a taux foncier faible, borne a 8 % de la base.
+      const TYP=400,ex=Math.max(0,jM-TYP);
+      let v=ex*baseSqmAdj*0.04;const cap=baseSqmAdj*(numv("surface")||1)*0.08;v=Math.min(v,cap);
+      if(v>0){val+=v;rows.push([`Jardin ${jM} m\u00b2 (exc\u00e9dent vs ~${TYP} m\u00b2 typique, d\u00e9j\u00e0 inclus dans les prix DVF)`,v]);}
+      else rows.push([`Jardin ${jM} m\u00b2 (d\u00e9j\u00e0 inclus dans les prix DVF maison)`,0]);
+    }else{
+      const f=Math.min(jM,300),x=Math.max(0,jM-300);let v=f*baseSqmAdj*wJ+x*baseSqmAdj*0.015;const cap=baseSqmAdj*(numv("surface")||1)*0.30;v=Math.min(v,cap);val+=v;rows.push([`Jardin ${jM} m\u00b2 (\u00e9quiv. surface)`,v]);
+    }
+  }
   return{val,rows};
 }
 // ===== T1 : moteur d'estimation dedie aux terrains (foncier, ajustements marginaux bornes) =====
@@ -1185,7 +1205,7 @@ function estimate(realBase){
     if(Math.abs(effMult-mult)>0.004)rows.push(["Ajustement marginal (base DVF, anti-cumul)",effMult-mult]);
   }
   const sqmAdj=sqm*effMult;
-  const od=outdoorValue(sqmAdj,ctx);
+  const od=outdoorValue(sqmAdj,ctx,!!realBase);
   const dyn=computeDynamics(city,cp);
   let price=sqmAdj*surface+od.val;
   if(realBase){const _e=price/surface,_cap=Math.max(realBase*0.75,Math.min(realBase*1.25,_e));price=_cap*surface;}
@@ -1203,21 +1223,38 @@ function countUp(el,target,suffix){const reduce=matchMedia("(prefers-reduced-mot
 
 function rng(seed){let x=Math.sin(seed)*10000;return x-Math.floor(x);}
 function renderInsee(r){const d=r.dyn;const sign=x=>(x>=0?"+":"")+x;
-  const stats=[["Revenu m\u00e9dian / habitant",eur(d.revenu)+" /an"],["Taux de pauvret\u00e9",d.pauvrete+" %"],["Part de cadres / CSP+",d.cadres+" %"],["Population",eur0((state.live&&state.live.pop)||d.pop)+" hab."+((state.live&&state.live.pop)?` <span style="color:var(--brand-dark);font-weight:700">r\u00e9el</span>`:"")],["Variation population (5 ans)",sign(d.popVar5)+" %"],["Croissance des m\u00e9nages (5 ans)",sign(d.menagesVar5)+" %"],["Solde migratoire / an",sign(d.soldeMig)+" \u2030"],["Taux de ch\u00f4mage",d.chomage+" %"],["\u00c9volution des salaires (5 ans)",sign(d.salVar5)+" %"],["Nombre de logements",eur0(d.logements)],["Logements vacants",d.vacance+" %"],["R\u00e9sidences secondaires",d.secondaire+" %"]];
+  const rb='<span style="color:var(--brand-dark);font-weight:700;font-size:9px;margin-left:3px">r\u00e9el</span>';
+  const eb='<span style="color:var(--ink-soft);font-weight:400;font-size:9px;margin-left:3px">estimation</span>';
+  const popReal=!!(state.live&&state.live.pop);
+  const stats=[
+    ["Revenu m\u00e9dian / habitant",eur(d.revenu)+" /an"+(d.filosofiReal?rb:eb)],
+    ["Taux de pauvret\u00e9",d.pauvrete+" %"+(d.filosofiReal?rb:eb)],
+    ["Part de cadres / CSP+",d.cadres+" %"+(d.filosofiReal?rb:eb)],
+    ["Population",eur0((state.live&&state.live.pop)||d.pop)+" hab."+(popReal?rb:eb)],
+    ["Variation population (5 ans)",sign(d.popVar5)+" %"+eb],
+    ["Croissance des m\u00e9nages (5 ans)",sign(d.menagesVar5)+" %"+eb],
+    ["Solde migratoire / an",sign(d.soldeMig)+" \u2030"+eb],
+    ["Taux de ch\u00f4mage",d.chomage+" %"+(d.filosofiReal?rb:eb)],
+    ["\u00c9volution des salaires (5 ans)",sign(d.salVar5)+" %"+eb],
+    ["Nombre de logements",eur0(d.logements)+(d.logReal?rb:eb)],
+    ["Logements vacants",d.vacance+" %"+eb],
+    ["R\u00e9sidences secondaires",d.secondaire+" %"+eb]
+  ];
   $("inseeStats").innerHTML=stats.map(([l,v])=>`<div class="stat"><span class="sl">${l}</span><span class="sv num">${v}</span></div>`).join("");
 }
 function renderMarket(r){const d=r.dyn;const sign=x=>(x>=0?"+":"")+x;
   const cls=d.evo12>=0?"trend-up":"trend-down";const arr=d.evo12>=0?"\u25b2":"\u25bc";const ncls=d.notairesEvo>=0?"trend-up":"trend-down";
   const cap=mtCapacity(1000,RATE20/100,20),capUp=mtCapacity(1000,(RATE20+1)/100,20);const effet=Math.round((1-capUp/cap)*100);
   const mois=(d.ratioOV*12).toFixed(0);
-  let html=`<div class="stat"><span class="sl">Prix m\u00e9dian secteur (DVF/notaires)</span><span class="sv num">${eur0(r.sqmBase)} /m\u00b2</span></div>`+
-    `<div class="stat"><span class="sl">\u00c9volution prix 12 mois${d.trendReal?' <span style="color:var(--brand-dark);font-weight:700;font-size:9px">r\u00e9el</span>':''}</span><span class="sv num ${cls}">${arr} ${Math.abs(d.evo12)} %</span></div>`+
+  let html=`<div class="stat"><span class="sl">Prix de base retenu (multi-mod\u00e8les)</span><span class="sv num">${eur0(r.sqmBase)} /m\u00b2</span></div>`+
+    `<div class="stat"><span class="sl">${d.trendReal?'Tendance prix /an (liss\u00e9e) <span style="color:var(--brand-dark);font-weight:700;font-size:9px">r\u00e9el</span>':'\u00c9volution prix 12 mois'}</span><span class="sv num ${cls}">${arr} ${Math.abs(d.evo12)} %</span></div>`+
     `<div class="stat"><span class="sl">\u00c9volution sur ${d.trendReal?d.evoSpan:5} ans${d.trendReal?' <span style="color:var(--brand-dark);font-weight:700;font-size:9px">r\u00e9el</span>':''}</span><span class="sv num">${sign(d.evo5)} %</span></div>`+
-    `<div class="stat"><span class="sl">${d.trendReal?"Tendance DVF (1 an)":"Indice Notaires-INSEE (1 an)"}</span><span class="sv num ${ncls}">${sign(d.notairesEvo)} %</span></div>`+
+    `<div class="stat"><span class="sl">${d.trendReal?"Tendance DVF (/an, liss\u00e9e)":"Indice Notaires-INSEE (1 an)"}</span><span class="sv num ${ncls}">${sign(d.notairesEvo)} %</span></div>`+
     `<div class="stat"><span class="sl">Loyer de march\u00e9${d.rentReal?' <span style="color:var(--brand-dark);font-weight:700;font-size:9px">ancr\u00e9 DVF</span>':''}</span><span class="sv num">${d.loyerM2.toFixed(1).replace('.',',')} \u20ac/m\u00b2/mois</span></div>`+
     `<div class="stat"><span class="sl">Rendement locatif brut de march\u00e9</span><span class="sv num">${d.rendementMarche.toFixed(1).replace('.',',')} %</span></div>`+
-    `<div class="stat"><span class="sl">Stock d'annonces en vente</span><span class="sv num">${eur0(d.stockAnnonces)}</span></div>`+
-    `<div class="stat"><span class="sl">Ratio offre / ventes</span><span class="sv num">${d.ratioOV.toFixed(2).replace('.',',')} \u00b7 ${mois} mois</span></div>`+
+    `<div class="stat"><span class="sl">Stock d'annonces en vente</span><span class="sv num">${eur0(d.stockAnnonces)}<span style="color:var(--ink-soft);font-size:9px;margin-left:3px">estimation</span></span></div>`+
+    `<div class="stat"><span class="sl">${d.liquiditeReal?"Transactions DVF /an (typ.)":"Transactions annuelles"}</span><span class="sv num">${eur0(d.txAn)}${d.liquiditeReal?'<span style="color:var(--brand-dark);font-weight:700;font-size:9px;margin-left:3px">r\u00e9el</span>':'<span style="color:var(--ink-soft);font-size:9px;margin-left:3px">estimation</span>'}</span></div>`+
+    `<div class="stat"><span class="sl">Ratio offre / ventes</span><span class="sv num">${d.ratioOV.toFixed(2).replace('.',',')} \u00b7 ${mois} mois<span style="color:var(--ink-soft);font-size:9px;margin-left:3px">${d.liquiditeReal?"estimation":"estimation"}</span></span></div>`+
     `<div class="stat"><span class="sl">D\u00e9lai de vente m\u00e9dian</span><span class="sv num">${d.delai} jours</span></div>`+
     `<div class="stat"><span class="sl">Rapport de force</span><span class="sv">${d.ratioOV>8?'March\u00e9 acheteur':d.ratioOV<4?'March\u00e9 vendeur':'March\u00e9 \u00e9quilibr\u00e9'}</span></div>`+
     `<div class="stat"><span class="sl">Taux cr\u00e9dit moyen (20 ans)</span><span class="sv num">${RATE20.toFixed(2).replace('.',',')} %</span></div>`+
@@ -1246,7 +1283,7 @@ function renderLocStats(r){const d=r.dyn;
   html+=`</div>`;
   $("locStats").innerHTML=html;
 }
-function genComparables(r){const list=$("compList");list.innerHTML="";const ic=r.type==="maison"?"\u1f3e0":r.type==="terrain"?"\u1f333":"\u1f3e2";
+function genComparables(r){const list=$("compList");list.innerHTML="";const ic=r.type==="maison"?"\ud83c\udfe0":r.type==="terrain"?"\ud83c\udf33":"\ud83c\udfe2";
   if(r.realPts&&r.realPts.length){const sorted=[...r.realPts].sort((a,b)=>String(b.date||"").localeCompare(String(a.date||""))).slice(0,6);
     sorted.forEach(p=>{const dt=p.date?String(p.date).slice(0,7).split("-").reverse().join("/"):"";const div=document.createElement("div");div.className="comp";
       div.innerHTML=`<div class="comp-ic">${ic}</div><div class="comp-main"><div class="t">${Math.round(p.surf)} m\u00b2${p.rooms?` \u00b7 ${p.rooms} pi\u00e8ces`:""}</div><div class="s">Vendu ${dt} \u00b7 ${r.city||"secteur"}</div></div><div class="comp-price"><div class="p num">${eur(p.price)}</div><div class="pm num">${eur0(p.ppm)} /m\u00b2</div></div>`;
@@ -1274,7 +1311,7 @@ function renderDvfStats(r){
    `<div style="font-weight:700;font-size:14px;margin:2px 0 10px;color:var(--ink)">Ventes r\u00e9elles \u00e0 surface comparable</div>`+
    `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">`+
      cell("Ventes analys\u00e9es",String(s.n),period+(s.removed?" \u00b7 "+s.removed+" aberr. exclues":""))+
-     cell("Prix de r\u00e9f\u00e9rence",f(s.west),"\u20ac/m\u00b2 \u00b7 m\u00e9diane pond\u00e9r\u00e9e r\u00e9cence")+
+     cell("M\u00e9diane pond\u00e9r\u00e9e r\u00e9cence",f(s.west),"\u20ac/m\u00b2 \u00b7 poids aux ventes r\u00e9centes")+
      cell("M\u00e9diane / moyenne",f(s.med)+" / "+f(s.mean),"\u20ac/m\u00b2")+
      cell("Fourchette 50 % (Q1\u2013Q3)",f(s.q1)+"\u2013"+f(s.q3),"\u20ac/m\u00b2")+
    `</div>`+
@@ -1467,8 +1504,8 @@ function priceFormation(r){
   const pxHed=r.pxHedonic!=null?r.pxHedonic:Math.round((r.sqmAdj||0)*surf+odVal),capDelta=Math.round(pxHed-(Math.round((r.sqmAdj||0)*surf)+odVal));
   const ix=r.indexAdj||{tot:0,qA:0,eA:0,rA:0},baseI=r.basePrice||pxHed,idxDelta=Math.round(baseI-pxHed);
   const dyn=r.dynAdj||{adj:0},dynDelta=Math.round(baseI*dyn.adj),afterDyn=Math.round(baseI*(1+dyn.adj));
-  const geo=r.geoAdj||{adj:0},geoDelta=Math.round((r.price||afterDyn)-afterDyn);
-  const pct=v=>L0?(v/L0*100):0,lines=[];
+  const geo=r.geoAdj||{adj:0},geoDelta=Math.round(((r.priceBeforeCap!=null?r.priceBeforeCap:r.price)||afterDyn)-afterDyn);
+  const pct=v=>L0?+(v/L0*100).toFixed(1):0,lines=[];
   lines.push({k:"base",label:"Valeur de march\u00e9 de base",eur:L0,pct:100,note:eur0(r.sqmBase||0)+" \u20ac/m\u00b2 (multi-mod\u00e8les) \u00d7 "+surf+" m\u00b2"});
   if(charac)lines.push({k:"carac",label:"Caract\u00e9ristiques du bien",eur:charac,pct:pct(charac),note:"\u00c9tat, DPE, \u00e9tage, exposition, standing\u2026 (effets contextuels)",sub:(r.rows||[]).filter(x=>x[1]&&Math.abs(x[1])>=0.005).map(x=>[x[0],(x[1]>0?"+":"")+(x[1]*100).toFixed(1)+" %"])});
   if(odVal)lines.push({k:"ext",label:"Surface \u00e9conomique (ext\u00e9rieurs)",eur:odVal,pct:pct(odVal),note:"Balcon / terrasse / jardin en \u00e9quivalent surface habitable"});
@@ -1476,6 +1513,7 @@ function priceFormation(r){
   if(idxDelta){const sub=[];if(ix.qA)sub.push(["Qualit\u00e9",(ix.qA>0?"+":"")+(ix.qA*100).toFixed(1)+" %"]);if(ix.eA)sub.push(["Coup de c\u0153ur","+"+(ix.eA*100).toFixed(1)+" %"]);if(ix.rA)sub.push(["Raret\u00e9","+"+(ix.rA*100).toFixed(1)+" %"]);lines.push({k:"idx",label:"Indices qualit\u00e9 / raret\u00e9 / \u00e9motion",eur:idxDelta,pct:pct(idxDelta),note:"Primes non lin\u00e9aires (excellence, raret\u00e9, coup de c\u0153ur)",sub});}
   if(dynDelta)lines.push({k:"dyn",label:"Dynamique de march\u00e9",eur:dynDelta,pct:pct(dynDelta),note:(dyn.real?"Tendance r\u00e9elle DVF":"Tendance")+" \u2014 momentum prospectif"});
   if(geoDelta)lines.push({k:"geo",label:"Micro-localisation",eur:geoDelta,pct:pct(geoDelta),note:"Transports, \u00e9coles, commerces, air, risques (au sein de la commune)"});
+  if(r.finalCap)lines.push({k:"capfinal",label:"Garde-fou final (\u00b120 % m\u00e9diane DVF)",eur:r.finalCap,pct:pct(r.finalCap),note:"Bornage final autour de la m\u00e9diane pond\u00e9r\u00e9e des ventes r\u00e9elles"});
   lines.push({k:"final",label:"Estimation finale",eur:r.price,pct:pct(r.price),final:true,note:eur0(r.sqm||0)+" \u20ac/m\u00b2"});
   return lines;
 }
@@ -1506,13 +1544,24 @@ async function provPlu(coord){try{if(!coord)return null;const g=encodeURICompone
 // Placeholders defensifs prets a brancher des qu'un endpoint public est confirme (aucun appel inutile).
 async function provBruit(_coord){return null;}
 async function provPermis(_insee){return null;}
+// P4 : Filosofi INSEE via Opendatasoft (sans cle, CORS OK). Revenu median + taux pauvrete par commune.
+// Endpoint public : filosofi-evolution-et-structure-des-revenus-de-2012-a-2020-commune
+async function provFilosofi(insee){
+  if(!insee)return null;
+  try{
+    const u="https://public.opendatasoft.com/api/explore/v2.1/catalog/datasets/filosofi-evolution-et-structure-des-revenus-de-2012-a-2020-commune/records?where=codgeo%3D%22"+insee+"%22&limit=1&select=med20%2Ctp6020%2Ccadres15p20%2Ctcho1564t20";
+    const d=await dvfFetch(u);const r=(d&&d.json&&d.json.results&&d.json.results[0])||null;
+    if(!r||r.med20==null)return null;
+    return{revenu:Math.round(r.med20),pauvrete:r.tp6020!=null?+r.tp6020.toFixed(1):null,cadres:r.cadres15p20!=null?+r.cadres15p20.toFixed(0):null,chomage:r.tcho1564t20!=null?+r.tcho1564t20.toFixed(1):null};
+  }catch(_){return null;}
+}
 // Orchestrateur : tous les fournisseurs en parallele, echecs isoles (allSettled). Renvoie ctx2.
 async function fetchContextProviders(coord){
   if(!coord)return{};
-  const res=await Promise.allSettled([provDemo(coord.insee),provEntreprises(coord.insee),provPlu(coord),provBruit(coord),provPermis(coord.insee)]);
+  const res=await Promise.allSettled([provDemo(coord.insee),provEntreprises(coord.insee),provPlu(coord),provBruit(coord),provPermis(coord.insee),provFilosofi(coord.insee)]);
   const v=i=>res[i]&&res[i].status==="fulfilled"?res[i].value:null;
-  const ctx={},iris=v(0),ent=v(1),plu=v(2),br=v(3),pm=v(4);
-  if(iris)ctx.iris=iris;if(ent)ctx.sirene=ent;if(plu)ctx.plu=plu;if(br)ctx.bruit=br;if(pm)ctx.permis=pm;
+  const ctx={},iris=v(0),ent=v(1),plu=v(2),br=v(3),pm=v(4),filo=v(5);
+  if(iris)ctx.iris=iris;if(ent)ctx.sirene=ent;if(plu)ctx.plu=plu;if(br)ctx.bruit=br;if(pm)ctx.permis=pm;if(filo)ctx.filosofi=filo;
   return ctx;
 }
 // ===== Reconciliation ChatGPT x Grok \u2014 W1 : socle contextuel (additif, ZERO impact prix) =====
@@ -1666,7 +1715,10 @@ function multiEstimators(r){
   const hed=r.pxHedonic||Math.round((r.sqmAdj||(stats?stats.med:0))*surf);est.push(Object.assign({key:"hed",label:"Estimateur h\u00e9donique",price:hed,conf:72,justif:"Valeur de base \u00d7 coefficients des caract\u00e9ristiques (\u00e9tat, DPE, \u00e9tage, exposition, standing) + surface \u00e9conomique"},iv(hed,1)));
   const base=r.engineBase||(stats?stats.med:0),geoA=(r.geoAdj&&r.geoAdj.adj)||0,geo=Math.round(base*(1+geoA)*surf),geoOk=r.geoAdj&&r.geoAdj.score!=null;
   est.push(Object.assign({key:"geo",label:"Estimateur g\u00e9ographique",price:geo,conf:geoOk?Math.round(Math.min(100,55+Math.abs(geoA)*400)):45,justif:geoOk?("Base \u00d7 micro-localisation ("+r.geoAdj.score+"/100 : transports, \u00e9coles, commerces, air, risques)"):"Micro-localisation en cours de chargement"},iv(geo,1.1)));
-  const ia=r.price;est.push(Object.assign({key:"ia",label:"Mod\u00e8le composite (IA)",price:ia,conf:88,justif:"Synth\u00e8se non lin\u00e9aire : h\u00e9donique + indices qualit\u00e9/raret\u00e9/coup de c\u0153ur + micro-localisation + dynamique de march\u00e9"},iv(ia,0.9)));
+  const ia=r.price;const _mkt=est.filter(e=>["dvf","comp","stat"].indexOf(e.key)>=0).map(e=>e.price).sort((a,b)=>a-b);
+  const _mmed=_mkt.length?_mkt[Math.floor(_mkt.length/2)]:ia,_dev=_mmed?Math.abs(ia-_mmed)/_mmed:0;
+  const _iaConf=Math.round(88*(_dev>0.15?Math.max(0.5,1-(_dev-0.15)*2):1));
+  est.push(Object.assign({key:"ia",label:"Mod\u00e8le composite (IA)",price:ia,conf:_iaConf,justif:"Synth\u00e8se non lin\u00e9aire : h\u00e9donique + indices qualit\u00e9/raret\u00e9/coup de c\u0153ur + micro-localisation + dynamique de march\u00e9"+(_dev>0.15?" \u00b7 confiance r\u00e9duite : \u00e9cart de "+Math.round(_dev*100)+" % aux estimateurs march\u00e9":"")},iv(ia,0.9)));
   let W=0,B=0;est.forEach(e=>{W+=e.conf;B+=e.conf*e.price;});
   return{est,fused:W>0?Math.round(B/W):r.price};
 }
@@ -1706,16 +1758,26 @@ function marketDynamicsAdjust(r){
   let adj=Math.max(-2.5,Math.min(2.5,trend))/100*0.5;adj=Math.max(-0.025,Math.min(0.025,adj));
   return{adj,trend,real:!!dyn.trendReal};
 }
+// P1 : garde-fou FINAL \u2014 borne le prix apres TOUS les ajustements (indices, dynamique, micro-loc)
+// a +/-20 % de la mediane ponderee DVF. Le cap intermediaire +/-25 % laissait fuir ~+39 % au total.
+function applyFinalDvfCap(r){
+  r.priceBeforeCap=r.price;r.finalCap=0;
+  if(!r.real||!r.realStats||r.type==="terrain")return;
+  const ref=(r.realStats.west||r.realStats.med)*(r.surface||1);if(!ref)return;
+  const lo=Math.round(ref*0.80),hi=Math.round(ref*1.20),p0=r.price,p=Math.max(lo,Math.min(hi,p0));
+  if(p!==p0){r.finalCap=p-p0;r.price=p;r.sqm=Math.round(p/(r.surface||1));r.low=p*(1-r.spread);r.high=p*(1+r.spread);}
+}
 function applyGeoDyn(r){
   if(!r.basePrice)return;const oldPrice=r.price;
   r.geoAdj=geoValue(r);if(!r.dynAdj)r.dynAdj=marketDynamicsAdjust(r);
   r.price=Math.round(r.basePrice*(1+r.dynAdj.adj)*(1+r.geoAdj.adj));
   r.sqm=Math.round(r.price/(r.surface||1));r.low=r.price*(1-r.spread);r.high=r.price*(1+r.spread);
+  applyFinalDvfCap(r);
   if($("pcPrice"))countUp($("pcPrice"),r.price," \u20ac");
   if($("pcSqm"))$("pcSqm").textContent=eur0(r.sqm)+" \u20ac";
   if($("gLow"))$("gLow").textContent=eur(r.low);if($("gMid"))$("gMid").textContent=eur(r.price);if($("gHigh"))$("gHigh").textContent=eur(r.high);
   const pa=$("prixAchat");if(pa&&Math.round(parseFloat(pa.value)||0)===Math.round(oldPrice))pa.value=Math.round(r.price);
-  if(lastResult===r){computeAll(r);computeResale(r);renderEstimators(r);renderBienIndices(r);renderGlobalIndex(r);renderPriceFormation(r);renderContext(r);renderMarket(r);renderScatter(r);}
+  if(lastResult===r){computeAll(r);computeResale(r);renderCalcDetail(r);renderEstimators(r);renderBienIndices(r);renderGlobalIndex(r);renderPriceFormation(r);renderContext(r);renderMarket(r);renderScatter(r);}
 }
 // ===== Vague 2 : indices synthetiques du bien (qualite, emotionnel, rarete, profil acheteur) =====
 function buyerProfile(r){
@@ -1896,6 +1958,51 @@ function warnIcon(){return '<svg width="18" height="18" viewBox="0 0 24 24" fill
 function okIcon(){return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="m8 12 3 3 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';}
 
 let lastResult=null;
+// P3 : detail du calcul factorise \u2014 cascade COMPLETE jusqu'au prix final affiche (reutilise
+// priceFormation pour les etapes indices/dynamique/micro-loc/garde-fou), re-rendu apres micro-loc.
+function renderCalcDetail(r){
+  const bd=$("bdRows");if(!bd||!r)return;bd.innerHTML="";
+  const note=document.createElement("div");note.className="hint";note.style.margin="0 0 8px";note.innerHTML="Le prix part du prix de r\u00e9f\u00e9rence /m\u00b2 du secteur, ajust\u00e9 par chaque caract\u00e9ristique (effet \u2191 ou \u2193), multipli\u00e9 par la surface, puis affin\u00e9 par les ajustements de march\u00e9.";bd.appendChild(note);
+  const addRow=(l,v,isPct,eurv)=>{const div=document.createElement("div");div.className="bd-row";let val;if(eurv!=null){val=(eurv>=0?"+":"\u2212")+eur(Math.abs(eurv));}else if(isPct){const a=v>0?"\u2191 ":v<0?"\u2193 ":"";val=a+(v>0?"+":"")+(v*100).toFixed(0)+" %";}else val=v;const cls=eurv!=null?(eurv>=0?"pos":"neg"):isPct?(v>0?"pos":v<0?"neg":""):"";div.innerHTML=`<span>${l}</span><span class="${cls}">${val}</span>`;bd.appendChild(div);};
+  const sep=(l,val)=>{const d=document.createElement("div");d.className="bd-row";d.style.cssText="border-top:1px solid var(--line);margin-top:6px;padding-top:8px;font-weight:700";d.innerHTML=`<span>${l}</span><span>${val}</span>`;bd.appendChild(d);};
+  addRow("Prix de r\u00e9f\u00e9rence /m\u00b2",eur0(r.sqmBase)+" \u20ac");
+  r.rows.forEach(row=>{if(row[2]!=null)addRow(row[0],null,false,row[2]);else addRow(row[0],row[1],true);});
+  addRow("Prix /m\u00b2 ajust\u00e9",eur0(r.sqmAdj)+" \u20ac");addRow("\u00d7 Surface",r.surface+" m\u00b2");
+  const pf=priceFormation(r),steps=pf.filter(l=>["idx","dyn","geo","capfinal"].indexOf(l.k)>=0);
+  if(steps.length){
+    sep("= Valeur h\u00e9donique",eur(r.pxHedonic!=null?r.pxHedonic:r.price));
+    steps.forEach(s=>addRow(s.label,null,false,s.eur));
+  }
+  sep("= Valeur estim\u00e9e finale",eur(r.price));
+}
+// P4 : injection coordonnee des donnees reelles dans r.dyn (liquidite DVF + Filosofi + pop).
+// Appele (1) depuis showResults apres DVF+livePromise, (2) depuis ctxProm.then.
+// Ne modifie que les variables disponibles, preserve toujours les valeurs estimees en fallback.
+function patchDynReal(r){
+  if(!r||!r.dyn)return;
+  const d=r.dyn,lv=state.live||{},x2=state.ctx2||{};
+  // Population reelle (Georisques/INSEE geo.api)
+  const popReal=lv.pop||null;if(popReal){d.pop=popReal;d.popReal=true;d.logements=Math.round(popReal/2.3);}
+  // Filosofi : revenu, pauvrete, cadres, chomage
+  const fi=x2.filosofi||null;
+  if(fi){if(fi.revenu>0)d.revenu=fi.revenu;if(fi.pauvrete!=null)d.pauvrete=fi.pauvrete;if(fi.cadres!=null)d.cadres=fi.cadres;if(fi.chomage!=null)d.chomage=fi.chomage;d.filosofiReal=true;}
+  // Liquidite DVF reelle : transactions/an depuis realPts (ne touche pas evo12/trendReal)
+  const pts=r.realPts;if(pts&&pts.length>=10){
+    const byY={};pts.forEach(p=>{const y=p.date?+String(p.date).slice(0,4):0;if(y>=2019)byY[y]=(byY[y]||0)+1;});
+    const ys=Object.keys(byY).map(Number).filter(y=>byY[y]>=3).sort((a,b)=>a-b);
+    if(ys.length>=2){
+      d.txAn=Math.round(ys.reduce((s,y)=>s+byY[y],0)/ys.length);d.txRealYears=ys.length;
+      // stockAnnonces : estimation depuis pop reelle + ratio de mise en vente (~0,3 % du parc/mois)
+      if(d.pop>0)d.stockAnnonces=Math.round(d.logements*0.003);
+      d.ratioOV=d.txAn>0?+(d.stockAnnonces/d.txAn).toFixed(2):d.ratioOV;
+      d.delai=Math.round(Math.min(150,Math.max(20,d.ratioOV*3.6*30)));d.liquiditeReal=true;
+      // Recalcul subTension avec valeurs reelles (meme formule que computeDynamics)
+      const _n=(x,a,b)=>Math.max(0,Math.min(1,(x-a)/(b-a)));
+      d.subTension=Math.round(100*(0.45*(1-_n(d.ratioOV,2,12))+0.33*_n(d.evo12||0,-3,5)+0.22*(1-_n(d.delai,30,120))));
+      d.score=Math.round(0.34*d.subDemande+0.34*d.subTension+0.16*d.subMacro+0.16*d.subCadre);
+    }
+  }
+}
 async function showResults(){
   const err=$("formErr");const surface=state.type==="terrain"?numv("terrain"):numv("surface");
   if(!($("adresse").value||"").trim()){err.textContent="Saisissez l'adresse du bien, puis choisissez une suggestion.";err.classList.add("show");$("adresse").focus();return;}
@@ -1929,6 +2036,7 @@ async function showResults(){
   // Donnees reelles : loyer ancre au prix DVF + tendance de prix calculee sur DVF (remplace la demo)
   if(realBase){const _rent=CITY_RENT[norm(r.city)]||mktRentSqm(r.sqmBase);r.dyn.loyerM2=_rent;r.dyn.rendementMarche=+(_rent*12/r.sqmBase*100).toFixed(1);r.dyn.rentReal=true;
     const _tr=dvfTrend(realPts);if(_tr){r.dyn.evo12=_tr.evo12;r.dyn.evo5=_tr.evoTot;r.dyn.notairesEvo=_tr.evo12;r.dyn.evoSpan=_tr.span;r.dyn.trendReal=true;}}
+  patchDynReal(r); // P4 : liquidite DVF + pop reelle injectees ici
   // Vague 3 : indice de confiance multicritere + fourchette pilotee par la confiance
   const _checks=[numv("surface")>0,numv("chambres")>0,numv("sdb")>0,(state.type!=="appartement"||numv("floorExact")>0),(numv("balconM2")>0||numv("terrasseM2")>0||numv("jardinM2")>0),!!state.coord];
   const _conf=estimationConfidence(realStats,{dyn:r.dyn,nTotal:(realPts?realPts.length:0),attrFilled:_checks.filter(Boolean).length,attrTotal:_checks.length,baseConf:r.conf});
@@ -1940,6 +2048,7 @@ async function showResults(){
   // Vague 3 : prix de base (hedonique + indices) memorise ; ajustement dynamique de marche applique ; la micro-localisation s'applique a l'arrivee de l'enrich (applyGeoDyn)
   r.basePrice=r.price;r.dynAdj=marketDynamicsAdjust(r);r.geoAdj={adj:0,score:null};
   if(r.dynAdj.adj){r.price=Math.round(r.basePrice*(1+r.dynAdj.adj));r.sqm=Math.round(r.price/(r.surface||1));r.low=r.price*(1-r.spread);r.high=r.price*(1+r.spread);}
+  applyFinalDvfCap(r);
   const sd=$("srcDot"),st=$("srcTxt");
   if(realBase){sd.style.background="#7fe3d4";st.textContent=`Donn\u00e9es r\u00e9elles DVF \u00b7 ${r.realCount} ventes`;$("compTag").textContent="DVF \u00b7 r\u00e9el";}
   else{sd.style.background="#E8742A";st.textContent="D\u00e9mo \u00b7 "+diag;$("compTag").textContent="DVF \u00b7 d\u00e9mo";}
@@ -1954,14 +2063,7 @@ async function showResults(){
   const _cc=r.confScore>=70?"#7fe3d4":r.confScore>=45?"#F2D31C":"#E8742A";
   cd.style.background=_cc;ct.textContent="Indice de confiance "+r.confScore+"/100 \u00b7 "+r.confLabel;
   renderConfBreak(_conf);
-  // d\u00e9tail \u2014 mod\u00e8le explicable
-  const bd=$("bdRows");bd.innerHTML="";
-  const note=document.createElement("div");note.className="hint";note.style.margin="0 0 8px";note.innerHTML="Le prix part du prix de r\u00e9f\u00e9rence /m\u00b2 du secteur, ajust\u00e9 par chaque caract\u00e9ristique (effet \u2191 ou \u2193), puis multipli\u00e9 par la surface.";bd.appendChild(note);
-  const addRow=(l,v,isPct,eurv)=>{const div=document.createElement("div");div.className="bd-row";let val;if(eurv!=null){val="+"+eur(eurv);}else if(isPct){const a=v>0?"\u2191 ":v<0?"\u2193 ":"";val=a+(v>0?"+":"")+(v*100).toFixed(0)+" %";}else val=v;const cls=eurv!=null?"pos":isPct?(v>0?"pos":v<0?"neg":""):"";div.innerHTML=`<span>${l}</span><span class="${cls}">${val}</span>`;bd.appendChild(div);};
-  addRow("Prix de r\u00e9f\u00e9rence /m\u00b2",eur0(r.sqmBase)+" \u20ac");
-  r.rows.forEach(row=>{if(row[2]!=null)addRow(row[0],null,false,row[2]);else addRow(row[0],row[1],true);});
-  addRow("Prix /m\u00b2 ajust\u00e9",eur0(r.sqmAdj)+" \u20ac");addRow("\u00d7 Surface",r.surface+" m\u00b2");
-  const tot=document.createElement("div");tot.className="bd-row";tot.style.cssText="border-top:1px solid var(--line);margin-top:6px;padding-top:8px;font-weight:700";tot.innerHTML=`<span>= Valeur estim\u00e9e</span><span>${eur(r.price)}</span>`;bd.appendChild(tot);
+  renderCalcDetail(r);
   renderInsee(r);renderMarket(r);renderLocStats(r);renderDvfStats(r);genComparables(r);renderEstimators(r);renderBienIndices(r);renderGlobalIndex(r);renderPriceFormation(r);renderContext(r);
   $("locAddr").textContent=state.coord?.label||(($("ville").value||"")+" "+$("cp").value).trim();
   $("locCoord").textContent=state.coord?`${state.coord.lat.toFixed(4)}, ${state.coord.lon.toFixed(4)}${state.coord.alt!=null?" \u00b7 alt. "+state.coord.alt+" m":""} \u00b7 carte interactive dans la version h\u00e9berg\u00e9e`:"Carte interactive disponible dans la version h\u00e9berg\u00e9e";
@@ -1972,7 +2074,7 @@ async function showResults(){
   renderEnrich(r);
   renderMap(r);
   enrichPromise.then(e=>{state.enrich=e;if(lastResult===r){applyGeoDyn(r);renderLocStats(r);renderEnrich(r);renderMap(r);}}).catch(()=>{state.enrich={};if(lastResult===r){renderEnrich(r);renderMap(r);}});
-  ctxProm.then(c=>{state.ctx2=c||{};if(lastResult===r)renderContext(r);}).catch(()=>{state.ctx2={};if(lastResult===r)renderContext(r);});
+  ctxProm.then(c=>{state.ctx2=c||{};if(lastResult===r){patchDynReal(r);renderInsee(r);renderMarket(r);renderContext(r);}}).catch(()=>{state.ctx2={};if(lastResult===r)renderContext(r);});
   $("results").classList.add("show");
   $("results").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth",block:"start"});
 }
@@ -2615,7 +2717,7 @@ function renderReport(r){
   const _pf=priceFormation(r),_gi=globalIndex(r),_rel=reliabilityIndex(r);
   const _base=_pf.find(l=>l.k==="base"),_fin=_pf.find(l=>l.final),_mid=_pf.filter(l=>l.k!=="base"&&!l.final);
   const _fe=v=>(v>0?"+":(v<0?"-":""))+eur0(Math.abs(v))+" \u20ac";
-  const _decompRows=_mid.map(l=>`<tr><td style="padding:3px 8px 3px 0;font-size:12px;color:var(--ink)">${l.label}</td><td class="num" style="text-align:right;font-size:12px;font-weight:700;color:${l.eur>=0?"var(--ink)":"var(--bad)"};white-space:nowrap">${_fe(l.eur)}</td><td class="num" style="text-align:right;font-size:11px;color:var(--ink-soft);white-space:nowrap;padding-left:8px">${l.pct>0?"+":""}${l.pct} %</td></tr>`).join("");
+  const _decompRows=_mid.map(l=>`<tr><td style="padding:3px 8px 3px 0;font-size:12px;color:var(--ink)">${l.label}</td><td class="num" style="text-align:right;font-size:12px;font-weight:700;color:${l.eur>=0?"var(--ink)":"var(--bad)"};white-space:nowrap">${_fe(l.eur)}</td><td class="num" style="text-align:right;font-size:11px;color:var(--ink-soft);white-space:nowrap;padding-left:8px">${l.pct>0?"+":""}${(+l.pct).toFixed(1)} %</td></tr>`).join("");
   const decomp=`<div style="font-size:12px;color:var(--ink-soft);line-height:1.55;margin-bottom:8px">D\u00e9composition de la valeur estim\u00e9e, facteur par facteur, depuis la valeur de march\u00e9 de base.</div><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse"><tr><td style="padding:3px 8px 3px 0;font-size:12px;color:var(--ink-soft)">${_base?_base.label:"Valeur de base"}</td><td class="num" style="text-align:right;font-size:12px;color:var(--ink-soft)">${eur0(_base?_base.eur:0)} \u20ac</td><td></td></tr>${_decompRows}<tr><td style="padding:6px 8px 0 0;font-size:12.5px;font-weight:800;color:var(--brand-dark);border-top:2px solid var(--line)">${_fin?_fin.label:"Estimation retenue"}</td><td class="num" style="text-align:right;font-size:13px;font-weight:800;color:var(--brand-dark);border-top:2px solid var(--line)">${eur(price)}</td><td style="border-top:2px solid var(--line)"></td></tr></table></div><div style="display:flex;gap:7px;margin-top:9px"><div style="flex:1;background:var(--bg);border-radius:9px;padding:7px 9px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.3px">Note globale</div><div class="num" style="font-size:15px;font-weight:800;color:var(--ink)">${_gi.global}<span style="font-size:9px;color:var(--ink-soft)">/100</span></div></div><div style="flex:1;background:var(--bg);border-radius:9px;padding:7px 9px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.3px">Fiabilit\u00e9</div><div class="num" style="font-size:15px;font-weight:800;color:var(--ink)">${_rel.score}<span style="font-size:9px;color:var(--ink-soft)">/100</span></div></div><div style="flex:1;background:var(--bg);border-radius:9px;padding:7px 9px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.3px">Fourchette</div><div class="num" style="font-size:12.5px;font-weight:800;color:var(--ink)">${eur0(r.low)}\u2013${eur0(r.high)}</div></div></div>`;
   el.innerHTML=sec("R\u00e9sum\u00e9 du bien",resume)+sec("Justification de l'estimation",just)+sec("D\u00e9composition chiffr\u00e9e de la valeur",decomp)+sec("Points forts",ul(forces))+sec("Points faibles",ul(faib))+sec("Risques",ul(risks))+sec("Potentiel",ul(pot))+sec("Argumentaire de n\u00e9gociation",nego)+sec("Recommandations",ul(reco))+`<div class="hint" style="margin-top:12px">Rapport g\u00e9n\u00e9r\u00e9 automatiquement \u00e0 partir des donn\u00e9es calcul\u00e9es (DVF, G\u00e9orisques, enrichissement, projection). Indicatif \u2014 ne remplace pas une expertise.</div>`;
 }
