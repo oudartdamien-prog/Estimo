@@ -83,6 +83,8 @@
   .wstep{display:none}
   .wstep.on{display:block;animation:wfade .28s ease}
   @keyframes wfade{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+  @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  .card-shimmer{border-radius:7px;background:linear-gradient(90deg,var(--bg) 25%,#dde8f0 50%,var(--bg) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;margin:6px 0}
   .wprog{margin:2px 0 18px}
   .wprog-bar{height:6px;background:var(--line);border-radius:99px;overflow:hidden}
   .wprog-bar span{display:block;height:100%;width:33.33%;background:linear-gradient(90deg,var(--brand),var(--brand-dark));border-radius:99px;transition:width .35s cubic-bezier(.4,0,.2,1)}
@@ -982,6 +984,30 @@ function parsePtsTerrain(arr){
 }
 async function fetchDvf(coord,type){
   if(!coord||!coord.insee)return {pts:null,status:"no-conn"};
+  // Q2 : passe geographique \u2014 mutations dans un rayon ~1 km autour du bien (endpoint geomutations
+  // Cerema + in_bbox). Si >=30 ventes exploitables -> comparables hyper-locaux (quartier reel,
+  // au lieu de la commune entiere qui melange centre et peripherie) ; sinon repli commune inchange.
+  if(coord.lat!=null&&coord.lon!=null){
+    try{
+      const dLat=0.010,dLon=0.010/Math.max(0.2,Math.cos(coord.lat*Math.PI/180));
+      const bbox=[(coord.lon-dLon).toFixed(5),(coord.lat-dLat).toFixed(5),(coord.lon+dLon).toFixed(5),(coord.lat+dLat).toFixed(5)].join(",");
+      const gBase=DVF_BASE.replace("/mutations/","/geomutations/")+`?in_bbox=${bbox}&page_size=500`;
+      if(DEBUG)dbg("DVF bbox URL: "+gBase);
+      const g1=await dvfFetch(gBase);
+      if(g1&&g1.json){
+        const gcount=g1.json.count||0;let garr;
+        if(gcount>500){
+          const last=Math.ceil(gcount/500),pages=[last,last-1,last-2].filter(p=>p>=1);
+          const more=await Promise.all(pages.map(p=>dvfFetch(gBase+"&page="+p)));
+          garr=[];more.forEach(m=>{if(m)garr=garr.concat(extractArr(m.json));});
+          if(!garr.length)garr=extractArr(g1.json);
+        }else garr=extractArr(g1.json);
+        const gpts=type==="terrain"?parsePtsTerrain(garr):parsePts(garr,type);
+        if(DEBUG)dbg("DVF bbox ~1 km : "+(gcount||garr.length)+" mutations, "+gpts.length+" exploitables");
+        if(gpts.length>=30)return{pts:gpts,status:"ok",scope:"bbox"};
+      }
+    }catch(_){/* repli commune */}
+  }
   const base=`${DVF_BASE}?code_insee=${coord.insee}&page_size=500`;
   const r1=await dvfFetch(base);
   if(!r1)return {pts:null,status:"no-conn"};
@@ -997,7 +1023,7 @@ async function fetchDvf(coord,type){
   }else arr=extractArr(r1.json);
   const pts=type==="terrain"?parsePtsTerrain(arr):parsePts(arr,type);
   if(DEBUG)dbg("Ventes "+type+" exploitables: "+pts.length);
-  return pts.length>0?{pts,status:"ok"}:{pts:null,status:"no-data"};
+  return pts.length>0?{pts,status:"ok",scope:"commune"}:{pts:null,status:"no-data"};
 }
 
 /* ===== Estimation ===== */
@@ -1024,6 +1050,36 @@ function estimationEngines(pts,surf,stats){
   let W=0,B=0;engines.forEach(e=>{W+=e.w;B+=e.w*e.ppm;});
   const base=W>0?Math.round(B/W):Math.round(stats.med);
   return{base,engines,nEff,top:scored.slice(0,6).map(x=>Object.assign({},x.p,{score:Math.round(x.s)}))};
+}
+// Q1 : backtest leave-one-out \u2014 mesure l'erreur REELLE du moteur sur les ventes du secteur.
+// Chaque vente recente est predite par les autres (meme noyau surface+recence que E1) ;
+// l'erreur mediane (MdAPE) et le P80 calibrent la fourchette affichee et la fiabilite.
+function backtestLocal(pts,subjSurf){
+  const clean=(pts||[]).filter(p=>p.surf>0&&p.ppm>0);
+  if(clean.length<25)return null;
+  const year=new Date().getFullYear(),yr=p=>p.date?+String(p.date).slice(0,4):year;
+  // regression globale surface->prix (repli ; retirer 1 point est negligeable a n>=25)
+  let n=clean.length,sx=0,sy=0,sxx=0,sxy=0;clean.forEach(p=>{const x=p.surf,y=p.price||p.ppm*p.surf;sx+=x;sy+=y;sxx+=x*x;sxy+=x*y;});
+  const den=n*sxx-sx*sx,slope=den?(n*sxy-sx*sy)/den:0,intc=den?(sy-slope*sx)/n:0;
+  const targets=[...clean].sort((a,b)=>yr(b)-yr(a)).slice(0,120);
+  const errs=[];
+  targets.forEach(t=>{
+    let sw=0,swp=0;
+    clean.forEach(p=>{
+      if(p===t)return;
+      const sr=Math.log(p.surf/t.surf),ss=Math.exp(-(sr*sr)/(2*0.20*0.20));
+      const rs=Math.exp(-Math.max(0,year-yr(p))/4.5);
+      const s=0.55*ss+0.35*rs+0.10;
+      if(s>=0.45){sw+=s;swp+=s*p.ppm;}
+    });
+    let pred=sw>0?swp/sw:0;
+    if(!(pred>0)&&den){const pv=slope*t.surf+intc;if(pv>0)pred=pv/t.surf;}
+    if(pred>0)errs.push(Math.abs(pred-t.ppm)/t.ppm);
+  });
+  if(errs.length<25)return null;
+  errs.sort((a,b)=>a-b);
+  const q=f=>errs[Math.min(errs.length-1,Math.floor(f*errs.length))];
+  return{mdape:+(q(0.5)*100).toFixed(1),p80:+(q(0.8)*100).toFixed(1),n:errs.length};
 }
 function similBase(pts,subjSurf,ymax){
   if(!pts||!pts.length||!(subjSurf>0))return{base:0,nEff:0};
@@ -1319,7 +1375,7 @@ function renderDvfStats(r){
    `<div style="font-weight:700;font-size:13px;margin:16px 0 4px;color:var(--ink)">Positionnement prix / surface</div>`+
    `<div class="hint" style="margin-bottom:8px">Chaque point = une vente r\u00e9cente. La croix = votre bien au <b>prix envisag\u00e9</b>. Les % se recalculent quand vous modifiez le prix d'achat.</div>`+
    `<div id="dvfScatter"></div>`+
-   `<div style="margin-top:13px;padding:11px 13px;background:var(--brand-tint);border-radius:10px;font-size:11.5px;color:var(--ink-soft);line-height:1.6"><b style="color:var(--ink)">S\u00e9lection des comparables</b><br>\u2022 M\u00eame type (<b>${typeLbl}</b>) dans la <b>commune</b> ${r.city||""} \u2014 DVF/Cerema (pas de rayon en m\u00e8tres)<br>\u2022 Stats ci-dessus : ventes \u00e0 <b>surface proche</b> de la v\u00f4tre (r\u00e9centes, pond\u00e9r\u00e9es)<br>\u2022 Nuage : <b>toutes</b> les ventes r\u00e9centes du type<br>\u2022 Aberrations de prix/m\u00b2 exclues (IQR de Tukey)</div>`;
+   `<div style="margin-top:13px;padding:11px 13px;background:var(--brand-tint);border-radius:10px;font-size:11.5px;color:var(--ink-soft);line-height:1.6"><b style="color:var(--ink)">S\u00e9lection des comparables</b><br>\u2022 M\u00eame type (<b>${typeLbl}</b>) ${state.dvfScope==="bbox"?`dans un <b>rayon ~1 km</b> autour du bien \u2014 DVF/Cerema (g\u00e9olocalis\u00e9)`:`dans la <b>commune</b> ${r.city||""} \u2014 DVF/Cerema (pas de rayon en m\u00e8tres)`}<br>\u2022 Stats ci-dessus : ventes \u00e0 <b>surface proche</b> de la v\u00f4tre (r\u00e9centes, pond\u00e9r\u00e9es)<br>\u2022 Nuage : <b>toutes</b> les ventes r\u00e9centes du type<br>\u2022 Aberrations de prix/m\u00b2 exclues (IQR de Tukey)</div>`;
   renderScatter(r);
 }
 /* Nuage de points : surface (x) vs prix (y), croix sur le bien envisage, % par quadrant */
@@ -1494,9 +1550,15 @@ function reliabilityIndex(r){
   const cleanRatio=(stats.n+(stats.removed||0))>0?stats.n/(stats.n+(stats.removed||0)):1,dataQ=cl(cleanRatio*0.6+r2*0.4,0,1);
   const ages=(r.realPts||[]).map(p=>year-(p.date?+String(p.date).slice(0,4):year)).filter(a=>a>=0);
   const avgAge=ages.length?ages.reduce((s,a)=>s+a,0)/ages.length:5,rec=cl(1-avgAge/6,0,1);
-  const lbl=(state.coord&&state.coord.label)||"",precise=!!(state.coord&&/\d/.test(lbl)),geoP=precise?0.85:0.55;
-  const pillars=[["Quantit\u00e9 de comparables",nq,(stats.n||0)+" ventes DVF"],["Dispersion des prix",disp,"\u00e9cart Q1\u2013Q3 "+Math.round(relIQR*100)+" %"],["Homog\u00e9n\u00e9it\u00e9 du quartier",agree,"accord moteurs "+Math.round(agree*100)+" %"],["Qualit\u00e9 des donn\u00e9es",dataQ,Math.round(cleanRatio*100)+" % conserv\u00e9es \u00b7 R\u00b2 "+r2.toFixed(2)],["R\u00e9cence des ventes",rec,"\u00e2ge moyen "+avgAge.toFixed(1)+" an(s)"],["Pr\u00e9cision g\u00e9oloc.",geoP,precise?"adresse pr\u00e9cise \u00b7 DVF communal":"niveau commune"]];
-  const score=Math.round((nq*0.20+disp*0.18+agree*0.15+dataQ*0.15+rec*0.16+geoP*0.16)*100);
+  const lbl=(state.coord&&state.coord.label)||"",precise=!!(state.coord&&/\d/.test(lbl)),bbx=state.dvfScope==="bbox",geoP=bbx?0.95:(precise?0.85:0.55);
+  const pillars=[["Quantit\u00e9 de comparables",nq,(stats.n||0)+" ventes DVF"],["Dispersion des prix",disp,"\u00e9cart Q1\u2013Q3 "+Math.round(relIQR*100)+" %"],["Homog\u00e9n\u00e9it\u00e9 du quartier",agree,"accord moteurs "+Math.round(agree*100)+" %"],["Qualit\u00e9 des donn\u00e9es",dataQ,Math.round(cleanRatio*100)+" % conserv\u00e9es \u00b7 R\u00b2 "+r2.toFixed(2)],["R\u00e9cence des ventes",rec,"\u00e2ge moyen "+avgAge.toFixed(1)+" an(s)"],["Pr\u00e9cision g\u00e9oloc.",geoP,bbx?"adresse pr\u00e9cise \u00b7 DVF rayon ~1 km":(precise?"adresse pr\u00e9cise \u00b7 DVF communal":"niveau commune")]];
+  const bt=r.backtest||null;let score;
+  if(bt){
+    // Q1 : erreur mesuree en leave-one-out \u2014 MdAPE 5 % = excellent, 20 % = faible
+    const btS=cl(1-(bt.mdape/100-0.05)/0.15,0,1);
+    pillars.push(["Erreur mesur\u00e9e (backtest)",btS,"\u00b1"+bt.mdape+" % m\u00e9diane \u00b7 "+bt.n+" ventes test\u00e9es"]);
+    score=Math.round((nq*0.17+disp*0.15+agree*0.13+dataQ*0.13+rec*0.13+geoP*0.14+btS*0.15)*100);
+  }else score=Math.round((nq*0.20+disp*0.18+agree*0.15+dataQ*0.15+rec*0.16+geoP*0.16)*100);
   return{score,label:score>=75?"\u00c9lev\u00e9e":score>=55?"Correcte":score>=40?"Mod\u00e9r\u00e9e":"Faible",pillars};
 }
 function priceFormation(r){
@@ -1523,7 +1585,7 @@ function renderPriceFormation(r){
   const band=(lab,o,col,prob)=>`<div style="margin-bottom:7px"><div style="display:flex;justify-content:space-between;font-size:11.5px"><span style="font-weight:700;color:${col}">${lab} <span style="color:var(--ink-soft);font-weight:600">(${prob})</span></span><span class="num" style="color:var(--ink)">${eur0(o.low)} \u2013 ${eur0(o.high)} \u20ac</span></div></div>`;
   const A=`<div style="font-size:12px;font-weight:800;color:var(--ink);margin-bottom:7px">Fourchette probabiliste</div>`+band("50 % central",iv.p50,"#0a8f7e","1 chance sur 2")+band("80 %",iv.p80,"var(--brand-dark)","8 sur 10")+band("95 %",iv.p95,"var(--ink-soft)","quasi certain")+`<div class="hint" style="margin:2px 0 0">Probabilit\u00e9 que le prix de vente r\u00e9el tombe dans chaque fourchette, selon la dispersion du march\u00e9 et la fiabilit\u00e9 des donn\u00e9es.</div>`;
   let B;if(rel.pillars.length){const bar=p=>`<div style="height:6px;border-radius:4px;background:var(--line);overflow:hidden;margin-top:3px"><div style="height:100%;width:${Math.round(p[1]*100)}%;background:${p[1]>=0.66?'var(--good)':p[1]>=0.4?'var(--warn)':'var(--bad)'}"></div></div>`,relC=rel.score>=70?"var(--good)":rel.score>=50?"var(--warn)":"var(--bad)";
-    B=`<div style="border-top:1px solid var(--line);margin-top:13px;padding-top:13px"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px"><span style="font-size:12px;font-weight:800;color:var(--ink)">Fiabilit\u00e9 de l'estimation</span><span class="num" style="font-size:16px;font-weight:800;color:${relC}">${rel.score}/100 \u00b7 ${rel.label}</span></div>`+rel.pillars.map(p=>`<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:11.5px"><span style="font-weight:700;color:var(--ink)">${p[0]}</span><span style="color:var(--ink-soft)">${p[2]}</span></div>${bar(p)}</div>`).join("")+`<div class="hint" style="margin-top:2px">Fiabilit\u00e9 fond\u00e9e sur 6 facteurs : quantit\u00e9 de comparables, dispersion des prix, homog\u00e9n\u00e9it\u00e9 du quartier, qualit\u00e9 des donn\u00e9es, r\u00e9cence des ventes et pr\u00e9cision de la g\u00e9olocalisation.</div></div>`;
+    B=`<div style="border-top:1px solid var(--line);margin-top:13px;padding-top:13px"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px"><span style="font-size:12px;font-weight:800;color:var(--ink)">Fiabilit\u00e9 de l'estimation</span><span class="num" style="font-size:16px;font-weight:800;color:${relC}">${rel.score}/100 \u00b7 ${rel.label}</span></div>`+rel.pillars.map(p=>`<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:11.5px"><span style="font-weight:700;color:var(--ink)">${p[0]}</span><span style="color:var(--ink-soft)">${p[2]}</span></div>${bar(p)}</div>`).join("")+`${r.backtest?`<div style="margin-top:6px;padding:8px 11px;background:var(--brand-tint);border-radius:9px;font-size:11.5px;color:var(--ink)">Erreur mesur\u00e9e du mod\u00e8le sur ce secteur : <b class="num">\u00b1${r.backtest.mdape} %</b> (m\u00e9diane, ${r.backtest.n} ventes test\u00e9es \u00b7 80 % des pr\u00e9dictions \u00e0 \u00b1${r.backtest.p80} %). La fourchette affich\u00e9e est calibr\u00e9e sur cette erreur r\u00e9elle.</div>`:""}<div class="hint" style="margin-top:2px">Fiabilit\u00e9 fond\u00e9e sur la quantit\u00e9 de comparables, la dispersion des prix, l'homog\u00e9n\u00e9it\u00e9 du quartier, la qualit\u00e9 des donn\u00e9es, la r\u00e9cence, la pr\u00e9cision de la g\u00e9olocalisation${r.backtest?" et l'erreur mesur\u00e9e par backtest sur les ventes locales":""}.</div></div>`;
   } else B=`<div style="border-top:1px solid var(--line);margin-top:13px;padding-top:13px"><div style="font-size:11.5px;color:var(--ink-soft)">${rel.note||""}</div></div>`;
   const fmtE=v=>(v>0?"+":"")+eur0(v)+" \u20ac",fmtP=v=>(v>0?"+":"")+v.toFixed(1)+" %";
   const C=`<div style="border-top:1px solid var(--line);margin-top:13px;padding-top:13px"><div style="font-size:12px;font-weight:800;color:var(--ink);margin-bottom:8px">Formation du prix, \u00e9tape par \u00e9tape</div>`+lines.map(l=>{const col=l.final?"var(--brand-dark)":l.eur>=0?"var(--ink)":"var(--bad)";
@@ -2018,6 +2080,7 @@ async function showResults(){
   else if(state.type==="terrain"){diag="terrain : pas de comparable b\u00e2ti DVF";}
   else{
     const res=await fetchDvf(coord,state.type);
+    state.dvfScope=res.scope||null;
     if(res.pts&&res.pts.length){
       realPts=res.pts; // tous les points -> nuage de points
       const surf=state.type==="terrain"?numv("terrain"):numv("surface");let band=res.pts;
@@ -2041,7 +2104,12 @@ async function showResults(){
   const _checks=[numv("surface")>0,numv("chambres")>0,numv("sdb")>0,(state.type!=="appartement"||numv("floorExact")>0),(numv("balconM2")>0||numv("terrasseM2")>0||numv("jardinM2")>0),!!state.coord];
   const _conf=estimationConfidence(realStats,{dyn:r.dyn,nTotal:(realPts?realPts.length:0),attrFilled:_checks.filter(Boolean).length,attrTotal:_checks.length,baseConf:r.conf});
   r.confScore=_conf.score;r.confFactors=_conf.factors;r.confLabel=_conf.label;
-  if(realBase){const _rs=realStats,_riq=(_rs&&_rs.med>0)?(_rs.q3-_rs.q1)/_rs.med:0.3;r.spread=Math.max(0.06,Math.min(0.20,0.045+_riq*0.18+(1-_conf.score/100)*0.04));r.low=r.price*(1-r.spread);r.high=r.price*(1+r.spread);}
+  if(realBase){const _rs=realStats,_riq=(_rs&&_rs.med>0)?(_rs.q3-_rs.q1)/_rs.med:0.3;
+    r.backtest=backtestLocal(_rs?_rs.clean:null,r.surface);
+    const _sprF=Math.max(0.06,Math.min(0.20,0.045+_riq*0.18+(1-_conf.score/100)*0.04));
+    // Q1 : P80 mesure par backtest = intervalle 80 % reel -> calibre directement la bande affichee
+    r.spread=r.backtest?Math.max(0.06,Math.min(0.20,r.backtest.p80/100)):_sprF;
+    r.low=r.price*(1-r.spread);r.high=r.price*(1+r.spread);}
   // Vague 2 : indices synthetiques du bien -> ajustement de valeur non lineaire borne (qualite/rarete/emotion)
   r.indices=bienIndices(r,realStats);r.indexAdj=indexValueAdjust(r.indices);
   if(r.indexAdj.tot){r.price=Math.round(r.price*(1+r.indexAdj.tot));r.sqm=Math.round(r.price/(r.surface||1));r.low=r.price*(1-r.spread);r.high=r.price*(1+r.spread);}
@@ -2050,7 +2118,7 @@ async function showResults(){
   if(r.dynAdj.adj){r.price=Math.round(r.basePrice*(1+r.dynAdj.adj));r.sqm=Math.round(r.price/(r.surface||1));r.low=r.price*(1-r.spread);r.high=r.price*(1+r.spread);}
   applyFinalDvfCap(r);
   const sd=$("srcDot"),st=$("srcTxt");
-  if(realBase){sd.style.background="#7fe3d4";st.textContent=`Donn\u00e9es r\u00e9elles DVF \u00b7 ${r.realCount} ventes`;$("compTag").textContent="DVF \u00b7 r\u00e9el";}
+  if(realBase){sd.style.background="#7fe3d4";st.textContent=`Donn\u00e9es r\u00e9elles DVF \u00b7 ${r.realCount} ventes \u00b7 ${state.dvfScope==="bbox"?"rayon ~1 km":"commune"}`;$("compTag").textContent="DVF \u00b7 r\u00e9el";}
   else{sd.style.background="#E8742A";st.textContent="D\u00e9mo \u00b7 "+diag;$("compTag").textContent="DVF \u00b7 d\u00e9mo";}
   countUp($("pcPrice"),r.price," \u20ac");
   $("pcMargin").textContent="\u00b1 "+(r.spread*100).toFixed(0)+" %";
