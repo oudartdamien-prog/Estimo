@@ -2272,7 +2272,7 @@ async function showResults(){
   if(!surface||surface<=0){err.textContent="Renseignez une surface valide.";err.classList.add("show");return;}
   err.classList.remove("show");
   const btn=$("btnEstim");const oldTxt=btn.textContent;btn.textContent="Recherche des ventes r\u00e9elles\u2026";btn.disabled=true;
-  let realBase=null,realPts=null,realStats=null,diag="",engineData=null;
+  let realBase=null,realPts=null,realStats=null,diag="",engineData=null,bandWidened=false;
   const coord=await geocode();dbg("Coordonnees BAN: "+JSON.stringify(coord));
   const livePromise=(coord&&coord.insee)?fetchLive(coord):Promise.resolve({});
   state.enrich=null;const enrichPromise=coord?fetchEnrich(coord):Promise.resolve(null);
@@ -2284,7 +2284,7 @@ async function showResults(){
     state.dvfScope=res.scope||null;
     if(res.pts&&res.pts.length){
       realPts=res.pts; // tous les points -> nuage de points
-      const surf=state.type==="terrain"?numv("terrain"):numv("surface");let band=res.pts,bandWidened=false;
+      const surf=state.type==="terrain"?numv("terrain"):numv("surface");let band=res.pts;bandWidened=false;
       if(surf>0){
         let b=res.pts.filter(p=>p.surf>=surf*0.55&&p.surf<=surf*1.7);
         // Peu de comparables -> elargissement progressif automatique de la fenetre de surface
