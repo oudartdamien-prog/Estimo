@@ -413,14 +413,15 @@
 
     <div id="modeBar" style="order:-1"><div class="seg" id="segMode"><button data-m="simple" class="on">Mode Simple</button><button data-m="expert">Mode Expert</button></div><div class="hint" style="margin-top:6px">Mode Simple : l'essentiel pour d&#233;cider (verdict, prix conseille, negociation, risques). Mode Expert : tous les calculs detailles.</div></div>
     <section class="card" id="decisionCard" style="order:0"><div id="decisionPanel"></div></section>
-    <section class="card expert-only" id="reportCard" style="order:0"><div class="card-head"><div class="step-no">&#128221;</div><div><h2>Rapport d'analyse</h2><div class="sub">Synth&#232;se r&#233;dig&#233;e automatiquement &#224; partir de vos donn&#233;es</div></div></div><div id="reportPanel"></div></section>
-    <section class="card expert-only" id="formationCard" style="order:3"><div class="card-head"><div class="step-no">&#128269;</div><div><h2>Fiabilit&#233; & formation du prix</h2><div class="sub">Fourchettes probabilistes, fiabilit&#233; des donn&#233;es et explication d&#233;taill&#233;e</div></div></div><div id="formationPanel"></div></section>
-    <section class="card expert-only" id="enginesCard" style="order:3"><div class="card-head"><div class="step-no">&#129518;</div><div><h2>Estimation multi-estimateurs</h2><div class="sub">6 estimateurs ind&#233;pendants fusionn&#233;s par leur confiance</div></div></div><div id="enginesPanel"></div></section>
-    <section class="card expert-only" id="bienIndicesCard" style="order:3"><div class="card-head"><div class="step-no">&#10024;</div><div><h2>Profil & indices du bien</h2><div class="sub">Qualit&#233;, raret&#233;, attractivit&#233; &#233;motionnelle et profil acheteur</div></div></div><div id="bienIndicesPanel"></div></section>
-    <section class="card expert-only" id="globalCard" style="order:3"><div class="card-head"><div class="step-no">&#127941;</div><div><h2>Note globale du bien</h2><div class="sub">Indice /100 sur 7 dimensions ind&#233;pendantes</div></div></div><div id="globalPanel"></div></section>
+    <section class="card expert-only" id="reportCard" style="order:6"><div class="card-head"><div class="step-no">&#128221;</div><div><h2>Rapport d'analyse</h2><div class="sub">Synth&#232;se r&#233;dig&#233;e automatiquement &#224; partir de vos donn&#233;es</div></div></div><div id="reportPanel"></div></section>
+    <section class="card expert-only" id="formationCard" style="order:4"><div class="card-head"><div class="step-no">&#128269;</div><div><h2>Fiabilit&#233; & formation du prix</h2><div class="sub">Fourchettes probabilistes, fiabilit&#233; des donn&#233;es et explication d&#233;taill&#233;e</div></div></div><div id="formationPanel"></div></section>
+    <section class="card expert-only" id="enginesCard" style="order:4"><div class="card-head"><div class="step-no">&#129518;</div><div><h2>Estimation multi-estimateurs</h2><div class="sub">6 estimateurs ind&#233;pendants fusionn&#233;s par leur confiance</div></div></div><div id="enginesPanel"></div></section>
+    <section class="card expert-only" id="bienIndicesCard" style="order:4"><div class="card-head"><div class="step-no">&#10024;</div><div><h2>Profil & indices du bien</h2><div class="sub">Qualit&#233;, raret&#233;, attractivit&#233; &#233;motionnelle et profil acheteur</div></div></div><div id="bienIndicesPanel"></div></section>
+    <section class="card expert-only" id="globalCard" style="order:4"><div class="card-head"><div class="step-no">&#127941;</div><div><h2>Note globale du bien</h2><div class="sub">Indice /100 sur 7 dimensions ind&#233;pendantes</div></div></div><div id="globalPanel"></div></section>
     <section class="card expert-only" id="proKpiCard" style="order:4"><div class="card-head"><div class="step-no">&#128202;</div><div><h2>Tableau de bord investisseur</h2><div class="sub">Ratios financiers professionnels &#8212; calcul&#233;s en direct</div></div></div><div id="proKpiPanel"></div></section>
     <section class="card expert-only" id="negoCard" style="order:5"><div class="card-head"><div class="step-no">&#129309;</div><div><h2>Aide &#224; la n&#233;gociation</h2><div class="sub">Prix cible, offre, marge et probabilit&#233; d'acceptation</div></div></div><div id="negoPanel"></div></section>
     <section class="card expert-only" id="contextCard" style="order:6"><div class="card-head"><div class="step-no">&#129517;</div><div><h2>Contexte &amp; signaux</h2><div class="sub">Donn&#233;es publiques, indices compl&#233;mentaires et anomalies &#8212; sans impact sur le prix</div></div></div><div id="contextPanel"></div></section>
+    <section class="card expert-only" id="vendorCard" style="order:95"><div class="card-head"><div class="step-no">&#127991;&#65039;</div><div><h2>C&#244;t&#233; vendeur</h2><div class="sub">Strat&#233;gie de prix de mise en march&#233;</div></div></div><div id="vendorPanel"></div></section>
     <section class="card expert-only" id="fiscalCard" style="order:5"><div class="card-head"><div class="step-no">&#9878;&#65039;</div><div><h2>Comparateur fiscal</h2><div class="sub">Tous les r&#233;gimes compar&#233;s &#8212; recommandation automatique</div></div></div><div id="fiscalPanel"></div></section>
     <section class="card expert-only" id="dispositifCard" style="order:5"><div class="card-head"><div class="step-no">&#127963;&#65039;</div><div><h2>Dispositifs de d&#233;fiscalisation</h2><div class="sub">Pinel, Denormandie, Malraux, Monuments Historiques, holding</div></div></div>
       <div><label class="lbl" for="dispositif">Dispositif</label><select class="input" id="dispositif"><option value="none">Aucun (droit commun)</option><option value="pinel">Pinel (neuf, 2024)</option><option value="pinelplus">Pinel+ (neuf, qualit&#233;)</option><option value="denormandie">Denormandie (ancien + travaux)</option><option value="malraux">Malraux (restauration SPR)</option><option value="mh">Monuments Historiques</option><option value="holding">Holding (structuration)</option></select></div>
@@ -605,7 +606,7 @@
 
     <!-- OP&#201;RATION ACHAT-REVENTE -->
     <section class="card expert-only" style="order:6" id="worksCard"><div class="card-head"><div class="step-no">&#128296;</div><div><h2>Valorisation des travaux</h2><div class="sub">Co&#251;t, dur&#233;e, plus-value et ROI par poste</div></div></div><div id="worksPanel"></div></section>
-    <section class="card" style="order:7" id="reportPdfCard"><div class="card-head"><div class="step-no">&#128196;</div><div><h2>Rapport professionnel (PDF)</h2><div class="sub">Document complet, &#224; votre identit&#233; visuelle</div></div></div>
+    <section class="card" style="order:96" id="reportPdfCard"><div class="card-head"><div class="step-no">&#128196;</div><div><h2>Rapport professionnel (PDF)</h2><div class="sub">Document complet, &#224; votre identit&#233; visuelle</div></div></div>
       <div style="display:flex;flex-direction:column;gap:10px">
         <div><label class="lbl" for="repName">Cabinet / pr&#233;parateur</label><input class="input" id="repName" type="text" placeholder="Votre nom ou agence" /></div>
         <div style="display:flex;gap:10px;align-items:flex-end"><div style="flex:1"><label class="lbl" for="repLogo">Logo (optionnel)</label><input class="input" id="repLogo" type="file" accept="image/*" /></div><div><label class="lbl" for="repColor">Couleur</label><input id="repColor" type="color" value="#0A8C7D" style="width:48px;height:42px;border:1px solid var(--line);border-radius:8px;padding:2px;background:#fff" /></div></div>
@@ -1242,7 +1243,9 @@ function outdoorValue(baseSqmAdj,ctx,realMode){
   ctx=ctx||marketCtx(null);const premium=ctx.premium,cold=ctx.cold;
   const rows=[];let val=0;
   // Surface economique : chaque m2 exterieur converti en equivalent surface habitable, taux dependant du marche local
-  const wB=0.35*(premium?1.15:1)*(cold?0.9:1),wT=0.45*(premium?1.25:1)*(cold?0.85:1),wJ=premium?0.05:0.06;
+  let wB=0.35*(premium?1.15:1)*(cold?0.9:1),wT=0.45*(premium?1.25:1)*(cold?0.85:1);const wJ=premium?0.05:0.06;
+  // Maison sur base DVF : terrasse et balcon sont la norme (deja refletes dans les prix) -> taux reduits
+  if(realMode&&state.type==="maison"){wB=0.15;wT=0.18;}
   const bM=numv("balconM2"),tM=numv("terrasseM2"),jM=numv("jardinM2");
   if(bM>0){const v=bM*baseSqmAdj*wB;val+=v;rows.push([`Balcon ${bM} m\u00b2 (\u00e9quiv. surface)`,v]);}
   if(tM>0){const v=tM*baseSqmAdj*wT;val+=v;rows.push([`Terrasse ${tM} m\u00b2 (\u00e9quiv. surface)`,v]);}
@@ -1257,6 +1260,12 @@ function outdoorValue(baseSqmAdj,ctx,realMode){
     }else{
       const f=Math.min(jM,300),x=Math.max(0,jM-300);let v=f*baseSqmAdj*wJ+x*baseSqmAdj*0.015;const cap=baseSqmAdj*(numv("surface")||1)*0.30;v=Math.min(v,cap);val+=v;rows.push([`Jardin ${jM} m\u00b2 (\u00e9quiv. surface)`,v]);
     }
+  }
+  // Cap TOTAL des exterieurs en base DVF (partiellement deja inclus dans les prix observes) :
+  // 8 % de la base pour une maison, 12 % pour un appartement. Items reduits proportionnellement.
+  if(realMode&&val>0){
+    const capTot=baseSqmAdj*(numv("surface")||1)*(state.type==="maison"?0.08:0.12);
+    if(val>capTot){const f=capTot/val;rows.forEach(rr=>{if(rr[1])rr[1]*=f;});val=capTot;}
   }
   return{val,rows};
 }
@@ -1350,8 +1359,8 @@ function renderInsee(r){const d=r.dyn;const sign=x=>(x>=0?"+":"")+x;
     ["Variation population (5 ans)",na],
     ["Croissance des m\u00e9nages (5 ans)",na],
     ["Solde migratoire / an",na],
-    ["Taux de ch\u00f4mage",d.filosofiReal&&d.chomage!=null?d.chomage+" %"+rb:na],
-    ["\u00c9volution des salaires (5 ans)",na],
+    ["Taux de ch\u00f4mage",d.filosofiReal&&d.chomage!=null?d.chomage+" %"+(d.choVar8!=null?' <span style="font-size:10px;color:var(--ink-soft)">('+(d.choVar8>=0?"+":"")+d.choVar8+" pt / 8 ans)</span>":"")+rb:na],
+    ["\u00c9volution du revenu m\u00e9dian (2012\u21922020)",d.revVar8!=null?(d.revVar8>=0?"+":"")+d.revVar8+" %"+rb:na],
     ["Nombre de logements",popReal?eur0(d.logements)+eb:na],
     ["Logements vacants",na],
     ["R\u00e9sidences secondaires",na]
@@ -1412,6 +1421,24 @@ function genComparables(r){const list=$("compList");list.innerHTML="";const ic=r
 }
 
 /* Statistiques DVF reelles + nuage de points prix/surface */
+// Evolution du prix median /m2 par annee (ventes DVF reelles) : sparkline SVG appendue a la carte DVF
+function renderPriceHistory(r){
+  const box=$("dvfStats");if(!box||!r||!r.realPts||box.style.display==="none")return;
+  const old=$("priceHistory");if(old)old.remove();
+  const byY={};r.realPts.forEach(p=>{const y=p.date?+String(p.date).slice(0,4):0;if(y&&p.ppm>0)(byY[y]=byY[y]||[]).push(p.ppm);});
+  const ys=Object.keys(byY).map(Number).filter(y=>byY[y].length>=6).sort((a,b)=>a-b);
+  if(ys.length<3)return;
+  const med=a=>{const s=[...a].sort((x,z)=>x-z);return s[s.length>>1];};
+  const pts=ys.map(y=>({y,v:med(byY[y])}));
+  const vmin=Math.min.apply(null,pts.map(p=>p.v)),vmax=Math.max.apply(null,pts.map(p=>p.v)),pad=(vmax-vmin)*0.15||vmax*0.05;
+  const X=i=>6+i/(pts.length-1)*88,Y=v=>44-((v-(vmin-pad))/((vmax+pad)-(vmin-pad)))*36;
+  const line=pts.map((p,i)=>(i?"L":"M")+X(i).toFixed(1)+" "+Y(p.v).toFixed(1)).join(" ");
+  const dots=pts.map((p,i)=>'<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(p.v).toFixed(1)+'" r="1.6" fill="var(--brand-dark)"/>').join("");
+  const first=pts[0],last=pts[pts.length-1],evo=Math.round((last.v/first.v-1)*100);
+  const d=document.createElement("div");d.id="priceHistory";
+  d.innerHTML='<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:11.5px;font-weight:800;color:var(--ink)">\u00c9volution du prix m\u00e9dian /m\u00b2 <span style="color:var(--brand-dark);font-weight:700;font-size:9px">r\u00e9el</span></span><span class="num" style="font-size:11px;font-weight:800;color:'+(evo>=0?"var(--good)":"var(--bad)")+'">'+(evo>=0?"+":"")+evo+' % sur '+(last.y-first.y)+' ans</span></div><svg viewBox="0 0 100 50" style="width:100%;height:64px;margin-top:4px" preserveAspectRatio="none"><path d="'+line+'" fill="none" stroke="var(--brand-dark)" stroke-width="1.6" vector-effect="non-scaling-stroke"/>'+dots+'</svg><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--ink-soft)"><span>'+first.y+' \u00b7 '+eur0(first.v)+' \u20ac/m\u00b2</span><span>'+last.y+' \u00b7 '+eur0(last.v)+' \u20ac/m\u00b2</span></div><div class="hint" style="margin-top:3px">M\u00e9diane annuelle des ventes DVF du secteur (ann\u00e9es d\u2019au moins 6 ventes).</div></div>';
+  box.appendChild(d);
+}
 function renderDvfStats(r){
   const box=$("dvfStats");
   if(!r.realStats||!r.realStats.n){box.style.display="none";box.innerHTML="";return;}
@@ -1522,9 +1549,12 @@ function updRentVsMkt(){
      `<div style="position:absolute;top:10px;left:0;right:0;height:8px;border-radius:5px;background:var(--line)"></div>`+
      `<div style="position:absolute;top:10px;left:${zL}%;width:${Math.max(0,zR-zL)}%;height:8px;background:rgba(15,179,158,.35)"></div>`+
      `<div style="position:absolute;top:5px;left:50%;width:2px;height:18px;background:var(--ink-soft);transform:translateX(-50%)"></div>`+
+     `<div style="position:absolute;top:8px;left:30%;width:1.5px;height:12px;background:var(--ink-soft);opacity:.55"></div>`+
+     `<div style="position:absolute;top:8px;left:70%;width:1.5px;height:12px;background:var(--ink-soft);opacity:.55"></div>`+
      `<div style="position:absolute;top:-2px;left:${pos}%;transform:translateX(-50%);background:var(--brand-dark);color:#fff;font-size:9.5px;font-weight:800;padding:2px 5px;border-radius:6px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.25)">${eur0(ent)} \u20ac</div>`+
    `</div>`+
-   `<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--ink-soft)"><span>\u221230 %</span><span style="color:#0a8f7e;font-weight:700">zone de march\u00e9 (\u00b110 %)</span><span>+30 %</span></div>`;
+   `<div style="position:relative;height:12px;font-size:9.5px;color:var(--ink-soft)"><span style="position:absolute;left:30%;transform:translateX(-50%)">Q1 \u2248 ${eur0(mkt*0.88)}</span><span style="position:absolute;left:50%;transform:translateX(-50%);font-weight:800;color:var(--ink)">m\u00e9diane ${eur0(mkt)}</span><span style="position:absolute;left:70%;transform:translateX(-50%)">Q3 \u2248 ${eur0(mkt*1.12)}</span></div>`+
+   `<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--ink-soft);margin-top:2px"><span>\u221230 %</span><span style="color:#0a8f7e;font-weight:700">fourchette type des loyers (\u00b112 %)</span><span>+30 %</span></div>`;
 }
 
 /* ===== Vague 6 : dispositifs de defiscalisation (Pinel, Denormandie, Malraux, MH, holding) ===== */
@@ -1724,10 +1754,16 @@ async function provLoyers(insee,type){
 async function provFilosofi(insee){
   if(!insee)return null;
   try{
-    const u="https://public.opendatasoft.com/api/explore/v2.1/catalog/datasets/filosofi-evolution-et-structure-des-revenus-de-2012-a-2020-commune/records?where=codgeo%3D%22"+insee+"%22&limit=1&select=med20%2Ctp6020%2Ccadres15p20%2Ctcho1564t20";
-    const d=await dvfFetch(u);const r=(d&&d.json&&d.json.results&&d.json.results[0])||null;
+    const base="https://public.opendatasoft.com/api/explore/v2.1/catalog/datasets/filosofi-evolution-et-structure-des-revenus-de-2012-a-2020-commune/records?where=codgeo%3D%22"+insee+"%22&limit=1&select=";
+    // Select etendu (variations 2012->2020) avec repli automatique sur le select court si refus
+    let d=await dvfFetch(base+"med20%2Ctp6020%2Ccadres15p20%2Ctcho1564t20%2Cmed12%2Ctcho1564t12");
+    let r=(d&&d.json&&d.json.results&&d.json.results[0])||null;
+    if(!r){d=await dvfFetch(base+"med20%2Ctp6020%2Ccadres15p20%2Ctcho1564t20");r=(d&&d.json&&d.json.results&&d.json.results[0])||null;}
     if(!r||r.med20==null)return null;
-    return{revenu:Math.round(r.med20),pauvrete:r.tp6020!=null?+r.tp6020.toFixed(1):null,cadres:r.cadres15p20!=null?+r.cadres15p20.toFixed(0):null,chomage:r.tcho1564t20!=null?+r.tcho1564t20.toFixed(1):null};
+    const out={revenu:Math.round(r.med20),pauvrete:r.tp6020!=null?+r.tp6020.toFixed(1):null,cadres:r.cadres15p20!=null?+r.cadres15p20.toFixed(0):null,chomage:r.tcho1564t20!=null?+r.tcho1564t20.toFixed(1):null};
+    if(r.med12>0)out.revVar8=+((r.med20/r.med12-1)*100).toFixed(1);
+    if(r.tcho1564t12!=null&&r.tcho1564t20!=null)out.choVar8=+(r.tcho1564t20-r.tcho1564t12).toFixed(1);
+    return out;
   }catch(_){return null;}
 }
 // Orchestrateur : tous les fournisseurs en parallele, echecs isoles (allSettled). Renvoie ctx2.
@@ -1795,6 +1831,20 @@ function contextAnomalies(r,pc){
   const rel=(function(){try{return reliabilityIndex(r).score;}catch(e){return null;}})();
   if(rel!=null&&rel<45)A.push("Indice de fiabilite faible ("+rel+"/100) : recouper avec des sources locales.");
   return A;
+}
+// Cote vendeur : strategie de mise en marche, symetrique de l'aide a la negociation acheteur
+// (reutilise negotiation() : memes donnees de tension, rarete et juste valeur).
+function renderVendor(r){
+  const el=$("vendorPanel");if(!el||!r)return;
+  const n=negotiation(r),d=r.dyn||{},tens=n.tens;
+  const markup=0.02+(1-tens)*0.05+(n.rare>0.6?0.02:0);
+  const askAdv=Math.round(n.just*(1+markup)),floor=Math.round(n.offre),fast=Math.round(n.just*0.98);
+  const delai=d.liquiditeReal?d.delai+" jours (d\u00e9riv\u00e9 DVF)":"n.d.";
+  const rows=[["Prix de mise en march\u00e9 conseill\u00e9",eur(askAdv),"var(--brand-dark)"],["Vente rapide (strat\u00e9gie agressive)",eur(fast),"var(--good)"],["Plancher \u00e0 ne pas franchir",eur(floor),"var(--warn)"],["Juste valeur (estimation)",eur(n.just),"var(--ink)"]];
+  el.innerHTML=rows.map(x=>`<div style="display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--line)"><span style="font-size:12.5px;color:var(--ink)">${x[0]}</span><span class="num" style="font-size:14px;font-weight:800;color:${x[2]}">${x[1]}</span></div>`).join("")+
+  `<div style="display:flex;gap:8px;margin-top:10px"><div style="flex:1;background:var(--bg);border-radius:10px;padding:9px 11px"><div style="font-size:10px;color:var(--ink-soft);text-transform:uppercase">Marge de n\u00e9go int\u00e9gr\u00e9e</div><div class="num" style="font-size:16px;font-weight:800;color:var(--ink)">${(markup*100).toFixed(1)} %</div></div><div style="flex:1;background:var(--bg);border-radius:10px;padding:9px 11px"><div style="font-size:10px;color:var(--ink-soft);text-transform:uppercase">D\u00e9lai de vente attendu</div><div class="num" style="font-size:13px;font-weight:800;color:var(--ink)">${delai}</div></div></div>`+
+  `<div style="margin-top:10px;padding:10px 13px;background:var(--brand-tint);border-radius:11px;font-size:12px;color:var(--ink);line-height:1.5">${tens>0.6?"March\u00e9 tendu : affichez proche de la juste valeur ("+eur0(askAdv)+" \u20ac) pour cr\u00e9er de la concurrence entre acheteurs.":tens<0.4?"March\u00e9 d\u00e9tendu : int\u00e9grez une vraie marge de n\u00e9gociation ("+eur0(askAdv)+" \u20ac affich\u00e9) et pr\u00e9parez-vous \u00e0 un d\u00e9lai plus long.":"March\u00e9 \u00e9quilibr\u00e9 : affichez "+eur0(askAdv)+" \u20ac et acceptez autour de "+eur0(n.just)+" \u20ac."}</div>`+
+  `<div class="hint" style="margin-top:8px">Strat\u00e9gie indicative, sym\u00e9trique de l'aide \u00e0 la n\u00e9gociation acheteur (m\u00eames donn\u00e9es de tension et de raret\u00e9).</div>`;
 }
 function renderContext(r){
   const el=$("contextPanel");if(!el||!r)return;
@@ -2108,7 +2158,7 @@ function computeAll(r){
   renderProKpis(r,{rentY:rentY,charges:charges,bp:bp,coutTotal:coutTotal,emprunt:emprunt,mensuTot:mensuTot,apport:apport});
   renderFiscalCompare(r);
   renderDispositif();
-  renderNego(r);
+  renderNego(r);renderVendor(r);
 }
 function setMetric(el,txt,val,isCash){el.textContent=txt;el.classList.remove("good","warn","bad");if(isCash){el.classList.add(val>=0?"good":"bad");return;}el.classList.add(val>=5.5?"good":val>=3.5?"warn":"bad");}
 
@@ -2160,7 +2210,7 @@ function patchDynReal(r){
   const popReal=lv.pop||null;if(popReal){d.pop=popReal;d.popReal=true;d.logements=Math.round(popReal/2.3);}
   // Filosofi : revenu, pauvrete, cadres, chomage
   const fi=x2.filosofi||null;
-  if(fi){if(fi.revenu>0)d.revenu=fi.revenu;if(fi.pauvrete!=null)d.pauvrete=fi.pauvrete;if(fi.cadres!=null)d.cadres=fi.cadres;if(fi.chomage!=null)d.chomage=fi.chomage;d.filosofiReal=true;}
+  if(fi){if(fi.revenu>0)d.revenu=fi.revenu;if(fi.pauvrete!=null)d.pauvrete=fi.pauvrete;if(fi.cadres!=null)d.cadres=fi.cadres;if(fi.chomage!=null)d.chomage=fi.chomage;if(fi.revVar8!=null)d.revVar8=fi.revVar8;if(fi.choVar8!=null)d.choVar8=fi.choVar8;d.filosofiReal=true;}
   // Liquidite DVF reelle : transactions/an depuis realPts (ne touche pas evo12/trendReal)
   const pts=r.realPts;if(pts&&pts.length>=10){
     const byY={};pts.forEach(p=>{const y=p.date?+String(p.date).slice(0,4):0;if(y>=2019)byY[y]=(byY[y]||0)+1;});
@@ -2287,7 +2337,7 @@ async function showResults(){
   cd.style.background=_cc;ct.textContent="Indice de confiance "+r.confScore+"/100 \u00b7 "+r.confLabel;
   renderConfBreak(_conf);
   renderCalcDetail(r);renderExplain(r);
-  renderInsee(r);renderMarket(r);renderLocStats(r);renderDvfStats(r);genComparables(r);renderEstimators(r);renderBienIndices(r);renderGlobalIndex(r);renderPriceFormation(r);renderContext(r);
+  renderInsee(r);renderMarket(r);renderLocStats(r);renderDvfStats(r);renderPriceHistory(r);genComparables(r);renderEstimators(r);renderBienIndices(r);renderGlobalIndex(r);renderPriceFormation(r);renderContext(r);
   $("locAddr").textContent=state.coord?.label||(($("ville").value||"")+" "+$("cp").value).trim();
   $("locCoord").textContent=state.coord?`${state.coord.lat.toFixed(4)}, ${state.coord.lon.toFixed(4)}${state.coord.alt!=null?" \u00b7 alt. "+state.coord.alt+" m":""} \u00b7 carte interactive dans la version h\u00e9berg\u00e9e`:"Carte interactive disponible dans la version h\u00e9berg\u00e9e";
   const dpeCostHi=renderDpe();
