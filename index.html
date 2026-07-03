@@ -790,8 +790,11 @@ const DVF_BASE=DVF_PROXY||"https://apidf-preprod.cerema.fr/dvf_opendata/mutation
 const DEBUG=location.search.indexOf("debug")>=0;
 function dbg(m){if(!DEBUG)return;let b=document.getElementById("__dbg");if(!b){b=document.createElement("pre");b.id="__dbg";b.style.cssText="position:fixed;left:0;right:0;bottom:0;max-height:45vh;overflow:auto;margin:0;padding:10px;background:#0F2A43;color:#8fe;font:11px/1.45 monospace;white-space:pre-wrap;word-break:break-all;z-index:99999;border-top:3px solid #0FB39E";document.body.appendChild(b);}b.textContent+=m+"\n\n";}
 // Relais CORS publics : permettent d'acc\u00e9der \u00e0 DVF depuis une page h\u00e9berg\u00e9e SANS installer de proxy (id\u00e9al sur mobile).
-// Relais CORS. corsproxy.io en t\u00eate : son offre gratuite couvre les domaines github.io (notre h\u00e9bergement).
-const CORS_PROXIES=["https://corsproxy.io/?url=","https://api.allorigins.win/raw?url=","https://api.codetabs.com/v1/proxy/?quest="];
+// Relais CORS. corsproxy.io en tete : son offre gratuite couvre les domaines github.io (notre hebergement).
+// R1 : USER_PROXY = ton relais dedie (Cloudflare Worker). Une fois deploye, colle son URL ci-dessous
+// (format : "https://ton-worker.workers.dev/?url=") -> il passe en priorite 1, fallback sur les relais publics.
+const USER_PROXY="";
+const CORS_PROXIES=(USER_PROXY?[USER_PROXY]:[]).concat(["https://corsproxy.io/?url=","https://api.allorigins.win/raw?url=","https://api.codetabs.com/v1/proxy/?quest=","https://thingproxy.freeboard.io/fetch/"]);
 function fetchT(url,ms){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);return fetch(url,{signal:c.signal}).finally(()=>clearTimeout(t));}
 // Tente la source directe ET les relais EN PARALL\u00c8LE, avec d\u00e9lai. Rejette les pages d'erreur HTML (un relais peut r\u00e9pondre 200 avec une page d'erreur).
 async function dvfFetch(url){
