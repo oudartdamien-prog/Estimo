@@ -298,18 +298,14 @@
         </div>
 
         <div class="field">
-          <label class="lbl">Exposition <span style="font-weight:500;color:var(--ink-soft)">(cochez toutes les orientations)</span></label>
+          <label class="lbl">Exposition <span style="font-weight:500;color:var(--ink-soft)">(cochez la ou les orientations)</span></label>
           <div class="checks expo-checks">
             <label class="chk" id="ckExpoN"><input type="checkbox" id="expoN" />Nord</label>
-            <label class="chk" id="ckExpoNE"><input type="checkbox" id="expoNE" />Nord-Est</label>
             <label class="chk" id="ckExpoE"><input type="checkbox" id="expoE" />Est</label>
-            <label class="chk on" id="ckExpoSE"><input type="checkbox" id="expoSE" checked />Sud-Est</label>
             <label class="chk" id="ckExpoS"><input type="checkbox" id="expoS" />Sud</label>
-            <label class="chk" id="ckExpoSO"><input type="checkbox" id="expoSO" />Sud-Ouest</label>
             <label class="chk" id="ckExpoO"><input type="checkbox" id="expoO" />Ouest</label>
-            <label class="chk" id="ckExpoNO"><input type="checkbox" id="expoNO" />Nord-Ouest</label>
           </div>
-          <div class="hint">Plusieurs orientations = logement traversant / multi-expos&#233; (mieux valoris&#233;).</div>
+          <div class="hint">Cochez 2 orientations adjacentes (ex. Sud + Est) pour un bien orient&#233; sud-est ; orientations oppos&#233;es (ex. Est + Ouest) = logement traversant.</div>
         </div>
 
         <div class="field">
@@ -373,7 +369,8 @@
         <div class="field">
           <label class="lbl">Annexes</label>
           <div class="checks">
-            <label class="chk" id="chkPark"><input type="checkbox" id="parking" />Parking / garage</label>
+            <label class="chk" id="chkPark"><input type="checkbox" id="parking" />Place de parking</label>
+            <label class="chk" id="chkGarage"><input type="checkbox" id="garage" />Garage ferm&#233;</label>
             <label class="chk" id="chkCave"><input type="checkbox" id="cave" />Cave / cellier</label>
           </div>
         </div>
@@ -707,6 +704,7 @@ const NAT_RENT_FACTOR=0.0046;
 const ENCADREMENT=["paris","lille","hellemmes","lomme","lyon","villeurbanne","montpellier","bordeaux","montreuil","bagnolet","pantin","est ensemble","plaine commune","grenoble"];
 
 const $=id=>document.getElementById(id);
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");}
 const eur=n=>Math.round(n).toLocaleString("fr-FR")+" \u20ac";
 const eur0=n=>Math.round(n).toLocaleString("fr-FR");
 const norm=s=>(s||"").toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/^st /,"saint-");
@@ -719,10 +717,10 @@ function bindSeg(wrapId,key,cb){const w=$(wrapId);w.querySelectorAll("button").f
 bindSeg("segType","type",updateTypeUI);
 bindSeg("segPieces","pieces");
 $("segDpe").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{$("segDpe").querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on");state.dpe=b.dataset.v;}));
-[$("parking"),$("cave"),$("asc")].forEach(c=>c.addEventListener("change",()=>c.closest(".chk").classList.toggle("on",c.checked)));
+[$("parking"),$("garage"),$("cave"),$("asc")].forEach(c=>{if(c)c.addEventListener("change",()=>c.closest(".chk").classList.toggle("on",c.checked));});
 $("segGes").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{$("segGes").querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on");state.ges=b.dataset.v;}));
 [$("piscine"),$("amenageable")].forEach(c=>c&&c.addEventListener("change",()=>c.closest(".chk").classList.toggle("on",c.checked)));
-["expoN","expoNE","expoE","expoSE","expoS","expoSO","expoO","expoNO"].forEach(id=>{const c=$(id);if(c)c.addEventListener("change",()=>c.closest(".chk").classList.toggle("on",c.checked));});
+["expoN","expoE","expoS","expoO"].forEach(id=>{const c=$(id);if(c)c.addEventListener("change",()=>c.closest(".chk").classList.toggle("on",c.checked));});
 
 function updateTypeUI(){const t=state.type;
   $("wrapTerrain").style.display=(t==="maison"||t==="terrain")?"":"none";
@@ -739,7 +737,7 @@ function updateTypeUI(){const t=state.type;
 let acTimer=null;
 $("adresse").addEventListener("input",e=>{const q=e.target.value.trim();state.coord=null;state.live=null;$("cp").value="";$("ville").value="";clearTimeout(acTimer);if(q.length<4){closeAc();return;}acTimer=setTimeout(()=>fetchBan(q),250);});
 function closeAc(){$("acList").classList.remove("open");$("acList").innerHTML="";}
-async function fetchBan(q){try{const r=await fetchT("https://api-adresse.data.gouv.fr/search/?limit=5&q="+encodeURIComponent(q),6000);if(!r.ok)throw 0;const d=await r.json();const list=$("acList");list.innerHTML="";(d.features||[]).forEach(f=>{const p=f.properties,c=f.geometry.coordinates;const div=document.createElement("div");div.className="ac-item";div.innerHTML=`${p.label}<span class="ac-sub">${p.context||""}</span>`;div.addEventListener("click",()=>{$("adresse").value=p.label;$("cp").value=p.postcode||"";$("ville").value=p.city||"";state.coord={lat:c[1],lon:c[0],label:p.label,insee:p.citycode};closeAc();autoFillFromAddress(state.coord);});list.appendChild(div);});list.classList.toggle("open",(d.features||[]).length>0);}catch(_){closeAc();}}
+async function fetchBan(q){try{const r=await fetchT("https://api-adresse.data.gouv.fr/search/?limit=5&q="+encodeURIComponent(q),6000);if(!r.ok)throw 0;const d=await r.json();const list=$("acList");list.innerHTML="";(d.features||[]).forEach(f=>{const p=f.properties,c=f.geometry.coordinates;const div=document.createElement("div");div.className="ac-item";div.innerHTML=`${esc(p.label)}<span class="ac-sub">${esc(p.context||"")}</span>`;div.addEventListener("click",()=>{$("adresse").value=p.label;$("cp").value=p.postcode||"";$("ville").value=p.city||"";state.coord={lat:c[1],lon:c[0],label:p.label,insee:p.citycode};closeAc();autoFillFromAddress(state.coord);});list.appendChild(div);});list.classList.toggle("open",(d.features||[]).length>0);}catch(_){closeAc();}}
 /* ===== Vague 2 : auto-remplissage depuis donnees publiques (ADEME DPE + altitude), pre-rempli & modifiable ===== */
 function _afTouch(){if(!window._afApplying)state._energyTouched=true;}
 (function(){["segDpe","segGes"].forEach(id=>{const el=$(id);if(el)el.addEventListener("click",_afTouch);});const e=$("epoque");if(e)e.addEventListener("change",_afTouch);})();
@@ -938,7 +936,7 @@ function renderMap(r){
       var map=L.map("leafMap",{scrollWheelZoom:false}).setView([c.lat,c.lon],15);
       window._estimoMap=map;
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"\u00a9 OpenStreetMap"}).addTo(map);
-      var risk=(state.live&&state.live.risqueLbl)?("<br><span style='color:#E0533D'>Risques : "+state.live.risqueLbl.replace(/^\d+\s*:\s*/,"")+"</span>"):"";
+      var risk=(state.live&&state.live.risqueLbl)?("<br><span style='color:#E0533D'>Risques : "+esc(state.live.risqueLbl.replace(/^\d+\s*:\s*/,""))+"</span>"):"";
       L.marker([c.lat,c.lon]).addTo(map).bindPopup("<b>Le bien</b><br>"+(c.label||"")+risk).openPopup();
       var e=state.enrich||{};
       function mk(p,color,label){return L.circleMarker([p.lat,p.lon],{radius:6,color:"#fff",weight:1.5,fillColor:color,fillOpacity:.9}).bindPopup(label);}
@@ -1027,7 +1025,34 @@ function dvfStats(pts,subjSurf){
   }
   return{n:clean.length,removed:pts.length-clean.length,clean,mean,med:quantile(cp,0.5),west:Math.round(westG),westRec:Math.round(west),q1:quantile(cp,0.25),q3:quantile(cp,0.75),p10:quantile(cp,0.10),p90:quantile(cp,0.90),sd,min:cp[0]||0,max:cp[cp.length-1]||0,yMin:yr.length?Math.min.apply(null,yr):null,yMax:ymax||null,spreadHQ};
 }
-function extractArr(d){return d.features?d.features.map(f=>f.properties||f):(d.results||d.resultats||(Array.isArray(d)?d:[]));}
+// P6 : appariement DPE ADEME <-> ventes DVF. Pour les ventes geolocalisees (bbox),
+// requete ADEME geo_distance=60m par lot de 5, sur les 15 plus recentes. Stocke le DPE
+// sur chaque point. Utilise dans estimate pour un coefficient DPE APPRIS localement.
+async function enrichDvfDpe(pts){
+  if(!pts||!pts.length)return;
+  const geo=pts.filter(p=>p.lat!=null&&p.lon!=null);
+  if(geo.length<10)return;
+  const year=new Date().getFullYear();
+  const recent=[...geo].sort((a,b)=>{const ya=a.date?+String(a.date).slice(0,4):0,yb=b.date?+String(b.date).slice(0,4):0;return yb-ya;}).slice(0,15);
+  const sel=encodeURIComponent("etiquette_dpe");
+  const batch=async(sub)=>{
+    const results=await Promise.allSettled(sub.map(p=>{
+      const u="https://data.ademe.fr/data-fair/api/v1/datasets/dpe-v2-logements-existants/lines?geo_distance="+p.lon.toFixed(6)+","+p.lat.toFixed(6)+",60m&size=1&sort=-date_etablissement_dpe&select="+sel;
+      return dvfFetch(u);
+    }));
+    results.forEach((r,i)=>{
+      if(r.status!=="fulfilled"||!r.value)return;
+      const rows=(r.value.json&&(r.value.json.results||r.value.json.data))||[];
+      const o=rows[0];if(o&&o.etiquette_dpe&&/^[A-G]$/.test(o.etiquette_dpe))sub[i].dpe=o.etiquette_dpe;
+    });
+  };
+  // Lots de 5 pour ne pas surcharger l'API (rate limit ADEME)
+  for(let i=0;i<recent.length;i+=5){
+    await batch(recent.slice(i,i+5));
+  }
+  if(DEBUG){const n=pts.filter(p=>p.dpe).length;dbg("DPE ADEME apparies: "+n+"/"+recent.length+" ventes ("+geo.length+" geolocalisees)");}
+}
+function extractArr(d){return d.features?d.features.map(f=>{const p=f.properties||f;if(f.geometry&&f.geometry.coordinates){const c=f.geometry.coordinates;p._lon=c[0];p._lat=c[1];}return p;}):(d.results||d.resultats||(Array.isArray(d)?d:[]));}
 function parsePts(arr,type){
   const want=type==="maison"?"maison":"appartement",pts=[];
   arr.forEach(o=>{
@@ -1037,7 +1062,7 @@ function parsePts(arr,type){
     if(!v||!s||s<9)return;
     if(typ&&typ.indexOf(want)<0)return; // type present : ne garder que le type voulu (exclut activite, dependance, bien multiple...)
     const ppm=v/s;if(ppm<300||ppm>40000)return;
-    pts.push({ppm,surf:s,price:v,rooms:Number(recVal(o,["nbpprinc","nblocapt"]))||null,date:recVal(o,["datemut","date_mutation"])});
+    pts.push({ppm,surf:s,price:v,rooms:Number(recVal(o,["nbpprinc","nblocapt"]))||null,date:recVal(o,["datemut","date_mutation"]),lat:o._lat||null,lon:o._lon||null});
   });
   return pts;
 }
@@ -1309,12 +1334,25 @@ function marketCtx(realBase){
   const alt=(state.coord&&state.coord.alt!=null)?state.coord.alt:120;
   return {lvl:lvl,tier:tier,alt:alt,cold:alt>=550,mountain:alt>=900,premium:(tier==="recherche"||tier==="premium"),realBase:realBase||REF,type:state.type};
 }
-function coefficients(ctx){const rows=[];let m=1;let detail=0;
+function coefficients(ctx,realBase,realStats){const rows=[];let m=1;let detail=0;
   ctx=ctx||marketCtx(null);const tier=ctx.tier,cold=ctx.cold,mountain=ctx.mountain,premium=ctx.premium;
   if(state.type==="terrain")return{mult:1,rows,detail:0};
   const etatMap={vetuste:[-0.25,"V\u00e9tuste"],renover:[-0.15,"\u00c0 r\u00e9nover"],correct:[-0.03,"\u00c9tat correct"],bon:[0.05,"Bon \u00e9tat"],renove:[0.10,"R\u00e9nov\u00e9 r\u00e9cemment"],neuf:[0.14,"Neuf / refait"]};
   let [v,lbl]=etatMap[$("etat").value];m*=(1+v);rows.push([lbl,v]);const etatKey=$("etat").value;
-  const dpeMap={A:0.06,B:0.04,C:0.02,D:0,E:-0.03,F:-0.07,G:-0.12};let dv=dpeMap[state.dpe];if(dv!==undefined&&dv!==0){const dpeClim=mountain?1.8:cold?1.45:1,dpeTier=tier==="modeste"?1.2:premium?0.7:1;dv=dv*dpeClim*dpeTier;m*=(1+dv);rows.push(["DPE "+state.dpe,dv]);}
+  const dpeMap={A:0.06,B:0.04,C:0.02,D:0,E:-0.03,F:-0.07,G:-0.12};let dv=dpeMap[state.dpe];
+  // P6 : coefficient DPE APPRIS des ventes locales (mediane ppm par classe DPE vs globale).
+  // Remplace le coefficient calibre quand assez de ventes ont un DPE apparie (n>=6 pour la classe du bien).
+  let dpeAppris=false;
+  if(realBase&&realStats&&realStats.clean&&state.dpe&&dv!==undefined){
+    const withDpe=realStats.clean.filter(p=>p.dpe&&/^[A-G]$/.test(p.dpe));
+    const sameDpe=withDpe.filter(p=>p.dpe===state.dpe);
+    if(withDpe.length>=12&&sameDpe.length>=6){
+      const medAll=median(withDpe.map(p=>p.ppm)),medSame=median(sameDpe.map(p=>p.ppm));
+      if(medAll>0){const learned=Math.max(-0.08,Math.min(0.08,medSame/medAll-1));
+        if(Math.abs(learned)>=0.005||Math.abs(dv)>=0.005){dv=learned;dpeAppris=true;}}
+    }
+  }
+  if(dv!==undefined&&dv!==0){const dpeClim=mountain?1.8:cold?1.45:1,dpeTier=tier==="modeste"?1.2:premium?0.7:1;if(!dpeAppris){dv=dv*dpeClim*dpeTier;}m*=(1+dv);rows.push([dpeAppris?"DPE "+state.dpe+" (appris des ventes locales)":"DPE "+state.dpe,dv]);}
   if(etatKey==="renove"||etatKey==="neuf"){if(state.dpe==="A"||state.dpe==="B"){m*=1.015;rows.push(["Coh\u00e9rence r\u00e9novation + DPE performant",0.015]);}else if(state.dpe==="F"||state.dpe==="G"){m*=0.98;rows.push(["Incoh\u00e9rence r\u00e9nov\u00e9 / passoire \u00e9nerg\u00e9tique",-0.02]);}}
   const gesMap={A:0.01,B:0.005,C:0,D:0,E:-0.005,F:-0.015,G:-0.02};const gv=gesMap[state.ges];if(gv){m*=(1+gv);rows.push(["GES "+state.ges,gv]);}
   if(state.type==="appartement"){const fe=numv("floorExact"),ft=numv("floorTotal"),asc=$("asc").checked;let ev=0,l="";
@@ -1326,10 +1364,25 @@ function coefficients(ctx){const rows=[];let m=1;let detail=0;
   }
   const vueMap={rue_passante:[-0.03,"Vue rue passante"],rue:[0,"Vue rue"],cour:[0.01,"Vue cour"],visavis:[-0.02,"Vis-\u00e0-vis proche"],degagee:[0.03,"Vue d\u00e9gag\u00e9e"],verdure:[0.05,"Vue verdure/parc"],monument:[0.08,"Vue panoramique"],montagne:[0.06,"Vue montagne"],mer:[0.12,"Vue mer"]};
   let [vv,vl]=vueMap[$("vue").value];if(vv>0){const _pv=["degagee","verdure","monument","montagne","mer"].indexOf($("vue").value)>=0;if(_pv&&premium)vv*=1.25;if($("vue").value==="montagne"&&mountain)vv*=1.3;}if(vv){m*=(1+vv);rows.push([vl,vv]);}detail++;
-  const dirs=[["expoN","Nord",-0.02],["expoNE","Nord-Est",-0.01],["expoE","Est",0],["expoSE","Sud-Est",0.02],["expoS","Sud",0.03],["expoSO","Sud-Ouest",0.03],["expoO","Ouest",0.01],["expoNO","Nord-Ouest",-0.01]];
+  // Exposition : 4 orientations cardinales. 2 adjacentes (ex. Sud+Est) = moyenne des deux -> valeur
+  // intermediaire realiste ; 2 opposees (ex. Est+Ouest) = traversant ; 3-4 = multi-expose.
+  const dirs=[["expoN","Nord",-0.02],["expoE","Est",0],["expoS","Sud",0.03],["expoO","Ouest",0.01]];
   const exChecked=dirs.filter(d=>{const e=$(d[0]);return e&&e.checked;});
-  const traversant=[["expoN","expoS"],["expoE","expoO"],["expoNE","expoSO"],["expoNO","expoSE"]].some(([a,b])=>$(a)&&$(a).checked&&$(b)&&$(b).checked);
-  if(exChecked.length){let best=Math.max(...exChecked.map(d=>d[2]));if(best>0&&cold)best*=1.4;const multi=exChecked.length>=3?0.03:exChecked.length>=2?0.02:0;const trav=traversant?0.015:0;const xv=best+multi+trav;m*=(1+xv);rows.push([traversant?`Exposition traversante (${exChecked.length} orient.)`:exChecked.length>=2?`Exposition multi (${exChecked.length} orient.)`:`Exposition ${exChecked[0][1]}`,xv]);}detail++;
+  const traversant=[["expoN","expoS"],["expoE","expoO"]].some(([a,b])=>$(a)&&$(a).checked&&$(b)&&$(b).checked);
+  if(exChecked.length){
+    // Base = meilleure orientation si 1 seule cochee, sinon moyenne (2 adjacentes -> intermediaire)
+    let base;const vals=exChecked.map(d=>d[2]);
+    if(exChecked.length===1)base=vals[0];
+    else base=vals.reduce((a,b)=>a+b,0)/vals.length;
+    if(base>0&&cold)base*=1.4;
+    const multi=exChecked.length>=3?0.02:0;const trav=traversant?0.015:0;const xv=base+multi+trav;
+    let lbl;
+    if(traversant)lbl=`Exposition traversante (${exChecked.length} orient.)`;
+    else if(exChecked.length>=3)lbl=`Exposition multi (${exChecked.length} orient.)`;
+    else if(exChecked.length===2)lbl=`Exposition ${exChecked[0][1].toLowerCase()}\u2013${exChecked[1][1].toLowerCase()}`;
+    else lbl=`Exposition ${exChecked[0][1]}`;
+    m*=(1+xv);rows.push([lbl,xv]);
+  }detail++;
   const chMap={collectif:[-0.01,"Chauffage collectif"],indiv_gaz:[0,"Chauffage gaz"],indiv_elec:[-0.015,"Chauffage \u00e9lectrique"],fioul:[-0.02,"Chauffage fioul"],bois:[0.005,"Po\u00eale \u00e0 bois"],pellets:[0.01,"Chauffage granul\u00e9s"],pac:[0.02,"Chauffage PAC/r\u00e9cent"],reversible:[0.015,"Clim r\u00e9versible"],plancher:[0.015,"Plancher chauffant"]};
   let [cv,cl]=chMap[$("chauffage").value]||[0,""];if(cv){m*=(1+cv);rows.push([cl,cv]);}
   const stMap={standard:[0,"Standard"],bon:[0.03,"Bonnes prestations"],haut:[0.07,"Haut standing"]};
@@ -1349,7 +1402,8 @@ function coefficients(ctx){const rows=[];let m=1;let detail=0;
     if($("piscine").checked){const pv=mountain?0.02:cold?0.03:0.045;m*=(1+pv);rows.push(["Piscine",pv]);}
     if($("amenageable").checked){m*=1.02;rows.push(["Combles/sous-sol am\u00e9nageables",0.02]);}
   }
-  if($("parking").checked){const pk=premium?0.04:tier==="modeste"?0.02:0.03;m*=(1+pk);rows.push(["Parking / garage",pk]);}
+  if($("parking").checked){const pk=premium?0.03:tier==="modeste"?0.015:0.02;m*=(1+pk);rows.push(["Place de parking",pk]);}
+  if($("garage")&&$("garage").checked){const gg=premium?0.05:tier==="modeste"?0.03:0.04;m*=(1+gg);rows.push(["Garage ferm\u00e9",gg]);}
   if($("cave").checked){m*=1.01;rows.push(["Cave / cellier",0.01]);}
   return{mult:m,rows,detail};
 }
@@ -1419,7 +1473,7 @@ function estimate(realBase,realStats){
   if(type==="terrain")return estimateTerrain(realBase,surface,city,cp);
   const {sqm,conf}=realBase?{sqm:realBase,conf:"\u00e9lev\u00e9e"}:baseSqm(city,cp,type);
   const ctx=marketCtx(realBase);
-  const {mult,rows,detail}=coefficients(ctx);
+  const {mult,rows,detail}=coefficients(ctx,realBase,realStats);
   let effMult=mult;
   // Coefficient de typologie APPRIS des ventes : a surface comparable, ecart de prix/m2 reel
   // entre les biens de meme nombre de pieces et l'ensemble (borne +-5 %, n>=12 de chaque cote).
@@ -1519,7 +1573,7 @@ function renderLocStats(r){const d=r.dyn;
   const _en=(state.enrich&&state.enrich.osm)?state.enrich.osm:null;
   const _realTag='<span style="color:var(--brand-dark);font-weight:700;font-size:11px">\u00b7 r\u00e9el</span>';
   const estAccess=_en?(function(){const shops=(_en.shops||0)+(_en.food||0)+(_en.health||0),transit=_en.transit||0;const cLvl=shops>=25?"\u00c9lev\u00e9e":shops>=10?"Correcte":"Faible",tLvl=transit>=20?"Tr\u00e8s bonne":transit>=8?"Correcte":"Limit\u00e9e";return `<div id="locEstAccess"><div class="stat"><span class="sl">Densit\u00e9 de commerces & services</span><span class="sv num">${cLvl} (${shops}) ${_realTag}</span></div><div class="stat"><span class="sl">Desserte transports en commun</span><span class="sv num">${tLvl} (${transit}) ${_realTag}</span></div></div>`;})():`<div id="locEstAccess"><div class="stat"><span class="sl">Densit\u00e9 de commerces & services</span><span class="sv num">${d.accessMin<12?"\u00c9lev\u00e9e":d.accessMin<25?"Correcte":"Faible"} ${tag}</span></div><div class="stat"><span class="sl">Desserte transports en commun</span><span class="sv num">${d.accessMin<10?"Tr\u00e8s bonne":d.accessMin<20?"Correcte":"Limit\u00e9e"} ${tag}</span></div></div>`;
-  const risk=(state.live&&state.live.risqueLbl)?state.live.risqueLbl:d.risqueLbl;
+  const risk=esc((state.live&&state.live.risqueLbl)?state.live.risqueLbl:(d.risqueLbl||""));
   const isReal=!!(state.live&&state.live.risqueLbl);
   const radon=(state.live&&state.live.radon)?`<div style="margin-top:8px;font-size:13px;color:var(--ink)">Potentiel radon : <b style="color:${state.live.radon.classe>=3?"var(--bad)":state.live.radon.classe===2?"var(--warn)":"var(--good)"}">${state.live.radon.label}</b> (classe ${state.live.radon.classe}/3, G\u00e9orisques)</div>`:"";
   const _bi=(state.live&&state.live.basias)||0,_bo=(state.live&&state.live.basol)||0,_hasSol=!!(state.live&&(state.live.basias!=null||state.live.basol!=null));
@@ -1533,7 +1587,7 @@ function renderLocStats(r){const d=r.dyn;
 function genComparables(r){const list=$("compList");list.innerHTML="";const ic=r.type==="maison"?"\ud83c\udfe0":r.type==="terrain"?"\ud83c\udf33":"\ud83c\udfe2";
   if(r.realPts&&r.realPts.length){const sorted=[...r.realPts].sort((a,b)=>String(b.date||"").localeCompare(String(a.date||""))).slice(0,6);
     sorted.forEach(p=>{const dt=p.date?String(p.date).slice(0,7).split("-").reverse().join("/"):"";const div=document.createElement("div");div.className="comp";
-      div.innerHTML=`<div class="comp-ic">${ic}</div><div class="comp-main"><div class="t">${Math.round(p.surf)} m\u00b2${p.rooms?` \u00b7 ${p.rooms} pi\u00e8ces`:""}</div><div class="s">Vendu ${dt} \u00b7 ${r.city||"secteur"}</div></div><div class="comp-price"><div class="p num">${eur(p.price)}</div><div class="pm num">${eur0(p.ppm)} /m\u00b2</div></div>`;
+      div.innerHTML=`<div class="comp-ic">${ic}</div><div class="comp-main"><div class="t">${Math.round(p.surf)} m\u00b2${p.rooms?` \u00b7 ${p.rooms} pi\u00e8ces`:""}</div><div class="s">Vendu ${dt} \u00b7 ${esc(r.city||"secteur")}</div></div><div class="comp-price"><div class="p num">${eur(p.price)}</div><div class="pm num">${eur0(p.ppm)} /m\u00b2</div></div>`;
       list.appendChild(div);});
     return;}
   // Zero demo : sans ventes DVF reelles, aucun comparable invente n'est affiche.
@@ -1893,7 +1947,7 @@ function autofillCadastre(data){
   const t=state.type,el=$("terrain"),note=$("cadastreNote");if(!note)return;
   const visible=t==="terrain"||t==="maison";
   const empty=!el||!el.value||+el.value===0;
-  const info="&#128208; Cadastre IGN : <b>"+data.surf+" m\u00b2</b>"+(data.section?" (section "+data.section+(data.numero?" n\u00b0"+data.numero:"")+")":"");
+  const info="&#128208; Cadastre IGN : <b>"+data.surf+" m\u00b2</b>"+(data.section?" (section "+esc(data.section)+(data.numero?" n\u00b0"+esc(data.numero):"")+")":"");
   if(visible&&el&&empty){
     el.value=data.surf;
     note.innerHTML=info+` &mdash; <a href="#" style="color:var(--brand-dark)" onclick="event.preventDefault();var e=document.getElementById('terrain');if(e){e.value='';e.focus();}">\u270f\ufe0f modifier</a>`;
@@ -1908,8 +1962,6 @@ function autofillCadastre(data){
 async function provPlu(coord){try{if(!coord)return null;const g=encodeURIComponent(JSON.stringify({type:"Point",coordinates:[coord.lon,coord.lat]}));const d=await dvfFetch("https://apicarto.ign.fr/api/gpu/zone-urba?geom="+g);const f=(((d.json||{}).features)||[])[0];if(!f)return null;const p=f.properties||{};const z=p.typezone||null,lib=p.libelle||p.libelong||null;return(z||lib)?{zone:z,libelle:lib}:null;}catch(_){return null;}}
 // Bruit et permis de construire : pas d'API nationale gratuite sans cle fiable a ce jour.
 // Placeholders defensifs prets a brancher des qu'un endpoint public est confirme (aucun appel inutile).
-async function provBruit(_coord){return null;}
-async function provPermis(_insee){return null;}
 // Q6 : Carte des loyers 2023 (data.gouv / opendatasoft, sans cle).
 // Loyer m\u00e9dian par commune, appartement et maison s\u00e9par\u00e9s.
 async function provLoyers(insee,type){
@@ -1991,10 +2043,10 @@ async function provCrime(insee){
 // Orchestrateur : tous les fournisseurs en parallele, echecs isoles (allSettled). Renvoie ctx2.
 async function fetchContextProviders(coord){
   if(!coord)return{};
-  const res=await Promise.allSettled([provDemo(coord.insee),provEntreprises(coord.insee),provPlu(coord),provBruit(coord),provPermis(coord.insee),provFilosofi(coord.insee),provLoyers(coord.insee,state.type),provRPLS(coord.insee),provFibre(coord.insee),provCrime(coord.insee)]);
+  const res=await Promise.allSettled([provDemo(coord.insee),provEntreprises(coord.insee),provPlu(coord),provFilosofi(coord.insee),provLoyers(coord.insee,state.type),provRPLS(coord.insee),provFibre(coord.insee),provCrime(coord.insee)]);
   const v=i=>res[i]&&res[i].status==="fulfilled"?res[i].value:null;
-  const ctx={},iris=v(0),ent=v(1),plu=v(2),br=v(3),pm=v(4),filo=v(5),loy=v(6),rpls=v(7),fib=v(8),crime=v(9);
-  if(iris)ctx.iris=iris;if(ent)ctx.sirene=ent;if(plu)ctx.plu=plu;if(br)ctx.bruit=br;if(pm)ctx.permis=pm;if(filo)ctx.filosofi=filo;if(loy)ctx.loyers=loy;if(rpls)ctx.rpls=rpls;if(fib)ctx.fibre=fib;if(crime)ctx.crime=crime;
+  const ctx={},iris=v(0),ent=v(1),plu=v(2),filo=v(3),loy=v(4),rpls=v(5),fib=v(6),crime=v(7);
+  if(iris)ctx.iris=iris;if(ent)ctx.sirene=ent;if(plu)ctx.plu=plu;if(filo)ctx.filosofi=filo;if(loy)ctx.loyers=loy;if(rpls)ctx.rpls=rpls;if(fib)ctx.fibre=fib;if(crime)ctx.crime=crime;
   return ctx;
 }
 // ===== Reconciliation ChatGPT x Grok \u2014 W1 : socle contextuel (additif, ZERO impact prix) =====
@@ -2002,22 +2054,6 @@ async function fetchContextProviders(coord){
 // bornage DVF, interactions) + signaux open-data (approche ChatGPT). TOUTES desactivees par
 // defaut : elles n'influenceront le prix qu'une fois validees statistiquement sur le DVF local.
 // Tant que enabled=false, aucun effet sur le comportement actuel.
-const FUTURE_WEIGHTS={
-  grokCoefConservateur:{label:"Coefficients hedoniques plus conservateurs (etat, DPE, etage, expo, standing, exterieurs)",enabled:false,impact:0,source:"Grok",note:"A calibrer sur regression DVF locale"},
-  grokBorneDVF:{label:"Bornage fort a +8-10 % de la mediane ponderee DVF",enabled:false,impact:0,source:"Grok",note:"Garde-fou +/-25 % deja actif ; resserrement a valider"},
-  grokInteractions:{label:"Interactions / saturations non additives renforcees",enabled:false,impact:0,source:"Grok"},
-  iris:{label:"Attractivite socio-economique (IRIS : revenus, demographie)",enabled:false,impact:0,source:"INSEE"},
-  plu:{label:"Potentiel de valorisation (PLU, constructibilite)",enabled:false,impact:0,source:"ChatGPT"},
-  permis:{label:"Dynamique de construction (permis Sitadel)",enabled:false,impact:0,source:"ChatGPT"},
-  bruit:{label:"Nuisances sonores",enabled:false,impact:0,source:"ChatGPT"},
-  sirene:{label:"Tissu economique local (SIRENE)",enabled:false,impact:0,source:"ChatGPT"}
-};
-// Ajustement prix issu du contexte = somme des SEULES ponderations activees.
-// Renvoie 0 tant que tout est desactive -> prix strictement inchange. Non branche sur le
-// calcul de prix : architecture prete pour une activation future validee (flip de enabled).
-function contextPriceAdjust(){let a=0;for(const k in FUTURE_WEIGHTS){const w=FUTURE_WEIGHTS[k];if(w.enabled)a+=w.impact||0;}return a;}
-// PropertyContext : consolidation EN LECTURE SEULE des signaux deja disponibles + emplacements
-// pour les futurs providers. Aucun effet de bord, aucun calcul de prix.
 function propertyContext(r){
   const co=state.coord||{},en=state.enrich||{},lv=state.live||{},x2=state.ctx2||{};
   const src={
@@ -2082,7 +2118,7 @@ function renderContext(r){
   const x2=state.ctx2||{},extra=[];
   if(x2.iris)extra.push("Population commune : "+eur0(x2.iris.population)+(x2.iris.densite?" ("+eur0(x2.iris.densite)+" hab/km\u00b2)":""));
   if(x2.sirene)extra.push("Entreprises actives : "+eur0(x2.sirene.total));
-  if(x2.plu&&(x2.plu.libelle||x2.plu.zone))extra.push("Zonage PLU : "+(x2.plu.libelle||x2.plu.zone));
+  if(x2.plu&&(x2.plu.libelle||x2.plu.zone))extra.push("Zonage PLU : "+esc(x2.plu.libelle||x2.plu.zone));
   const extraHtml=extra.length?`<div style="margin-top:10px;font-size:11.5px;color:var(--ink);line-height:1.7">`+extra.map(e=>`<div>&#8226; ${e}</div>`).join("")+`</div>`:"";
   el.innerHTML=`<div style="font-size:12px;color:var(--ink-soft);line-height:1.55;margin-bottom:8px">Contexte consolide a partir des sources publiques disponibles. Ces donnees enrichissent la confiance et les analyses, <b>sans modifier le prix</b>.</div><div>${chips||'<span style="font-size:11.5px;color:var(--ink-soft)">Sources en cours de chargement.</span>'}</div>${extraHtml}${idxHtml}${confHtml}${anHtml}<div class="hint" style="margin-top:10px">Richesse des donnees : ${pc.richness} %. De futurs fournisseurs (IRIS, SIRENE, PLU, bruit, permis) enrichiront ce contexte ; tout impact eventuel sur le prix restera desactive tant qu'il n'est pas valide sur le DVF local.</div>`;
 }
@@ -2485,47 +2521,44 @@ function renderExplain(r){
   el.innerHTML="<b>En clair :</b> march\u00e9 local \u00e0 "+eur0(r.sqmBase)+" \u20ac/m\u00b2 ("+(r.realCount||0)+" ventes r\u00e9elles)"+(parts.length?" \u00b7 "+parts.join(" \u00b7 "):"")+".";
   el.style.display="";
 }
-async function showResults(){
-  const err=$("formErr");const surface=state.type==="terrain"?numv("terrain"):numv("surface");
-  if(!($("adresse").value||"").trim()){err.textContent="Saisissez l'adresse du bien, puis choisissez une suggestion.";err.classList.add("show");$("adresse").focus();return;}
-  if(!surface||surface<=0){err.textContent="Renseignez une surface valide.";err.classList.add("show");return;}
-  err.classList.remove("show");
-  const btn=$("btnEstim");const oldTxt=btn.textContent;btn.textContent="Recherche des ventes r\u00e9elles\u2026";btn.disabled=true;
-  let realBase=null,realPts=null,realStats=null,diag="",engineData=null,bandWidened=false;
-  const coord=await geocode();dbg("Coordonnees BAN: "+JSON.stringify(coord));
+// Phase 1 : recuperation de toutes les donnees (DVF, live, enrich, ctx) -> objet data
+async function fetchAllData(coord){
+  const out={realBase:null,realPts:null,realStats:null,diag:"",engineData:null,bandWidened:false};
   const livePromise=(coord&&coord.insee)?fetchLive(coord):Promise.resolve({});
   state.enrich=null;const enrichPromise=coord?fetchEnrich(coord):Promise.resolve(null);
   state.ctx2=null;const ctxProm=coord?fetchContextProviders(coord):Promise.resolve({});
-  if(!coord){diag="adresse non localis\u00e9e \u2014 v\u00e9rifiez l'adresse saisie et choisissez une suggestion";}
-  else if(state.type==="terrain"){diag="terrain : pas de comparable b\u00e2ti DVF";}
+  if(!coord){out.diag="adresse non localis\u00e9e \u2014 v\u00e9rifiez l'adresse saisie et choisissez une suggestion";}
+  else if(state.type==="terrain"){out.diag="terrain : pas de comparable b\u00e2ti DVF";}
   else{
     const res=await fetchDvf(coord,state.type);
     state.dvfScope=res.scope||null;
     if(res.pts&&res.pts.length){
-      realPts=res.pts; // tous les points -> nuage de points
-      const surf=state.type==="terrain"?numv("terrain"):numv("surface");let band=res.pts;bandWidened=false;
+      out.realPts=res.pts;
+      const surf=state.type==="terrain"?numv("terrain"):numv("surface");let band=res.pts;out.bandWidened=false;
       if(surf>0){
         let b=res.pts.filter(p=>p.surf>=surf*0.55&&p.surf<=surf*1.7);
-        // Peu de comparables -> elargissement progressif automatique de la fenetre de surface
-        if(b.length<25){const b2=res.pts.filter(p=>p.surf>=surf*0.40&&p.surf<=surf*2.30);if(b2.length>b.length+4){b=b2;bandWidened=true;}}
-        if(b.length>=10)band=b;else bandWidened=false;
+        if(b.length<25){const b2=res.pts.filter(p=>p.surf>=surf*0.40&&p.surf<=surf*2.30);if(b2.length>b.length+4){b=b2;out.bandWidened=true;}}
+        if(b.length>=10)band=b;else out.bandWidened=false;
       }
-      realStats=dvfStats(band,surf>0?surf:null); // Q3 : subjSurf -> west gaussien + spreadHQ
-      // Vague 4 : base = moyenne ponderee par confiance de plusieurs moteurs (comparables scores, regression, mediane recence)
-      engineData=estimationEngines(realStats.clean,surf,realStats);
-      realBase=engineData.base||realStats.west||Math.round(realStats.med);
+      out.realStats=dvfStats(band,surf>0?surf:null);
+      out.engineData=estimationEngines(out.realStats.clean,surf,out.realStats);
+      out.realBase=out.engineData.base||out.realStats.west||Math.round(out.realStats.med);
+      // P6 : enrichissement DPE ADEME (asynchrone, non bloquant si echec)
+      if(state.dvfScope==="bbox")try{await enrichDvfDpe(out.realPts);}catch(_){}
     }
-    else if(res.status==="no-conn")diag="sources DVF injoignables \u2014 r\u00e9essayez dans un instant";
-    else diag="aucune vente DVF comparable dans le secteur";
+    else if(res.status==="no-conn")out.diag="sources DVF injoignables \u2014 r\u00e9essayez dans un instant";
+    else out.diag="aucune vente DVF comparable dans le secteur";
   }
   state.live=await livePromise;
-  btn.textContent=oldTxt;btn.disabled=false;
+  return{...out,enrichPromise,ctxProm};
+}
+// Phase 2 : construction de l'estimation (estimate + indices + spread + caps)
+function buildEstimation(data){
+  const {realBase,realStats,realPts,engineData,bandWidened}=data;
   const r=estimate(realBase,realStats);r.bandWidened=bandWidened;r.realPts=realPts;r.realStats=realStats;r.realCount=realStats?realStats.n:0;r.engines=engineData?engineData.engines:[];r.engineBase=engineData?engineData.base:realBase;r.engineTop=engineData?engineData.top:[];r.pxHedonic=r.price;lastResult=r;
-  // Donnees reelles : loyer ancre au prix DVF + tendance de prix calculee sur DVF (remplace la demo)
   if(realBase){const _rent=getRentSqm(r);r.dyn.loyerM2=_rent;r.dyn.rendementMarche=+(_rent*12/r.sqmBase*100).toFixed(1);r.dyn.rentReal=true;
     const _tr=dvfTrend(realPts);if(_tr){r.dyn.evo12=_tr.evo12;r.dyn.evo5=_tr.evoTot;r.dyn.notairesEvo=_tr.evo12;r.dyn.evoSpan=_tr.span;r.dyn.trendReal=true;}}
-  patchDynReal(r);updateBadges(r); // P4 + Q8
-  // Vague 3 : indice de confiance multicritere + fourchette pilotee par la confiance
+  patchDynReal(r);updateBadges(r);
   const _checks=[numv("surface")>0,numv("chambres")>0,numv("sdb")>0,(state.type!=="appartement"||numv("floorExact")>0),(numv("balconM2")>0||numv("terrasseM2")>0||numv("jardinM2")>0),!!state.coord];
   const _conf=estimationConfidence(realStats,{dyn:r.dyn,nTotal:(realPts?realPts.length:0),attrFilled:_checks.filter(Boolean).length,attrTotal:_checks.length,baseConf:r.conf});
   r.confScore=_conf.score;r.confFactors=_conf.factors;r.confLabel=_conf.label;
@@ -2533,17 +2566,18 @@ async function showResults(){
     r.backtest=backtestLocal(_rs?_rs.clean:null,r.surface);
     const _sprF=Math.max(0.06,Math.min(0.20,0.045+_riq*0.18+(1-_conf.score/100)*0.04));
     const _sprHQ=_rs&&_rs.spreadHQ!=null?Math.max(0.06,Math.min(0.20,_rs.spreadHQ)):null;
-    // Q3 : IQR des comparables haute qualite (score>=70) > P80 backtest > formule recence/dispersion
-    r.spread=_sprHQ||( r.backtest?Math.max(0.06,Math.min(0.20,r.backtest.p80/100)):_sprF);
+    r.spread=_sprHQ||(r.backtest?Math.max(0.06,Math.min(0.20,r.backtest.p80/100)):_sprF);
     r.spreadSrc=_sprHQ?"HQ-IQR":r.backtest?"backtest":"formula";
     r.low=r.price*(1-r.spread);r.high=r.price*(1+r.spread);}
-  // Vague 2 : indices synthetiques du bien -> ajustement de valeur non lineaire borne (qualite/rarete/emotion)
   r.indices=bienIndices(r,realStats);r.indexAdj=indexValueAdjust(r.indices);
   if(r.indexAdj.tot){r.price=Math.round(r.price*(1+r.indexAdj.tot));r.sqm=Math.round(r.price/(r.surface||1));r.low=r.price*(1-r.spread);r.high=r.price*(1+r.spread);}
-  // Vague 3 : prix de base (hedonique + indices) memorise ; ajustement dynamique de marche applique ; la micro-localisation s'applique a l'arrivee de l'enrich (applyGeoDyn)
   r.basePrice=r.price;r.dynAdj=marketDynamicsAdjust(r);r.geoAdj={adj:0,score:null};
   if(r.dynAdj.adj){r.price=Math.round(r.basePrice*(1+r.dynAdj.adj));r.sqm=Math.round(r.price/(r.surface||1));r.low=r.price*(1-r.spread);r.high=r.price*(1+r.spread);}
   applyFinalDvfCap(r);
+  return{r,_conf,realBase,diag:data.diag};
+}
+// Phase 3 : rendu de tous les panneaux (DOM)
+function renderAllPanels(r,_conf,realBase,diag){
   const sd=$("srcDot"),st=$("srcTxt");
   if(realBase){sd.style.background="#7fe3d4";st.textContent=`Donn\u00e9es r\u00e9elles DVF \u00b7 ${r.realCount} ventes \u00b7 ${state.dvfScope==="bbox"?"rayon ~1 km":"commune"}`;$("compTag").textContent="DVF \u00b7 r\u00e9el";}
   else{sd.style.background="#E8742A";st.textContent="Bar\u00e8me r\u00e9gional \u00b7 sans DVF ("+diag+")";$("compTag").textContent="DVF indisponible";}
@@ -2552,7 +2586,6 @@ async function showResults(){
   $("pcSqm").textContent=eur0(r.sqm)+" \u20ac";
   $("pcType").textContent=({appartement:"appartement",maison:"maison",terrain:"terrain"})[r.type];
   $("gLow").textContent=eur(r.low);$("gMid").textContent=eur(r.price);$("gHigh").textContent=eur(r.high);
-  // gauge fill width = 2\u00d7spread centr\u00e9
   const w=Math.min(45,r.spread*100*1.6);$("gFill").style.left=(50-w)+"%";$("gFill").style.right=(50-w)+"%";$("gDot").style.left="50%";
   const cd=$("confDot"),ct=$("confTxt");
   const _cc=r.confScore>=70?"#7fe3d4":r.confScore>=45?"#F2D31C":"#E8742A";
@@ -2563,17 +2596,33 @@ async function showResults(){
   $("locAddr").textContent=state.coord?.label||(($("ville").value||"")+" "+$("cp").value).trim();
   $("locCoord").textContent=state.coord?`${state.coord.lat.toFixed(4)}, ${state.coord.lon.toFixed(4)}${state.coord.alt!=null?" \u00b7 alt. "+state.coord.alt+" m":""} \u00b7 carte interactive dans la version h\u00e9berg\u00e9e`:"Carte interactive disponible dans la version h\u00e9berg\u00e9e";
   const dpeCostHi=renderDpe();
-  $("iTravaux").value=dpeCostHi>0?Math.round(dpeCostHi*0.8/1000)*1000:0; // suggestion travaux \u2248 80% du haut de fourchette
+  $("iTravaux").value=dpeCostHi>0?Math.round(dpeCostHi*0.8/1000)*1000:0;
   renderRentalDefaults(r);
   renderResaleDefaults(r);
   renderEnrich(r);
   renderMap(r);
+}
+// Phase 4 : callbacks asynchrones (enrich, ctx) qui arrivent apres le rendu initial
+function setupAsyncCallbacks(r,enrichPromise,ctxProm){
   enrichPromise.then(e=>{state.enrich=e;if(lastResult===r){applyGeoDyn(r);renderLocStats(r);renderEnrich(r);renderMap(r);}}).catch(()=>{state.enrich={};if(lastResult===r){renderEnrich(r);renderMap(r);}});
   ctxProm.then(c=>{state.ctx2=c||{};if(lastResult===r){patchDynReal(r);
-    // Q6 : loyer reel maintenant disponible -> recalcule et re-rend
     const _lr=getRentSqm(r);if(r.sqmBase&&_lr!==r.dyn.loyerM2){r.dyn.loyerM2=_lr;r.dyn.rendementMarche=+(_lr*12/r.sqmBase*100).toFixed(1);}
     updateBadges(r);computeAll(r);renderInsee(r);renderMarket(r);renderContext(r);}}).catch(()=>{state.ctx2={};if(lastResult===r)renderContext(r);});
   setShimmer("enrichPanel");setShimmer("contextPanel");
+}
+// Orchestrateur principal : validation -> fetch -> estimation -> rendu -> async
+async function showResults(){
+  const err=$("formErr");const surface=state.type==="terrain"?numv("terrain"):numv("surface");
+  if(!($("adresse").value||"").trim()){err.textContent="Saisissez l'adresse du bien, puis choisissez une suggestion.";err.classList.add("show");$("adresse").focus();return;}
+  if(!surface||surface<=0){err.textContent="Renseignez une surface valide.";err.classList.add("show");return;}
+  err.classList.remove("show");
+  const btn=$("btnEstim");const oldTxt=btn.textContent;btn.textContent="Recherche des ventes r\u00e9elles\u2026";btn.disabled=true;
+  const coord=await geocode();dbg("Coordonnees BAN: "+JSON.stringify(coord));
+  const data=await fetchAllData(coord);
+  btn.textContent=oldTxt;btn.disabled=false;
+  const {r,_conf,realBase,diag}=buildEstimation(data);
+  renderAllPanels(r,_conf,realBase,diag);
+  setupAsyncCallbacks(r,data.enrichPromise,data.ctxProm);
   $("results").classList.add("show");
   $("results").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth",block:"start"});
 }
