@@ -1128,15 +1128,84 @@ function estimationEngines(pts,surf,stats){
   let sw=0,swp=0,sw2=0;used.forEach(x=>{const w=x.s/100;sw+=w;swp+=w*x.p.ppm;sw2+=w*w;});
   const e1=sw>0?swp/sw:stats.med,nEff=sw>0?(sw*sw)/sw2:0;
   engines.push({key:"comp",label:"Comparables scor\u00e9s",ppm:Math.round(e1),w:Math.min(1,nEff/14),detail:keep.length+" ventes \u226570/100"});
-  // E2 : regression statistique OLS (surface -> prix)
+  // E2 : regression statistique multiple (surface + nombre de pieces -> prix), moindres carres.
+  // Le DVF fournit nbpprinc par vente : ajouter les pieces capte le decoupage (a surface egale,
+  // un T2 et un T3 n'ont pas le meme prix). Repli automatique sur surface seule si pieces absentes.
   let n=clean.length,sx=0,sy=0,sxx=0,sxy=0;clean.forEach(p=>{const x=p.surf,y=p.price||p.ppm*p.surf;sx+=x;sy+=y;sxx+=x*x;sxy+=x*y;});
-  const den=n*sxx-sx*sx;
-  if(den!==0){const slope=(n*sxy-sx*sy)/den,intc=(sy-slope*sx)/n,pred=slope*surf+intc;if(pred>0){const ybar=sy/n;let ssr=0,sst=0;clean.forEach(p=>{const y=p.price||p.ppm*p.surf,yh=slope*p.surf+intc;ssr+=(y-yh)*(y-yh);sst+=(y-ybar)*(y-ybar);});const r2=sst>0?Math.max(0,1-ssr/sst):0;engines.push({key:"reg",label:"R\u00e9gression statistique",ppm:Math.round(pred/surf),w:r2*Math.min(1,n/30),detail:"R\u00b2 "+r2.toFixed(2)});}}
+  const den=n*sxx-sx*sx;let slopeReg=null,intcReg=null;
+  // Regression simple (surface) : base pour le repli ET pour enginePerf (R8)
+  if(den!==0){slopeReg=(n*sxy-sx*sy)/den;intcReg=(sy-slopeReg*sx)/n;}
+  const withRooms=clean.filter(p=>p.rooms>0),subjPcs=+state.pieces||0;
+  let regDone=false;
+  if(subjPcs>0&&withRooms.length>=20&&den!==0){
+    // Equations normales 3x3 : y = b0 + b1*surface + b2*pieces
+    let S1=0,Sx=0,Sr=0,Sxx=0,Srr=0,Sxr=0,Sy=0,Sxy2=0,Sry=0;
+    withRooms.forEach(p=>{const x=p.surf,r=p.rooms,y=p.price||p.ppm*p.surf;
+      S1++;Sx+=x;Sr+=r;Sxx+=x*x;Srr+=r*r;Sxr+=x*r;Sy+=y;Sxy2+=x*y;Sry+=r*y;});
+    // Resolution par la regle de Cramer (matrice 3x3 symetrique)
+    const A=[[S1,Sx,Sr],[Sx,Sxx,Sxr],[Sr,Sxr,Srr]],Bv=[Sy,Sxy2,Sry];
+    const det3=(m)=>m[0][0]*(m[1][1]*m[2][2]-m[1][2]*m[2][1])-m[0][1]*(m[1][0]*m[2][2]-m[1][2]*m[2][0])+m[0][2]*(m[1][0]*m[2][1]-m[1][1]*m[2][0]);
+    const D=det3(A);
+    if(Math.abs(D)>1e-6){
+      const col=(m,c,v)=>m.map((row,i)=>row.map((x,j)=>j===c?v[i]:x));
+      const b0=det3(col(A,0,Bv))/D,b1=det3(col(A,1,Bv))/D,b2=det3(col(A,2,Bv))/D;
+      const pred=b0+b1*surf+b2*subjPcs;
+      if(pred>0){
+        const ybar=Sy/S1;let ssr=0,sst=0;
+        withRooms.forEach(p=>{const y=p.price||p.ppm*p.surf,yh=b0+b1*p.surf+b2*p.rooms;ssr+=(y-yh)*(y-yh);sst+=(y-ybar)*(y-ybar);});
+        const r2=sst>0?Math.max(0,1-ssr/sst):0;
+        engines.push({key:"reg",label:"R\u00e9gression (surface + pi\u00e8ces)",ppm:Math.round(pred/surf),w:r2*Math.min(1,withRooms.length/30),detail:"R\u00b2 "+r2.toFixed(2)+" \u00b7 2 variables"});
+        regDone=true;
+      }
+    }
+  }
+  // Repli : regression simple surface -> prix
+  if(!regDone&&den!==0&&slopeReg!=null){const pred=slopeReg*surf+intcReg;if(pred>0){const ybar=sy/n;let ssr=0,sst=0;clean.forEach(p=>{const y=p.price||p.ppm*p.surf,yh=slopeReg*p.surf+intcReg;ssr+=(y-yh)*(y-yh);sst+=(y-ybar)*(y-ybar);});const r2=sst>0?Math.max(0,1-ssr/sst):0;engines.push({key:"reg",label:"R\u00e9gression statistique",ppm:Math.round(pred/surf),w:r2*Math.min(1,n/30),detail:"R\u00b2 "+r2.toFixed(2)});}}
   // E3 : mediane ponderee par la recence (robuste)
   engines.push({key:"rec",label:"M\u00e9diane (r\u00e9cence)",ppm:Math.round(stats.west||stats.med),w:0.5,detail:"robuste"});
+  // R8 : ponderation par performance LOCALE mesuree. Chaque methode (comparables, regression,
+  // mediane-recence) predit un echantillon de ventes recentes en leave-one-out ; son erreur mediane
+  // (MdAPE) module son poids : l'estimateur le plus fiable DANS CE SECTEUR pese davantage.
+  const perf=enginePerf(clean,surf,slopeReg,intcReg);
+  if(perf){
+    engines.forEach(e=>{const mape=perf[e.key];
+      if(mape!=null){
+        // facteur 1.35 (excellent, MdAPE<=5%) -> 0.55 (faible, MdAPE>=25%), borne
+        const f=Math.max(0.55,Math.min(1.35,1.35-(mape-0.05)*(0.80/0.20)));
+        e.w*=f;e.perf=+(mape*100).toFixed(1);
+      }
+    });
+  }
   let W=0,B=0;engines.forEach(e=>{W+=e.w;B+=e.w*e.ppm;});
   const base=W>0?Math.round(B/W):Math.round(stats.med);
-  return{base,engines,nEff,top:scored.slice(0,6).map(x=>Object.assign({},x.p,{score:Math.round(x.s)}))};
+  return{base,engines,nEff,top:scored.slice(0,6).map(x=>Object.assign({},x.p,{score:Math.round(x.s)})),perf:perf||null};
+}
+// R8 : mesure l'erreur locale (MdAPE) de chaque estimateur de base par validation croisee
+// leave-one-out sur un echantillon de ventes recentes. Retourne {comp,reg,rec} en fraction, ou null.
+function enginePerf(clean,subjSurf,slope,intc){
+  if(!clean||clean.length<20)return null;
+  const year=new Date().getFullYear();
+  const yr=p=>p.date?+String(p.date).slice(0,4):year;
+  const sample=[...clean].sort((a,b)=>yr(b)-yr(a)).slice(0,80);
+  const eComp=[],eReg=[],eRec=[];
+  sample.forEach(t=>{
+    const others=clean.filter(p=>p!==t);
+    // Comparables : moyenne ponderee similarite surface+recence (meme noyau que E1)
+    let sw=0,swp=0,swr=0,swpr=0;
+    others.forEach(p=>{
+      const sr=Math.log((p.surf||subjSurf)/t.surf),ss=Math.exp(-(sr*sr)/(2*0.20*0.20));
+      const age=Math.max(0,year-yr(p)),rs=Math.exp(-age/4.5);
+      const sc=0.55*ss+0.35*rs+0.10;if(sc>=0.70){sw+=sc;swp+=sc*p.ppm;}
+      swr+=rs;swpr+=rs*p.ppm; // recence seule
+    });
+    if(sw>0)eComp.push(Math.abs(swp/sw-t.ppm)/t.ppm);
+    if(swr>0)eRec.push(Math.abs(swpr/swr-t.ppm)/t.ppm);
+    // Regression : reutilise la pente globale (retrait d'un point negligeable a n>=20)
+    if(slope!=null&&intc!=null){const pv=(slope*t.surf+intc)/t.surf;if(pv>0)eReg.push(Math.abs(pv-t.ppm)/t.ppm);}
+  });
+  const md=a=>{if(a.length<10)return null;a.sort((x,y)=>x-y);return a[a.length>>1];};
+  const out={comp:md(eComp),reg:md(eReg),rec:md(eRec)};
+  return(out.comp!=null||out.reg!=null||out.rec!=null)?out:null;
 }
 // Q1 : backtest leave-one-out \u2014 mesure l'erreur REELLE du moteur sur les ventes du secteur.
 // Chaque vente recente est predite par les autres (meme noyau surface+recence que E1) ;
@@ -1266,7 +1335,12 @@ function coefficients(ctx){const rows=[];let m=1;let detail=0;
   const stMap={standard:[0,"Standard"],bon:[0.03,"Bonnes prestations"],haut:[0.07,"Haut standing"]};
   let [sv,sl]=stMap[$("standing").value];if(sv>0){const stTier=premium?1.3:tier==="modeste"?0.5:1;sv*=stTier;}if(sv){m*=(1+sv);rows.push([sl,sv]);detail++;}
   const epMap={avant1948:[0.01,"Avant 1948"],"1949_1974":[-0.02,"1949\u20131974"],"1975_2000":[0,"1975\u20132000"],apres2000:[0.03,"Apr\u00e8s 2000"],neuf:[0.06,"Neuf"]};
-  let [ev2,el2]=epMap[$("epoque").value];if(ev2){m*=(1+ev2);rows.push([el2,ev2]);}detail++;
+  let [ev2,el2]=epMap[$("epoque").value];
+  // Anti-double comptage : un bien deja marque "neuf/refait" en etat porte deja sa prime de modernite ;
+  // la prime d'epoque "Neuf" ferait double emploi -> neutralisee. Idem "renove" + "apres2000/neuf".
+  if($("epoque").value==="neuf"&&(etatKey==="neuf"||etatKey==="renove"))ev2=0;
+  else if($("epoque").value==="apres2000"&&etatKey==="neuf")ev2=0.01;
+  if(ev2){m*=(1+ev2);rows.push([el2,ev2]);}detail++;
   if(numv("sdb")>=2){m*=1.01;rows.push(["Plusieurs salles d'eau",0.01]);}
   if(numv("wcSep")>=1){m*=1.005;rows.push(["WC s\u00e9par\u00e9",0.005]);}
   if(state.type==="maison"){
@@ -1406,6 +1480,9 @@ function renderInsee(r){const d=r.dyn;const sign=x=>(x>=0?"+":"")+x;
     ["Logement social (RPLS)",(function(){const rp=(state.ctx2||{}).rpls;if(!rp||!rp.social)return na;const tx=popReal&&d.logements>0?Math.round(rp.social/d.logements*100):null;return eur0(rp.social)+" logts"+(tx!=null?" \u00b7 "+tx+" %":"")+rb;})()],
     ["Logements vacants",na],
     ["Couverture fibre (FTTH)",(function(){const fb=(state.ctx2||{}).fibre;if(!fb||fb.ftth==null)return na;return fb.ftth+" % des locaux"+rb;})()],
+    ["D\u00e9linquance (SSMSI)",(function(){const cr=(state.ctx2||{}).crime;if(!cr||cr.tx==null)return na;
+      let cmp="";if(cr.depTx>0){const rel=Math.round((cr.tx/cr.depTx-1)*100);const col=rel<=-15?"var(--good)":rel>=15?"var(--bad)":"var(--ink-soft)";cmp=' <span style="font-size:10px;color:'+col+'">('+(rel>=0?"+":"")+rel+" % vs d\u00e9p. "+cr.dep+")</span>";}
+      return cr.tx.toFixed(1).replace('.',',')+" \u2030 /an"+cmp+rb;})()],
     ["R\u00e9sidences secondaires",na]
   ];
   $("inseeStats").innerHTML=stats.map(([l,v])=>`<div class="stat"><span class="sl">${l}</span><span class="sv num">${v}</span></div>`).join("");
@@ -1474,15 +1551,61 @@ function renderPriceHistory(r){
   const ys=Object.keys(byY).map(Number).filter(y=>byY[y].length>=6).sort((a,b)=>a-b);
   if(ys.length<3)return;
   const med=a=>{const s=[...a].sort((x,z)=>x-z);return s[s.length>>1];};
-  const pts=ys.map(y=>({y,v:med(byY[y])}));
-  const vmin=Math.min.apply(null,pts.map(p=>p.v)),vmax=Math.max.apply(null,pts.map(p=>p.v)),pad=(vmax-vmin)*0.15||vmax*0.05;
-  const X=i=>6+i/(pts.length-1)*88,Y=v=>44-((v-(vmin-pad))/((vmax+pad)-(vmin-pad)))*36;
-  const line=pts.map((p,i)=>(i?"L":"M")+X(i).toFixed(1)+" "+Y(p.v).toFixed(1)).join(" ");
-  const dots=pts.map((p,i)=>'<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(p.v).toFixed(1)+'" r="1.6" fill="var(--brand-dark)"/>').join("");
+  // Par annee : mediane, volume, min/max (pour tooltip enrichi)
+  const pts=ys.map(y=>{const a=byY[y];return{y,v:med(a),n:a.length,lo:Math.min.apply(null,a),hi:Math.max.apply(null,a)};});
+  const vmin=Math.min.apply(null,pts.map(p=>p.v)),vmax=Math.max.apply(null,pts.map(p=>p.v)),pad=(vmax-vmin)*0.2||vmax*0.06;
+  const y0=vmin-pad,y1=vmax+pad,W=100,H=52,mL=1,mR=1,mT=4,mB=10;
+  const X=i=>mL+i/(pts.length-1)*(W-mL-mR),Y=v=>mT+(1-(v-y0)/(y1-y0))*(H-mT-mB);
+  const line=pts.map((p,i)=>(i?"L":"M")+X(i).toFixed(2)+" "+Y(p.v).toFixed(2)).join(" ");
+  const area=line+" L"+X(pts.length-1).toFixed(2)+" "+(H-mB)+" L"+X(0).toFixed(2)+" "+(H-mB)+" Z";
+  // Lignes de grille horizontales (3 niveaux) + labels prix
+  let grid="",ylab="";[0,0.5,1].forEach(f=>{const v=y0+(y1-y0)*f,gy=Y(v).toFixed(2);grid+='<line x1="'+mL+'" y1="'+gy+'" x2="'+(W-mR)+'" y2="'+gy+'" stroke="var(--line)" stroke-width="0.3"/>';});
+  const dots=pts.map((p,i)=>'<circle cx="'+X(i).toFixed(2)+'" cy="'+Y(p.v).toFixed(2)+'" r="1.7" fill="#fff" stroke="var(--brand-dark)" stroke-width="1.2" class="phDot" data-i="'+i+'"/>').join("");
   const first=pts[0],last=pts[pts.length-1],evo=Math.round((last.v/first.v-1)*100);
+  const totalV=pts.reduce((s,p)=>s+p.n,0);
+  // Tendance annualisee (CAGR) sur la periode
+  const nyr=last.y-first.y,cagr=nyr>0?((Math.pow(last.v/first.v,1/nyr)-1)*100):0;
+  const barW=Math.min(6,(W-mL-mR)/pts.length*0.5),vmaxN=Math.max.apply(null,pts.map(p=>p.n));
+  const bars=pts.map((p,i)=>{const bh=(p.n/vmaxN)*6,bx=X(i)-barW/2,by=H-mB-bh;return '<rect x="'+bx.toFixed(2)+'" y="'+by.toFixed(2)+'" width="'+barW.toFixed(2)+'" height="'+bh.toFixed(2)+'" fill="var(--brand)" opacity="0.18" rx="0.4"/>';}).join("");
   const d=document.createElement("div");d.id="priceHistory";
-  d.innerHTML='<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:11.5px;font-weight:800;color:var(--ink)">\u00c9volution du prix m\u00e9dian /m\u00b2 <span style="color:var(--brand-dark);font-weight:700;font-size:9px">r\u00e9el</span></span><span class="num" style="font-size:11px;font-weight:800;color:'+(evo>=0?"var(--good)":"var(--bad)")+'">'+(evo>=0?"+":"")+evo+' % sur '+(last.y-first.y)+' ans</span></div><svg viewBox="0 0 100 50" style="width:100%;height:64px;margin-top:4px" preserveAspectRatio="none"><path d="'+line+'" fill="none" stroke="var(--brand-dark)" stroke-width="1.6" vector-effect="non-scaling-stroke"/>'+dots+'</svg><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--ink-soft)"><span>'+first.y+' \u00b7 '+eur0(first.v)+' \u20ac/m\u00b2</span><span>'+last.y+' \u00b7 '+eur0(last.v)+' \u20ac/m\u00b2</span></div><div class="hint" style="margin-top:3px">M\u00e9diane annuelle des ventes DVF du secteur (ann\u00e9es d\u2019au moins 6 ventes).</div></div>';
+  const dataJson=JSON.stringify(pts).replace(/"/g,"&quot;");
+  d.innerHTML='<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">'+
+    '<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:11.5px;font-weight:800;color:var(--ink)">\u00c9volution du prix m\u00e9dian /m\u00b2 <span style="color:var(--brand-dark);font-weight:700;font-size:9px">r\u00e9el</span></span><span class="num" style="font-size:11px;font-weight:800;color:'+(evo>=0?"var(--good)":"var(--bad)")+'">'+(evo>=0?"+":"")+evo+' % sur '+nyr+' ans</span></div>'+
+    '<div style="position:relative"><svg id="phSvg" viewBox="0 0 100 52" style="width:100%;height:118px;margin-top:6px;overflow:visible;touch-action:none" preserveAspectRatio="none" data-pts="'+dataJson+'">'+
+      grid+bars+
+      '<path d="'+area+'" fill="var(--brand)" opacity="0.10"/>'+
+      '<path d="'+line+'" fill="none" stroke="var(--brand-dark)" stroke-width="1.6" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>'+
+      dots+
+      '<line id="phCursor" x1="0" y1="'+mT+'" x2="0" y2="'+(H-mB)+'" stroke="var(--brand-dark)" stroke-width="0.5" stroke-dasharray="1.5 1.5" style="display:none"/>'+
+    '</svg><div id="phTip" style="position:absolute;display:none;pointer-events:none;background:var(--ink);color:#fff;font-size:10px;font-weight:600;padding:5px 8px;border-radius:7px;white-space:nowrap;box-shadow:0 3px 10px rgba(0,0,0,.25);z-index:5;transform:translate(-50%,-115%)"></div></div>'+
+    '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--ink-soft);margin-top:2px"><span>'+first.y+'</span><span>'+last.y+'</span></div>'+
+    '<div style="display:flex;gap:6px;margin-top:8px">'+
+      '<div style="flex:1;background:var(--bg);border-radius:8px;padding:6px 8px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase">Tendance /an</div><div class="num" style="font-size:13px;font-weight:800;color:'+(cagr>=0?"var(--good)":"var(--bad)")+'">'+(cagr>=0?"+":"")+cagr.toFixed(1)+' %</div></div>'+
+      '<div style="flex:1;background:var(--bg);border-radius:8px;padding:6px 8px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase">Actuel</div><div class="num" style="font-size:13px;font-weight:800;color:var(--ink)">'+eur0(last.v)+'</div></div>'+
+      '<div style="flex:1;background:var(--bg);border-radius:8px;padding:6px 8px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase">Ventes</div><div class="num" style="font-size:13px;font-weight:800;color:var(--ink)">'+totalV+'</div></div>'+
+    '</div>'+
+    '<div class="hint" style="margin-top:6px">M\u00e9diane annuelle des ventes DVF (barres claires = volume). Survolez ou touchez la courbe pour le d\u00e9tail par ann\u00e9e.</div></div>';
   box.appendChild(d);
+  // Interactivite : tooltip au survol/toucher
+  const svg=$("phSvg"),tip=$("phTip"),cur=$("phCursor");
+  if(svg&&tip){
+    const data=pts,cont=svg.parentElement;
+    const show=(clientX)=>{
+      const rect=svg.getBoundingClientRect();let fx=(clientX-rect.left)/rect.width;fx=Math.max(0,Math.min(1,fx));
+      const idx=Math.round(fx*(data.length-1)),p=data[idx];
+      const cx=X(idx),cy=Y(p.v);
+      cur.setAttribute("x1",cx);cur.setAttribute("x2",cx);cur.style.display="";
+      tip.style.display="";tip.style.left=(cx/100*rect.width)+"px";tip.style.top=((cy/52)*rect.height)+"px";
+      tip.innerHTML='<b>'+p.y+'</b> \u00b7 '+eur0(p.v)+' \u20ac/m\u00b2<br><span style="opacity:.8;font-weight:400">'+p.n+' ventes \u00b7 '+eur0(p.lo)+'\u2013'+eur0(p.hi)+'</span>';
+    };
+    const hide=()=>{tip.style.display="none";cur.style.display="none";};
+    svg.addEventListener("mousemove",e=>show(e.clientX));
+    svg.addEventListener("mouseleave",hide);
+    svg.addEventListener("touchstart",e=>{if(e.touches[0])show(e.touches[0].clientX);},{passive:true});
+    svg.addEventListener("touchmove",e=>{if(e.touches[0])show(e.touches[0].clientX);},{passive:true});
+    svg.addEventListener("touchend",hide);
+  }
+
 }
 function renderDvfStats(r){
   const box=$("dvfStats");
@@ -1594,17 +1717,17 @@ function updRentVsMkt(){
   // Badge du loyer saisi : ancrage horizontal borne (evite le debordement aux extremes)
   const badgePos=Math.max(9,Math.min(91,pos));
   el.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:4px;padding:9px 11px;background:var(--bg);border-radius:10px"><div><div style="font-size:10px;color:var(--ink-soft);text-transform:uppercase">Loyer de march\u00e9</div><div class="num" style="font-size:16px;font-weight:800;color:var(--ink)">${eur0(mkt)} \u20ac<span style="font-size:11px;color:var(--ink-soft);font-weight:600"> /mois</span></div><div style="font-size:10px;color:var(--ink-soft)">${state.mktRentSqm.toFixed(1).replace('.',',')} \u20ac/m\u00b2/mois</div></div><div style="text-align:right"><div style="font-size:10px;color:var(--ink-soft);text-transform:uppercase">\u00c9cart</div><div class="num" style="font-size:16px;font-weight:800;color:${gcol}">${diff>0?"+":""}${diff} %</div><div style="font-size:10px;color:${gcol}">${diff===0?"au niveau du march\u00e9":diff>0?"au-dessus":"sous le march\u00e9"}</div></div></div>`+
-   `<div style="position:relative;height:40px;margin:14px 0 4px">`+
-     `<div style="position:absolute;top:20px;left:0;right:0;height:8px;border-radius:5px;background:var(--line)"></div>`+
-     `<div style="position:absolute;top:20px;left:${zL}%;width:${Math.max(0,zR-zL)}%;height:8px;border-radius:5px;background:rgba(15,179,158,.35)"></div>`+
-     `<div style="position:absolute;top:15px;left:50%;width:2px;height:18px;background:var(--ink-soft);transform:translateX(-50%)"></div>`+
-     `<div style="position:absolute;top:18px;left:${q1}%;width:1.5px;height:12px;background:var(--ink-soft);opacity:.55;transform:translateX(-50%)"></div>`+
-     `<div style="position:absolute;top:18px;left:${q3}%;width:1.5px;height:12px;background:var(--ink-soft);opacity:.55;transform:translateX(-50%)"></div>`+
-     `<div style="position:absolute;top:-4px;left:${badgePos}%;transform:translateX(-50%);background:var(--brand-dark);color:#fff;font-size:9.5px;font-weight:800;padding:2px 6px;border-radius:6px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.25)">Votre loyer&#160;: ${eur0(ent)} \u20ac</div>`+
-     `<div style="position:absolute;top:14px;left:${badgePos}%;width:2px;height:20px;background:var(--brand-dark);transform:translateX(-50%)"></div>`+
+   `<div style="position:relative;height:52px;margin:10px 0 2px">`+
+     `<div style="position:absolute;top:0;left:${badgePos}%;transform:translateX(-50%);background:var(--brand-dark);color:#fff;font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:6px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.25);z-index:2">Votre loyer&#160;: ${eur0(ent)} \u20ac</div>`+
+     `<div style="position:absolute;top:17px;left:${badgePos}%;width:2px;height:22px;background:var(--brand-dark);transform:translateX(-50%);z-index:2"></div>`+
+     `<div style="position:absolute;top:32px;left:0;right:0;height:8px;border-radius:5px;background:var(--line)"></div>`+
+     `<div style="position:absolute;top:32px;left:${zL}%;width:${Math.max(0,zR-zL)}%;height:8px;border-radius:5px;background:rgba(15,179,158,.35)"></div>`+
+     `<div style="position:absolute;top:28px;left:50%;width:2px;height:16px;background:var(--ink-soft);transform:translateX(-50%)"></div>`+
+     `<div style="position:absolute;top:30px;left:${q1}%;width:1.5px;height:12px;background:var(--ink-soft);opacity:.55;transform:translateX(-50%)"></div>`+
+     `<div style="position:absolute;top:30px;left:${q3}%;width:1.5px;height:12px;background:var(--ink-soft);opacity:.55;transform:translateX(-50%)"></div>`+
    `</div>`+
-   `<div style="position:relative;height:13px;font-size:9.5px;color:var(--ink-soft)"><span style="position:absolute;left:${q1}%;transform:translateX(-50%);white-space:nowrap">${eur0(mkt*0.9)}</span><span style="position:absolute;left:50%;transform:translateX(-50%);font-weight:800;color:var(--ink);white-space:nowrap">m\u00e9diane ${eur0(mkt)}</span><span style="position:absolute;left:${q3}%;transform:translateX(-50%);white-space:nowrap">${eur0(mkt*1.1)}</span></div>`+
-   `<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--ink-soft);margin-top:3px"><span>\u221230 %</span><span style="color:#0a8f7e;font-weight:700">fourchette type des loyers (\u00b110 %)</span><span>+30 %</span></div>`;
+   `<div style="position:relative;height:14px;font-size:9.5px;color:var(--ink-soft)"><span style="position:absolute;left:${q1}%;transform:translateX(-50%);white-space:nowrap">${eur0(mkt*0.9)}</span>${Math.abs(pos-50)<11?"":`<span style="position:absolute;left:50%;transform:translateX(-50%);font-weight:800;color:var(--ink);white-space:nowrap">m\u00e9diane ${eur0(mkt)}</span>`}<span style="position:absolute;left:${q3}%;transform:translateX(-50%);white-space:nowrap">${eur0(mkt*1.1)}</span></div>`+
+   `<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--ink-soft);margin-top:4px"><span>\u221230 %</span><span style="color:#0a8f7e;font-weight:700">fourchette type (\u00b110 %)</span><span>+30 %</span></div>`;
 }
 
 /* ===== Vague 6 : dispositifs de defiscalisation (Pinel, Denormandie, Malraux, MH, holding) ===== */
@@ -1839,13 +1962,39 @@ async function provFibre(insee){
     return tx>=0&&tx<=100?{ftth:tx}:null;
   }catch(_){return null;}
 }
+// SSMSI - delinquance enregistree (base communale + departementale, data.gouv/opendatasoft, sans cle).
+// Taux pour 1000 hab. cumule sur les principaux indicateurs, annee la plus recente. Le taux communal
+// est compare au taux DEPARTEMENTAL (meme source, meme methode) pour donner un effet relatif fiable.
+async function provCrime(insee){
+  if(!insee||insee.length<2)return null;
+  const dep=insee.slice(0,2)==="97"?insee.slice(0,3):insee.slice(0,2);
+  const base="https://public.opendatasoft.com/api/explore/v2.1/catalog/datasets/donnees-de-delinquance-enregistree-par-la-police-et-la-gendarmerie-communes/records";
+  const sumRate=async(where)=>{
+    try{const u=base+"?where="+encodeURIComponent(where)+"&select=annee%2Ctaux_pour_mille&order_by=annee%20desc&limit=60";
+      const d=await dvfFetch(u);const rows=(d&&d.json&&d.json.results)||[];
+      if(!rows.length)return null;
+      const yr=Math.max.apply(null,rows.map(r=>+r.annee||0));
+      const s=rows.filter(r=>+r.annee===yr&&r.taux_pour_mille!=null).reduce((a,r)=>a+ +r.taux_pour_mille,0);
+      return s>0?{tx:+s.toFixed(1),year:yr}:null;
+    }catch(_){return null;}
+  };
+  const com=await sumRate('code_commune="'+insee+'"');
+  if(!com)return null;
+  // Reference departementale : moyenne des communes du departement (meme annee)
+  let depTx=null;
+  try{const u=base+'?where=code_commune%20like%20"'+dep+'%25"%20and%20annee%3D'+com.year+'&select=avg(taux_pour_mille)%20as%20m&limit=1';
+    const d=await dvfFetch(u);const r=(d&&d.json&&d.json.results&&d.json.results[0]);
+    if(r&&r.m!=null)depTx=+(+r.m).toFixed(1);
+  }catch(_){}
+  return{tx:com.tx,year:com.year,depTx:depTx,dep:dep};
+}
 // Orchestrateur : tous les fournisseurs en parallele, echecs isoles (allSettled). Renvoie ctx2.
 async function fetchContextProviders(coord){
   if(!coord)return{};
-  const res=await Promise.allSettled([provDemo(coord.insee),provEntreprises(coord.insee),provPlu(coord),provBruit(coord),provPermis(coord.insee),provFilosofi(coord.insee),provLoyers(coord.insee,state.type),provRPLS(coord.insee),provFibre(coord.insee)]);
+  const res=await Promise.allSettled([provDemo(coord.insee),provEntreprises(coord.insee),provPlu(coord),provBruit(coord),provPermis(coord.insee),provFilosofi(coord.insee),provLoyers(coord.insee,state.type),provRPLS(coord.insee),provFibre(coord.insee),provCrime(coord.insee)]);
   const v=i=>res[i]&&res[i].status==="fulfilled"?res[i].value:null;
-  const ctx={},iris=v(0),ent=v(1),plu=v(2),br=v(3),pm=v(4),filo=v(5),loy=v(6),rpls=v(7),fib=v(8);
-  if(iris)ctx.iris=iris;if(ent)ctx.sirene=ent;if(plu)ctx.plu=plu;if(br)ctx.bruit=br;if(pm)ctx.permis=pm;if(filo)ctx.filosofi=filo;if(loy)ctx.loyers=loy;if(rpls)ctx.rpls=rpls;if(fib)ctx.fibre=fib;
+  const ctx={},iris=v(0),ent=v(1),plu=v(2),br=v(3),pm=v(4),filo=v(5),loy=v(6),rpls=v(7),fib=v(8),crime=v(9);
+  if(iris)ctx.iris=iris;if(ent)ctx.sirene=ent;if(plu)ctx.plu=plu;if(br)ctx.bruit=br;if(pm)ctx.permis=pm;if(filo)ctx.filosofi=filo;if(loy)ctx.loyers=loy;if(rpls)ctx.rpls=rpls;if(fib)ctx.fibre=fib;if(crime)ctx.crime=crime;
   return ctx;
 }
 // ===== Reconciliation ChatGPT x Grok \u2014 W1 : socle contextuel (additif, ZERO impact prix) =====
@@ -2033,7 +2182,7 @@ function renderEngines(r){
   const el=$("enginesPanel");if(!el)return;
   const eng=r.engines||[];if(!eng.length){el.innerHTML='<div class="hint">Estimation par d\u00e9faut : donn\u00e9es DVF insuffisantes pour le multi-mod\u00e8les.</div>';return;}
   const tot=eng.reduce((s,x)=>s+x.w,0)||1;
-  const rows=eng.map(e=>{const wp=Math.round(e.w/tot*100);return `<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:12.5px;font-weight:700;color:var(--ink)">${e.label}</span><span class="num" style="font-size:14px;font-weight:800;color:var(--ink)">${eur0(e.ppm)} \u20ac/m\u00b2</span></div><div style="display:flex;align-items:center;gap:8px;margin-top:4px"><div style="flex:1;height:7px;border-radius:5px;background:var(--line);overflow:hidden"><div style="height:100%;width:${wp}%;background:var(--brand-dark)"></div></div><span style="font-size:10.5px;color:var(--ink-soft);min-width:88px;text-align:right">poids ${wp}% \u00b7 ${e.detail}</span></div></div>`;}).join("");
+  const rows=eng.map(e=>{const wp=Math.round(e.w/tot*100);const perfTxt=e.perf!=null?" \u00b7 erreur locale \u00b1"+e.perf+"%":"";return `<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:12.5px;font-weight:700;color:var(--ink)">${e.label}</span><span class="num" style="font-size:14px;font-weight:800;color:var(--ink)">${eur0(e.ppm)} \u20ac/m\u00b2</span></div><div style="display:flex;align-items:center;gap:8px;margin-top:4px"><div style="flex:1;height:7px;border-radius:5px;background:var(--line);overflow:hidden"><div style="height:100%;width:${wp}%;background:var(--brand-dark)"></div></div><span style="font-size:10.5px;color:var(--ink-soft);min-width:88px;text-align:right">poids ${wp}% \u00b7 ${e.detail}</span></div>${perfTxt?`<div style="font-size:10px;color:var(--brand-dark);margin-top:2px;text-align:right">${perfTxt.replace(' \u00b7 ','')}</div>`:""}</div>`;}).join("");
   el.innerHTML=rows+
     `<div style="margin-top:6px;display:flex;justify-content:space-between;align-items:center;padding:11px 13px;background:var(--brand-tint);border-radius:11px"><div><div style="font-size:11px;color:var(--ink-soft);text-transform:uppercase;font-weight:700">Base retenue (moyenne pond\u00e9r\u00e9e)</div><div style="font-size:10.5px;color:var(--ink-soft)">avant ajustements propres au bien</div></div><div class="num" style="font-size:18px;font-weight:800;color:var(--brand-dark)">${eur0(r.engineBase||r.sqmBase)} \u20ac/m\u00b2</div></div>`+
     `<div class="hint" style="margin-top:8px">Moteurs ind\u00e9pendants (comparables scor\u00e9s, r\u00e9gression statistique, m\u00e9diane pond\u00e9r\u00e9e par la r\u00e9cence) combin\u00e9s par leur niveau de confiance. Le moteur h\u00e9donique (caract\u00e9ristiques), les indices qualit\u00e9/raret\u00e9 et la dynamique de march\u00e9 personnalisent ensuite cette base. Indicatif.</div>`;
