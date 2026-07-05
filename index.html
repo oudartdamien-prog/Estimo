@@ -556,6 +556,8 @@
       <div class="line-item"><span class="li-l">Charges de copro (non r&#233;cup.)</span><span class="li-input"><input class="num" id="iCopro" type="number" min="0" /></span></div>
       <div class="line-item"><span class="li-l">Assurance PNO</span><span class="li-input"><input class="num" id="iPno" type="number" min="0" /></span></div>
       <div class="line-item"><span class="li-l">Gestion + vacance + entretien</span><span class="li-input"><input class="num" id="iDivers" type="number" min="0" /></span></div>
+      <div class="line-item"><span class="li-l">Comptabilit&#233; (LMNP r&#233;el)</span><span class="li-input"><input class="num" id="iCompta" type="number" min="0" value="0" /></span></div>
+      <div class="line-item"><span class="li-l">CFE (cotisation fonci&#232;re)</span><span class="li-input"><input class="num" id="iCfe" type="number" min="0" value="0" /></span></div>
       <div class="line-item total"><span>Total charges</span><span class="num" id="chargesTot">&#8212;</span></div>
 
       <div class="subhead">Financement <span class="opt">(d&#233;taill&#233;)</span></div>
@@ -1802,31 +1804,50 @@ function renderRentalDefaults(r){
   renderWorks();
 }
 function updRentVsMkt(){
-  const r=lastResult,el=$("rentVsMkt");if(!el)return;
-  if(!r||!state.mktRentSqm){el.innerHTML="";return;}
-  const mkt=Math.round(state.mktRentSqm*r.surface),ent=numv("iRent");
-  if(!ent||!mkt){el.innerHTML="";return;}
-  const diff=Math.round((ent/mkt-1)*100);
-  const tag=diff===0?'<b>au niveau du march\u00e9</b>':diff>0?`<b style="color:var(--warn)">+${diff} %</b> au-dessus du march\u00e9`:`<b style="color:var(--good)">${diff} %</b> sous le march\u00e9`;
-  const lo=mkt*0.7,hi=mkt*1.3,clamp=v=>Math.max(0,Math.min(100,v)),pos=clamp((ent-lo)/(hi-lo)*100);
+  const el=$("rentVsMkt");if(!el)return;
+  const rent=numv("iRent"),surf=(lastResult&&lastResult.surface)||numv("surface")||1;
+  const mktSqm=state.mktRentSqm||0;if(!mktSqm||!rent){el.innerHTML="";return;}
+  const mkt=Math.round(mktSqm*surf);const diff=mkt>0?Math.round((rent-mkt)/mkt*100):0;
+  const lo=mkt*0.7,hi=mkt*1.3,clamp=v=>Math.max(0,Math.min(100,v)),pos=clamp((rent-lo)/(hi-lo)*100);
   const zL=clamp((mkt*0.9-lo)/(hi-lo)*100),zR=clamp((mkt*1.1-lo)/(hi-lo)*100);
   const gcol=diff===0?"#0a8f7e":diff>0?"var(--warn)":"var(--good)";
-  // Q1/Q3 = bornes de la zone verte (+-10 %) -> ticks et labels parfaitement alignes
-  const q1=clamp((mkt*0.9-lo)/(hi-lo)*100),q3=clamp((mkt*1.1-lo)/(hi-lo)*100);
-  // Badge du loyer saisi : ancrage horizontal borne (evite le debordement aux extremes)
-  const badgePos=Math.max(9,Math.min(91,pos));
-  el.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:4px;padding:9px 11px;background:var(--bg);border-radius:10px"><div><div style="font-size:10px;color:var(--ink-soft);text-transform:uppercase">Loyer de march\u00e9</div><div class="num" style="font-size:16px;font-weight:800;color:var(--ink)">${eur0(mkt)} \u20ac<span style="font-size:11px;color:var(--ink-soft);font-weight:600"> /mois</span></div><div style="font-size:10px;color:var(--ink-soft)">${state.mktRentSqm.toFixed(1).replace('.',',')} \u20ac/m\u00b2/mois</div></div><div style="text-align:right"><div style="font-size:10px;color:var(--ink-soft);text-transform:uppercase">\u00c9cart</div><div class="num" style="font-size:16px;font-weight:800;color:${gcol}">${diff>0?"+":""}${diff} %</div><div style="font-size:10px;color:${gcol}">${diff===0?"au niveau du march\u00e9":diff>0?"au-dessus":"sous le march\u00e9"}</div></div></div>`+
-   `<div style="position:relative;height:52px;margin:10px 0 2px">`+
-     `<div style="position:absolute;top:0;left:${badgePos}%;transform:translateX(-50%);background:var(--brand-dark);color:#fff;font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:6px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.25);z-index:2">Votre loyer&#160;: ${eur0(ent)} \u20ac</div>`+
-     `<div style="position:absolute;top:17px;left:${badgePos}%;width:2px;height:22px;background:var(--brand-dark);transform:translateX(-50%);z-index:2"></div>`+
-     `<div style="position:absolute;top:32px;left:0;right:0;height:8px;border-radius:5px;background:var(--line)"></div>`+
-     `<div style="position:absolute;top:32px;left:${zL}%;width:${Math.max(0,zR-zL)}%;height:8px;border-radius:5px;background:rgba(15,179,158,.35)"></div>`+
-     `<div style="position:absolute;top:28px;left:50%;width:2px;height:16px;background:var(--ink-soft);transform:translateX(-50%)"></div>`+
-     `<div style="position:absolute;top:30px;left:${q1}%;width:1.5px;height:12px;background:var(--ink-soft);opacity:.55;transform:translateX(-50%)"></div>`+
-     `<div style="position:absolute;top:30px;left:${q3}%;width:1.5px;height:12px;background:var(--ink-soft);opacity:.55;transform:translateX(-50%)"></div>`+
-   `</div>`+
-   `<div style="position:relative;height:14px;font-size:9.5px;color:var(--ink-soft)"><span style="position:absolute;left:${q1}%;transform:translateX(-50%);white-space:nowrap">${eur0(mkt*0.9)}</span>${Math.abs(pos-50)<11?"":`<span style="position:absolute;left:50%;transform:translateX(-50%);font-weight:800;color:var(--ink);white-space:nowrap">m\u00e9diane ${eur0(mkt)}</span>`}<span style="position:absolute;left:${q3}%;transform:translateX(-50%);white-space:nowrap">${eur0(mkt*1.1)}</span></div>`+
-   `<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--ink-soft);margin-top:4px"><span>\u221230 %</span><span style="color:#0a8f7e;font-weight:700">fourchette type (\u00b110 %)</span><span>+30 %</span></div>`;
+  const q1=zL,q3=zR,badgePos=Math.max(9,Math.min(91,pos));
+  // Distribution des loyers DVF : si realPts disponibles, barres de repartition par tranche de prix/m2
+  let distHtml="";
+  if(lastResult&&lastResult.realPts&&lastResult.realPts.length>=20&&surf>0){
+    const rents=lastResult.realPts.filter(p=>p.ppm>0).map(p=>p.ppm*0.004);// approx loyer/m2 ~ 0.4% du prix/m2
+    if(rents.length>=20){
+      const bins=[0,0,0,0,0,0,0,0];const bmin=mkt*0.5/surf,bmax=mkt*1.5/surf,bw=(bmax-bmin)/8;
+      rents.forEach(r=>{const bi=Math.floor((r-bmin)/bw);if(bi>=0&&bi<8)bins[bi]++;});
+      const mx=Math.max(1,...bins);
+      distHtml='<div style="display:flex;align-items:flex-end;height:28px;gap:1px;margin:6px 0">';
+      for(let i=0;i<8;i++){const h=Math.max(2,bins[i]/mx*28);const v=bmin+i*bw;
+        const inZone=v>=mktSqm*0.9&&v<=mktSqm*1.1;
+        distHtml+='<div style="flex:1;height:'+h+'px;background:'+(inZone?'rgba(15,179,158,.4)':'var(--line)')+';border-radius:2px" title="'+Math.round(v*surf)+' - '+Math.round((v+bw)*surf)+' \u20ac : '+bins[i]+' biens"></div>';}
+      distHtml+='</div><div style="display:flex;justify-content:space-between;font-size:9px;color:var(--ink-soft)"><span>'+eur0(Math.round(bmin*surf))+'</span><span>'+eur0(Math.round(bmax*surf))+'</span></div>';
+    }
+  }
+  el.innerHTML=
+    '<div style="display:flex;gap:12px;margin-top:6px;padding:10px 12px;background:var(--bg);border-radius:10px">'+
+      '<div style="flex:1"><div style="font-size:10px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.5px">Loyer de march\u00e9</div><div class="num" style="font-size:18px;font-weight:800;color:var(--ink);margin-top:2px">'+eur0(mkt)+' \u20ac<span style="font-size:11px;color:var(--ink-soft);font-weight:500"> /mois</span></div><div style="font-size:10.5px;color:var(--ink-soft);margin-top:1px">'+mktSqm.toFixed(1).replace('.',',')+' \u20ac/m\u00b2/mois</div></div>'+
+      '<div style="flex:1;text-align:right"><div style="font-size:10px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.5px">\u00c9cart au march\u00e9</div><div class="num" style="font-size:18px;font-weight:800;color:'+gcol+';margin-top:2px">'+(diff>0?"+":"")+diff+' %</div><div style="font-size:10.5px;color:'+gcol+';margin-top:1px">'+(diff===0?"au niveau du march\u00e9":diff>0?"au-dessus du march\u00e9":"sous le march\u00e9")+'</div></div>'+
+    '</div>'+
+    distHtml+
+    '<div style="position:relative;height:54px;margin:10px 0 2px">'+
+      '<div style="position:absolute;top:0;left:'+badgePos+'%;transform:translateX(-50%);background:var(--brand-dark);color:#fff;font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:6px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.25);z-index:2">'+eur0(rent)+' \u20ac</div>'+
+      '<div style="position:absolute;top:17px;left:'+badgePos+'%;width:2px;height:22px;background:var(--brand-dark);transform:translateX(-50%);z-index:2"></div>'+
+      '<div style="position:absolute;top:32px;left:0;right:0;height:8px;border-radius:5px;background:var(--line)"></div>'+
+      '<div style="position:absolute;top:32px;left:'+zL+'%;width:'+Math.max(0,zR-zL)+'%;height:8px;border-radius:5px;background:rgba(15,179,158,.35)"></div>'+
+      '<div style="position:absolute;top:28px;left:50%;width:2px;height:16px;background:var(--ink-soft);transform:translateX(-50%)"></div>'+
+      '<div style="position:absolute;top:30px;left:'+q1+'%;width:1.5px;height:12px;background:var(--ink-soft);opacity:.55;transform:translateX(-50%)"></div>'+
+      '<div style="position:absolute;top:30px;left:'+q3+'%;width:1.5px;height:12px;background:var(--ink-soft);opacity:.55;transform:translateX(-50%)"></div>'+
+    '</div>'+
+    '<div style="position:relative;height:14px;font-size:9.5px;color:var(--ink-soft)">'+
+      '<span style="position:absolute;left:'+q1+'%;transform:translateX(-50%);white-space:nowrap">'+eur0(Math.round(mkt*0.9))+'</span>'+
+      (Math.abs(pos-50)>=12?'<span style="position:absolute;left:50%;transform:translateX(-50%);font-weight:800;color:var(--ink);white-space:nowrap">m\u00e9diane</span>':'')+
+      '<span style="position:absolute;left:'+q3+'%;transform:translateX(-50%);white-space:nowrap">'+eur0(Math.round(mkt*1.1))+'</span>'+
+    '</div>'+
+    '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--ink-soft);margin-top:4px"><span>\u221230 %</span><span style="color:#0a8f7e;font-weight:700">fourchette march\u00e9 (\u00b110 %)</span><span>+30 %</span></div>';
 }
 
 /* ===== Vague 6 : dispositifs de defiscalisation (Pinel, Denormandie, Malraux, MH, holding) ===== */
@@ -1883,7 +1904,7 @@ function renderFiscalCompare(r){
   const el=$("fiscalPanel");if(!el)return;
   const R=numv("iRent")*12,C=numv("iTaxe")+numv("iCopro")+numv("iPno")+numv("iDivers"),taux=numv("iTaux")/100,bp=numv("prixAchat")||r.price;
   const apport=numv("iApport"),coutTotal=bp+bp*notaireRate()+numv("iTravaux")+numv("iDossier")+numv("iGarantie");
-  const emprunt=Math.max(0,coutTotal-apport),I=emprunt*taux,ins=emprunt*(numv("iAssur")/100),amort=bp*0.85/30+700;
+  const emprunt=Math.max(0,coutTotal-apport),I=emprunt*taux,ins=emprunt*(numv("iAssur")/100),amort=state._amortTotal||(bp*0.85/30);
   const list=compareRegimes(R,C,I,ins,amort).sort((a,b)=>a.t-b.t);
   const best=list[0],worst=list[list.length-1],span=Math.max(1,worst.t-best.t),cur=$("regime")?$("regime").value:"",eco=worst.t-best.t;
   const fmt=v=>v<-0.5?"\u2212 "+eur0(-v):eur0(v);
@@ -2411,7 +2432,7 @@ function computeAll(r){
   } else eb.style.display="none";
 
   const bp=numv("prixAchat")||r.price;
-  const charges=numv("iTaxe")+numv("iCopro")+numv("iPno")+numv("iDivers");$("chargesTot").textContent=eur(charges);
+  const charges=numv("iTaxe")+numv("iCopro")+numv("iPno")+numv("iDivers")+numv("iCompta")+numv("iCfe");$("chargesTot").textContent=eur(charges);
   const ntxR=notaireRate();const notaire=bp*ntxR;$("notaireV").textContent=eur(notaire);
   $("notaireRate").textContent=`(${(ntxR*100).toFixed(1).replace('.',',')} % \u00b7 ${state.type==="terrain"?"terrain":state.neuf==="neuf"?"neuf":"ancien"}${state.type!=="terrain"&&state.neuf!=="neuf"?" d\u00e9pt "+depFromCP():""})`;
   const travaux=numv("iTravaux");
@@ -2434,7 +2455,14 @@ function computeAll(r){
   const reg=$("regime").value;
   const interetsAn=emprunt*taux; // approx ann\u00e9e 1
   const assurAn=emprunt*assurTaux;
-  const tax=fiscalTax(reg,rentY,charges,interetsAn,assurAn,bp*0.85/30+700);
+  // P10 : amortissement LMNP decompose (regle fiscale reelle, pas d approximation)
+  // Immobilier : 85 % du prix hors terrain sur 30 ans. Mobilier : ~10 % du prix sur 7 ans (si meuble).
+  // Travaux : montant saisi sur 10 ans. Comptabilite et CFE : charges deductibles, pas d amortissement.
+  const amortImmo=bp*0.85/30;
+  const amortMobilier=state.loc==="meuble"?bp*0.10/7:0;
+  const amortTravaux=travaux>0?travaux/10:0;
+  const amortTotal=amortImmo+amortMobilier+amortTravaux;
+  const tax=fiscalTax(reg,rentY,charges,interetsAn,assurAn,amortTotal);
   $("taxYear").textContent=tax<-0.5?("\u2212 "+eur(-tax)+" (\u00e9co. d\u00e9ficit foncier)"):eur(tax);
   // plafonds des r\u00e9gimes micro
   const rn=$("regimeNote");
@@ -2459,6 +2487,7 @@ function computeAll(r){
   if(Math.abs(gp)<0.5)gapEl.innerHTML=`Identique \u00e0 l'estimation de l'outil (${eur(r.price)}).`;
   else gapEl.innerHTML=`<b style="color:${gp>0?'var(--bad)':'var(--good)'}">${gp>0?'+':''}${gp.toFixed(1)} %</b> ${gp>0?'au-dessus':'en dessous'} de la valeur estim\u00e9e (${eur(r.price)}).`;
   renderProKpis(r,{rentY:rentY,charges:charges,bp:bp,coutTotal:coutTotal,emprunt:emprunt,mensuTot:mensuTot,apport:apport});
+  state._amortTotal=amortTotal; // stocke pour compareRegimes
   renderFiscalCompare(r);
   renderDispositif();
   renderNego(r);renderVendor(r);
@@ -2692,7 +2721,7 @@ $("btnEstim").addEventListener("click",showResults);
   show(false);
 })();
 ["discRate"].forEach(id=>{$(id).addEventListener("input",()=>{if(lastResult)renderProjection(lastResult);});});
-["prixAchat","iRent","iTaxe","iCopro","iPno","iDivers","iApport","iTaux","iAssur","iDossier","iGarantie","iDuree","iTravaux","tmi","regime"].forEach(id=>{const h=()=>{if(lastResult){computeAll(lastResult);computeResale(lastResult);renderScatter(lastResult);updRentVsMkt();}};$(id).addEventListener("input",h);$(id).addEventListener("change",h);});
+["prixAchat","iRent","iTaxe","iCopro","iPno","iDivers","iCompta","iCfe","iApport","iTaux","iAssur","iDossier","iGarantie","iDuree","iTravaux","tmi","regime"].forEach(id=>{const h=()=>{if(lastResult){computeAll(lastResult);computeResale(lastResult);renderScatter(lastResult);updRentVsMkt();}};$(id).addEventListener("input",h);$(id).addEventListener("change",h);});
 ["dispositif","dispoTravaux","dispoDuree","dispoZone"].forEach(id=>{const e=$(id);if(e){e.addEventListener("input",renderDispositif);e.addEventListener("change",renderDispositif);}});
 ["holdYears","reval","fraisVente","gRent","gCharges"].forEach(id=>{$(id).addEventListener("input",()=>{if(lastResult)computeResale(lastResult);});$(id).addEventListener("change",()=>{if(lastResult)computeResale(lastResult);});});
 bindSeg("segStatut","statut",()=>{const nr=state.statut==="nonresident";$("chkEEE").style.display=nr?"flex":"none";$("tmi").style.display=nr?"none":"";$("tmiNR").style.display=nr?"block":"none";$("tmiLabel").textContent=nr?"Imposition (non-r\u00e9sident)":"Tranche d'imp\u00f4t (TMI)";$("tmiNote").style.display=nr?"block":"none";if(lastResult){computeAll(lastResult);computeResale(lastResult);}});
@@ -2797,7 +2826,7 @@ function computeResale(r){
   const notaire=bp*notaireRate();const forfaitTravaux=years>5?bp*0.15:0;
   let acqCorr=bp+notaire+forfaitTravaux;
   const reg=$("regime").value;let amortReint=0;
-  if(reg==="meuble_reel"){amortReint=Math.min(bp*0.85,(bp*0.85/30+700)*years);acqCorr-=amortReint;}
+  if(reg==="meuble_reel"){amortReint=Math.min(bp*0.85,((state._amortTotal||(bp*0.85/30)))*years);acqCorr-=amortReint;}
   const pvBrute=Math.max(0,sell-fraisVente-acqCorr);$("rvPV").textContent=eur(pvBrute);
   const aIR=abatIR(years),aPS=abatPS(years);$("rvAbat").textContent=Math.round(aIR*100)+" % / "+Math.round(aPS*100)+" %";
   const ps=psRate();const pvIR=pvBrute*(1-aIR);const pvPS=pvBrute*(1-aPS);
@@ -2809,7 +2838,7 @@ function computeResale(r){
   const ira=crd>0?Math.min(crd*taux*0.5,crd*0.03):0;$("rvIra").textContent=ira>0?("\u2212 "+eur(ira)):"\u2014";
   const net=sell-fraisVente-impot-crd-ira;$("rvNet").textContent=eur(net);
   const rentY=numv("iRent")*12;const charges=numv("iTaxe")+numv("iCopro")+numv("iPno")+numv("iDivers");
-  const taxLoc=fiscalTax(reg,rentY,charges,emprunt*taux,emprunt*(numv("iAssur")/100),bp*0.85/30+700);
+  const taxLoc=fiscalTax(reg,rentY,charges,emprunt*taux,emprunt*(numv("iAssur")/100),(state._amortTotal||(bp*0.85/30)));
   let mensTot=0;if(duree>0&&emprunt>0){const im=taux/12,n=duree*12;mensTot=(im>0?emprunt*im/(1-Math.pow(1+im,-n)):emprunt/n)+emprunt*(numv("iAssur")/100)/12;}
   const cfAnnuel=(rentY-charges-taxLoc)-mensTot*12;const gain=cfAnnuel*years+(net-apport);const el=$("rvRend");el.classList.remove("good","warn","bad");
   if(apport>0){const rend=gain/apport/years*100;el.textContent=(rend>=0?"+":"")+rend.toFixed(1)+" %";el.classList.add(rend>=6?"good":rend>=2?"warn":"bad");}
@@ -2926,7 +2955,7 @@ function opCalc(r,sellPrice,works){
     const notaireP=bp*notaireRate(),forfait=opYears>5?bp*0.15:0;
     let acqCorr=bp+notaireP+forfait;
     const reg=$("regime").value;
-    if(reg==="meuble_reel")acqCorr-=Math.min(bp*0.85,(bp*0.85/30+700)*opYears);
+    if(reg==="meuble_reel")acqCorr-=Math.min(bp*0.85,((state._amortTotal||(bp*0.85/30)))*opYears);
     const pvB=Math.max(0,sellPrice-fraisVente-acqCorr);
     const aIR=abatIR(opYears),aPS=abatPS(opYears),ps=psRate();
     fisc=pvB*(1-aIR)*0.19+pvB*(1-aPS)*ps+surtaxePV(pvB*(1-aIR));fiscLabel="Plus-value des particuliers";
@@ -3095,11 +3124,11 @@ function renderProjection(r){
     const rY=rentY*Math.pow(1+gRent,t-1),chY=charges*Math.pow(1+gCharges,t-1);
     const intY=(t<=duree)?Math.max(0,mens*12-(crdAt(t-1)-crdAt(t))):0;
     const insY=(t<=duree)?emprunt*assur:0;const payY=(t<=duree)?(mens*12+emprunt*assur):0;
-    const amY=(reg==="meuble_reel"&&t<=30)?(bp*0.85/30+700):0;
+    const amY=(reg==="meuble_reel"&&t<=30)?((state._amortTotal||(bp*0.85/30))):0;
     const tax=fiscalTax(reg,rY,chY,intY,insY,amY);cfArr.push(rY-chY-tax-payY);payArr.push(payY);taxArr.push(tax);valArr.push(bp*Math.pow(1+reval,t));rentArr.push(rY);chgArr.push(chY);
   }
   const iraAt=s=>{const crd=crdAt(s);return crd>0?Math.min(crd*taux*0.5,crd*0.03):0;};
-  const netResaleAt=s=>{const sell=bp*Math.pow(1+reval,s),fr=sell*fv;let acq=bp+notaire+(s>5?bp*0.15:0);if(reg==="meuble_reel")acq-=Math.min(bp*0.85,(bp*0.85/30+700)*s);const pvB=Math.max(0,sell-fr-acq);const impot=pvB*(1-abatIR(s))*0.19+pvB*(1-abatPS(s))*ps+surtaxePV(pvB*(1-abatIR(s)));return sell-fr-impot-crdAt(s)-iraAt(s);};
+  const netResaleAt=s=>{const sell=bp*Math.pow(1+reval,s),fr=sell*fv;let acq=bp+notaire+(s>5?bp*0.15:0);if(reg==="meuble_reel")acq-=Math.min(bp*0.85,((state._amortTotal||(bp*0.85/30)))*s);const pvB=Math.max(0,sell-fr-acq);const impot=pvB*(1-abatIR(s))*0.19+pvB*(1-abatPS(s))*ps+surtaxePV(pvB*(1-abatIR(s)));return sell-fr-impot-crdAt(s)-iraAt(s);};
   const npvAt=s=>{let v=-apport;for(let t=1;t<=s;t++)v+=cfArr[t-1]/Math.pow(1+rate,t);return v+netResaleAt(s)/Math.pow(1+rate,s);};
   // VAN selon l'ann\u00e9e de revente \u2192 dur\u00e9e optimale
   const vanArr=[],vyLabels=[];for(let s=1;s<=SMAX;s++){vanArr.push(npvAt(s));vyLabels.push(""+s);}
@@ -3124,7 +3153,7 @@ function renderProjection(r){
   $("chartEq").innerHTML=chartSVG({labels,lines:[{values:valS,color:"#0FB39E"},{values:crdS,color:"#E0402E"}],fmt:v=>eur0(v)});
   // ===== Dashboard =====
   const sellH=bp*Math.pow(1+reval,H),fraisH=sellH*fv,crdH=crdAt(H),iraH=iraAt(H);
-  let acqH=bp+notaire+(H>5?bp*0.15:0);if(reg==="meuble_reel")acqH-=Math.min(bp*0.85,(bp*0.85/30+700)*H);
+  let acqH=bp+notaire+(H>5?bp*0.15:0);if(reg==="meuble_reel")acqH-=Math.min(bp*0.85,((state._amortTotal||(bp*0.85/30)))*H);
   const pvBH=Math.max(0,sellH-fraisH-acqH),impotPV=pvBH*(1-abatIR(H))*0.19+pvBH*(1-abatPS(H))*ps+surtaxePV(pvBH*(1-abatIR(H)));
   let sumPay=0,sumTax=0,sumRent=0,sumChg=0;for(let t=1;t<=H;t++){sumPay+=payArr[t-1];sumTax+=taxArr[t-1];sumRent+=rentArr[t-1];sumChg+=chgArr[t-1];}
   const wf=[["Apport",-apport],["Loyers",sumRent],["Charges",-sumChg],["Cr\u00e9dit pay\u00e9",-sumPay],["Revente",sellH],["Frais vente",-fraisH],["Capital d\u00fb",-crdH],["IRA",-iraH],["Imp\u00f4ts",-(sumTax+impotPV)]];
@@ -3156,7 +3185,7 @@ function renderProjection(r){
   $("dTri").textContent=tri==null?"n/a":(tri*100).toFixed(1)+" %";$("dTri").className="dt-v neu";
   $("dOpt").textContent="An "+opt;$("dOpt").className="dt-v neu";
   // r\u00e9gime fiscal le plus avantageux (ann\u00e9e 1)
-  const i1=(duree>0)?Math.max(0,mens*12-(crdAt(0)-crdAt(1))):0,ins1=(duree>0)?emprunt*assur:0,am1=bp*0.85/30+700;
+  const i1=(duree>0)?Math.max(0,mens*12-(crdAt(0)-crdAt(1))):0,ins1=(duree>0)?emprunt*assur:0,am1=(state._amortTotal||(bp*0.85/30));
   const regNames={nue_micro:"Nu micro-foncier",nue_reel:"Nu au r\u00e9el",meuble_micro:"LMNP micro-BIC",meuble_reel:"LMNP r\u00e9el"};
   const regElig={nue_micro:rentY<=15000,nue_reel:true,meuble_micro:rentY<=77700,meuble_reel:true};
   let bestReg="",bestNet=-Infinity;["nue_micro","nue_reel","meuble_micro","meuble_reel"].forEach(k=>{if(!regElig[k])return;const net=rentY-charges-fiscalTax(k,rentY,charges,i1,ins1,am1);if(net>bestNet){bestNet=net;bestReg=k;}});
@@ -3194,11 +3223,11 @@ function projCore(p){
     const rY=p.rentY*Math.pow(1+p.gRent,t-1)*(1-p.vac/12),chY=p.charges*Math.pow(1+p.gCharges,t-1);
     const intY=(t<=p.duree)?Math.max(0,mens*12-(crdAt(t-1)-crdAt(t))):0;
     const insY=(t<=p.duree)?emprunt*p.assur:0,payY=(t<=p.duree)?(mens*12+emprunt*p.assur):0;
-    const amY=(p.reg==="meuble_reel"&&t<=30)?(p.bp*0.85/30+700):0;
+    const amY=(p.reg==="meuble_reel"&&t<=30)?((state._amortTotal||(p.bp*0.85/30))):0;
     cfArr.push(rY-chY-fiscalTax(p.reg,rY,chY,intY,insY,amY)-payY);
   }
   const iraAt=s=>{const crd=crdAt(s);return crd>0?Math.min(crd*p.taux*0.5,crd*0.03):0;};
-  const netResaleAt=s=>{const sell=p.bp*Math.pow(1+p.reval,s),fr=sell*p.fv;let acq=p.bp+notaire+(s>5?p.bp*0.15:0);if(p.reg==="meuble_reel")acq-=Math.min(p.bp*0.85,(p.bp*0.85/30+700)*s);const pvB=Math.max(0,sell-fr-acq),impot=pvB*(1-abatIR(s))*0.19+pvB*(1-abatPS(s))*ps+surtaxePV(pvB*(1-abatIR(s)));return sell-fr-impot-crdAt(s)-iraAt(s);};
+  const netResaleAt=s=>{const sell=p.bp*Math.pow(1+p.reval,s),fr=sell*p.fv;let acq=p.bp+notaire+(s>5?p.bp*0.15:0);if(p.reg==="meuble_reel")acq-=Math.min(p.bp*0.85,((state._amortTotal||(p.bp*0.85/30)))*s);const pvB=Math.max(0,sell-fr-acq),impot=pvB*(1-abatIR(s))*0.19+pvB*(1-abatPS(s))*ps+surtaxePV(pvB*(1-abatIR(s)));return sell-fr-impot-crdAt(s)-iraAt(s);};
   const flows=[-p.apport];let van=-p.apport;
   for(let t=1;t<=p.H;t++){let flow=cfArr[t-1];if(t===p.H)flow+=netResaleAt(p.H);flows.push(flow);van+=flow/Math.pow(1+p.rate,t);}
   return {van:van,cf1m:cfArr[0]/12,tri:irr(flows)};
