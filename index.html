@@ -321,11 +321,14 @@
         <div class="field">
           <label class="lbl" for="epoque">&#201;poque de construction</label>
           <select class="input" id="epoque">
-            <option value="avant1948">Avant 1948 (ancien, cachet)</option>
-            <option value="1949_1974">1949 &#8211; 1974</option>
-            <option value="1975_2000" selected>1975 &#8211; 2000</option>
-            <option value="apres2000">Apr&#232;s 2000</option>
-            <option value="neuf">Neuf (&lt; 5 ans)</option>
+            <option value="avant1914">Avant 1914 &#8212; Haussmannien, ancien (cachet, pierres)</option>
+            <option value="1914_1947">1914 &#8211; 1947 &#8212; Interguerre (art d&#233;co, briques)</option>
+            <option value="1948_1969">1948 &#8211; 1969 &#8212; Reconstruction (immeubles collectifs)</option>
+            <option value="1970_1981">1970 &#8211; 1981 &#8212; Grands ensembles, dalles, barres</option>
+            <option value="1982_1999" selected>1982 &#8211; 1999 &#8212; Modernisation (double vitrage)</option>
+            <option value="2000_2010">2000 &#8211; 2010 &#8212; Normes HQE, BBC</option>
+            <option value="apres2011">Apr&#232;s 2011 &#8212; RT2012 / RE2020 (basse conso)</option>
+            <option value="neuf">Neuf &lt; 5 ans &#8212; Garantie d&#233;cennale, fiscalit&#233; r&#233;duite</option>
           </select>
         </div>
 
@@ -352,9 +355,7 @@
             <option value="fioul">Fioul</option>
           </select>
         </div>
-        <div class="field"><label class="lbl">&#201;tiquette climat (GES)</label>
-          <div class="dpe-seg" id="segGes"><button data-v="A" class="dpe-a">A</button><button data-v="B" class="dpe-b">B</button><button data-v="C" class="dpe-c">C</button><button data-v="D" class="dpe-d on">D</button><button data-v="E" class="dpe-e">E</button><button data-v="F" class="dpe-f">F</button><button data-v="G" class="dpe-g">G</button></div>
-        </div>
+
         <div class="field"><label class="lbl" for="standing">Standing / prestations</label>
           <select class="input" id="standing"><option value="standard" selected>Standard</option><option value="bon">Bonnes prestations</option><option value="haut">Haut standing</option></select>
         </div>
@@ -390,8 +391,19 @@
       <div class="hint">Ex. &#171; &#224; r&#233;nover &#187; : fonctionnel mais cuisine/sols/peintures &#224; reprendre. &#171; R&#233;nov&#233; &#187; : travaux r&#233;cents de qualit&#233;, sans reste &#224; faire.</div>
     </div>
 
-    <div class="field" id="wrapDpe"><label class="lbl">&#201;tiquette DPE <span class="opt">(&#233;nergie)</span></label>
-      <div class="dpe-seg" id="segDpe"><button data-v="A" class="dpe-a">A</button><button data-v="B" class="dpe-b">B</button><button data-v="C" class="dpe-c">C</button><button data-v="D" class="dpe-d on">D</button><button data-v="E" class="dpe-e">E</button><button data-v="F" class="dpe-f">F</button><button data-v="G" class="dpe-g">G</button></div>
+    <div class="field" id="wrapDpe">
+      <label class="lbl">DPE &amp; Climat <span class="opt">(&#233;tiquettes &#233;nerg&#233;tiques &#8212; g&#233;n&#233;ralement indiqu&#233;es ensemble)</span></label>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div>
+          <div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:4px;font-weight:600">&#128267; DPE &#8212; &#233;nergie (kWh/m&#178;/an)</div>
+          <div class="dpe-seg" id="segDpe"><button data-v="A" class="dpe-a">A</button><button data-v="B" class="dpe-b">B</button><button data-v="C" class="dpe-c">C</button><button data-v="D" class="dpe-d on">D</button><button data-v="E" class="dpe-e">E</button><button data-v="F" class="dpe-f">F</button><button data-v="G" class="dpe-g">G</button></div>
+        </div>
+        <div>
+          <div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:4px;font-weight:600">&#127811; GES &#8212; &#233;missions CO&#178; (kgCO&#178;/m&#178;/an)</div>
+          <div class="dpe-seg" id="segGes"><button data-v="A" class="dpe-a">A</button><button data-v="B" class="dpe-b">B</button><button data-v="C" class="dpe-c">C</button><button data-v="D" class="dpe-d on">D</button><button data-v="E" class="dpe-e">E</button><button data-v="F" class="dpe-f">F</button><button data-v="G" class="dpe-g">G</button></div>
+        </div>
+      </div>
+      <div class="hint" style="margin-top:6px">Les deux &#233;tiquettes figurent sur tout DPE depuis 2021. A = tr&#232;s performant, G = passoire thermique (obligation de travaux).</div>
     </div>
 
     </div>
@@ -410,17 +422,17 @@
 
     <div id="modeBar" style="order:-1"><div class="seg" id="segMode"><button data-m="simple" class="on">Mode Simple</button><button data-m="expert">Mode Expert</button></div><div class="hint" style="margin-top:6px">Mode Simple : l'essentiel pour d&#233;cider (verdict, prix conseille, negociation, risques). Mode Expert : tous les calculs detailles.</div></div>
     <section class="card" id="decisionCard" style="order:0"><div id="decisionPanel"></div></section>
-    <section class="card expert-only" id="reportCard" style="order:6"><div class="card-head"><div class="step-no">&#128221;</div><div><h2>Rapport d'analyse</h2><div class="sub">Synth&#232;se r&#233;dig&#233;e automatiquement &#224; partir de vos donn&#233;es</div></div></div><div id="reportPanel"></div></section>
+    <section class="card expert-only" id="reportCard" style="order:7"><div class="card-head"><div class="step-no">&#128221;</div><div><h2>Rapport d'analyse</h2><div class="sub">Synth&#232;se r&#233;dig&#233;e automatiquement &#224; partir de vos donn&#233;es</div></div></div><div id="reportPanel"></div></section>
     <section class="card expert-only" id="formationCard" style="order:4"><div class="card-head"><div class="step-no">&#128269;</div><div><h2>Fiabilit&#233; & formation du prix</h2><div class="sub">Fourchettes probabilistes, fiabilit&#233; des donn&#233;es et explication d&#233;taill&#233;e</div></div></div><div id="formationPanel"></div></section>
     <section class="card expert-only" id="enginesCard" style="order:4"><div class="card-head"><div class="step-no">&#129518;</div><div><h2>Estimation multi-estimateurs</h2><div class="sub">6 estimateurs ind&#233;pendants fusionn&#233;s par leur confiance</div></div></div><div id="enginesPanel"></div></section>
     <section class="card expert-only" id="bienIndicesCard" style="order:4"><div class="card-head"><div class="step-no">&#10024;</div><div><h2>Profil & indices du bien</h2><div class="sub">Qualit&#233;, raret&#233;, attractivit&#233; &#233;motionnelle et profil acheteur</div></div></div><div id="bienIndicesPanel"></div></section>
     <section class="card expert-only" id="globalCard" style="order:4"><div class="card-head"><div class="step-no">&#127941;</div><div><h2>Note globale du bien</h2><div class="sub">Indice /100 sur 7 dimensions ind&#233;pendantes</div></div></div><div id="globalPanel"></div></section>
     <section class="card expert-only" id="proKpiCard" style="order:4"><div class="card-head"><div class="step-no">&#128202;</div><div><h2>Tableau de bord investisseur</h2><div class="sub">Ratios financiers professionnels &#8212; calcul&#233;s en direct</div></div></div><div id="proKpiPanel"></div></section>
-    <section class="card expert-only" id="negoCard" style="order:5"><div class="card-head"><div class="step-no">&#129309;</div><div><h2>Aide &#224; la n&#233;gociation</h2><div class="sub">Prix cible, offre, marge et probabilit&#233; d'acceptation</div></div></div><div id="negoPanel"></div></section>
-    <section class="card expert-only" id="contextCard" style="order:6"><div class="card-head"><div class="step-no">&#129517;</div><div><h2>Contexte &amp; signaux</h2><div class="sub">Donn&#233;es publiques, indices compl&#233;mentaires et anomalies &#8212; sans impact sur le prix</div></div></div><div id="contextPanel"></div></section>
+    <section class="card expert-only" id="negoCard" style="order:6"><div class="card-head"><div class="step-no">&#129309;</div><div><h2>Aide &#224; la n&#233;gociation</h2><div class="sub">Prix cible, offre, marge et probabilit&#233; d'acceptation</div></div></div><div id="negoPanel"></div></section>
+    <section class="card expert-only" id="contextCard" style="order:7"><div class="card-head"><div class="step-no">&#129517;</div><div><h2>Contexte &amp; signaux</h2><div class="sub">Donn&#233;es publiques, indices compl&#233;mentaires et anomalies &#8212; sans impact sur le prix</div></div></div><div id="contextPanel"></div></section>
     <section class="card expert-only" id="vendorCard" style="order:95"><div class="card-head"><div class="step-no">&#127991;&#65039;</div><div><h2>C&#244;t&#233; vendeur</h2><div class="sub">Strat&#233;gie de prix de mise en march&#233;</div></div></div><div id="vendorPanel"></div></section>
-    <section class="card expert-only" id="fiscalCard" style="order:5"><div class="card-head"><div class="step-no">&#9878;&#65039;</div><div><h2>Comparateur fiscal</h2><div class="sub">Tous les r&#233;gimes compar&#233;s &#8212; recommandation automatique</div></div></div><div id="fiscalPanel"></div></section>
-    <section class="card expert-only" id="dispositifCard" style="order:5"><div class="card-head"><div class="step-no">&#127963;&#65039;</div><div><h2>Dispositifs de d&#233;fiscalisation</h2><div class="sub">Pinel, Denormandie, Malraux, Monuments Historiques, holding</div></div></div>
+    <section class="card expert-only" id="fiscalCard" style="order:6"><div class="card-head"><div class="step-no">&#9878;&#65039;</div><div><h2>Comparateur fiscal</h2><div class="sub">Tous les r&#233;gimes compar&#233;s &#8212; recommandation automatique</div></div></div><div id="fiscalPanel"></div></section>
+    <section class="card expert-only" id="dispositifCard" style="order:6"><div class="card-head"><div class="step-no">&#127963;&#65039;</div><div><h2>Dispositifs de d&#233;fiscalisation</h2><div class="sub">Pinel, Denormandie, Malraux, Monuments Historiques, holding</div></div></div>
       <div><label class="lbl" for="dispositif">Dispositif</label><select class="input" id="dispositif"><option value="none">Aucun (droit commun)</option><option value="pinel">Pinel (neuf, 2024)</option><option value="pinelplus">Pinel+ (neuf, qualit&#233;)</option><option value="denormandie">Denormandie (ancien + travaux)</option><option value="malraux">Malraux (restauration SPR)</option><option value="mh">Monuments Historiques</option><option value="holding">Holding (structuration)</option></select></div>
       <div id="dispoTravauxRow" style="display:none;margin-top:10px"><label class="lbl" for="dispoTravaux">Montant des travaux</label><div class="with-unit"><input class="input num" id="dispoTravaux" type="number" min="0" /><span class="unit">&#8364;</span></div></div>
       <div id="dispoDureeRow" style="display:none;margin-top:10px"><label class="lbl" for="dispoDuree">Engagement de location</label><select class="input" id="dispoDuree"><option value="6">6 ans</option><option value="9" selected>9 ans</option><option value="12">12 ans</option></select></div>
@@ -441,7 +453,7 @@
       </div>
       <div class="conf"><span class="dot" id="confDot"></span><span id="confTxt">&#8212;</span></div>
       <div id="confBreak" class="expert-only" style="margin-top:12px"></div>
-      <details class="bd"><summary>D&#233;tail du calcul</summary><div id="bdRows"></div><div class="bd-note">M&#233;thode : prix m&#233;dian /m&#178; du secteur &#215; surface &#215; coefficients, + valorisation des ext&#233;rieurs. Coefficients indicatifs et param&#233;trables.</div></details>
+      <div class="hint" id="bdNote" style="margin-top:8px"></div>
     </section>
 
     <!-- PROJET D'ACHAT -->
@@ -459,7 +471,7 @@
     </section>
 
     <!-- DASHBOARD -->
-    <section class="card" id="dashCard" style="order:3">
+    <section class="card" id="dashCard" style="order:5">
       <div class="card-head"><div class="step-no">&#128202;</div><div><h2>Synth&#232;se de l'investissement</h2><div class="sub">Lecture rapide &#8212; recalcul&#233;e en direct</div></div></div>
       <div class="seg" id="segView" style="margin-bottom:14px"><button data-v="full" class="on">Vue compl&#232;te</button><button data-v="lean">Synth&#232;se (masquer le d&#233;tail)</button></div>
       <div id="verdict" class="verdict neu">&#8212;</div>
@@ -602,7 +614,7 @@
     </section>
 
     <!-- OP&#201;RATION ACHAT-REVENTE -->
-    <section class="card expert-only" style="order:6" id="worksCard"><div class="card-head"><div class="step-no">&#128296;</div><div><h2>Valorisation des travaux</h2><div class="sub">Co&#251;t, dur&#233;e, plus-value et ROI par poste</div></div></div><div id="worksPanel"></div></section>
+    <section class="card expert-only" style="order:3" id="worksCard"><div class="card-head"><div class="step-no">&#128296;</div><div><h2>Valorisation des travaux</h2><div class="sub">Co&#251;t, dur&#233;e, plus-value et ROI par poste</div></div></div><div id="worksPanel"></div></section>
     <section class="card" style="order:96" id="reportPdfCard"><div class="card-head"><div class="step-no">&#128196;</div><div><h2>Rapport professionnel (PDF)</h2><div class="sub">Document complet, &#224; votre identit&#233; visuelle</div></div></div>
       <div style="display:flex;flex-direction:column;gap:10px">
         <div><label class="lbl" for="repName">Cabinet / pr&#233;parateur</label><input class="input" id="repName" type="text" placeholder="Votre nom ou agence" /></div>
@@ -658,7 +670,7 @@
     </section>
 
     <!-- PROJECTION -->
-    <section class="card" style="order:6">
+    <section class="card" style="order:7">
       <div class="card-head"><div class="step-no">8</div><div><h2>Projection & graphiques</h2><div class="sub">Cash-flows, actualisation, VAN et TRI jusqu'&#224; la revente</div></div></div>
       <div class="field" style="margin-bottom:12px"><label class="lbl" for="discRate">Taux d'actualisation <span style="font-weight:500;color:var(--ink-soft)">(rendement attendu sur vos fonds propres &#8212; vide = auto)</span></label><div class="with-unit" style="max-width:160px"><input class="input num" id="discRate" type="number" step="0.1" placeholder="auto" /><span class="unit">%</span></div></div>
       <div class="kpis">
@@ -674,7 +686,7 @@
       <div class="hint" style="margin-top:10px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#5B7186" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#5B7186" stroke-width="2" stroke-linecap="round"/></svg>Hypoth&#232;ses : cash-flow d'exploitation suppos&#233; stable, revalorisation annuelle constante, fiscalit&#233; de l'ann&#233;e 1 reconduite. La VAN > 0 signifie que le projet bat votre co&#251;t du capital. Mod&#232;le indicatif.</div>
     </section>
 
-    <section class="card expert-only" id="scnCard" style="order:6">
+    <section class="card expert-only" id="scnCard" style="order:7">
       <div class="card-head"><div class="step-no">9</div><div><h2>Simulations de sc&#233;narios</h2><div class="sub">Stress test : comment la VAN r&#233;siste aux al&#233;as (taux, prix, march&#233;, vacance, DPE)</div></div></div>
       <div id="scnPanel"></div>
     </section>
@@ -772,7 +784,7 @@ function autofillApply(o){
   window._afApplying=true;
   if(dpe&&V.indexOf(dpe)>=0){const b=document.querySelector('#segDpe button[data-v="'+dpe+'"]');if(b){b.click();done.push("DPE "+dpe);}}
   if(ges&&V.indexOf(ges)>=0){const b=document.querySelector('#segGes button[data-v="'+ges+'"]');if(b){b.click();done.push("GES "+ges);}}
-  if(an>1700){const yr=new Date().getFullYear();const ep=an<1949?"avant1948":an<=1974?"1949_1974":an<=2000?"1975_2000":(yr-an<5?"neuf":"apres2000");const e=$("epoque");if(e){e.value=ep;done.push("construction "+an);}}
+  if(an>1700){const yr=new Date().getFullYear();const ep=an<1914?"avant1914":an<1948?"1914_1947":an<1970?"1948_1969":an<1982?"1970_1981":an<2000?"1982_1999":an<2011?"2000_2010":(yr-an<5?"neuf":"apres2011");const e=$("epoque");if(e){e.value=ep;done.push("construction "+an);}}
   window._afApplying=false;
   if(done.length){
     const dt=o.date_etablissement_dpe?(" du "+String(o.date_etablissement_dpe).slice(0,10)):"";
@@ -1387,12 +1399,14 @@ function coefficients(ctx,realBase,realStats){const rows=[];let m=1;let detail=0
   let [cv,cl]=chMap[$("chauffage").value]||[0,""];if(cv){m*=(1+cv);rows.push([cl,cv]);}
   const stMap={standard:[0,"Standard"],bon:[0.03,"Bonnes prestations"],haut:[0.07,"Haut standing"]};
   let [sv,sl]=stMap[$("standing").value];if(sv>0){const stTier=premium?1.3:tier==="modeste"?0.5:1;sv*=stTier;}if(sv){m*=(1+sv);rows.push([sl,sv]);detail++;}
-  const epMap={avant1948:[0.01,"Avant 1948"],"1949_1974":[-0.02,"1949\u20131974"],"1975_2000":[0,"1975\u20132000"],apres2000:[0.03,"Apr\u00e8s 2000"],neuf:[0.06,"Neuf"]};
-  let [ev2,el2]=epMap[$("epoque").value];
-  // Anti-double comptage : un bien deja marque "neuf/refait" en etat porte deja sa prime de modernite ;
-  // la prime d'epoque "Neuf" ferait double emploi -> neutralisee. Idem "renove" + "apres2000/neuf".
+  // Coefficients epoque : 8 segments agents immo, granularite accrue
+  const epMap={avant1914:[0.03,"Avant 1914 (cachet)"],"1914_1947":[0.01,"1914\u20131947"],"1948_1969":[-0.02,"1948\u20131969"],
+    "1970_1981":[-0.04,"1970\u20131981 (grands ensembles)"],"1982_1999":[0,"1982\u20131999"],
+    "2000_2010":[0.02,"2000\u20132010 (HQE/BBC)"],"apres2011":[0.04,"Apr\u00e8s 2011 (RT2012/RE2020)"],neuf:[0.06,"Neuf"]};
+  let [ev2,el2]=epMap[$("epoque").value]||[0,""];
+  // Anti-double comptage : etat "neuf/renove" porte deja la prime de modernite
   if($("epoque").value==="neuf"&&(etatKey==="neuf"||etatKey==="renove"))ev2=0;
-  else if($("epoque").value==="apres2000"&&etatKey==="neuf")ev2=0.01;
+  else if(($("epoque").value==="apres2011"||$("epoque").value==="2000_2010")&&etatKey==="neuf")ev2=Math.min(0.01,ev2);
   if(ev2){m*=(1+ev2);rows.push([el2,ev2]);}detail++;
   if(numv("sdb")>=2){m*=1.01;rows.push(["Plusieurs salles d'eau",0.01]);}
   if(numv("wcSep")>=1){m*=1.005;rows.push(["WC s\u00e9par\u00e9",0.005]);}
@@ -1585,7 +1599,14 @@ function renderLocStats(r){const d=r.dyn;
   $("locStats").innerHTML=html;
 }
 function genComparables(r){const list=$("compList");list.innerHTML="";const ic=r.type==="maison"?"\ud83c\udfe0":r.type==="terrain"?"\ud83c\udf33":"\ud83c\udfe2";
-  if(r.realPts&&r.realPts.length){const sorted=[...r.realPts].sort((a,b)=>String(b.date||"").localeCompare(String(a.date||""))).slice(0,6);
+  if(r.realPts&&r.realPts.length){
+    const subjSurf=r.surface||0;
+    // P5 : afficher uniquement les biens \u00e0 surface proche (\u00b130%) \u2014 repli \u00b150% si <4 biens
+    let pool=r.realPts;
+    if(subjSurf>0){const close=r.realPts.filter(p=>p.surf>=subjSurf*0.70&&p.surf<=subjSurf*1.30);
+      if(close.length>=4)pool=close;
+      else pool=r.realPts.filter(p=>p.surf>=subjSurf*0.50&&p.surf<=subjSurf*1.50);}
+    const sorted=[...pool].sort((a,b)=>String(b.date||"").localeCompare(String(a.date||""))).slice(0,6);
     sorted.forEach(p=>{const dt=p.date?String(p.date).slice(0,7).split("-").reverse().join("/"):"";const div=document.createElement("div");div.className="comp";
       div.innerHTML=`<div class="comp-ic">${ic}</div><div class="comp-main"><div class="t">${Math.round(p.surf)} m\u00b2${p.rooms?` \u00b7 ${p.rooms} pi\u00e8ces`:""}</div><div class="s">Vendu ${dt} \u00b7 ${esc(r.city||"secteur")}</div></div><div class="comp-price"><div class="p num">${eur(p.price)}</div><div class="pm num">${eur0(p.ppm)} /m\u00b2</div></div>`;
       list.appendChild(div);});
@@ -1634,9 +1655,9 @@ function renderPriceHistory(r){
     '</svg><div id="phTip" style="position:absolute;display:none;pointer-events:none;background:var(--ink);color:#fff;font-size:10px;font-weight:600;padding:5px 8px;border-radius:7px;white-space:nowrap;box-shadow:0 3px 10px rgba(0,0,0,.25);z-index:5;transform:translate(-50%,-115%)"></div></div>'+
     '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--ink-soft);margin-top:2px"><span>'+first.y+'</span><span>'+last.y+'</span></div>'+
     '<div style="display:flex;gap:6px;margin-top:8px">'+
-      '<div style="flex:1;background:var(--bg);border-radius:8px;padding:6px 8px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase">Tendance /an</div><div class="num" style="font-size:13px;font-weight:800;color:'+(cagr>=0?"var(--good)":"var(--bad)")+'">'+(cagr>=0?"+":"")+cagr.toFixed(1)+' %</div></div>'+
-      '<div style="flex:1;background:var(--bg);border-radius:8px;padding:6px 8px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase">Actuel</div><div class="num" style="font-size:13px;font-weight:800;color:var(--ink)">'+eur0(last.v)+'</div></div>'+
-      '<div style="flex:1;background:var(--bg);border-radius:8px;padding:6px 8px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase">Ventes</div><div class="num" style="font-size:13px;font-weight:800;color:var(--ink)">'+totalV+'</div></div>'+
+      '<div style="flex:1;background:var(--bg);border-radius:8px;padding:6px 8px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase">Tendance /an (CAGR)</div><div class="num" style="font-size:13px;font-weight:800;color:'+(cagr>=0?"var(--good)":"var(--bad)")+'">'+(cagr>=0?"+":"")+cagr.toFixed(1)+' %</div><div style="font-size:9px;color:var(--ink-soft)">'+first.y+'\u2192'+last.y+'</div></div>'+
+      '<div style="flex:1;background:var(--bg);border-radius:8px;padding:6px 8px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase">M\u00e9diane '+last.y+'</div><div class="num" style="font-size:13px;font-weight:800;color:var(--ink)">'+eur0(last.v)+'</div><div style="font-size:9px;color:var(--ink-soft)">\u20ac/m\u00b2</div></div>'+
+      '<div style="flex:1;background:var(--bg);border-radius:8px;padding:6px 8px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase">Moy. ventes/an</div><div class="num" style="font-size:13px;font-weight:800;color:var(--ink)">'+Math.round(totalV/ys.length)+'</div><div style="font-size:9px;color:var(--ink-soft)">('+totalV+' sur '+nyr+' ans)</div></div>'+
     '</div>'+
     '<div class="hint" style="margin-top:6px">M\u00e9diane annuelle des ventes DVF (barres claires = volume). Survolez ou touchez la courbe pour le d\u00e9tail par ann\u00e9e.</div></div>';
   box.appendChild(d);
@@ -1692,8 +1713,20 @@ function renderScatter(r){
   const all=(r.realPts||[]).filter(p=>p.surf>0&&p.price>0);
   if(!all.length){box.innerHTML="";return;}
   const ssurf=numv("surface")||r.surface||1,sprice=numv("prixAchat")||r.price;
-  let pts=all;if(pts.length>140){const st=Math.ceil(pts.length/140);pts=pts.filter((_,i)=>i%st===0);}
-  const xs=all.map(p=>p.surf).concat(ssurf),ys=all.map(p=>p.price).concat(sprice);
+  // P6 : zoom sur la zone dense \u2014 exclusion des extr\u00eames (IQR \u00e9tendu, percentiles 5-95 %)
+  // Un bien de 300m2 \u00e0 plusieurs millions ne doit pas comprimer toute la zone lisible.
+  const pct=(arr,p)=>{const s=[...arr].sort((a,b)=>a-b);return s[Math.floor(s.length*p)]||s[s.length-1];};
+  const allX=all.map(p=>p.surf),allY=all.map(p=>p.price);
+  const x5=pct(allX,.05),x95=pct(allX,.95),y5=pct(allY,.05),y95=pct(allY,.95);
+  const xRange=x95-x5,yRange=y95-y5;
+  // Fen\u00eatre : 5-95% + marge 15%, mais toujours inclure le bien sujet
+  const rawXmin=Math.min(x5-xRange*.15,ssurf*.88),rawXmax=Math.max(x95+xRange*.15,ssurf*1.12);
+  const rawYmin=Math.min(Math.max(0,y5-yRange*.15),sprice*.88),rawYmax=Math.max(y95+yRange*.15,sprice*1.12);
+  // Compter les points hors fen\u00eatre (info utilisateur)
+  const nOut=all.filter(p=>p.surf<rawXmin||p.surf>rawXmax||p.price<rawYmin||p.price>rawYmax).length;
+  let pts=all.filter(p=>p.surf>=rawXmin&&p.surf<=rawXmax&&p.price>=rawYmin&&p.price<=rawYmax);
+  if(pts.length>140){const st=Math.ceil(pts.length/140);pts=pts.filter((_,i)=>i%st===0);}
+  const xs=pts.map(p=>p.surf).concat(ssurf),ys=pts.map(p=>p.price).concat(sprice);
   let xmin=Math.min.apply(null,xs),xmax=Math.max.apply(null,xs),ymin=Math.min.apply(null,ys),ymax=Math.max.apply(null,ys);
   const xp=(xmax-xmin)*0.07||1,yp=(ymax-ymin)*0.07||1;xmin-=xp;xmax+=xp;ymin=Math.max(0,ymin-yp);ymax+=yp;
   const W=320,H=232,L=42,Rr=310,T=22,B=210;
@@ -1703,7 +1736,9 @@ function renderScatter(r){
   const trq=pc(cnt(s=>s>ssurf,p=>p>sprice)),brq=pc(cnt(s=>s>ssurf,p=>p<sprice)),tlq=pc(cnt(s=>s<ssurf,p=>p>sprice)),blq=pc(cnt(s=>s<ssurf,p=>p<sprice));
   const pBig=pc(all.filter(p=>p.surf>ssurf).length),pExp=pc(all.filter(p=>p.price>sprice).length);
   const sx=mx(ssurf).toFixed(1),sy=my(sprice).toFixed(1);
-  const dots=pts.map(p=>`<circle cx="${mx(p.surf).toFixed(1)}" cy="${my(p.price).toFixed(1)}" r="2.5" fill="#0FB39E" fill-opacity=".4"/>`).join("");
+  // P7 : dots interactifs \u2014 donn\u00e9es enrichies pour tooltip click/touch
+  const dots=pts.map((p,i)=>{const ro=p.surf>=ssurf*0.75&&p.surf<=ssurf*1.25?"#0FB39E":"#7EC8BC";
+    return `<circle cx="${mx(p.surf).toFixed(1)}" cy="${my(p.price).toFixed(1)}" r="3" fill="${ro}" fill-opacity=".45" class="scDot" data-s="${Math.round(p.surf)}" data-p="${Math.round(p.price)}" data-r="${p.rooms||''}" data-d="${p.date?String(p.date).slice(0,7):''}"/>`;}).join("");
   // Regression lineaire prix ~ surface (OLS) sur toutes les ventes
   let _rsx=0,_rsy=0,_rsxy=0,_rsxx=0;all.forEach(p=>{_rsx+=p.surf;_rsy+=p.price;_rsxy+=p.surf*p.price;_rsxx+=p.surf*p.surf;});
   const _rn=all.length,_rden=_rn*_rsxx-_rsx*_rsx;
@@ -1732,7 +1767,17 @@ function renderScatter(r){
     `<text x="${(L+Rr)/2}" y="${B+13}" font-size="8.5" text-anchor="middle" fill="var(--ink-soft)">Surface \u2192   Prix \u2191</text>`+
     `</svg>`+
     `<div style="margin-top:8px;padding:8px 10px;background:#fff5ef;border-left:3px solid #E8742A;border-radius:0 8px 8px 0;font-size:11.5px;line-height:1.55;color:var(--ink)">Droite de tendance (orange) : <b class="num">Prix &#8776; ${eur0(Math.round(regSlope))} &#8364;/m&#178; &#215; surface ${regInt>=0?"+":"&#8722;"} ${eur0(Math.abs(Math.round(regInt)))} &#8364;</b><br>&#201;cart moyen au mod&#232;le : <b class="num">&#177; ${eur0(Math.round(regMae))} &#8364;</b> &#183; R&#178; <b class="num">${regR2.toFixed(2).replace('.',',')}</b> <span style="color:var(--ink-soft)">(part du prix expliquee par la surface)</span></div>`+
-    `<div class="hint" style="margin-top:6px;line-height:1.5"><b style="color:var(--brand-dark)">${pExp}%</b> des ventes sont plus ch\u00e8res que votre prix \u00b7 <b style="color:var(--brand-dark)">${pBig}%</b> portent sur un bien plus grand.</div>`;
+    `<div class="hint" style="margin-top:6px;line-height:1.5"><b style="color:var(--brand-dark)">${pExp}%</b> des ventes sont plus ch\u00e8res que votre prix \u00b7 <b style="color:var(--brand-dark)">${pBig}%</b> portent sur un bien plus grand${nOut>0?' <span style="color:var(--ink-soft)">\u00b7 '+nOut+' valeur(s) extr\u00eame(s) masqu\u00e9e(s)</span>':''}.</div>`+
+    `<div id="scTip" style="display:none;margin-top:6px;padding:8px 11px;background:var(--ink);color:#fff;border-radius:9px;font-size:11.5px;line-height:1.5"></div>`;
+  // P7 : tooltip interactif click/touch sur chaque point
+  box.querySelectorAll('.scDot').forEach(c=>{
+    const show=()=>{const tip=box.querySelector('#scTip');if(!tip)return;
+      const s=c.dataset.s,p=c.dataset.p,rms=c.dataset.r,dt=c.dataset.d;
+      tip.style.display='';
+      tip.innerHTML='<b>'+eur(+p)+'</b> \u00b7 '+s+' m\u00b2'+(rms?' \u00b7 '+rms+' pi\u00e8ce'+(+rms>1?'s':''):'')+(dt?' \u00b7 '+dt:'');};
+    c.addEventListener('click',show);
+    c.addEventListener('touchend',e=>{e.preventDefault();show();},{passive:false});
+  });
 }
 
 /* R\u00e9gimes fiscaux dynamiques */
@@ -2260,7 +2305,7 @@ function applyGeoDyn(r){
   if($("pcSqm"))$("pcSqm").textContent=eur0(r.sqm)+" \u20ac";
   if($("gLow"))$("gLow").textContent=eur(r.low);if($("gMid"))$("gMid").textContent=eur(r.price);if($("gHigh"))$("gHigh").textContent=eur(r.high);
   const pa=$("prixAchat");if(pa&&Math.round(parseFloat(pa.value)||0)===Math.round(oldPrice))pa.value=Math.round(r.price);
-  if(lastResult===r){computeAll(r);computeResale(r);renderCalcDetail(r);renderExplain(r);renderEstimators(r);renderBienIndices(r);renderGlobalIndex(r);renderPriceFormation(r);renderContext(r);renderMarket(r);renderScatter(r);}
+  if(lastResult===r){computeAll(r);computeResale(r);renderExplain(r);renderEstimators(r);renderBienIndices(r);renderGlobalIndex(r);renderPriceFormation(r);renderContext(r);renderMarket(r);renderScatter(r);}
 }
 // ===== Vague 2 : indices synthetiques du bien (qualite, emotionnel, rarete, profil acheteur) =====
 function buyerProfile(r){
@@ -2280,7 +2325,7 @@ function bienIndices(r,realStats){
   const extScore=Math.min(1,(nv("balconM2")>0?0.3:0)+(nv("terrasseM2")>0?0.5:0)+(nv("jardinM2")>0?0.5:0)+(ck("parking")?0.3:0));
   const vueWow={mer:1,montagne:0.85,monument:0.85,verdure:0.6,degagee:0.45}[g("vue").value]||0;
   const lumiere=Math.min(1,["expoS","expoSO","expoSE","expoE","expoO"].filter(d=>ck(d)).length*0.35);
-  const charmeScore=Math.min(1,(g("epoque").value==="avant1948"?0.5:0)+(standScore>0.6?0.3:0)+(vueWow>0.5?0.4:0));
+  const charmeScore=Math.min(1,(($("epoque").value==="avant1914"||$("epoque").value==="1914_1947")?0.5:0)+(standScore>0.6?0.3:0)+(vueWow>0.5?0.4:0));
   const sNorm=Math.min(1,(r.surface||50)/(r.type==="maison"?140:90));
   let q=(etatScore*0.30+dpeScore*0.22*W.dpe+standScore*0.18*W.prestations+extScore*0.12*W.exterior+sNorm*0.10*W.surface+lumiere*0.08);
   q=q/(0.30+0.22*W.dpe+0.18*W.prestations+0.12*W.exterior+0.10*W.surface+0.08);
@@ -2443,21 +2488,6 @@ function okIcon(){return '<svg width="18" height="18" viewBox="0 0 24 24" fill="
 let lastResult=null;
 // P3 : detail du calcul factorise \u2014 cascade COMPLETE jusqu'au prix final affiche (reutilise
 // priceFormation pour les etapes indices/dynamique/micro-loc/garde-fou), re-rendu apres micro-loc.
-function renderCalcDetail(r){
-  const bd=$("bdRows");if(!bd||!r)return;bd.innerHTML="";
-  const note=document.createElement("div");note.className="hint";note.style.margin="0 0 8px";note.innerHTML="Le prix part du prix de r\u00e9f\u00e9rence /m\u00b2 du secteur, ajust\u00e9 par chaque caract\u00e9ristique (effet \u2191 ou \u2193), multipli\u00e9 par la surface, puis affin\u00e9 par les ajustements de march\u00e9.";bd.appendChild(note);
-  const addRow=(l,v,isPct,eurv)=>{const div=document.createElement("div");div.className="bd-row";let val;if(eurv!=null){val=(eurv>=0?"+":"\u2212")+eur(Math.abs(eurv));}else if(isPct){const a=v>0?"\u2191 ":v<0?"\u2193 ":"";val=a+(v>0?"+":"")+(v*100).toFixed(0)+" %";}else val=v;const cls=eurv!=null?(eurv>=0?"pos":"neg"):isPct?(v>0?"pos":v<0?"neg":""):"";div.innerHTML=`<span>${l}</span><span class="${cls}">${val}</span>`;bd.appendChild(div);};
-  const sep=(l,val)=>{const d=document.createElement("div");d.className="bd-row";d.style.cssText="border-top:1px solid var(--line);margin-top:6px;padding-top:8px;font-weight:700";d.innerHTML=`<span>${l}</span><span>${val}</span>`;bd.appendChild(d);};
-  addRow("Prix de r\u00e9f\u00e9rence /m\u00b2",eur0(r.sqmBase)+" \u20ac");
-  r.rows.forEach(row=>{if(row[2]!=null)addRow(row[0],null,false,row[2]);else addRow(row[0],row[1],true);});
-  addRow("Prix /m\u00b2 ajust\u00e9",eur0(r.sqmAdj)+" \u20ac");addRow("\u00d7 Surface",r.surface+" m\u00b2");
-  const pf=priceFormation(r),steps=pf.filter(l=>["idx","dyn","geo","capfinal"].indexOf(l.k)>=0);
-  if(steps.length){
-    sep("= Valeur h\u00e9donique",eur(r.pxHedonic!=null?r.pxHedonic:r.price));
-    steps.forEach(s=>addRow(s.label,null,false,s.eur));
-  }
-  sep("= Valeur estim\u00e9e finale",eur(r.price));
-}
 // P4 : injection coordonnee des donnees reelles dans r.dyn (liquidite DVF + Filosofi + pop).
 // Appele (1) depuis showResults apres DVF+livePromise, (2) depuis ctxProm.then.
 // Ne modifie que les variables disponibles, preserve toujours les valeurs estimees en fallback.
@@ -2518,8 +2548,9 @@ function renderExplain(r){
   const map={carac:"caract\u00e9ristiques du bien",ext:"ext\u00e9rieurs",cap:"recentrage sur le march\u00e9",idx:"qualit\u00e9/raret\u00e9",dyn:"tendance du march\u00e9",geo:"micro-localisation",capfinal:"garde-fou march\u00e9"};
   const seuil=Math.max(500,(r.price||0)*0.002);
   const parts=priceFormation(r).filter(l=>map[l.k]&&Math.abs(l.eur)>=seuil).map(l=>map[l.k]+" "+(l.eur>0?"+":"\u2212")+eur0(Math.abs(l.eur))+" \u20ac");
-  el.innerHTML="<b>En clair :</b> march\u00e9 local \u00e0 "+eur0(r.sqmBase)+" \u20ac/m\u00b2 ("+(r.realCount||0)+" ventes r\u00e9elles)"+(parts.length?" \u00b7 "+parts.join(" \u00b7 "):"")+".";
+  el.innerHTML="<b>En clair :</b> march\u00e9 local \u00e0 "+eur0(r.sqmBase)+" \u20ac/m\u00b2 ("+(r.realCount||0)+" ventes r\u00e9elles)"+(parts.length?" \u00b7 "+parts.join(" \u00b7 "):"")+". <span style=\"color:var(--ink-soft);font-size:10px\">D\u00e9tail complet en Mode Expert \u2192 Fiabilit\u00e9 &amp; formation du prix.</span>";
   el.style.display="";
+  const bdN=$("bdNote");if(bdN)bdN.innerHTML="D\u00e9composition d\u00e9taill\u00e9e disponible en <b>Mode Expert</b> \u2192 \u00ab\u00a0Fiabilit\u00e9 &amp; formation du prix\u00a0\u00bb.";
 }
 // Phase 1 : recuperation de toutes les donnees (DVF, live, enrich, ctx) -> objet data
 async function fetchAllData(coord){
@@ -2591,7 +2622,7 @@ function renderAllPanels(r,_conf,realBase,diag){
   const _cc=r.confScore>=70?"#7fe3d4":r.confScore>=45?"#F2D31C":"#E8742A";
   cd.style.background=_cc;ct.textContent="Indice de confiance "+r.confScore+"/100 \u00b7 "+r.confLabel;
   renderConfBreak(_conf);
-  renderCalcDetail(r);renderExplain(r);
+  renderExplain(r);
   renderInsee(r);renderMarket(r);renderLocStats(r);renderDvfStats(r);renderPriceHistory(r);genComparables(r);renderEstimators(r);renderBienIndices(r);renderGlobalIndex(r);renderPriceFormation(r);renderContext(r);
   $("locAddr").textContent=state.coord?.label||(($("ville").value||"")+" "+$("cp").value).trim();
   $("locCoord").textContent=state.coord?`${state.coord.lat.toFixed(4)}, ${state.coord.lon.toFixed(4)}${state.coord.alt!=null?" \u00b7 alt. "+state.coord.alt+" m":""} \u00b7 carte interactive dans la version h\u00e9berg\u00e9e`:"Carte interactive disponible dans la version h\u00e9berg\u00e9e";
