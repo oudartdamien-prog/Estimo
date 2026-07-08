@@ -525,7 +525,7 @@
     </section>
 
     <!-- ANALYSE LOCATIVE -->
-    <section class="card" style="order:4">
+    <section class="card" style="order:2">
       <div class="card-head"><div class="step-no">5</div><div><h2>Analyse locative & rentabilit&#233;</h2><div class="sub">Loyer, fiscalit&#233;, financement, cash-flow</div></div></div>
 
       <div class="metrics three">
@@ -1082,7 +1082,7 @@ function parsePts(arr,type){
     if(!v||!s||s<9)return;
     if(typ&&typ.indexOf(want)<0)return; // type present : ne garder que le type voulu (exclut activite, dependance, bien multiple...)
     const ppm=v/s;if(ppm<300||ppm>40000)return;
-    pts.push({ppm,surf:s,price:v,rooms:Number(recVal(o,["nbpprinc","nblocapt"]))||null,date:recVal(o,["datemut","date_mutation"]),lat:o._lat||null,lon:o._lon||null,addr:recVal(o,["l_adr","adrmut","adresse","adr_voie"])||null});
+    pts.push({ppm,surf:s,price:v,rooms:Number(recVal(o,["nbpprinc","nblocapt"]))||null,date:recVal(o,["datemut","date_mutation"]),lat:o._lat||null,lon:o._lon||null,addr:recVal(o,["l_adrmut","adrmut","l_adr","adresse","adr_voie"])||(function(){const n=recVal(o,["novoie","numero_voie"])||"",tv=recVal(o,["typvoie","type_de_voie"])||"",v=recVal(o,["voie","libvoie","nom_voie"])||"";return(n+" "+tv+" "+v).trim()||null;})()});
   });
   return pts;
 }
