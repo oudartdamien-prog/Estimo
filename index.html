@@ -83,6 +83,10 @@
   .wstep{display:none}
   .wstep.on{display:block;animation:wfade .28s ease}
   @keyframes wfade{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+
+  .stat{cursor:help;transition:background .15s}
+  .stat:hover{background:var(--bg)}
+  .stat[title]:active{background:var(--brand-tint)}
   @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
   .card-shimmer{border-radius:7px;background:linear-gradient(90deg,var(--bg) 25%,#dde8f0 50%,var(--bg) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;margin:6px 0}
   .wprog{margin:2px 0 18px}
@@ -454,10 +458,11 @@
       <div class="conf"><span class="dot" id="confDot"></span><span id="confTxt">&#8212;</span></div>
       <div id="confBreak" class="expert-only" style="margin-top:12px"></div>
       <div class="hint" id="bdNote" style="margin-top:8px"></div>
+      <div id="finPriceNote" style="display:none;margin-top:8px;padding:9px 12px;background:var(--bg);border-radius:10px;font-size:12px;line-height:1.55"></div>
     </section>
 
     <!-- PROJET D'ACHAT -->
-    <section class="card" id="buyCard" style="order:2">
+    <section class="card" id="buyCard" style="order:1">
       <div class="card-head"><div class="step-no">&#8364;</div><div><h2>Votre projet d'achat</h2><div class="sub">Prix r&#233;ellement pay&#233; &#8212; base du financement et de la rentabilit&#233;</div></div></div>
       <label class="lbl" for="prixAchat" style="display:block;margin-bottom:6px">Prix d'achat envisag&#233;</label>
       <div class="with-unit" style="max-width:240px"><input class="input num" id="prixAchat" type="number" min="0" style="font-size:22px;font-weight:800;letter-spacing:-.5px" /><span class="unit">&#8364;</span></div>
@@ -878,15 +883,16 @@ async function enrichOSM(lat,lon){
    +");out tags center 250;";
   const d=await dvfFetch("https://overpass-api.de/api/interpreter?data="+encodeURIComponent(q));
   if(!d)throw 0;const els=(d.json&&d.json.elements)||[];
-  let transit=0,shops=0,food=0,health=0;const pts=[];
+  let transit=0,shops=0,food=0,health=0,supermarkets=0;const pts=[];
   els.forEach(e=>{const t=e.tags||{};let kind=null;
     if(t.railway||t.highway==="bus_stop"||t.public_transport){transit++;kind="transit";}
-    else if(t.shop||t.amenity==="supermarket"||t.amenity==="marketplace"){shops++;kind="shop";}
+    else if(t.amenity==="supermarket"||t.amenity==="marketplace"){shops++;kind="shop";if(t.amenity==="supermarket")supermarkets++;}
+    else if(t.shop){shops++;kind="shop";}
     else if(t.amenity==="restaurant"||t.amenity==="cafe"){food++;kind="food";}
     else if(t.amenity==="pharmacy"||t.amenity==="hospital"||t.amenity==="doctors"){health++;kind="health";}
     if(kind){const la=e.lat!=null?e.lat:(e.center&&e.center.lat),lo=e.lon!=null?e.lon:(e.center&&e.center.lon);if(la!=null&&lo!=null&&pts.length<150)pts.push({lat:la,lon:lo,kind:kind,name:t.name||""});}
   });
-  return {transit:transit,shops:shops,food:food,health:health,total:els.length,pts:pts};
+  return {transit:transit,shops:shops,food:food,health:health,supermarkets:supermarkets,total:els.length,pts:pts};
 }
 // Isochrone IGN Geoplateforme (BD TOPO, reseau routier reel, sans cle). Aire accessible en 10 min
 // voiture = indicateur objectif de connectivite routiere (grande aire = bien connecte, petite = enclave).
@@ -988,7 +994,7 @@ function renderEnrich(r){
     html+=item("\u00c9coles (&lt; 1,5 km)",sch.total,parts.join(" \u00b7 ")||"\u00e9tablissements scolaires",sch.total>0?"var(--good)":"var(--ink-soft)");}
   if(osm){html+=item("Transports (&lt; 1 km)",osm.transit,osm.transit>=8?"tr\u00e8s bien desservi":osm.transit>=3?"correctement desservi":osm.transit>0?"desserte limit\u00e9e":"peu de transports",osm.transit>=3?"var(--good)":osm.transit>0?"var(--warn)":"var(--bad)");
     const comm=osm.shops+osm.food+osm.health;
-    html+=item("Commerces &amp; services (&lt; 600 m)",comm,osm.shops+" commerces \u00b7 "+osm.food+" caf\u00e9s/restos \u00b7 "+osm.health+" sant\u00e9",comm>=15?"var(--good)":comm>=5?"var(--warn)":"var(--bad)");}
+    html+=item("Commerces &amp; services (&lt; 600 m)",comm,osm.shops+" commerces"+(osm.supermarkets?" (dont "+osm.supermarkets+" supermarch\u00e9)":"")+" \u00b7 "+osm.food+" caf\u00e9s/restos \u00b7 "+osm.health+" sant\u00e9",comm>=15?"var(--good)":comm>=5?"var(--warn)":"var(--bad)");}
   if(e.iso&&e.iso.carArea10>0){const km=e.iso.carArea10,lab=km>=180?["excellente","var(--good)"]:km>=90?["bonne","var(--good)"]:km>=40?["correcte","var(--warn)"]:["limit\u00e9e (secteur enclav\u00e9)","var(--bad)"];
     html+=item("Accessibilit\u00e9 voiture (10 min)",lab[0],km+" km\u00b2 atteignables \u00b7 r\u00e9seau routier IGN",lab[1]);}
   if(!air&&!sch&&!osm){el.innerHTML='<div class="hint">Donn\u00e9es de proximit\u00e9 momentan\u00e9ment indisponibles (sources publiques surcharg\u00e9es). R\u00e9essayez dans un instant.</div>';return;}
@@ -1076,7 +1082,7 @@ function parsePts(arr,type){
     if(!v||!s||s<9)return;
     if(typ&&typ.indexOf(want)<0)return; // type present : ne garder que le type voulu (exclut activite, dependance, bien multiple...)
     const ppm=v/s;if(ppm<300||ppm>40000)return;
-    pts.push({ppm,surf:s,price:v,rooms:Number(recVal(o,["nbpprinc","nblocapt"]))||null,date:recVal(o,["datemut","date_mutation"]),lat:o._lat||null,lon:o._lon||null});
+    pts.push({ppm,surf:s,price:v,rooms:Number(recVal(o,["nbpprinc","nblocapt"]))||null,date:recVal(o,["datemut","date_mutation"]),lat:o._lat||null,lon:o._lon||null,addr:recVal(o,["l_adr","adrmut","adresse","adr_voie"])||null});
   });
   return pts;
 }
@@ -1537,25 +1543,23 @@ function renderInsee(r){const d=r.dyn;const sign=x=>(x>=0?"+":"")+x;
   const popReal=!!(state.live&&state.live.pop);
   const na='\u2014 <span style="color:var(--ink-soft);font-weight:400;font-size:9px">n.d.</span>';
   const stats=[
-    ["Revenu m\u00e9dian / habitant",d.filosofiReal?eur(d.revenu)+" /an"+rb:na],
-    ["Taux de pauvret\u00e9",d.filosofiReal?d.pauvrete+" %"+rb:na],
-    ["Part de cadres / CSP+",d.filosofiReal&&d.cadres!=null?d.cadres+" %"+rb:na],
-    ["Population",popReal?eur0(state.live.pop)+" hab."+rb:na],
-    ["Variation population (5 ans)",na],
-    ["Croissance des m\u00e9nages (5 ans)",na],
-    ["Solde migratoire / an",na],
+    ["Revenu m\u00e9dian / habitant",d.filosofiReal?eur(d.revenu)+" /an"+rb:na,"Revenu annuel m\u00e9dian par unit\u00e9 de consommation (Filosofi INSEE 2020). Indicateur de la solvabilit\u00e9 des acheteurs locaux."],
+    ["Taux de pauvret\u00e9",d.filosofiReal?d.pauvrete+" %"+rb:na,"Part de la population vivant sous le seuil de pauvret\u00e9 (60 % du revenu m\u00e9dian national). Source Filosofi INSEE."],
+    ["Part de cadres / CSP+",d.filosofiReal&&d.cadres!=null?d.cadres+" %"+rb:na,"Part des cadres et professions intellectuelles sup\u00e9rieures parmi les 15+ ans actifs. Indicateur de la demande qualifi\u00e9e."],
+    ["Population",popReal?eur0(state.live.pop)+" hab."+rb:na,"Population municipale (donn\u00e9es INSEE via geo.api.gouv.fr)."],
+
     ["Taux de ch\u00f4mage",d.filosofiReal&&d.chomage!=null?d.chomage+" %"+(d.choVar8!=null?' <span style="font-size:10px;color:var(--ink-soft)">('+(d.choVar8>=0?"+":"")+d.choVar8+" pt / 8 ans)</span>":"")+rb:na],
-    ["\u00c9volution du revenu m\u00e9dian (2012\u21922020)",d.revVar8!=null?(d.revVar8>=0?"+":"")+d.revVar8+" %"+rb:na],
+    ["\u00c9volution revenus (2012\u21922020)",d.revVar8!=null?(d.revVar8>=0?"+":"")+d.revVar8+" %"+rb:na],
     ["Nombre de logements",popReal?eur0(d.logements)+eb:na],
     ["Logement social (RPLS)",(function(){const rp=(state.ctx2||{}).rpls;if(!rp||!rp.social)return na;const tx=popReal&&d.logements>0?Math.round(rp.social/d.logements*100):null;return eur0(rp.social)+" logts"+(tx!=null?" \u00b7 "+tx+" %":"")+rb;})()],
-    ["Logements vacants",na],
+
     ["Couverture fibre (FTTH)",(function(){const fb=(state.ctx2||{}).fibre;if(!fb||fb.ftth==null)return na;return fb.ftth+" % des locaux"+rb;})()],
     ["D\u00e9linquance (SSMSI)",(function(){const cr=(state.ctx2||{}).crime;if(!cr||cr.tx==null)return na;
       let cmp="";if(cr.depTx>0){const rel=Math.round((cr.tx/cr.depTx-1)*100);const col=rel<=-15?"var(--good)":rel>=15?"var(--bad)":"var(--ink-soft)";cmp=' <span style="font-size:10px;color:'+col+'">('+(rel>=0?"+":"")+rel+" % vs d\u00e9p. "+cr.dep+")</span>";}
       return cr.tx.toFixed(1).replace('.',',')+" \u2030 /an"+cmp+rb;})()],
-    ["R\u00e9sidences secondaires",na]
+
   ];
-  $("inseeStats").innerHTML=stats.map(([l,v])=>`<div class="stat"><span class="sl">${l}</span><span class="sv num">${v}</span></div>`).join("");
+  $("inseeStats").innerHTML=stats.map(([l,v,tip])=>`<div class="stat"${tip?' title="'+esc(tip)+'"':''}><span class="sl">${l}</span><span class="sv num">${v}</span></div>`).join("");
 }
 function renderMarket(r){const d=r.dyn;const sign=x=>(x>=0?"+":"")+x;
   const cls=d.evo12>=0?"trend-up":"trend-down";const arr=d.evo12>=0?"\u25b2":"\u25bc";const ncls=d.notairesEvo>=0?"trend-up":"trend-down";
@@ -1610,7 +1614,7 @@ function genComparables(r){const list=$("compList");list.innerHTML="";const ic=r
       else pool=r.realPts.filter(p=>p.surf>=subjSurf*0.50&&p.surf<=subjSurf*1.50);}
     const sorted=[...pool].sort((a,b)=>String(b.date||"").localeCompare(String(a.date||""))).slice(0,6);
     sorted.forEach(p=>{const dt=p.date?String(p.date).slice(0,7).split("-").reverse().join("/"):"";const div=document.createElement("div");div.className="comp";
-      div.innerHTML=`<div class="comp-ic">${ic}</div><div class="comp-main"><div class="t">${Math.round(p.surf)} m\u00b2${p.rooms?` \u00b7 ${p.rooms} pi\u00e8ces`:""}</div><div class="s">Vendu ${dt} \u00b7 ${esc(r.city||"secteur")}</div></div><div class="comp-price"><div class="p num">${eur(p.price)}</div><div class="pm num">${eur0(p.ppm)} /m\u00b2</div></div>`;
+      div.innerHTML=`<div class="comp-ic">${ic}</div><div class="comp-main"><div class="t">${Math.round(p.surf)} m\u00b2${p.rooms?` \u00b7 ${p.rooms} pi\u00e8ces`:""}</div><div class="s">Vendu ${dt} \u00b7 ${esc(r.city||"secteur")}${p.addr?' \u00b7 <span style="color:var(--ink-soft)">'+esc(p.addr)+'</span>':''}</div></div><div class="comp-price"><div class="p num">${eur(p.price)}</div><div class="pm num">${eur0(p.ppm)} /m\u00b2</div></div>`;
       list.appendChild(div);});
     return;}
   // Zero demo : sans ventes DVF reelles, aucun comparable invente n'est affiche.
@@ -1740,7 +1744,7 @@ function renderScatter(r){
   const sx=mx(ssurf).toFixed(1),sy=my(sprice).toFixed(1);
   // P7 : dots interactifs \u2014 donn\u00e9es enrichies pour tooltip click/touch
   const dots=pts.map((p,i)=>{const ro=p.surf>=ssurf*0.75&&p.surf<=ssurf*1.25?"#0FB39E":"#7EC8BC";
-    return `<circle cx="${mx(p.surf).toFixed(1)}" cy="${my(p.price).toFixed(1)}" r="3" fill="${ro}" fill-opacity=".45" class="scDot" data-s="${Math.round(p.surf)}" data-p="${Math.round(p.price)}" data-r="${p.rooms||''}" data-d="${p.date?String(p.date).slice(0,7):''}"/>`;}).join("");
+    return `<circle cx="${mx(p.surf).toFixed(1)}" cy="${my(p.price).toFixed(1)}" r="3" fill="${ro}" fill-opacity=".45" class="scDot" data-s="${Math.round(p.surf)}" data-p="${Math.round(p.price)}" data-r="${p.rooms||''}" data-d="${p.date?String(p.date).slice(0,7):''}" data-a="${esc(p.addr||'')}"/>`;}).join("");
   // Regression lineaire prix ~ surface (OLS) sur toutes les ventes
   let _rsx=0,_rsy=0,_rsxy=0,_rsxx=0;all.forEach(p=>{_rsx+=p.surf;_rsy+=p.price;_rsxy+=p.surf*p.price;_rsxx+=p.surf*p.surf;});
   const _rn=all.length,_rden=_rn*_rsxx-_rsx*_rsx;
@@ -1776,9 +1780,11 @@ function renderScatter(r){
     const show=()=>{const tip=box.querySelector('#scTip');if(!tip)return;
       const s=c.dataset.s,p=c.dataset.p,rms=c.dataset.r,dt=c.dataset.d;
       tip.style.display='';
-      tip.innerHTML='<b>'+eur(+p)+'</b> \u00b7 '+s+' m\u00b2'+(rms?' \u00b7 '+rms+' pi\u00e8ce'+(+rms>1?'s':''):'')+(dt?' \u00b7 '+dt:'');};
-    c.addEventListener('click',show);
-    c.addEventListener('touchend',e=>{e.preventDefault();show();},{passive:false});
+      tip.innerHTML='<b>'+eur(+p)+'</b> \u00b7 '+s+' m\u00b2'+(rms?' \u00b7 '+rms+' pi\u00e8ce'+(+rms>1?'s':''):'')+(dt?' \u00b7 '+dt:'')+(c.dataset.a?' \u00b7 <span style="opacity:.8">'+esc(c.dataset.a)+'</span>':'');};
+    const sel=()=>{box.querySelectorAll('.scDot.sel').forEach(x=>{x.classList.remove('sel');x.setAttribute('fill',x.dataset.of||'#7EC8BC');x.setAttribute('r','3');});
+      c.dataset.of=c.getAttribute('fill');c.classList.add('sel');c.setAttribute('fill','#E8742A');c.setAttribute('r','5');};
+    c.addEventListener('click',()=>{sel();show();});
+    c.addEventListener('touchend',e=>{e.preventDefault();sel();show();},{passive:false});
   });
 }
 
@@ -2186,7 +2192,7 @@ function renderContext(r){
   if(x2.sirene)extra.push("Entreprises actives : "+eur0(x2.sirene.total));
   if(x2.plu&&(x2.plu.libelle||x2.plu.zone))extra.push("Zonage PLU : "+esc(x2.plu.libelle||x2.plu.zone));
   const extraHtml=extra.length?`<div style="margin-top:10px;font-size:11.5px;color:var(--ink);line-height:1.7">`+extra.map(e=>`<div>&#8226; ${e}</div>`).join("")+`</div>`:"";
-  el.innerHTML=`<div style="font-size:12px;color:var(--ink-soft);line-height:1.55;margin-bottom:8px">Contexte consolide a partir des sources publiques disponibles. Ces donnees enrichissent la confiance et les analyses, <b>sans modifier le prix</b>.</div><div>${chips||'<span style="font-size:11.5px;color:var(--ink-soft)">Sources en cours de chargement.</span>'}</div>${extraHtml}${idxHtml}${confHtml}${anHtml}<div class="hint" style="margin-top:10px">Richesse des donnees : ${pc.richness} %. De futurs fournisseurs (IRIS, SIRENE, PLU, bruit, permis) enrichiront ce contexte ; tout impact eventuel sur le prix restera desactive tant qu'il n'est pas valide sur le DVF local.</div>`;
+  el.innerHTML=`<div style="font-size:12px;color:var(--ink-soft);line-height:1.55;margin-bottom:8px">Contexte consolide a partir des sources publiques disponibles. Ces donnees enrichissent la confiance et les analyses, <b>sans modifier le prix</b>.</div><div>${chips||'<span style="font-size:11.5px;color:var(--ink-soft)">Sources en cours de chargement.</span>'}</div>${extraHtml}${idxHtml}${confHtml}${anHtml}<div class="hint" style="margin-top:10px">Richesse des donnees : ${pc.richness} %. Contexte construit a partir de 10+ sources publiques (DVF, Filosofi, RPLS, ARCEP, SSMSI, ADEME, IGN, Georisques, OSM, BAN). Tout impact sur le prix est ancre au DVF local.</div>`;
 }
 // ===== Prompt 7 : moteur d'aide a la negociation =====
 function negotiation(r){
@@ -2634,8 +2640,68 @@ function buildEstimation(data){
   r.basePrice=r.price;r.dynAdj=marketDynamicsAdjust(r);r.geoAdj={adj:0,score:null};
   if(r.dynAdj.adj){r.price=Math.round(r.basePrice*(1+r.dynAdj.adj));r.sqm=Math.round(r.price/(r.surface||1));r.low=r.price*(1-r.spread);r.high=r.price*(1+r.spread);}
   applyFinalDvfCap(r);
+  r.financialPrice=computeFinancialPrice(r);
   return{r,_conf,realBase,diag:data.diag};
 }
+
+// Prix financier : prix d'achat maximal tel que VAN = 0 (point mort financier).
+// Resout par bisection : on fait varier le prix d'achat et on recalcule la VAN complete
+// (frais de notaire, credit, charges, loyers, fiscalite, revente) pour trouver le seuil.
+function computeFinancialPrice(r){
+  if(!r||!r.price||!r.surface)return null;
+  const H=numv("horizon")||numv("iDuree")||20;
+  const rent=numv("iRent")*12||0;if(!rent)return null;
+  const charges=numv("iTaxe")+numv("iCopro")+numv("iPno")+numv("iDivers")+numv("iCompta")+numv("iCfe");
+  const taux=(numv("iTaux")||3.4)/100/12,assur=(numv("iAssur")||0.34)/100/12;
+  const duree=(numv("iDuree")||20)*12,apportPct=numv("iApport")>0?numv("iApport"):0;
+  const dossier=numv("iDossier")||1000,garantie=numv("iGarantie")||6000;
+  const travaux=numv("iTravaux")||0;
+  const disc=numv("iDisc")||(numv("OAT10")||3.6)/100+0.008;
+  const tmi=+($("tmi").value)||30;const reg=$("regime").value||"meuble_micro";
+  const revalAn=(r.dyn&&r.dyn.trendReal&&r.dyn.evo12!=null)?Math.max(-2,Math.min(4,r.dyn.evo12))/100:0.015;
+  // Fonction VAN pour un prix d'achat donn\u00e9
+  function vanForPrice(bp){
+    const notaire=Math.round(bp*(bp>300000?0.075:0.08));
+    const totalOp=bp+notaire+travaux+dossier+garantie;
+    const apport=apportPct>0?Math.min(apportPct,totalOp):Math.round(totalOp*0.1);
+    const emprunt=totalOp-apport;
+    const mens=emprunt>0?emprunt*(taux+assur)/(1-Math.pow(1+taux+assur,-duree)):0;
+    const mensAn=mens*12;
+    const amortImmo=bp*0.85/30,amortMob=(state.loc==="meuble"?bp*0.10/7:0),amortTr=travaux>0?travaux/10:0;
+    const amortTotal=amortImmo+amortMob+amortTr;
+    let van=-apport;
+    for(let y=1;y<=H;y++){
+      const rY=rent;const ch=charges;
+      const intAn=y*12<=duree?(function(){let s=0,cap=emprunt;for(let m2=0;m2<(y-1)*12;m2++){const intM=cap*(taux);cap-=(mens-intM-cap*assur);}let si=0;for(let m2=0;m2<12;m2++){const intM=cap*(taux);si+=intM;cap-=(mens-intM-cap*assur);}return si;})():0;
+      const assurAn=y*12<=duree?emprunt*assur*12:0;
+      const taxable=reg==="meuble_micro"?rY*0.5:reg==="meuble_reel"?Math.max(0,rY-ch-assurAn-intAn-(y<=30?amortTotal:0)):reg==="nue_micro"?rY*0.7:Math.max(0,rY-ch-assurAn-intAn);
+      const impot=taxable*(tmi/100+0.172);
+      const cf=rY-ch-mensAn-impot;
+      van+=cf/Math.pow(1+disc,y);
+    }
+    // Revente en ann\u00e9e H
+    const valRevente=bp*Math.pow(1+revalAn,H);
+    const capDu=(function(){let cap=emprunt;for(let m2=0;m2<Math.min(H*12,duree);m2++){const intM=cap*(taux);cap-=(mens-intM-cap*assur);}return Math.max(0,cap);})();
+    const fraisRevente=valRevente*0.06;
+    const pvBrute=Math.max(0,valRevente-bp-travaux);
+    const abattIR=H>=22?1:H>=6?Math.min(1,0.06*(H-5)):0;
+    const pvNette=pvBrute*(1-abattIR);
+    const impotPV=pvNette*(0.19+0.172);
+    const fluxRevente=valRevente-capDu-fraisRevente-impotPV;
+    van+=fluxRevente/Math.pow(1+disc,H);
+    return van;
+  }
+  // Bisection : trouver le prix tel que VAN=0
+  let lo=10000,hi=r.price*3,mid;
+  if(vanForPrice(lo)<0)return null; // m\u00eame au prix plancher la VAN est n\u00e9gative -> pas de solution
+  for(let i=0;i<50;i++){
+    mid=Math.round((lo+hi)/2);
+    if(vanForPrice(mid)>0)lo=mid;else hi=mid;
+    if(hi-lo<500)break;
+  }
+  return Math.round((lo+hi)/2);
+}
+
 // Phase 3 : rendu de tous les panneaux (DOM)
 function renderAllPanels(r,_conf,realBase,diag){
   const sd=$("srcDot"),st=$("srcTxt");
@@ -2652,6 +2718,7 @@ function renderAllPanels(r,_conf,realBase,diag){
   cd.style.background=_cc;ct.textContent="Indice de confiance "+r.confScore+"/100 \u00b7 "+r.confLabel;
   renderConfBreak(_conf);
   renderExplain(r);
+  const fpn=$("finPriceNote");if(fpn&&r.financialPrice){fpn.style.display="";fpn.innerHTML='<div style="font-size:10px;color:var(--ink-soft);text-transform:uppercase">Prix financier (VAN = 0)</div><div class="num" style="font-size:17px;font-weight:800;color:var(--brand-dark);margin-top:2px">'+eur(r.financialPrice)+'</div><div style="font-size:10.5px;color:var(--ink-soft);margin-top:2px">Prix d\u2019achat maximal pour lequel votre investissement reste rentable (VAN \u2265 0) sur '+($("iDuree")?$("iDuree").value:"20")+' ans, avec vos hypoth\u00e8ses de loyer, charges, financement et fiscalit\u00e9.</div>';}else if(fpn)fpn.style.display="none";
   renderInsee(r);renderMarket(r);renderLocStats(r);renderDvfStats(r);renderPriceHistory(r);genComparables(r);renderEstimators(r);renderBienIndices(r);renderGlobalIndex(r);renderPriceFormation(r);renderContext(r);
   $("locAddr").textContent=state.coord?.label||(($("ville").value||"")+" "+$("cp").value).trim();
   $("locCoord").textContent=state.coord?`${state.coord.lat.toFixed(4)}, ${state.coord.lon.toFixed(4)}${state.coord.alt!=null?" \u00b7 alt. "+state.coord.alt+" m":""} \u00b7 carte interactive dans la version h\u00e9berg\u00e9e`:"Carte interactive disponible dans la version h\u00e9berg\u00e9e";
