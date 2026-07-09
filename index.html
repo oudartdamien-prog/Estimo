@@ -2239,7 +2239,7 @@ function renderEstimators(r){
   const _st=r.realStats,_reg=(r.engines||[]).find(e=>e.key==='reg'),_sc=(_st&&_st.med>0&&_reg)?(_reg.ppm-_st.med)/_st.med:null;
   const p3=_sc!=null?`<div style="margin-top:8px;padding:9px 13px;background:var(--bg);border-radius:11px;font-size:10.5px;color:var(--ink);line-height:1.45"><b>Coefficient de surface appris du DVF</b> : ${(_sc>0?'+':'')}${(_sc*100).toFixed(1)} % pour ${r.surface||'\u2014'} m\u00b2 (r\u00e9gression du secteur vs m\u00e9diane). Les effets de surface sont appris statistiquement sur les ventes ; les coefficients intrins\u00e8ques (DPE, \u00e9tat, standing) restent calibr\u00e9s car absents du DVF brut.</div>`:"";
   const rows=m.est.map(e=>{const wp=Math.round(e.conf/tot*100);return `<div style="padding:10px 0;border-bottom:1px solid var(--line)"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:12.5px;font-weight:700;color:var(--ink)">${e.label}</span><span class="num" style="font-size:14px;font-weight:800;color:var(--ink)">${eur0(e.price)} \u20ac</span></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:3px;gap:8px"><span style="font-size:10px;color:var(--ink-soft);white-space:nowrap">${eur0(e.low)}\u2013${eur0(e.high)} \u20ac</span><div style="flex:1;height:5px;border-radius:3px;background:var(--line);overflow:hidden;max-width:80px"><div style="height:100%;width:${e.conf}%;background:var(--brand-dark)"></div></div><span style="font-size:10px;color:var(--ink-soft);min-width:62px;text-align:right">conf. ${e.conf} \u00b7 ${wp}%</span></div><div style="font-size:10px;color:var(--ink-soft);margin-top:3px;line-height:1.4">${e.justif}</div></div>`;}).join("");
-  el.innerHTML=rows+`<div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;padding:11px 13px;background:var(--bg);border-radius:11px"><div><div style="font-size:11px;color:var(--ink-soft);text-transform:uppercase;font-weight:700">Moyenne pond\u00e9r\u00e9e des m\u00e9thodes</div><div style="font-size:10.5px;color:var(--ink-soft)">validation crois\u00e9e (march\u00e9 brut)</div></div><div class="num" style="font-size:17px;font-weight:800;color:var(--ink)">${eur0(m.fused)} \u20ac</div></div>`+`<div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center;padding:11px 13px;background:var(--brand-tint);border-radius:11px"><div><div style="font-size:11px;color:var(--ink-soft);text-transform:uppercase;font-weight:700">Estimation retenue</div><div style="font-size:10.5px;color:var(--ink-soft)">mod\u00e8le composite (caract\u00e9ristiques du bien)</div></div><div class="num" style="font-size:18px;font-weight:800;color:var(--brand-dark)">${eur0(r.price)} \u20ac</div></div>`+p3+`<div class="hint" style="margin-top:8px">Six estimateurs ind\u00e9pendants fusionn\u00e9s par confiance. L'estimation retenue est le mod\u00e8le composite (qui applique le d\u00e9tail des caract\u00e9ristiques) ; la moyenne des m\u00e9thodes, davantage ancr\u00e9e au march\u00e9 brut, sert de validation crois\u00e9e. Le DVF brut ne fournit ni distance, ni DPE, ni \u00e9tage par vente : le scoring porte sur surface, r\u00e9cence et type.</div>`;
+  el.innerHTML=rows+`<div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;padding:11px 13px;background:var(--bg);border-radius:11px"><div><div style="font-size:11px;color:var(--ink-soft);text-transform:uppercase;font-weight:700">Moyenne pond\u00e9r\u00e9e des m\u00e9thodes</div><div style="font-size:10.5px;color:var(--ink-soft)">validation crois\u00e9e (march\u00e9 brut)</div></div><div class="num" style="font-size:17px;font-weight:800;color:var(--ink)">${eur0(m.fused)} \u20ac</div></div>`+`<div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center;padding:11px 13px;background:var(--brand-tint);border-radius:11px"><div><div style="font-size:11px;color:var(--ink-soft);text-transform:uppercase;font-weight:700">Estimation retenue</div><div style="font-size:10.5px;color:var(--ink-soft)">mod\u00e8le composite (caract\u00e9ristiques du bien)</div></div><div class="num" style="font-size:18px;font-weight:800;color:var(--brand-dark)">${eur0(r.price)} \u20ac</div></div>`+p3+`<div id="finEstCard" style="margin-top:8px;padding:11px 13px;background:#fff6ef;border:1px solid var(--warn-tint);border-radius:11px">`+finCardHtml(r)+`</div>`+`<div class="hint" style="margin-top:8px">Six estimateurs ind\u00e9pendants fusionn\u00e9s par confiance. L'estimation retenue est le mod\u00e8le composite (qui applique le d\u00e9tail des caract\u00e9ristiques) ; la moyenne des m\u00e9thodes, davantage ancr\u00e9e au march\u00e9 brut, sert de validation crois\u00e9e. Le DVF brut ne fournit ni distance, ni DPE, ni \u00e9tage par vente : le scoring porte sur surface, r\u00e9cence et type.</div>`;
 }
 function renderEngines(r){
   const el=$("enginesPanel");if(!el)return;
@@ -2560,62 +2560,46 @@ function buildEstimation(data){
   return{r,_conf,realBase,diag:data.diag};
 }
 
+/* Prix financier investisseur : prix d'achat maximal atteignant le rendement exige (VAN=0),
+   revente incluse et ANCREE AU PRIX DE MARCHE (l'acheteur revend a la valeur du marche, pas au prix paye).
+   Reutilise le meme moteur actuariel que la projection VAN/TRI (projCore) : fiscalite plus-value
+   complete (abattements IR 22 ans / PS 30 ans + surtaxe), taux d'actualisation dynamique, croissance
+   des loyers/charges. Horizon standardise long terme (voir FIN_HORIZON). */
+const FIN_HORIZON=30; // detention longue : abattements plus-value complets (PS a 30 ans) + logique de marche long terme
 function computeFinancialPrice(r){
   if(!r||!r.price||!r.surface)return null;
-  const H=numv("iDuree")||20;
-  const rent=numv("iRent")*12||0;if(!rent)return null;
-  const charges=numv("iTaxe")+numv("iCopro")+numv("iPno")+numv("iDivers")+numv("iCompta")+numv("iCfe");
-  const taux=(numv("iTaux")||3.4)/100/12,assur=(numv("iAssur")||0.34)/100/12;
-  const duree=(numv("iDuree")||20)*12,apportPct=numv("iApport");
-  const dossier=numv("iDossier")||1000,garantie=numv("iGarantie")||6000;
-  const travaux=numv("iTravaux")||0;
-  const disc=(typeof OAT10!=="undefined"?OAT10:3.6)/100+0.008;
-  const tmi=+($("tmi")?$("tmi").value:30)||30;const reg=$("regime")?$("regime").value:"meuble_micro";
-  const revalAn=(r.dyn&&r.dyn.trendReal&&r.dyn.evo12!=null)?Math.max(-2,Math.min(4,r.dyn.evo12))/100:0.015;
-  function vanForPrice(bp){
-    const notaire=Math.round(bp*(bp>300000?0.075:0.08));
-    const totalOp=bp+notaire+travaux+dossier+garantie;
-    const apport=apportPct>0?Math.min(apportPct,totalOp):Math.round(totalOp*0.1);
-    const emprunt=totalOp-apport;
-    const mens=emprunt>0?emprunt*(taux+assur)/(1-Math.pow(1+taux+assur,-duree)):0;
-    const mensAn=mens*12;
-    const amortImmo=bp*0.85/30,amortMob=(state.loc==="meuble"?bp*0.10/7:0),amortTr=travaux>0?travaux/10:0;
-    const amortTotal=amortImmo+amortMob+amortTr;
-    let van=-apport;
-    for(let y=1;y<=H;y++){
-      const rY=rent;const ch=charges;
-      const intAn=y*12<=duree?(function(){let s=0,cap=emprunt;for(let m2=0;m2<(y-1)*12;m2++){const intM=cap*(taux);cap-=(mens-intM-cap*assur);}let si=0;for(let m2=0;m2<12;m2++){const intM=cap*(taux);si+=intM;cap-=(mens-intM-cap*assur);}return si;})():0;
-      const assurAn=y*12<=duree?emprunt*assur*12:0;
-      const taxable=reg==="meuble_micro"?rY*0.5:reg==="meuble_reel"?Math.max(0,rY-ch-assurAn-intAn-(y<=30?amortTotal:0)):reg==="nue_micro"?rY*0.7:Math.max(0,rY-ch-assurAn-intAn);
-      const impot=taxable*(tmi/100+0.172);
-      const cf=rY-ch-mensAn-impot;
-      van+=cf/Math.pow(1+disc,y);
-    }
-    const valRevente=bp*Math.pow(1+revalAn,H);
-    const capDu=(function(){let cap=emprunt;for(let m2=0;m2<Math.min(H*12,duree);m2++){const intM=cap*(taux);cap-=(mens-intM-cap*assur);}return Math.max(0,cap);})();
-    const fraisRevente=valRevente*0.06;
-    const pvBrute=Math.max(0,valRevente-bp-travaux);
-    const abattIR=H>=22?1:H>=6?Math.min(1,0.06*(H-5)):0;
-    const pvNette=pvBrute*(1-abattIR);
-    const impotPV=pvNette*(0.19+0.172);
-    const fluxRevente=valRevente-capDu-fraisRevente-impotPV;
-    van+=fluxRevente/Math.pow(1+disc,H);
-    return van;
-  }
-  let lo=10000,hi=r.price*3,mid;
-  if(vanForPrice(lo)<0)return null; // m\u00eame au prix plancher la VAN est n\u00e9gative -> pas de solution
-  for(let i=0;i<50;i++){
-    mid=Math.round((lo+hi)/2);
-    if(vanForPrice(mid)>0)lo=mid;else hi=mid;
-    if(hi-lo<500)break;
-  }
+  if(!(numv("iRent")>0))return null;
+  const p0=projParams(r);
+  const V=r.price; // valeur de marche (comparables) : point d'ancrage de la revente
+  const van=bp=>projCore(Object.assign({},p0,{bp:bp,H:FIN_HORIZON,exitBase:V})).van;
+  let lo=10000,hi=Math.max(V*3,30000);
+  if(van(lo)<0)return null;          // meme au prix plancher la VAN reste negative -> pas de solution
+  if(van(hi)>0)return Math.round(hi);// bien si rentable qu'il vaut la peine meme a 3x le marche -> plafond
+  for(let i=0;i<60;i++){const mid=(lo+hi)/2;if(van(mid)>0)lo=mid;else hi=mid;if(hi-lo<200)break;}
   return Math.round((lo+hi)/2);
+}
+function finCardHtml(r){
+  const fp=r.financialPrice;
+  if(!fp)return '<div style="font-size:11px;color:var(--ink-soft)">Renseignez un loyer pour calculer le prix financier investisseur.</div>';
+  const V=r.price,gap=V>0?Math.round((fp-V)/V*100):0,col=gap>=0?"var(--good)":gap>=-15?"var(--warn)":"var(--bad)";
+  return '<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:12.5px;font-weight:700;color:var(--ink)">Prix financier (investisseur)</span><span class="num" style="font-size:14px;font-weight:800;color:var(--ink)">'+eur0(fp)+' \u20ac</span></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:3px"><span style="font-size:10px;color:'+col+';font-weight:700">'+(gap>0?"+":"")+gap+' % / march\u00e9</span><span style="font-size:10px;color:var(--ink-soft)">VAN = 0 \u00b7 '+FIN_HORIZON+' ans</span></div><div style="font-size:10px;color:var(--ink-soft);margin-top:3px;line-height:1.4">Prix plafond pour atteindre votre rendement exig\u00e9, revente au prix de march\u00e9 incluse. Mesure une <b>rentabilit\u00e9</b>, non une valeur de march\u00e9 \u2014 exclu de la moyenne des m\u00e9thodes.</div>';
 }
 function renderFinPrice(r){
   const fpn=$("finPriceNote");if(!fpn||!r)return;
-  r.financialPrice=computeFinancialPrice(r);
-  if(r.financialPrice){fpn.style.display="";fpn.innerHTML='<div style="font-size:10px;color:var(--ink-soft);text-transform:uppercase">Prix financier (VAN = 0)</div><div class="num" style="font-size:17px;font-weight:800;color:var(--brand-dark);margin-top:2px">'+eur(r.financialPrice)+'</div><div style="font-size:10.5px;color:var(--ink-soft);margin-top:2px">Prix d\u2019achat maximal pour lequel votre investissement reste rentable (VAN \u2265 0) sur '+($("iDuree")?$("iDuree").value:"20")+' ans, avec vos hypoth\u00e8ses de loyer, charges, financement et fiscalit\u00e9.</div>';}
-  else fpn.style.display="none";
+  const fp=computeFinancialPrice(r);r.financialPrice=fp;
+  const fc=$("finEstCard");if(fc)fc.innerHTML=finCardHtml(r);
+  if(!fp){fpn.style.display="none";return;}
+  const V=r.price,gap=V>0?Math.round((fp-V)/V*100):0;
+  const col=gap>=0?"var(--good)":gap>=-15?"var(--warn)":"var(--bad)";
+  let msg;
+  if(gap>=5)msg='<b>Sup\u00e9rieur au prix de march\u00e9</b> : \u00e0 vos hypoth\u00e8ses, le bien peut se payer au-del\u00e0 de sa valeur de comparables tout en atteignant votre rendement cible \u2014 signal d\u2019opportunit\u00e9.';
+  else if(gap>-5)msg='<b>Align\u00e9 sur le prix de march\u00e9</b> : loyer et revalorisation attendue justifient \u00e0 peu pr\u00e8s le prix de march\u00e9 \u00e0 votre exigence de rendement.';
+  else if(gap>-15)msg='<b>L\u00e9g\u00e8rement sous le march\u00e9</b> : n\u00e9gocier ~'+Math.abs(gap)+' % am\u00e9liorerait le rendement de vos fonds propres.';
+  else msg='<b>Nettement sous le march\u00e9</b> ('+gap+' %) : \u00e0 vos hypoth\u00e8ses (loyer, charges, financement) et \u00e0 votre exigence de rendement, payer le prix de march\u00e9 d\u00e9truit de la valeur actualis\u00e9e. V\u00e9rifiez le loyer, l\u2019horizon et le taux d\u2019actualisation.';
+  fpn.style.display="";
+  fpn.innerHTML='<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><div><div style="font-size:10px;color:var(--ink-soft);text-transform:uppercase">Prix financier (VAN = 0)</div><div class="num" style="font-size:17px;font-weight:800;color:var(--brand-dark);margin-top:2px">'+eur(fp)+'</div></div><div style="text-align:right"><div style="font-size:10px;color:var(--ink-soft);text-transform:uppercase">\u00c9cart / march\u00e9</div><div class="num" style="font-size:15px;font-weight:800;color:'+col+';margin-top:2px">'+(gap>0?"+":"")+gap+' %</div></div></div>'+
+    '<div style="font-size:10.5px;color:var(--ink-soft);margin-top:6px;line-height:1.5">'+msg+'</div>'+
+    '<div style="font-size:10px;color:var(--ink-soft);margin-top:6px;line-height:1.45">Prix d\u2019achat maximal pour lequel l\u2019op\u00e9ration atteint votre rendement exig\u00e9 (VAN \u2265 0), <b>revente au prix de march\u00e9 revaloris\u00e9 incluse</b>, sur un horizon long de '+FIN_HORIZON+' ans (abattements plus-value complets). M\u00eame moteur actuariel que la projection VAN/TRI.</div>';
 }
 
 function renderAllPanels(r,_conf,realBase,diag){
@@ -3195,7 +3179,7 @@ function projCore(p){
     cfArr.push(rY-chY-fiscalTax(p.reg,rY,chY,intY,insY,amY)-payY);
   }
   const iraAt=s=>{const crd=crdAt(s);return crd>0?Math.min(crd*p.taux*0.5,crd*0.03):0;};
-  const netResaleAt=s=>{const sell=p.bp*Math.pow(1+p.reval,s),fr=sell*p.fv;let acq=p.bp+notaire+(s>5?p.bp*0.15:0);if(p.reg==="meuble_reel")acq-=Math.min(p.bp*0.85,((state._amortTotal||(p.bp*0.85/30)))*s);const pvB=Math.max(0,sell-fr-acq),impot=pvB*(1-abatIR(s))*0.19+pvB*(1-abatPS(s))*ps+surtaxePV(pvB*(1-abatIR(s)));return sell-fr-impot-crdAt(s)-iraAt(s);};
+  const netResaleAt=s=>{const sell=(p.exitBase||p.bp)*Math.pow(1+p.reval,s),fr=sell*p.fv;let acq=p.bp+notaire+(s>5?p.bp*0.15:0);if(p.reg==="meuble_reel")acq-=Math.min(p.bp*0.85,((state._amortTotal||(p.bp*0.85/30)))*s);const pvB=Math.max(0,sell-fr-acq),impot=pvB*(1-abatIR(s))*0.19+pvB*(1-abatPS(s))*ps+surtaxePV(pvB*(1-abatIR(s)));return sell-fr-impot-crdAt(s)-iraAt(s);};
   const flows=[-p.apport];let van=-p.apport;
   for(let t=1;t<=p.H;t++){let flow=cfArr[t-1];if(t===p.H)flow+=netResaleAt(p.H);flows.push(flow);van+=flow/Math.pow(1+p.rate,t);}
   return {van:van,cf1m:cfArr[0]/12,tri:irr(flows)};
