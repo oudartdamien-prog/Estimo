@@ -137,6 +137,18 @@
   .rg-note{font-size:11.5px;color:var(--ink-soft);line-height:1.5;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
   .rg-note b{color:var(--ink);font-weight:700}
 
+  /* Mes biens (sauvegarde locale) */
+  .saved-row{display:flex;gap:8px;align-items:center;margin-top:10px}
+  .saved-row:first-of-type{margin-top:2px}
+  .saved-select{flex:1;min-width:0;font-family:var(--body);font-size:13.5px;color:var(--ink);background:#fff;border:1.5px solid var(--line);border-radius:var(--r-sm);padding:11px 10px}
+  .saved-select:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-tint)}
+  .btn-sm{font-family:var(--body);font-weight:700;font-size:13px;border-radius:var(--r-sm);padding:11px 14px;cursor:pointer;border:1.5px solid var(--line);background:#fff;color:var(--ink);white-space:nowrap;transition:.12s}
+  .btn-sm:active{transform:translateY(1px)}
+  .btn-sm.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+  .btn-sm.danger{color:var(--bad);border-color:var(--bad-tint);background:var(--bad-tint)}
+  .btn-sm:disabled{opacity:.4;cursor:not-allowed}
+  .saved-note{font-size:10.5px;color:var(--ink-soft);margin-top:9px;line-height:1.4}
+
   #results{display:none}#results.show{display:flex;flex-direction:column;animation:fade .4s ease}
   @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
@@ -260,6 +272,22 @@
 </header>
 
 <main class="container">
+
+  <!-- MES BIENS (sauvegarde locale) -->
+  <section class="card saved-card" id="savedCard">
+    <div class="card-head"><div class="step-no">&#128190;</div><div><h2>Mes biens</h2><div class="sub">Enregistrez un bien pour le retrouver et l'actualiser plus tard, sans tout ressaisir</div></div></div>
+    <div class="saved-row">
+      <select class="saved-select" id="savedSelect"><option value="">Aucun bien sauvegard&#233; pour l'instant</option></select>
+      <button type="button" class="btn-sm" id="btnLoadBien" disabled>Ouvrir</button>
+      <button type="button" class="btn-sm danger" id="btnDeleteBien" disabled>Suppr.</button>
+    </div>
+    <div class="saved-row">
+      <input class="input" id="bienLabel" type="text" placeholder="Nom du bien (ex : T3 Lyon 7e)" maxlength="60" style="flex:1" />
+      <button type="button" class="btn-sm primary" id="btnSaveBien">Sauvegarder</button>
+    </div>
+    <div id="savedHint" class="hint" style="display:none"></div>
+    <div class="saved-note">Sauvegarde locale, sur cet appareil et ce navigateur uniquement (aucun envoi de donn&#233;es \u00e0 un serveur).</div>
+  </section>
 
   <!-- 1 &#183; LE BIEN -->
   <section class="card">
@@ -1680,7 +1708,7 @@ function renderScatter(r){
   const pBig=pc(all.filter(p=>p.surf>ssurf).length),pExp=pc(all.filter(p=>p.price>sprice).length);
   const sx=mx(ssurf).toFixed(1),sy=my(sprice).toFixed(1);
   const dots=pts.map((p,i)=>{const ro=p.surf>=ssurf*0.75&&p.surf<=ssurf*1.25?"#0FB39E":"#7EC8BC";
-    return `<circle cx="${mx(p.surf).toFixed(1)}" cy="${my(p.price).toFixed(1)}" r="3" fill="${ro}" fill-opacity=".45" class="scDot" data-s="${Math.round(p.surf)}" data-p="${Math.round(p.price)}" data-r="${p.rooms||''}" data-d="${p.date?String(p.date).slice(0,7):''}" data-a="${esc(p.addr||'')}"/>`;}).join("");
+    return `<circle cx="${mx(p.surf).toFixed(1)}" cy="${my(p.price).toFixed(1)}" r="3" fill="${ro}" fill-opacity=".45" class="scDot" data-s="${Math.round(p.surf)}" data-p="${Math.round(p.price)}" data-r="${p.rooms||''}" data-d="${p.date?String(p.date).slice(0,7):''}" data-a="${esc(p.addr||'')}" data-lat="${p.lat!=null?p.lat:''}" data-lon="${p.lon!=null?p.lon:''}"/>`;}).join("");
   let _rsx=0,_rsy=0,_rsxy=0,_rsxx=0;all.forEach(p=>{_rsx+=p.surf;_rsy+=p.price;_rsxy+=p.surf*p.price;_rsxx+=p.surf*p.surf;});
   const _rn=all.length,_rden=_rn*_rsxx-_rsx*_rsx;
   const regSlope=_rden!==0?(_rn*_rsxy-_rsx*_rsy)/_rden:0,regInt=(_rsy-regSlope*_rsx)/_rn;
@@ -1714,12 +1742,27 @@ function renderScatter(r){
     const show=()=>{const tip=box.querySelector('#scTip');if(!tip)return;
       const s=c.dataset.s,p=c.dataset.p,rms=c.dataset.r,dt=c.dataset.d;
       tip.style.display='';
-      tip.innerHTML='<b>'+eur(+p)+'</b> \u00b7 '+s+' m\u00b2'+(rms?' \u00b7 '+rms+' pi\u00e8ce'+(+rms>1?'s':''):'')+(dt?' \u00b7 '+dt:'')+(c.dataset.a?' \u00b7 <span style="opacity:.8">'+esc(c.dataset.a)+'</span>':'');};
+      const addrTxt=c.dataset.a?' \u00b7 <span style="opacity:.8">'+esc(c.dataset.a)+'</span>':(c.dataset.resolving?' \u00b7 <span style="opacity:.6">adresse\u2026</span>':'');
+      tip.innerHTML='<b>'+eur(+p)+'</b> \u00b7 '+s+' m\u00b2'+(rms?' \u00b7 '+rms+' pi\u00e8ce'+(+rms>1?'s':''):'')+(dt?' \u00b7 '+dt:'')+addrTxt;};
     const sel=()=>{box.querySelectorAll('.scDot.sel').forEach(x=>{x.classList.remove('sel');x.setAttribute('fill',x.dataset.of||'#7EC8BC');x.setAttribute('r','3');});
       c.dataset.of=c.getAttribute('fill');c.classList.add('sel');c.setAttribute('fill','#E8742A');c.setAttribute('r','5');};
-    c.addEventListener('click',()=>{sel();show();});
-    c.addEventListener('touchend',e=>{e.preventDefault();sel();show();},{passive:false});
+    c.addEventListener('click',()=>{sel();show();resolveDotAddr(c,show);});
+    c.addEventListener('touchend',e=>{e.preventDefault();sel();show();resolveDotAddr(c,show);},{passive:false});
   });
+}
+const _revGeoCache={};
+function resolveDotAddr(c,cb){
+  if(c.dataset.a||c.dataset.resolving)return;
+  const lat=parseFloat(c.dataset.lat),lon=parseFloat(c.dataset.lon);
+  if(!(lat>-90&&lat<90)||!(lon>-180&&lon<180))return;
+  const key=lat.toFixed(4)+","+lon.toFixed(4);
+  if(_revGeoCache[key]!=null){c.dataset.a=_revGeoCache[key];if(c.dataset.a)cb&&cb();return;}
+  c.dataset.resolving="1";
+  fetchT("https://api-adresse.data.gouv.fr/reverse/?lon="+lon+"&lat="+lat,5000)
+    .then(res=>res.ok?res.json():null)
+    .then(d=>{const f=d&&d.features&&d.features[0];const label=f?"\u2248 "+f.properties.label:"";
+      _revGeoCache[key]=label;delete c.dataset.resolving;if(label){c.dataset.a=label;cb&&cb();}})
+    .catch(()=>{delete c.dataset.resolving;});
 }
 
 /* R\u00e9gimes fiscaux dynamiques */
@@ -1741,6 +1784,7 @@ function renderRentalDefaults(r){
   fillRegimes();
   computeAll(r);
   updRentVsMkt();
+  renderFinPrice(r);
   renderWorks();
 }
 function updRentVsMkt(){
@@ -2567,6 +2611,12 @@ function computeFinancialPrice(r){
   }
   return Math.round((lo+hi)/2);
 }
+function renderFinPrice(r){
+  const fpn=$("finPriceNote");if(!fpn||!r)return;
+  r.financialPrice=computeFinancialPrice(r);
+  if(r.financialPrice){fpn.style.display="";fpn.innerHTML='<div style="font-size:10px;color:var(--ink-soft);text-transform:uppercase">Prix financier (VAN = 0)</div><div class="num" style="font-size:17px;font-weight:800;color:var(--brand-dark);margin-top:2px">'+eur(r.financialPrice)+'</div><div style="font-size:10.5px;color:var(--ink-soft);margin-top:2px">Prix d\u2019achat maximal pour lequel votre investissement reste rentable (VAN \u2265 0) sur '+($("iDuree")?$("iDuree").value:"20")+' ans, avec vos hypoth\u00e8ses de loyer, charges, financement et fiscalit\u00e9.</div>';}
+  else fpn.style.display="none";
+}
 
 function renderAllPanels(r,_conf,realBase,diag){
   const sd=$("srcDot"),st=$("srcTxt");
@@ -2583,7 +2633,7 @@ function renderAllPanels(r,_conf,realBase,diag){
   cd.style.background=_cc;ct.textContent="Indice de confiance "+r.confScore+"/100 \u00b7 "+r.confLabel;
   renderConfBreak(_conf);
   renderExplain(r);
-  const fpn=$("finPriceNote");if(fpn&&r.financialPrice){fpn.style.display="";fpn.innerHTML='<div style="font-size:10px;color:var(--ink-soft);text-transform:uppercase">Prix financier (VAN = 0)</div><div class="num" style="font-size:17px;font-weight:800;color:var(--brand-dark);margin-top:2px">'+eur(r.financialPrice)+'</div><div style="font-size:10.5px;color:var(--ink-soft);margin-top:2px">Prix d\u2019achat maximal pour lequel votre investissement reste rentable (VAN \u2265 0) sur '+($("iDuree")?$("iDuree").value:"20")+' ans, avec vos hypoth\u00e8ses de loyer, charges, financement et fiscalit\u00e9.</div>';}else if(fpn)fpn.style.display="none";
+  const fpn=$("finPriceNote");if(fpn)fpn.style.display="none"; // recalcule apres renseignement du loyer (voir renderRentalDefaults)
   renderInsee(r);renderMarket(r);renderLocStats(r);renderDvfStats(r);renderPriceHistory(r);genComparables(r);renderEstimators(r);renderBienIndices(r);renderGlobalIndex(r);renderPriceFormation(r);renderContext(r);
   $("locAddr").textContent=state.coord?.label||(($("ville").value||"")+" "+$("cp").value).trim();
   $("locCoord").textContent=state.coord?`${state.coord.lat.toFixed(4)}, ${state.coord.lon.toFixed(4)}${state.coord.alt!=null?" \u00b7 alt. "+state.coord.alt+" m":""} \u00b7 carte interactive dans la version h\u00e9berg\u00e9e`:"Carte interactive disponible dans la version h\u00e9berg\u00e9e";
@@ -2651,7 +2701,7 @@ $("btnEstim").addEventListener("click",showResults);
   show(false);
 })();
 ["discRate"].forEach(id=>{$(id).addEventListener("input",()=>{if(lastResult)renderProjection(lastResult);});});
-["prixAchat","iRent","iTaxe","iCopro","iPno","iDivers","iCompta","iCfe","iApport","iTaux","iAssur","iDossier","iGarantie","iDuree","iTravaux","tmi","regime"].forEach(id=>{const h=()=>{if(lastResult){computeAll(lastResult);computeResale(lastResult);renderScatter(lastResult);updRentVsMkt();}};$(id).addEventListener("input",h);$(id).addEventListener("change",h);});
+["prixAchat","iRent","iTaxe","iCopro","iPno","iDivers","iCompta","iCfe","iApport","iTaux","iAssur","iDossier","iGarantie","iDuree","iTravaux","tmi","regime"].forEach(id=>{const h=()=>{if(lastResult){computeAll(lastResult);computeResale(lastResult);renderScatter(lastResult);updRentVsMkt();renderFinPrice(lastResult);}};$(id).addEventListener("input",h);$(id).addEventListener("change",h);});
 ["dispositif","dispoTravaux","dispoDuree","dispoZone"].forEach(id=>{const e=$(id);if(e){e.addEventListener("input",renderDispositif);e.addEventListener("change",renderDispositif);}});
 ["holdYears","reval","fraisVente","gRent","gCharges"].forEach(id=>{$(id).addEventListener("input",()=>{if(lastResult)computeResale(lastResult);});$(id).addEventListener("change",()=>{if(lastResult)computeResale(lastResult);});});
 bindSeg("segStatut","statut",()=>{const nr=state.statut==="nonresident";$("chkEEE").style.display=nr?"flex":"none";$("tmi").style.display=nr?"none":"";$("tmiNR").style.display=nr?"block":"none";$("tmiLabel").textContent=nr?"Imposition (non-r\u00e9sident)":"Tranche d'imp\u00f4t (TMI)";$("tmiNote").style.display=nr?"block":"none";if(lastResult){computeAll(lastResult);computeResale(lastResult);}});
@@ -3313,6 +3363,69 @@ document.querySelectorAll(".card-head").forEach(h=>h.addEventListener("click",()
 const segM=$("segMode");if(segM)segM.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{segM.querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on");$("results").classList.toggle("simple",b.dataset.m==="simple");}));
 
 fillRegimes();updateTypeUI();
+
+/* ===== Mes biens : sauvegarde locale (localStorage), pour retrouver et actualiser un bien plus tard ===== */
+const SAVED_KEY="estimo_biens_v1";
+const SAVED_VALUE_IDS=["adresse","cp","ville","surface","terrain","floorExact","floorTotal","chambres","sdb","balconM2","balconNb","terrasseM2","jardinM2","etat","standing","epoque","chauffage","vue","mitoyen","iRent","iTaxe","iCopro","iPno","iDivers","iCompta","iCfe","iApport","iTaux","iAssur","iDossier","iGarantie","iDuree","iTravaux","tmi","regime","prixAchat","reval","fraisVente","gRent","gCharges","holdYears","discRate"];
+const SAVED_CHK_IDS=["viabilise","asc","expoN","expoE","expoS","expoO","piscine","amenageable","parking","garage","cave","eee"];
+const SAVED_SEG_IDS=["segType","segNeuf","segPieces","segDpe","segGes","segLoc","segStatut","segProfil"];
+
+function loadSavedBiens(){try{const l=JSON.parse(localStorage.getItem(SAVED_KEY)||"[]");return Array.isArray(l)?l:[];}catch(_){return [];}}
+function persistSavedBiens(list){try{localStorage.setItem(SAVED_KEY,JSON.stringify(list));return true;}catch(_){return false;}}
+
+function snapshotForm(){
+  const vals={};SAVED_VALUE_IDS.forEach(id=>{const el=$(id);if(el)vals[id]=el.value;});
+  const chks={};SAVED_CHK_IDS.forEach(id=>{const el=$(id);if(el)chks[id]=el.checked;});
+  const segs={};SAVED_SEG_IDS.forEach(id=>{const el=$(id);if(!el)return;const on=el.querySelector("button.on");if(on)segs[id]=on.dataset.v;});
+  return{vals,chks,segs,coord:state.coord||null};
+}
+function restoreForm(snap){
+  if(!snap)return;
+  const NOEVT=["adresse","cp","ville"]; // evite de re-declencher l'autocomplete BAN qui efface state.coord
+  Object.keys(snap.vals||{}).forEach(id=>{const el=$(id);const v=snap.vals[id];if(!el||v==null)return;el.value=v;
+    if(NOEVT.indexOf(id)===-1){el.dispatchEvent(new Event("input",{bubbles:true}));el.dispatchEvent(new Event("change",{bubbles:true}));}});
+  Object.keys(snap.chks||{}).forEach(id=>{const el=$(id);if(!el)return;el.checked=!!snap.chks[id];el.dispatchEvent(new Event("change",{bubbles:true}));});
+  Object.keys(snap.segs||{}).forEach(id=>{const el=$(id);if(!el)return;const v=snap.segs[id];
+    const btn=[...el.querySelectorAll("button")].find(b=>b.dataset.v===v);if(btn)btn.click();});
+  if(snap.coord)state.coord=snap.coord; // restaure apres les champs, pour ne pas etre efface par leurs ecouteurs
+  if($("cpVilleRow")&&((snap.vals&&snap.vals.cp)||(snap.vals&&snap.vals.ville)))$("cpVilleRow").style.display="";
+}
+function refreshSavedSelect(){
+  const sel=$("savedSelect");if(!sel)return;
+  const list=loadSavedBiens();
+  sel.innerHTML=list.length?list.map(b=>'<option value="'+esc(b.id)+'">'+esc(b.label)+" \u00b7 "+new Date(b.savedAt).toLocaleDateString("fr-FR")+"</option>").join(""):'<option value="">Aucun bien sauvegard\u00e9 pour l\u2019instant</option>';
+  const has=list.length>0;if($("btnLoadBien"))$("btnLoadBien").disabled=!has;if($("btnDeleteBien"))$("btnDeleteBien").disabled=!has;
+}
+function showSavedHint(msg,isErr){
+  const el=$("savedHint");if(!el)return;
+  el.style.display="flex";el.style.color=isErr?"var(--bad)":"var(--ink-soft)";el.textContent=msg;
+  clearTimeout(showSavedHint._t);showSavedHint._t=setTimeout(()=>{el.style.display="none";},4500);
+}
+function saveBien(){
+  const label=(($("bienLabel")&&$("bienLabel").value)||"").trim()||(($("adresse")&&$("adresse").value)||"").trim()||(($("ville")&&$("ville").value)||"").trim()||"Bien sans nom";
+  const list=loadSavedBiens();
+  const entry={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),label:label.slice(0,60),savedAt:Date.now(),snap:snapshotForm()};
+  list.unshift(entry);if(list.length>30)list.length=30;
+  if(persistSavedBiens(list)){if($("bienLabel"))$("bienLabel").value="";refreshSavedSelect();$("savedSelect").value=entry.id;showSavedHint("Bien \u00ab "+entry.label+" \u00bb sauvegard\u00e9 sur cet appareil.");}
+  else showSavedHint("Sauvegarde impossible (stockage plein ou indisponible sur ce navigateur).",true);
+}
+function openBien(){
+  const sel=$("savedSelect");const id=sel?sel.value:"";if(!id)return;
+  const entry=loadSavedBiens().find(b=>b.id===id);if(!entry)return;
+  restoreForm(entry.snap);
+  showSavedHint("Bien \u00ab "+entry.label+" \u00bb charg\u00e9. Lancement de l\u2019estimation actualis\u00e9e\u2026");
+  setTimeout(()=>{if($("btnEstim"))$("btnEstim").click();},60);
+}
+function deleteBien(){
+  const sel=$("savedSelect");const id=sel?sel.value:"";if(!id)return;
+  const list=loadSavedBiens().filter(b=>b.id!==id);
+  persistSavedBiens(list);refreshSavedSelect();showSavedHint("Bien supprim\u00e9.");
+}
+if($("btnSaveBien"))$("btnSaveBien").addEventListener("click",saveBien);
+if($("btnLoadBien"))$("btnLoadBien").addEventListener("click",openBien);
+if($("btnDeleteBien"))$("btnDeleteBien").addEventListener("click",deleteBien);
+refreshSavedSelect();
+
 </script>
 </body>
 </html>
