@@ -483,12 +483,10 @@
   <div id="results" class="simple">
 
     <div id="modeBar" style="order:-1"><div class="seg" id="segMode"><button data-m="simple" class="on">Mode Simple</button><button data-m="expert">Mode Expert</button></div><div class="hint" style="margin-top:6px">Mode Simple : l'essentiel pour d&#233;cider (verdict, prix conseille, negociation, risques). Mode Expert : tous les calculs detailles.</div></div>
-    <section class="card" id="decisionCard" style="order:0"><div id="decisionPanel"></div></section>
+    <section class="card" id="decisionCard" style="order:0"><div id="decisionPanel"></div><div class="hint" style="padding:0 2px">Score d'acquisition : synth&#232;se multicrit&#232;re (prix, rentabilit&#233;, march&#233;, DPE, cash-flow, risque). Distinct du verdict fond&#233; sur la seule VAN affich&#233; plus bas dans la Synth&#232;se de l'investissement.</div></section>
     <section class="card expert-only" id="reportCard" style="order:7"><div class="card-head"><div class="step-no">&#128221;</div><div><h2>Rapport d'analyse</h2><div class="sub">Synth&#232;se r&#233;dig&#233;e automatiquement &#224; partir de vos donn&#233;es</div></div></div><div id="reportPanel"></div></section>
-    <section class="card expert-only" id="formationCard" style="order:4"><div class="card-head"><div class="step-no">&#128269;</div><div><h2>Fiabilit&#233; & formation du prix</h2><div class="sub">Fourchettes probabilistes, fiabilit&#233; des donn&#233;es et explication d&#233;taill&#233;e</div></div></div><div id="formationPanel"></div></section>
-    <section class="card expert-only" id="enginesCard" style="order:4"><div class="card-head"><div class="step-no">&#129518;</div><div><h2>Estimation multi-estimateurs</h2><div class="sub">6 estimateurs ind&#233;pendants fusionn&#233;s par leur confiance</div></div></div><div id="enginesPanel"></div></section>
-    <section class="card expert-only" id="bienIndicesCard" style="order:4"><div class="card-head"><div class="step-no">&#10024;</div><div><h2>Profil & indices du bien</h2><div class="sub">Qualit&#233;, raret&#233;, attractivit&#233; &#233;motionnelle et profil acheteur</div></div></div><div id="bienIndicesPanel"></div></section>
-    <section class="card expert-only" id="globalCard" style="order:4"><div class="card-head"><div class="step-no">&#127941;</div><div><h2>Note globale du bien</h2><div class="sub">Indice /100 sur 7 dimensions ind&#233;pendantes</div></div></div><div id="globalPanel"></div></section>
+    <section class="card expert-only" id="enginesCard" style="order:4"><div class="card-head"><div class="step-no">&#129518;</div><div><h2>Estimation &amp; fiabilit&#233; du prix</h2><div class="sub">6 estimateurs fusionn&#233;s, fourchette probabiliste et formation du prix d&#233;taill&#233;e</div></div></div><div id="enginesPanel"></div><div style="margin:16px 0 10px;padding-top:14px;border-top:1px solid var(--line);font-size:11.5px;font-weight:800;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.4px">Fiabilit&#233; &amp; formation du prix</div><div id="formationPanel"></div></section>
+    <section class="card expert-only" id="globalCard" style="order:4"><div class="card-head"><div class="step-no">&#127941;</div><div><h2>Note globale &amp; profil du bien</h2><div class="sub">Indice /100 sur 7 dimensions, d&#233;taill&#233; ci-dessous</div></div></div><div id="globalPanel"></div><div style="margin:16px 0 10px;padding-top:14px;border-top:1px solid var(--line);font-size:11.5px;font-weight:800;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.4px">Profil d&#233;taill&#233; : qualit&#233;, raret&#233;, attractivit&#233; &amp; profil acheteur</div><div id="bienIndicesPanel"></div></section>
     <section class="card expert-only" id="proKpiCard" style="order:4"><div class="card-head"><div class="step-no">&#128202;</div><div><h2>Tableau de bord investisseur</h2><div class="sub">Ratios financiers professionnels &#8212; calcul&#233;s en direct</div></div></div><div id="proKpiPanel"></div></section>
     <section class="card expert-only" id="negoCard" style="order:6"><div class="card-head"><div class="step-no">&#129309;</div><div><h2>Aide &#224; la n&#233;gociation</h2><div class="sub">Prix cible, offre, marge et probabilit&#233; d'acceptation</div></div></div><div id="negoPanel"></div></section>
     <section class="card expert-only" id="contextCard" style="order:7"><div class="card-head"><div class="step-no">&#129517;</div><div><h2>Contexte &amp; signaux</h2><div class="sub">Donn&#233;es publiques, indices compl&#233;mentaires et anomalies &#8212; sans impact sur le prix</div></div></div><div id="contextPanel"></div></section>
@@ -535,7 +533,7 @@
 
     <!-- DASHBOARD -->
     <section class="card" id="dashCard" style="order:5">
-      <div class="card-head"><div class="step-no">&#128202;</div><div><h2>Synth&#232;se de l'investissement</h2><div class="sub">Lecture rapide &#8212; recalcul&#233;e en direct</div></div></div>
+      <div class="card-head"><div class="step-no">&#128202;</div><div><h2>Synth&#232;se de l'investissement</h2><div class="sub">Lecture rapide &#8212; recalcul&#233;e en direct &#8212; verdict fond&#233; sur la VAN (voir aussi le Score d'acquisition en haut de page)</div></div></div>
       <div class="seg" id="segView" style="margin-bottom:14px"><button data-v="full" class="on">Vue compl&#232;te</button><button data-v="lean">Synth&#232;se (masquer le d&#233;tail)</button></div>
       <div id="verdict" class="verdict neu">&#8212;</div>
       <div class="dash-grid">
@@ -549,6 +547,7 @@
         <div class="dtile"><div class="dt-l">Cash-flow mensuel (an 1)</div><div class="dt-v" id="dCash">&#8212;</div></div>
         <div class="dtile"><div class="dt-l">Co&#251;t total op&#233;ration</div><div class="dt-v" id="dCout">&#8212;</div></div>
       </div>
+      <div class="hint" style="margin-top:8px">VAN, TRI et co&#251;t total repris ici pour la lecture rapide &#8212; d&#233;tail complet (Cap Rate, DSCR, LTV, sensibilit&#233;, explications) dans le Tableau de bord investisseur ci-dessous.</div>
       <div class="chart-wrap"><h4>D&#233;composition du gain (cumul&#233; sur la p&#233;riode)</h4><div class="csub">De l'apport au gain net &#8212; chaque brique ajoute (+) ou retranche (&#8722;)</div><div id="chartWf"></div><div class="cinterp" id="iWf"></div></div>
       <details class="acc"><summary><span>D&#233;composition actualis&#233;e &#8594; VAN (avanc&#233;)</span><span class="chev">&#9656;</span></summary><div class="acc-body"><div class="csub">M&#234;mes briques que le gain net, mais actualis&#233;es ; le solde final correspond &#224; la VAN.</div><div id="chartWfD"></div></div></details>
       <div class="hint" style="margin-top:10px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#5B7186" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#5B7186" stroke-width="2" stroke-linecap="round"/></svg>Verdict bas&#233; sur la VAN (le projet bat-il votre taux d'actualisation ?), le cash-flow et la valorisation. Indicatif.</div>
@@ -774,6 +773,11 @@ function getRentSqm(r){
   const cn=norm((r&&r.city)||'');
   return CITY_RENT[cn]||mktRentSqm((r&&r.sqmBase)||0);
 }
+/* Les sources publiques (Carte des loyers ANIL/Cerema, DVF) refletent le loyer NU.
+   Le meuble se loue plus cher (observatoires locaux : ordre de +10 a +25 %). On applique une
+   prime prudente et editable (le loyer reste modifiable par l'utilisateur). */
+const FURNISHED_PREMIUM=0.12;
+function marketRentSqm(r){const bare=getRentSqm(r);return state.loc==="meuble"?+(bare*(1+FURNISHED_PREMIUM)).toFixed(1):bare;}
 const CITY_RENT={"paris":31,"lyon":14.5,"marseille":14,"nice":18,"bordeaux":15,"toulouse":13,"nantes":13.5,"rennes":13,"montpellier":15,"strasbourg":13.5,"lille":15,"grenoble":13,"annecy":16,"cannes":18,"aix-en-provence":17,"versailles":21,"la rochelle":15,"biarritz":18};
 const NAT_RENT_FACTOR=0.0046;
 const ENCADREMENT=["paris","lille","hellemmes","lomme","lyon","villeurbanne","montpellier","bordeaux","montreuil","bagnolet","pantin","est ensemble","plaine commune","grenoble"];
@@ -1767,10 +1771,10 @@ function resolveDotAddr(c,cb){
 
 /* R\u00e9gimes fiscaux dynamiques */
 function fillRegimes(){const sel=$("regime");const opts=state.loc==="nue"?[["nue_micro","Micro-foncier (abatt. 30 %)"],["nue_reel","R\u00e9el (charges d\u00e9duites)"]]:[["meuble_micro","LMNP micro-BIC (abatt. 50 %)"],["meuble_reel","LMNP r\u00e9el (amortissement)"]];sel.innerHTML=opts.map(([v,l])=>`<option value="${v}">${l}</option>`).join("");}
-bindSeg("segLoc","loc",()=>{fillRegimes();if(lastResult)computeAll(lastResult);});
+bindSeg("segLoc","loc",()=>{fillRegimes();if(lastResult){const rs=marketRentSqm(lastResult);state.mktRentSqm=rs;$("iRent").value=Math.round(rs*lastResult.surface/10)*10;computeAll(lastResult);updRentVsMkt();computeResale(lastResult);renderFinPrice(lastResult);}});
 
 function renderRentalDefaults(r){
-  const cn=norm(r.city);const rentSqm=getRentSqm(r);
+  const cn=norm(r.city);const rentSqm=marketRentSqm(r);
   state.mktRentSqm=rentSqm;
   const rent=Math.round(rentSqm*r.surface/10)*10;
   $("iRent").value=rent;
@@ -1778,7 +1782,7 @@ function renderRentalDefaults(r){
   $("iCopro").value=r.type==="appartement"?Math.round(r.surface*22/10)*10:0;
   $("iPno").value=150;
   $("iDivers").value=Math.round(rent*12*0.10/10)*10;
-  $("iApport").value=Math.round(r.price*0.10/1000)*1000;
+  $("iApport").value=Math.round((r.price+numv("iTravaux"))*0.10/1000)*1000;
   $("iTaux").value=3.4;$("iAssur").value=0.34;$("iDossier").value=1000;$("iGarantie").value=Math.round(r.price*0.013/100)*100;
   $("prixAchat").value=Math.round(r.price);
   fillRegimes();
@@ -2138,8 +2142,6 @@ function renderContext(r){
   const enr=baseConf!=null?Math.min(100,baseConf+bonus):null;
   const srcLabels=[["dvf","Ventes DVF"],["geoloc","Geolocalisation BAN"],["air","Qualite de l'air"],["ecoles","Ecoles"],["transports","Transports"],["commerces","Commerces"],["risques","Risques naturels"],["radon","Radon"],["iris","Demographie"],["sirene","Entreprises"],["plu","PLU"],["bruit","Bruit"],["permis","Permis"]];
   const chips=srcLabels.filter(s=>pc.src[s[0]]!=null&&pc.src[s[0]]!==0).map(s=>`<span style="display:inline-block;font-size:10.5px;background:var(--brand-tint);color:var(--brand-dark);border-radius:20px;padding:3px 9px;margin:0 4px 4px 0">${s[1]}</span>`).join("");
-  const idx=pc.indices,idxRow=[["Qualite de vie",idx.qualiteVie],["Liquidite",idx.liquidite],["Patrimonial",idx.patrimonial],["Faible risque",idx.risque]].filter(x=>x[1]!=null);
-  const idxHtml=idxRow.length?`<div style="display:flex;gap:7px;margin-top:10px;flex-wrap:wrap">`+idxRow.map(x=>{const c=x[1]>=66?"var(--good)":x[1]>=45?"var(--brand-dark)":x[1]>=30?"var(--warn)":"var(--bad)";return `<div style="flex:1;min-width:68px;background:var(--bg);border-radius:9px;padding:7px 9px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.3px">${x[0]}</div><div class="num" style="font-size:15px;font-weight:800;color:${c}">${x[1]}<span style="font-size:9px;color:var(--ink-soft)">/100</span></div></div>`;}).join("")+`</div>`:"";
   const confHtml=enr!=null?`<div style="margin-top:10px;padding:9px 12px;background:var(--bg);border-radius:10px;font-size:12px;color:var(--ink)">Confiance de base <b class="num">${baseConf}/100</b>${bonus>0?' + <b class="num" style="color:var(--good)">'+bonus+'</b> pts contextuels ('+pc.present+' sources concordantes) = <b class="num">'+enr+'/100</b>':' (pas de bonus contextuel)'}</div>`:"";
   const anHtml=an.length?`<div style="margin-top:12px"><div style="font-size:12px;font-weight:800;color:var(--ink);margin-bottom:5px">Signaux &amp; anomalies</div>`+an.map(a=>`<div style="display:flex;gap:7px;font-size:11.5px;color:var(--ink);line-height:1.5;margin-top:4px"><span style="color:var(--warn)">&#9888;</span><span>${a}</span></div>`).join("")+`</div>`:`<div style="margin-top:12px;font-size:11.5px;color:var(--ink-soft)">Aucune anomalie majeure detectee.</div>`;
   const x2=state.ctx2||{},extra=[];
@@ -2147,7 +2149,7 @@ function renderContext(r){
   if(x2.sirene)extra.push("Entreprises actives : "+eur0(x2.sirene.total));
   if(x2.plu&&(x2.plu.libelle||x2.plu.zone))extra.push("Zonage PLU : "+esc(x2.plu.libelle||x2.plu.zone));
   const extraHtml=extra.length?`<div style="margin-top:10px;font-size:11.5px;color:var(--ink);line-height:1.7">`+extra.map(e=>`<div>&#8226; ${e}</div>`).join("")+`</div>`:"";
-  el.innerHTML=`<div style="font-size:12px;color:var(--ink-soft);line-height:1.55;margin-bottom:8px">Contexte consolide a partir des sources publiques disponibles. Ces donnees enrichissent la confiance et les analyses, <b>sans modifier le prix</b>.</div><div>${chips||'<span style="font-size:11.5px;color:var(--ink-soft)">Sources en cours de chargement.</span>'}</div>${extraHtml}${idxHtml}${confHtml}${anHtml}<div class="hint" style="margin-top:10px">Richesse des donnees : ${pc.richness} %. Contexte construit a partir de 10+ sources publiques (DVF, Filosofi, RPLS, ARCEP, SSMSI, ADEME, IGN, Georisques, OSM, BAN). Tout impact sur le prix est ancre au DVF local.</div>`;
+  el.innerHTML=`<div style="font-size:12px;color:var(--ink-soft);line-height:1.55;margin-bottom:8px">Contexte consolide a partir des sources publiques disponibles. Ces donnees enrichissent la confiance et les analyses, <b>sans modifier le prix</b>. Indices qualite de vie, liquidite, potentiel patrimonial et risque : voir la carte "Note globale &amp; profil du bien".</div><div>${chips||'<span style="font-size:11.5px;color:var(--ink-soft)">Sources en cours de chargement.</span>'}</div>${extraHtml}${confHtml}${anHtml}<div class="hint" style="margin-top:10px">Richesse des donnees : ${pc.richness} %. Contexte construit a partir de 10+ sources publiques (DVF, Filosofi, RPLS, ARCEP, SSMSI, ADEME, IGN, Georisques, OSM, BAN). Tout impact sur le prix est ancre au DVF local.</div>`;
 }
 // ===== Prompt 7 : moteur d'aide a la negociation =====
 function negotiation(r){
@@ -2171,7 +2173,8 @@ function negoStrategy(n){
 }
 function renderNego(r){
   const el=$("negoPanel");if(!el||!r)return;
-  const cur=($("askPrice")&&$("askPrice").value)||"";
+  const cur=state._pendingAskPrice!=null?state._pendingAskPrice:(($("askPrice")&&$("askPrice").value)||"");
+  state._pendingAskPrice=null;
   const out=function(){const n=negotiation(r),pc=n.prob>=66?"var(--good)":n.prob>=40?"var(--warn)":"var(--bad)";
     const rows=[["Prix affich\u00e9",eur(n.ask),"var(--ink)"],["Juste valeur (estimation)",eur(n.just),"var(--brand-dark)"],["Prix cible (transaction r\u00e9aliste)",eur(n.cible),"var(--ink)"],["Premi\u00e8re offre recommand\u00e9e",eur(n.offre),"var(--good)"],["Prix maximum conseill\u00e9",eur(n.maxi),"var(--warn)"]];
     return rows.map(x=>`<div style="display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--line)"><span style="font-size:12.5px;color:var(--ink)">${x[0]}</span><span class="num" style="font-size:14px;font-weight:800;color:${x[2]}">${x[1]}</span></div>`).join("")+
@@ -2207,7 +2210,7 @@ function globalIndex(r){
 function renderGlobalIndex(r){
   const el=$("globalPanel");if(!el||!r)return;
   const gi=globalIndex(r),col=gi.global>=70?"var(--good)":gi.global>=50?"var(--brand-dark)":gi.global>=35?"var(--warn)":"var(--bad)";
-  const ring=`<div style="display:flex;align-items:center;gap:14px;margin-bottom:12px"><div style="position:relative;width:78px;height:78px;flex:none"><svg width="78" height="78" viewBox="0 0 78 78"><circle cx="39" cy="39" r="33" fill="none" stroke="var(--line)" stroke-width="9"/><circle cx="39" cy="39" r="33" fill="none" stroke="${col}" stroke-width="9" stroke-linecap="round" stroke-dasharray="${(gi.global/100*207).toFixed(0)} 207" transform="rotate(-90 39 39)"/></svg><div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center"><span class="num" style="font-size:21px;font-weight:800;color:${col}">${gi.global}</span><span style="font-size:8.5px;color:var(--ink-soft)">/ 100</span></div></div><div><div style="font-size:15px;font-weight:800;color:var(--ink)">${gi.label}</div><div style="font-size:11.5px;color:var(--ink-soft);line-height:1.45">Synth\u00e8se de 7 dimensions ind\u00e9pendantes du bien.</div></div></div>`;
+  const ring=`<div style="display:flex;align-items:center;gap:14px;margin-bottom:12px"><div style="position:relative;width:78px;height:78px;flex:none"><svg width="78" height="78" viewBox="0 0 78 78"><circle cx="39" cy="39" r="33" fill="none" stroke="var(--line)" stroke-width="9"/><circle cx="39" cy="39" r="33" fill="none" stroke="${col}" stroke-width="9" stroke-linecap="round" stroke-dasharray="${(gi.global/100*207).toFixed(0)} 207" transform="rotate(-90 39 39)"/></svg><div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center"><span class="num" style="font-size:21px;font-weight:800;color:${col}">${gi.global}</span><span style="font-size:8.5px;color:var(--ink-soft)">/ 100</span></div></div><div><div style="font-size:15px;font-weight:800;color:var(--ink)">${gi.label}</div><div style="font-size:11.5px;color:var(--ink-soft);line-height:1.45">Qualit\u00e9 intrins\u00e8que du bien (7 dimensions), ind\u00e9pendamment du prix pay\u00e9 \u2014 distinct du Score d'acquisition en haut de page.</div></div></div>`;
   const bars=gi.subs.map(s=>{const c=s[1]>=66?"var(--good)":s[1]>=45?"var(--brand-dark)":s[1]>=30?"var(--warn)":"var(--bad)";return `<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:11.5px"><span style="font-weight:700;color:var(--ink)">${s[0]}</span><span class="num" style="font-weight:800;color:${c}">${s[1]}</span></div><div style="height:6px;border-radius:4px;background:var(--line);overflow:hidden;margin-top:3px"><div style="height:100%;width:${s[1]}%;background:${c}"></div></div></div>`;}).join("");
   el.innerHTML=ring+bars+`<div class="hint" style="margin-top:6px">Chaque sous-score est calcul\u00e9 ind\u00e9pendamment (qualit\u00e9, \u00e9nergie, emplacement, potentiel patrimonial et locatif, liquidit\u00e9, risque) puis agr\u00e9g\u00e9 en note globale pond\u00e9r\u00e9e. Indicatif.</div>`;
 }
@@ -2218,17 +2221,17 @@ function multiEstimators(r){
   const pick=key=>{const e=eng.find(x=>x.key===key);return e?e.ppm:(stats?stats.med:0);};
   const est=[];
   if(stats){
-    const dvf=Math.round(stats.med*surf);est.push(Object.assign({key:"dvf",label:"Estimateur DVF",price:dvf,conf:Math.round(Math.min(65,(stats.n||0)/40*65)),justif:eur0(stats.med)+" \u20ac/m\u00b2 (m\u00e9diane DVF nettoy\u00e9e, "+(stats.n||0)+" ventes) \u00d7 "+surf+" m\u00b2"},iv(dvf,1.1)));
-    const compE=eng.find(x=>x.key==="comp"),cp=Math.round(pick("comp")*surf);est.push(Object.assign({key:"comp",label:"Estimateur comparables",price:cp,conf:Math.round(Math.min(100,(compE?compE.w:0.5)*100)),justif:"Ventes les plus similaires (surface, r\u00e9cence) pond\u00e9r\u00e9es par leur score /100 ("+(compE?compE.detail:"")+")"},iv(cp,1)));
-    const reg=eng.find(x=>x.key==="reg");if(reg){const st=Math.round(reg.ppm*surf),r2=parseFloat(reg.detail.replace(/[^0-9.]/g,""))||0;est.push(Object.assign({key:"stat",label:"Estimateur statistique",price:st,conf:Math.round(r2*100),justif:"R\u00e9gression DVF surface\u2192prix (R\u00b2 "+r2.toFixed(2)+")"},iv(st,1.15)));}
+    const dvf=Math.round(stats.med*surf);est.push(Object.assign({key:"dvf",label:"Estimateur DVF",price:dvf,conf:Math.round(Math.min(65,(stats.n||0)/40*65)),justif:eur0(stats.med)+" \u20ac/m\u00b2 (m\u00e9diane DVF nettoy\u00e9e sur "+(stats.n||0)+" ventes) \u00d7 "+surf+" m\u00b2 = "+eur0(dvf)+" \u20ac"},iv(dvf,1.1)));
+    const compE=eng.find(x=>x.key==="comp"),cppm=pick("comp"),cp=Math.round(cppm*surf);est.push(Object.assign({key:"comp",label:"Estimateur comparables",price:cp,conf:Math.round(Math.min(100,(compE?compE.w:0.5)*100)),justif:eur0(cppm)+" \u20ac/m\u00b2 (ventes similaires pond\u00e9r\u00e9es surface+r\u00e9cence"+(compE&&compE.detail?", "+compE.detail:"")+") \u00d7 "+surf+" m\u00b2 = "+eur0(cp)+" \u20ac"},iv(cp,1)));
+    const reg=eng.find(x=>x.key==="reg");if(reg){const st=Math.round(reg.ppm*surf),r2=parseFloat(reg.detail.replace(/[^0-9.]/g,""))||0;est.push(Object.assign({key:"stat",label:"Estimateur statistique",price:st,conf:Math.round(r2*100),justif:"R\u00e9gression DVF surface\u2192prix : "+eur0(reg.ppm)+" \u20ac/m\u00b2 \u00d7 "+surf+" m\u00b2 = "+eur0(st)+" \u20ac (R\u00b2 "+r2.toFixed(2)+", part du prix expliqu\u00e9e par la surface)"},iv(st,1.15)));}
   }
-  const hed=r.pxHedonic||Math.round((r.sqmAdj||(stats?stats.med:0))*surf);est.push(Object.assign({key:"hed",label:"Estimateur h\u00e9donique",price:hed,conf:72,justif:"Valeur de base \u00d7 coefficients des caract\u00e9ristiques (\u00e9tat, DPE, \u00e9tage, exposition, standing) + surface \u00e9conomique"},iv(hed,1)));
+  const hedSqm=r.sqmAdj||(stats?stats.med:0),hed=r.pxHedonic||Math.round(hedSqm*surf),hedDelta=(stats&&stats.med>0)?Math.round((hedSqm-stats.med)/stats.med*100):null;est.push(Object.assign({key:"hed",label:"Estimateur h\u00e9donique",price:hed,conf:72,justif:eur0(Math.round(hedSqm))+" \u20ac/m\u00b2 ajust\u00e9 \u00d7 "+surf+" m\u00b2 = "+eur0(hed)+" \u20ac"+(hedDelta!=null?" \u00b7 "+(hedDelta>=0?"+":"")+hedDelta+" % vs m\u00e9diane brute (\u00e9tat, DPE, \u00e9tage, exposition, standing)":"")},iv(hed,1)));
   const base=r.engineBase||(stats?stats.med:0),geoA=(r.geoAdj&&r.geoAdj.adj)||0,geo=Math.round(base*(1+geoA)*surf),geoOk=r.geoAdj&&r.geoAdj.score!=null;
-  est.push(Object.assign({key:"geo",label:"Estimateur g\u00e9ographique",price:geo,conf:geoOk?Math.round(Math.min(100,55+Math.abs(geoA)*400)):45,justif:geoOk?("Base \u00d7 micro-localisation ("+r.geoAdj.score+"/100 : transports, \u00e9coles, commerces, air, risques)"):"Micro-localisation en cours de chargement"},iv(geo,1.1)));
+  est.push(Object.assign({key:"geo",label:"Estimateur g\u00e9ographique",price:geo,conf:geoOk?Math.round(Math.min(100,55+Math.abs(geoA)*400)):45,justif:geoOk?(eur0(Math.round(base))+" \u20ac/m\u00b2 \u00d7 (1"+(geoA>=0?"+":"\u2212")+Math.abs(geoA*100).toFixed(1)+" % micro-localisation) \u00d7 "+surf+" m\u00b2 = "+eur0(geo)+" \u20ac \u00b7 score "+r.geoAdj.score+"/100 (transports, \u00e9coles, commerces, air, risques)"):"Micro-localisation en cours de chargement"},iv(geo,1.1)));
   const ia=r.price;const _mkt=est.filter(e=>["dvf","comp","stat"].indexOf(e.key)>=0).map(e=>e.price).sort((a,b)=>a-b);
   const _mmed=_mkt.length?_mkt[Math.floor(_mkt.length/2)]:ia,_dev=_mmed?Math.abs(ia-_mmed)/_mmed:0;
   const _iaConf=Math.round(88*(_dev>0.15?Math.max(0.5,1-(_dev-0.15)*2):1));
-  est.push(Object.assign({key:"ia",label:"Mod\u00e8le composite (IA)",price:ia,conf:_iaConf,justif:"Synth\u00e8se non lin\u00e9aire : h\u00e9donique + indices qualit\u00e9/raret\u00e9/coup de c\u0153ur + micro-localisation + dynamique de march\u00e9"+(_dev>0.15?" \u00b7 confiance r\u00e9duite : \u00e9cart de "+Math.round(_dev*100)+" % aux estimateurs march\u00e9":"")},iv(ia,0.9)));
+  est.push(Object.assign({key:"ia",label:"Mod\u00e8le composite (IA)",price:ia,conf:_iaConf,justif:"Synth\u00e8se non lin\u00e9aire = "+eur0(ia)+" \u20ac ("+eur0(Math.round(ia/surf))+" \u20ac/m\u00b2) : h\u00e9donique + indices qualit\u00e9/raret\u00e9/coup de c\u0153ur + micro-localisation + dynamique de march\u00e9"+(_dev>0.15?" \u00b7 confiance r\u00e9duite : \u00e9cart de "+Math.round(_dev*100)+" % aux estimateurs march\u00e9":" \u00b7 \u00e9cart "+Math.round(_dev*100)+" % au march\u00e9 brut ("+eur0(_mmed)+" \u20ac)")},iv(ia,0.9)));
   let W=0,B=0;est.forEach(e=>{W+=e.conf;B+=e.conf*e.price;});
   return{est,fused:W>0?Math.round(B/W):r.price};
 }
@@ -2240,15 +2243,6 @@ function renderEstimators(r){
   const p3=_sc!=null?`<div style="margin-top:8px;padding:9px 13px;background:var(--bg);border-radius:11px;font-size:10.5px;color:var(--ink);line-height:1.45"><b>Coefficient de surface appris du DVF</b> : ${(_sc>0?'+':'')}${(_sc*100).toFixed(1)} % pour ${r.surface||'\u2014'} m\u00b2 (r\u00e9gression du secteur vs m\u00e9diane). Les effets de surface sont appris statistiquement sur les ventes ; les coefficients intrins\u00e8ques (DPE, \u00e9tat, standing) restent calibr\u00e9s car absents du DVF brut.</div>`:"";
   const rows=m.est.map(e=>{const wp=Math.round(e.conf/tot*100);return `<div style="padding:10px 0;border-bottom:1px solid var(--line)"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:12.5px;font-weight:700;color:var(--ink)">${e.label}</span><span class="num" style="font-size:14px;font-weight:800;color:var(--ink)">${eur0(e.price)} \u20ac</span></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:3px;gap:8px"><span style="font-size:10px;color:var(--ink-soft);white-space:nowrap">${eur0(e.low)}\u2013${eur0(e.high)} \u20ac</span><div style="flex:1;height:5px;border-radius:3px;background:var(--line);overflow:hidden;max-width:80px"><div style="height:100%;width:${e.conf}%;background:var(--brand-dark)"></div></div><span style="font-size:10px;color:var(--ink-soft);min-width:62px;text-align:right">conf. ${e.conf} \u00b7 ${wp}%</span></div><div style="font-size:10px;color:var(--ink-soft);margin-top:3px;line-height:1.4">${e.justif}</div></div>`;}).join("");
   el.innerHTML=rows+`<div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;padding:11px 13px;background:var(--bg);border-radius:11px"><div><div style="font-size:11px;color:var(--ink-soft);text-transform:uppercase;font-weight:700">Moyenne pond\u00e9r\u00e9e des m\u00e9thodes</div><div style="font-size:10.5px;color:var(--ink-soft)">validation crois\u00e9e (march\u00e9 brut)</div></div><div class="num" style="font-size:17px;font-weight:800;color:var(--ink)">${eur0(m.fused)} \u20ac</div></div>`+`<div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center;padding:11px 13px;background:var(--brand-tint);border-radius:11px"><div><div style="font-size:11px;color:var(--ink-soft);text-transform:uppercase;font-weight:700">Estimation retenue</div><div style="font-size:10.5px;color:var(--ink-soft)">mod\u00e8le composite (caract\u00e9ristiques du bien)</div></div><div class="num" style="font-size:18px;font-weight:800;color:var(--brand-dark)">${eur0(r.price)} \u20ac</div></div>`+p3+`<div id="finEstCard" style="margin-top:8px;padding:11px 13px;background:#fff6ef;border:1px solid var(--warn-tint);border-radius:11px">`+finCardHtml(r)+`</div>`+`<div class="hint" style="margin-top:8px">Six estimateurs ind\u00e9pendants fusionn\u00e9s par confiance. L'estimation retenue est le mod\u00e8le composite (qui applique le d\u00e9tail des caract\u00e9ristiques) ; la moyenne des m\u00e9thodes, davantage ancr\u00e9e au march\u00e9 brut, sert de validation crois\u00e9e. Le DVF brut ne fournit ni distance, ni DPE, ni \u00e9tage par vente : le scoring porte sur surface, r\u00e9cence et type.</div>`;
-}
-function renderEngines(r){
-  const el=$("enginesPanel");if(!el)return;
-  const eng=r.engines||[];if(!eng.length){el.innerHTML='<div class="hint">Estimation par d\u00e9faut : donn\u00e9es DVF insuffisantes pour le multi-mod\u00e8les.</div>';return;}
-  const tot=eng.reduce((s,x)=>s+x.w,0)||1;
-  const rows=eng.map(e=>{const wp=Math.round(e.w/tot*100);const perfTxt=e.perf!=null?" \u00b7 erreur locale \u00b1"+e.perf+"%":"";return `<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:12.5px;font-weight:700;color:var(--ink)">${e.label}</span><span class="num" style="font-size:14px;font-weight:800;color:var(--ink)">${eur0(e.ppm)} \u20ac/m\u00b2</span></div><div style="display:flex;align-items:center;gap:8px;margin-top:4px"><div style="flex:1;height:7px;border-radius:5px;background:var(--line);overflow:hidden"><div style="height:100%;width:${wp}%;background:var(--brand-dark)"></div></div><span style="font-size:10.5px;color:var(--ink-soft);min-width:88px;text-align:right">poids ${wp}% \u00b7 ${e.detail}</span></div>${perfTxt?`<div style="font-size:10px;color:var(--brand-dark);margin-top:2px;text-align:right">${perfTxt.replace(' \u00b7 ','')}</div>`:""}</div>`;}).join("");
-  el.innerHTML=rows+
-    `<div style="margin-top:6px;display:flex;justify-content:space-between;align-items:center;padding:11px 13px;background:var(--brand-tint);border-radius:11px"><div><div style="font-size:11px;color:var(--ink-soft);text-transform:uppercase;font-weight:700">Base retenue (moyenne pond\u00e9r\u00e9e)</div><div style="font-size:10.5px;color:var(--ink-soft)">avant ajustements propres au bien</div></div><div class="num" style="font-size:18px;font-weight:800;color:var(--brand-dark)">${eur0(r.engineBase||r.sqmBase)} \u20ac/m\u00b2</div></div>`+
-    `<div class="hint" style="margin-top:8px">Moteurs ind\u00e9pendants (comparables scor\u00e9s, r\u00e9gression statistique, m\u00e9diane pond\u00e9r\u00e9e par la r\u00e9cence) combin\u00e9s par leur niveau de confiance. Le moteur h\u00e9donique (caract\u00e9ristiques), les indices qualit\u00e9/raret\u00e9 et la dynamique de march\u00e9 personnalisent ensuite cette base. Indicatif.</div>`;
 }
 // ===== Vague 3 : geolocalisation valorisante + dynamique de marche =====
 function geoValue(r){
@@ -2597,9 +2591,20 @@ function renderFinPrice(r){
   else if(gap>-15)msg='<b>L\u00e9g\u00e8rement sous le march\u00e9</b> : n\u00e9gocier ~'+Math.abs(gap)+' % am\u00e9liorerait le rendement de vos fonds propres.';
   else msg='<b>Nettement sous le march\u00e9</b> ('+gap+' %) : \u00e0 vos hypoth\u00e8ses (loyer, charges, financement) et \u00e0 votre exigence de rendement, payer le prix de march\u00e9 d\u00e9truit de la valeur actualis\u00e9e. V\u00e9rifiez le loyer, l\u2019horizon et le taux d\u2019actualisation.';
   fpn.style.display="";
+  const b=projCore(Object.assign({},projParams(r),{bp:V,H:FIN_HORIZON,exitBase:V}));
+  const totU=-b.apport+b.cfU+b.resU;
+  const se=n=>(n>=0?"+":"\u2212")+eur0(Math.abs(n))+" \u20ac";
+  const cvU=n=>n>=0?"var(--good)":"var(--bad)";
+  const tbl='<table style="width:100%;border-collapse:collapse;margin-top:9px;font-size:11px"><thead><tr><th style="text-align:left;font-weight:600;color:var(--ink-soft);padding:3px 0">Au prix de march\u00e9 \u00b7 '+FIN_HORIZON+' ans</th><th style="text-align:right;font-weight:600;color:var(--ink-soft);padding:3px 0">Non actualis\u00e9</th><th style="text-align:right;font-weight:600;color:var(--ink-soft);padding:3px 0">Actualis\u00e9</th></tr></thead><tbody>'+
+    '<tr><td style="padding:3px 0;color:var(--ink)">Apport initial</td><td class="num" style="text-align:right;color:var(--bad)">'+se(-b.apport)+'</td><td class="num" style="text-align:right;color:var(--bad)">'+se(-b.apport)+'</td></tr>'+
+    '<tr><td style="padding:3px 0;color:var(--ink)">Cash-flows locatifs</td><td class="num" style="text-align:right;color:'+cvU(b.cfU)+'">'+se(b.cfU)+'</td><td class="num" style="text-align:right;color:'+cvU(b.cfD)+'">'+se(b.cfD)+'</td></tr>'+
+    '<tr><td style="padding:3px 0;color:var(--ink)">Revente nette</td><td class="num" style="text-align:right;color:'+cvU(b.resU)+'">'+se(b.resU)+'</td><td class="num" style="text-align:right;color:'+cvU(b.resD)+'">'+se(b.resD)+'</td></tr>'+
+    '<tr style="border-top:1.5px solid var(--line)"><td style="padding:5px 0;font-weight:800;color:var(--ink)">Total (VAN)</td><td class="num" style="text-align:right;font-weight:800;color:'+cvU(totU)+'">'+se(totU)+'</td><td class="num" style="text-align:right;font-weight:800;color:'+cvU(b.van)+'">'+se(b.van)+'</td></tr>'+
+    '</tbody></table>';
   fpn.innerHTML='<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><div><div style="font-size:10px;color:var(--ink-soft);text-transform:uppercase">Prix financier (VAN = 0)</div><div class="num" style="font-size:17px;font-weight:800;color:var(--brand-dark);margin-top:2px">'+eur(fp)+'</div></div><div style="text-align:right"><div style="font-size:10px;color:var(--ink-soft);text-transform:uppercase">\u00c9cart / march\u00e9</div><div class="num" style="font-size:15px;font-weight:800;color:'+col+';margin-top:2px">'+(gap>0?"+":"")+gap+' %</div></div></div>'+
     '<div style="font-size:10.5px;color:var(--ink-soft);margin-top:6px;line-height:1.5">'+msg+'</div>'+
-    '<div style="font-size:10px;color:var(--ink-soft);margin-top:6px;line-height:1.45">Prix d\u2019achat maximal pour lequel l\u2019op\u00e9ration atteint votre rendement exig\u00e9 (VAN \u2265 0), <b>revente au prix de march\u00e9 revaloris\u00e9 incluse</b>, sur un horizon long de '+FIN_HORIZON+' ans (abattements plus-value complets). M\u00eame moteur actuariel que la projection VAN/TRI.</div>';
+    tbl+
+    '<div style="font-size:10px;color:var(--ink-soft);margin-top:8px;line-height:1.45">Tableau calcul\u00e9 <b>au prix de march\u00e9</b> ('+eur(V)+') : d\u00e9composition des flux sur '+FIN_HORIZON+' ans. La colonne actualis\u00e9e ram\u00e8ne chaque flux \u00e0 aujourd\u2019hui au taux de rendement exig\u00e9 ('+(b.rate?(b.rate*100).toFixed(1):"")+' %). Le prix financier ci-dessus est le prix qui annule la VAN actualis\u00e9e. Revente au prix de march\u00e9 revaloris\u00e9 incluse ; abattements plus-value complets \u00e0 '+FIN_HORIZON+' ans.</div>';
 }
 
 function renderAllPanels(r,_conf,realBase,diag){
@@ -2637,7 +2642,7 @@ function setupAsyncCallbacks(r,enrichPromise,ctxProm){
 }
 async function showResults(){
   const err=$("formErr");const surface=state.type==="terrain"?numv("terrain"):numv("surface");
-  if(!($("adresse").value||"").trim()){err.textContent="Saisissez l'adresse du bien, puis choisissez une suggestion.";err.classList.add("show");$("adresse").focus();return;}
+  if(!state.coord&&!($("adresse").value||"").trim()){err.textContent="Saisissez l'adresse du bien, puis choisissez une suggestion.";err.classList.add("show");$("adresse").focus();return;}
   if(!surface||surface<=0){err.textContent="Renseignez une surface valide.";err.classList.add("show");return;}
   err.classList.remove("show");
   const btn=$("btnEstim");const oldTxt=btn.textContent;btn.textContent="Recherche des ventes r\u00e9elles\u2026";btn.disabled=true;
@@ -2684,12 +2689,12 @@ $("btnEstim").addEventListener("click",showResults);
   window.__wizShow=show;
   show(false);
 })();
-["discRate"].forEach(id=>{$(id).addEventListener("input",()=>{if(lastResult)renderProjection(lastResult);});});
+["discRate"].forEach(id=>{$(id).addEventListener("input",()=>{if(lastResult){renderProjection(lastResult);renderFinPrice(lastResult);}});});
 ["prixAchat","iRent","iTaxe","iCopro","iPno","iDivers","iCompta","iCfe","iApport","iTaux","iAssur","iDossier","iGarantie","iDuree","iTravaux","tmi","regime"].forEach(id=>{const h=()=>{if(lastResult){computeAll(lastResult);computeResale(lastResult);renderScatter(lastResult);updRentVsMkt();renderFinPrice(lastResult);}};$(id).addEventListener("input",h);$(id).addEventListener("change",h);});
 ["dispositif","dispoTravaux","dispoDuree","dispoZone"].forEach(id=>{const e=$(id);if(e){e.addEventListener("input",renderDispositif);e.addEventListener("change",renderDispositif);}});
-["holdYears","reval","fraisVente","gRent","gCharges"].forEach(id=>{$(id).addEventListener("input",()=>{if(lastResult)computeResale(lastResult);});$(id).addEventListener("change",()=>{if(lastResult)computeResale(lastResult);});});
-bindSeg("segStatut","statut",()=>{const nr=state.statut==="nonresident";$("chkEEE").style.display=nr?"flex":"none";$("tmi").style.display=nr?"none":"";$("tmiNR").style.display=nr?"block":"none";$("tmiLabel").textContent=nr?"Imposition (non-r\u00e9sident)":"Tranche d'imp\u00f4t (TMI)";$("tmiNote").style.display=nr?"block":"none";if(lastResult){computeAll(lastResult);computeResale(lastResult);}});
-bindSeg("segNeuf","neuf",()=>{if(lastResult){computeAll(lastResult);computeResale(lastResult);}});
+["holdYears","reval","fraisVente","gRent","gCharges"].forEach(id=>{const h=()=>{if(lastResult){computeResale(lastResult);renderFinPrice(lastResult);}};$(id).addEventListener("input",h);$(id).addEventListener("change",h);});
+bindSeg("segStatut","statut",()=>{const nr=state.statut==="nonresident";$("chkEEE").style.display=nr?"flex":"none";$("tmi").style.display=nr?"none":"";$("tmiNR").style.display=nr?"block":"none";$("tmiLabel").textContent=nr?"Imposition (non-r\u00e9sident)":"Tranche d'imp\u00f4t (TMI)";$("tmiNote").style.display=nr?"block":"none";if(lastResult){computeAll(lastResult);computeResale(lastResult);renderFinPrice(lastResult);}});
+bindSeg("segNeuf","neuf",()=>{if(lastResult){computeAll(lastResult);computeResale(lastResult);renderFinPrice(lastResult);}});
 bindSeg("segProfil","profil",()=>{if(lastResult)renderOperation(lastResult);});
 $("btnFiche").addEventListener("click",()=>{if(lastResult)printFiche(lastResult);});
 (function(){try{const lg=localStorage.getItem("estimo_logo");if(lg){repLogoData=lg;if($("repLogoPrev")){$("repLogoPrev").src=lg;$("repLogoPrev").style.display="block";}}const nm=localStorage.getItem("estimo_repname"),cl=localStorage.getItem("estimo_repcolor");if($("repName")&&nm)$("repName").value=nm;if($("repColor")&&cl)$("repColor").value=cl;}catch(_){}})();
@@ -2865,7 +2870,7 @@ function renderWorks(){
     if(t.cost<=0)return '<div class="hint" style="margin-top:12px">Cochez les postes pr\u00e9vus pour estimer budget, dur\u00e9e, plus-value et ROI. Chaque montant estim\u00e9 reste librement ajustable.</div>';
     var cells=[["Co\u00fbt total des travaux",eur0(t.cost),"var(--ink)"],["Dur\u00e9e estim\u00e9e",t.duree+" sem.","var(--ink)"],["Plus-value g\u00e9n\u00e9r\u00e9e",(pv>=0?"+":"")+eur0(pv),pv>=0?"var(--good)":"var(--bad)"],["ROI des travaux",(roi>=0?"+":"")+roi.toFixed(0)+" %",roi>=50?"var(--good)":roi>=0?"var(--warn)":"var(--bad)"]];
     return '<div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:9px">'+cells.map(function(c){return '<div style="background:var(--bg);border-radius:10px;padding:9px 11px"><div style="font-size:10px;color:var(--ink-soft);text-transform:uppercase">'+c[0]+'</div><div class="num" style="font-size:17px;font-weight:800;color:'+c[2]+'">'+c[1]+'</div></div>';}).join("")+'</div><div style="margin-top:10px"><button id="worksApply" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--brand-dark);background:#fff;color:var(--brand-dark);font-weight:700;font-size:13px;cursor:pointer">Reporter '+eur0(t.cost)+' dans \u00ab Travaux \u00e0 financer \u00bb</button></div><div class="hint" style="margin-top:8px">Montants estim\u00e9s (prix de march\u00e9 2025 ajust\u00e9s \u00e0 la surface), librement modifiables. \u00ab Plus-value g\u00e9n\u00e9r\u00e9e \u00bb = part du co\u00fbt r\u00e9cup\u00e9r\u00e9e \u00e0 la revente (peinture/staging \u00e9lev\u00e9s ; \u00e9lectricit\u00e9/plomberie plus faibles). R\u00e9sultat r\u00e9el selon le march\u00e9 local et l\'\u00e9tat initial. Indicatif.</div>';};
-  var bindApply=function(){var ap=$("worksApply");if(ap)ap.addEventListener("click",function(){$("iTravaux").value=tot().cost;if(lastResult){computeAll(lastResult);computeResale(lastResult);}});};
+  var bindApply=function(){var ap=$("worksApply");if(ap)ap.addEventListener("click",function(){$("iTravaux").value=tot().cost;if(lastResult){computeAll(lastResult);computeResale(lastResult);renderFinPrice(lastResult);}});};
   el.innerHTML='<div style="display:flex;flex-direction:column;gap:6px">'+list+'</div><div id="worksSum">'+sumHtml()+'</div>';
   bindApply();
   el.querySelectorAll('.works-item').forEach(function(it){var id=it.dataset.id,cb=it.querySelector('.wchk'),ci=it.querySelector('.wcost');
@@ -3180,9 +3185,12 @@ function projCore(p){
   }
   const iraAt=s=>{const crd=crdAt(s);return crd>0?Math.min(crd*p.taux*0.5,crd*0.03):0;};
   const netResaleAt=s=>{const sell=(p.exitBase||p.bp)*Math.pow(1+p.reval,s),fr=sell*p.fv;let acq=p.bp+notaire+(s>5?p.bp*0.15:0);if(p.reg==="meuble_reel")acq-=Math.min(p.bp*0.85,((state._amortTotal||(p.bp*0.85/30)))*s);const pvB=Math.max(0,sell-fr-acq),impot=pvB*(1-abatIR(s))*0.19+pvB*(1-abatPS(s))*ps+surtaxePV(pvB*(1-abatIR(s)));return sell-fr-impot-crdAt(s)-iraAt(s);};
-  const flows=[-p.apport];let van=-p.apport;
-  for(let t=1;t<=p.H;t++){let flow=cfArr[t-1];if(t===p.H)flow+=netResaleAt(p.H);flows.push(flow);van+=flow/Math.pow(1+p.rate,t);}
-  return {van:van,cf1m:cfArr[0]/12,tri:irr(flows)};
+  const resU=netResaleAt(p.H);
+  const flows=[-p.apport];let cfU=0,cfD=0;
+  for(let t=1;t<=p.H;t++){const c=cfArr[t-1];cfU+=c;cfD+=c/Math.pow(1+p.rate,t);let flow=c;if(t===p.H)flow+=resU;flows.push(flow);}
+  const resD=resU/Math.pow(1+p.rate,p.H);
+  const van=-p.apport+cfD+resD;
+  return {van:van,cf1m:cfArr[0]/12,tri:irr(flows),apport:p.apport,cfU:cfU,cfD:cfD,resU:resU,resD:resD,rate:p.rate};
 }
 function renderScenarios(r){
   const el=$("scnPanel");if(!el)return;
@@ -3334,7 +3342,7 @@ function renderDecision(r,m){
        `<svg viewBox="0 0 82 82" width="82" height="82"><circle cx="41" cy="41" r="36" fill="none" stroke="var(--line)" stroke-width="8"/><circle cx="41" cy="41" r="36" fill="none" stroke="${col}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${dash} 226" transform="rotate(-90 41 41)"/></svg>`+
        `<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center"><div class="num" style="font-size:23px;font-weight:800;color:${col};line-height:1">${score}</div><div style="font-size:9px;color:var(--ink-soft)">/100</div></div>`+
      `</div>`+
-     `<div style="flex:1;min-width:0"><div style="font-size:10.5px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.5px">Score d'acquisition</div><div style="font-size:19px;font-weight:800;color:${col};line-height:1.15;margin:2px 0 4px">${verdict}</div></div>`+
+     `<div style="flex:1;min-width:0"><div style="font-size:10.5px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.5px">Score d'acquisition</div><div style="font-size:19px;font-weight:800;color:${col};line-height:1.15;margin:2px 0 4px">${verdict}</div><div style="font-size:10px;color:var(--ink-soft);line-height:1.35">Opportunit\u00e9 d'achat : prix, rentabilit\u00e9, march\u00e9, DPE, cash-flow, risque</div></div>`+
    `</div>`+
    `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin:14px 0 8px">${cell("Valeur march\u00e9",eur0(est))}${cell("Offre conseill\u00e9e",eur0(prixCible),"var(--good)")}${cell("Ne pas d\u00e9passer",eur0(prixMax))}</div>`+
    `<div style="margin-top:12px">${block("Forces",F,"var(--good)")}${block("Points de vigilance",W,"var(--warn)")}${block("Risques",R,"var(--bad)")}</div>`+
@@ -3350,7 +3358,7 @@ fillRegimes();updateTypeUI();
 
 /* ===== Mes biens : sauvegarde locale (localStorage), pour retrouver et actualiser un bien plus tard ===== */
 const SAVED_KEY="estimo_biens_v1";
-const SAVED_VALUE_IDS=["adresse","cp","ville","surface","terrain","floorExact","floorTotal","chambres","sdb","balconM2","balconNb","terrasseM2","jardinM2","etat","standing","epoque","chauffage","vue","mitoyen","iRent","iTaxe","iCopro","iPno","iDivers","iCompta","iCfe","iApport","iTaux","iAssur","iDossier","iGarantie","iDuree","iTravaux","tmi","regime","prixAchat","reval","fraisVente","gRent","gCharges","holdYears","discRate"];
+const SAVED_VALUE_IDS=["adresse","cp","ville","surface","terrain","floorExact","floorTotal","chambres","sdb","wcSep","balconM2","balconNb","terrasseM2","jardinM2","etat","standing","epoque","chauffage","vue","mitoyen","iRent","iTaxe","iCopro","iPno","iDivers","iCompta","iCfe","iApport","iTaux","iAssur","iDossier","iGarantie","iDuree","iTravaux","tmi","regime","prixAchat","reval","fraisVente","gRent","gCharges","holdYears","discRate","dispositif","dispoTravaux","dispoDuree","dispoZone","opSellTarget","opDureeMois","askPrice"];
 const SAVED_CHK_IDS=["viabilise","asc","expoN","expoE","expoS","expoO","piscine","amenageable","parking","garage","cave","eee"];
 const SAVED_SEG_IDS=["segType","segNeuf","segPieces","segDpe","segGes","segLoc","segStatut","segProfil"];
 
@@ -3366,8 +3374,12 @@ function snapshotForm(){
 function restoreForm(snap){
   if(!snap)return;
   const NOEVT=["adresse","cp","ville"]; // evite de re-declencher l'autocomplete BAN qui efface state.coord
-  Object.keys(snap.vals||{}).forEach(id=>{const el=$(id);const v=snap.vals[id];if(!el||v==null)return;el.value=v;
+  Object.keys(snap.vals||{}).forEach(id=>{const el=$(id);const v=snap.vals[id];if(v==null)return;
+    if(!el){if(id==="askPrice")state._pendingAskPrice=v;return;}
+    el.value=v;
     if(NOEVT.indexOf(id)===-1){el.dispatchEvent(new Event("input",{bubbles:true}));el.dispatchEvent(new Event("change",{bubbles:true}));}});
+  // askPrice n'existe qu'apres une premiere estimation (cree dans negoPanel) : toujours preparer la reprise differee
+  if(snap.vals&&snap.vals.askPrice!=null)state._pendingAskPrice=snap.vals.askPrice;
   Object.keys(snap.chks||{}).forEach(id=>{const el=$(id);if(!el)return;el.checked=!!snap.chks[id];el.dispatchEvent(new Event("change",{bubbles:true}));});
   Object.keys(snap.segs||{}).forEach(id=>{const el=$(id);if(!el)return;const v=snap.segs[id];
     const btn=[...el.querySelectorAll("button")].find(b=>b.dataset.v===v);if(btn)btn.click();});
