@@ -301,6 +301,25 @@
 .compare-table .ct-worst{color:var(--bad)}
 .compare-table .ct-num{font-family:var(--num);font-weight:700;color:var(--ink)}
 .cmp-score-pill{display:inline-block;padding:2px 7px;border-radius:8px;font-size:11px;font-weight:700;color:#fff}
+.wtab{background:transparent;color:var(--ink-soft);transition:.12s}
+.wtab-on{background:#fff;color:var(--brand-dark);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+/* Mode expert travaux */
+.wx-cat{border:1.5px solid var(--line);border-radius:11px;margin-bottom:9px;overflow:hidden}
+.wx-cat-head{display:flex;align-items:center;gap:9px;padding:10px 12px;background:var(--bg);cursor:pointer;user-select:none}
+.wx-cat-head:hover{background:#eef2f5}
+.wx-cat-title{flex:1;font-weight:700;font-size:12.5px;color:var(--ink)}
+.wx-cat-sum{font-family:var(--num);font-weight:800;font-size:12.5px;color:var(--brand-dark)}
+.wx-cat-body{padding:10px 12px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:9px}
+.wx-row{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
+.wx-f{display:flex;flex-direction:column;gap:3px;flex:1;min-width:78px}
+.wx-f-lbl{font-size:9.5px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.2px}
+.wx-f input,.wx-f select{font-family:var(--body);font-size:12.5px;padding:6px 8px;border:1.5px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);width:100%}
+.wx-f input{text-align:right;font-variant-numeric:tabular-nums}
+.wx-line{display:flex;justify-content:space-between;align-items:center;padding:7px 9px;background:var(--bg);border-radius:8px;font-size:11.5px}
+.wx-line-lbl{color:var(--ink);font-weight:600}
+.wx-line-val{font-family:var(--num);font-weight:800;color:var(--ink)}
+.wx-diy{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--good);font-weight:700;cursor:pointer}
+@media(max-width:480px){.wx-row{flex-direction:column;align-items:stretch}.wx-f{min-width:0}}
 /* Multi-lots immeuble de rapport v77 */
 .lots-panel{margin:12px 0 8px}
 .lots-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
@@ -385,6 +404,10 @@
     <div class="field"><div class="row">
       <div id="wrapSurface"><label class="lbl" for="surface">Surface habitable</label><div class="with-unit"><input class="input num" id="surface" type="number" min="1" placeholder="65" /><span class="unit">m&#178;</span></div></div>
       <div id="wrapTerrain" style="display:none"><label class="lbl" for="terrain">Surface terrain</label><div class="with-unit"><input class="input num" id="terrain" type="number" min="0" placeholder="300" /><span class="unit">m&#178;</span></div></div>
+      <div id="wrapVendeurPro" style="display:none;margin-bottom:12px">
+        <label class="chk" style="gap:8px"><input type="checkbox" id="terrainVendeurPro" /><span style="font-weight:700;font-size:13px">Vendeur professionnel (assujetti TVA)</span></label>
+        <div class="hint" style="margin-top:4px">Lotisseur, promoteur, marchand de biens &#8594; TVA 20 % incluse dans le prix et droits de mutation r&#233;duits &#224; 0,715 %. D&#233;coch&#233; = vendeur particulier (droits pleins ~5,8 %).</div>
+      </div>
       <div id="wrapViab" class="terrain-params" style="display:none">
         <!-- Type de terrain -->
         <div class="terrain-section">
@@ -574,10 +597,21 @@
       <div id="dpeReformeNote" class="banner warn" style="display:none;margin-top:8px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="flex:none"><circle cx="12" cy="12" r="9" stroke="#8a5e10" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#8a5e10" stroke-width="2" stroke-linecap="round"/></svg><span><b>R&#233;forme DPE du 01/01/2026 :</b> ce DPE date d'avant le changement du coefficient &#233;lectrique (2,58 &#8594; 1,79 kWhep/kWhef). Si le bien est chauffage &#233;lectrique, la classe r&#233;elle est probablement meilleure d'une &#224; deux lettres. Modifiez manuellement la lettre affich&#233;e ou commandez un nouveau DPE.</span></div>
     </div>
 
+    <div class="field" id="wrapDiags">
+      <label class="lbl">Diagnostics techniques &#8212; points de vigilance</label>
+      <div class="hint" style="margin-bottom:8px">Cochez ce qui est signal&#233; dans le dossier de diagnostic technique (DDT). Chaque point coch&#233; ouvre un questionnaire pour chiffrer son impact sur le prix et le co&#251;t des travaux.</div>
+      <div id="diagsGrid" style="display:flex;flex-direction:column;gap:7px"></div>
+      <div id="diagsImpact" style="display:none;margin-top:10px"></div>
+    </div>
+
+
     </div>
 
     <div class="wnav" id="wNav"><button id="wPrev" type="button">Pr&#233;c&#233;dent</button><button id="wNext" type="button">Suivant</button></div>
-    <button class="cta" id="btnEstim">Estimer le bien</button>
+    <div style="display:flex;gap:8px;align-items:stretch">
+      <button class="cta" id="btnEstim" style="flex:1">Estimer le bien</button>
+      <button type="button" id="btnNewBien" title="Effacer tous les champs et repartir de z&#233;ro" style="flex:none;padding:0 16px;border:1.5px solid var(--line);background:#fff;color:var(--ink-soft);border-radius:var(--r);font-family:var(--body);font-weight:700;font-size:13px;cursor:pointer;transition:.12s;white-space:nowrap">&#8635; Nouveau</button>
+    </div>
     <div class="err" id="formErr"></div>
     <div class="hint">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#5B7186" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#5B7186" stroke-width="2" stroke-linecap="round"/></svg>
@@ -723,6 +757,7 @@
         <div class="metric"><div class="ml">Nette</div><div class="mv" id="mNette" style="font-size:21px">&#8212;</div><div class="mh">apr&#232;s charges</div></div>
         <div class="metric"><div class="ml">Nette-nette</div><div class="mv" id="mNetNet" style="font-size:21px">&#8212;</div><div class="mh">apr&#232;s imp&#244;t</div></div>
       </div>
+      <div id="netNetNote" class="hint" style="display:none;margin-top:8px;padding:9px 11px;background:var(--bg);border-radius:9px;line-height:1.5"></div>
 
       <div class="subhead">Loyer</div>
       <div style="margin-bottom:10px">
@@ -791,7 +826,8 @@
         </div>
       </div>
 
-      <div class="line-item"><span class="li-l">Frais de notaire <span id="notaireRate" style="font-weight:500;color:var(--ink-soft)">(~7,8 %)</span></span><span class="num" id="notaireV">&#8212;</span></div>
+      <div class="line-item" id="notaireLine" style="cursor:pointer" title="Cliquez pour voir le d&#233;tail"><span class="li-l">Frais de notaire <span id="notaireRate" style="font-weight:500;color:var(--ink-soft)">(&#8212;)</span> <span style="font-size:10px;color:var(--brand-dark);font-weight:700">&#9662; d&#233;tail</span></span><span class="num" id="notaireV">&#8212;</span></div>
+      <div id="notaireDetail" style="display:none;margin:-2px 0 10px;padding:11px 12px;background:var(--bg);border-radius:10px;border-left:3px solid var(--brand-dark)"></div>
       <div class="line-item"><span class="li-l">Co&#251;t total de l'op&#233;ration</span><span class="num" id="coutTotalV">&#8212;</span></div>
       <div class="line-item"><span class="li-l">Montant emprunt&#233;</span><span class="num" id="empruntV">&#8212;</span></div>
       <div class="line-item"><span class="li-l">Co&#251;t total du cr&#233;dit (int&#233;r&#234;ts + assurance)</span><span class="num" id="coutCreditV">&#8212;</span></div>
@@ -805,6 +841,14 @@
     </section>
 
     <!-- REVENTE -->
+    <section class="card" style="order:4" id="benchCard">
+      <div class="card-head"><div class="step-no">&#127465;&#127479;</div><div><h2>Ce secteur vs la France</h2><div class="sub">Positionnement sur les indicateurs cl&#233;s</div></div></div>
+      <div id="benchPanel"></div>
+    </section>
+    <section class="card" style="order:6" id="ownVsRentCard">
+      <div class="card-head"><div class="step-no">&#127968;</div><div><h2>Acheter ou louer&#160;?</h2><div class="sub">&#192; partir de quand la propri&#233;t&#233; devient-elle plus avantageuse&#160;?</div></div></div>
+      <div id="ownVsRentPanel"></div>
+    </section>
     <section class="card" style="order:5" id="resaleCard">
       <div class="card-head"><div class="step-no">6</div><div><h2>Simulation de revente</h2><div class="sub">Plus-value, fiscalit&#233; et rendement global</div></div></div>
       <div class="subhead" style="margin-top:0">Hypoth&#232;ses d'&#233;volution annuelle</div>
@@ -831,7 +875,14 @@
     </section>
 
     <!-- OP&#201;RATION ACHAT-REVENTE -->
-    <section class="card expert-only" style="order:3" id="worksCard"><div class="card-head"><div class="step-no">&#128296;</div><div><h2>Valorisation des travaux</h2><div class="sub">Co&#251;t, dur&#233;e, plus-value et ROI par poste</div></div></div><div id="worksPanel"></div></section>
+    <section class="card expert-only" style="order:3" id="worksCard"><div class="card-head"><div class="step-no">&#128296;</div><div><h2>Valorisation des travaux</h2><div class="sub">Co&#251;t, dur&#233;e, plus-value et ROI par poste</div></div></div>
+      <div style="display:flex;gap:6px;margin-bottom:12px;background:var(--bg);padding:4px;border-radius:10px">
+        <button type="button" id="worksTabSimple" class="wtab wtab-on" style="flex:1;padding:8px;border:none;border-radius:8px;font-family:var(--body);font-weight:700;font-size:12.5px;cursor:pointer">Estimation rapide</button>
+        <button type="button" id="worksTabExpert" class="wtab" style="flex:1;padding:8px;border:none;border-radius:8px;font-family:var(--body);font-weight:700;font-size:12.5px;cursor:pointer">Mode expert (m&#233;tr&#233;)</button>
+      </div>
+      <div id="worksPanel"></div>
+      <div id="worksExpertPanel" style="display:none"></div>
+    </section>
     <section class="card" style="order:96" id="reportPdfCard"><div class="card-head"><div class="step-no">&#128196;</div><div><h2>Rapport professionnel (PDF)</h2><div class="sub">Document complet, &#224; votre identit&#233; visuelle</div></div></div>
       <div style="display:flex;flex-direction:column;gap:10px">
         <div><label class="lbl" for="repName">Cabinet / pr&#233;parateur</label><input class="input" id="repName" type="text" placeholder="Votre nom ou agence" /></div>
@@ -974,9 +1025,76 @@ $("segGes").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=
 [$("piscine"),$("amenageable")].forEach(c=>c&&c.addEventListener("change",()=>c.closest(".chk").classList.toggle("on",c.checked)));
 ["expoN","expoE","expoS","expoO"].forEach(id=>{const c=$(id);if(c)c.addEventListener("change",()=>c.closest(".chk").classList.toggle("on",c.checked));});
 
+/* POINT2 : vider les champs devenus non pertinents lors d'un changement de type de bien */
+function _clearIrrelevantFields(){
+  const t=state.type;
+  // Etage : uniquement pertinent pour un appartement
+  if(t!=="appartement"){
+    ["floorExact","floorTotal"].forEach(function(id){const e=$(id);if(e)e.value="";});
+    const a=$("asc");if(a)a.checked=false;
+  }
+  // Terrain : uniquement pour maison/terrain
+  if(t==="appartement"){
+    const tr=$("terrain");if(tr)tr.value="";
+    ["terrainType","terrainPente","terrainSol","terrainForme"].forEach(function(id){const e=$(id);if(e)e.selectedIndex=0;});
+    const p=$("piscine");if(p)p.checked=false;
+  }
+  // Jardin : pas pour un appartement
+  if(t==="appartement"){const j=$("jardinM2");if(j)j.value="";}
+  // Copropriete : pas pour maison/terrain
+  if(t!=="appartement"){const cp=$("iCopro");if(cp)cp.value=0;}
+}
+/* POINT1 : reinitialisation complete du formulaire */
+function resetForm(){
+  if(!confirm("Effacer tous les champs et repartir de z\u00e9ro ?\nLes biens sauvegard\u00e9s ne sont pas affect\u00e9s."))return;
+  // Vider tous les champs texte/number
+  SAVED_VALUE_IDS.forEach(function(id){
+    const e=$(id);if(!e)return;
+    if(e.tagName==="SELECT")e.selectedIndex=0;
+    else e.value="";
+  });
+  // Decocher toutes les cases
+  SAVED_CHK_IDS.forEach(function(id){const e=$(id);if(e)e.checked=false;});
+  // Remettre les segments sur leur premiere option
+  SAVED_SEG_IDS.forEach(function(id){
+    const el=$(id);if(!el)return;
+    const btns=el.querySelectorAll("button");
+    if(btns.length){btns.forEach(function(b){b.classList.remove("on");});btns[0].classList.add("on");}
+  });
+  // Reinitialiser l'etat interne
+  state.coord=null;state.ctx2={};state.enrich={};state.live={};
+  state._localApt=null;state._lots=[];state._restoring=false;state._restoredVals=null;
+  state._pendingAskPrice=null;state._dpeReformeWarn=false;state._dpePreRefDate="";
+  Object.keys(diagsState).forEach(function(k){delete diagsState[k];});
+  if(typeof renderDiags==="function")renderDiags();
+  if(typeof WX!=="undefined"&&WX.reset)WX.reset();
+  state.activeSnapId=null;state.mktRentSqm=0;
+  lastResult=null;
+  // Restaurer les valeurs par defaut des segments cles
+  state.type="appartement";state.neuf="ancien";state.pieces=3;
+  state.dpe="D";state.ges="D";state.loc="nue";state.statut="particulier";state.profil="equilibre";
+  // Remettre les valeurs par defaut des champs numeriques
+  const defaults={tmi:"30",iDuree:"20",iTaux:"3.4",iAssur:"0.34",iDossier:"1000",
+    reval:"2.0",gRent:"2.5",gCharges:"2.5",fraisVente:"4",holdYears:"10",iPno:"150"};
+  Object.keys(defaults).forEach(function(id){const e=$(id);if(e)e.value=defaults[id];});
+  // Desactiver le mode multi-lots
+  const ml=$("multiLotToggle");if(ml&&ml.checked){ml.checked=false;const lp=$("lotsPanel");if(lp)lp.style.display="none";const sr=$("singleRentRow");if(sr)sr.style.display="";}
+  // Masquer les resultats
+  const rz=$("results");if(rz)rz.style.display="none";
+  const cv=$("cpVilleRow");if(cv)cv.style.display="none";
+  const fe=$("formErr");if(fe)fe.classList.remove("show");
+  // Rafraichir l'UI
+  updateTypeUI();fillRegimes();refreshSavedSelect();
+  if(typeof _renderIrlNote==="function")_renderIrlNote();
+  // Remonter en haut
+  window.scrollTo({top:0,behavior:"smooth"});
+  const ad=$("adresse");if(ad)ad.focus();
+}
 function updateTypeUI(){const t=state.type,isTerrain=(t==="terrain");
+  _clearIrrelevantFields(); // POINT2 : nettoyer les champs devenus non pertinents
   $("wrapTerrain").style.display=(t==="maison"||t==="terrain")?"":"none";
   const _wv=$("wrapViab");if(_wv)_wv.style.display=isTerrain?"":"none";
+  const _wvp=$("wrapVendeurPro");if(_wvp)_wvp.style.display=isTerrain?"":"none";
   if(isTerrain)updateViabCost();
   $("wrapSurface").style.display=isTerrain?"none":"";
   ["wrapPieces","wrapEtat","wrapDpe","accCarac"].forEach(id=>$(id).style.display=isTerrain?"none":"");
@@ -986,7 +1104,7 @@ function updateTypeUI(){const t=state.type,isTerrain=(t==="terrain");
   $("wrapNeuf").style.display=isTerrain?"none":"";
   // Terrain : masquer les sections exclusivement locatives (loyer, fiscalite LMNP, financement locatif)
   // Conserver : revente (utile pour projeter la valeur du projet), travaux (viabilisation), achat-revente
-  ["rentalCard","proKpiCard","fiscalCard","dispositifCard"].forEach(id=>{const el=$(id);if(el)el.style.display=isTerrain?"none":"";});
+  ["rentalCard","proKpiCard","fiscalCard","dispositifCard","ownVsRentCard"].forEach(id=>{const el=$(id);if(el)el.style.display=isTerrain?"none":"";});
   // En mode terrain : afficher un message explicatif en haut de la revente
   const rc=$("resaleCard");if(rc){const bn=rc.querySelector(".terrain-resale-note");if(isTerrain&&!bn){const d=document.createElement("div");d.className="banner good terrain-resale-note";d.style.marginBottom="12px";d.innerHTML="<span>&#127961;&#65039; Mode terrain : la simulation de revente projette la valeur fonciere apres revalorisation. Ajoutez les travaux pour inclure le cout de viabilisation ou de construction.</span>";rc.insertBefore(d,rc.querySelector(".card-head").nextSibling);}else if(!isTerrain&&bn)bn.remove();}
 }
@@ -2037,7 +2155,11 @@ function renderPriceHistory(r){
   const line=pts.map((p,i)=>(i?"L":"M")+X(i).toFixed(2)+" "+Y(p.v).toFixed(2)).join(" ");
   const area=line+" L"+X(pts.length-1).toFixed(2)+" "+(H-mB)+" L"+X(0).toFixed(2)+" "+(H-mB)+" Z";
   // Bande Q1-Q3 (fourchette de marche)
-  const iqrPath=pts.map((p,i)=>(i?"L":"M")+X(i).toFixed(2)+" "+Y(p.q3).toFixed(2)).join(" ")+" "+[...pts].reverse().map((p,i)=>(i?"L":"M")+X(pts.length-1-i).toFixed(2)+" "+Y(p.q1).toFixed(2)).join(" ")+" Z";
+  // POINT7 FIX : le chemin retour doit utiliser "L" (lineto) partout, jamais "M" (moveto)
+  // sinon le polygone se brise et la zone ombree Q1-Q3 s'affiche de facon erratique.
+  const _upper=pts.map((p,i)=>(i===0?"M":"L")+X(i).toFixed(2)+" "+Y(p.q3).toFixed(2)).join(" ");
+  const _lower=[...pts].reverse().map((p,i)=>"L"+X(pts.length-1-i).toFixed(2)+" "+Y(p.q1).toFixed(2)).join(" ");
+  const iqrPath=_upper+" "+_lower+" Z";
   // Deltas year-over-year sur chaque point
   let yoyLabels="";pts.forEach((p,i)=>{if(i===0)return;const yoy=Math.round((p.v/pts[i-1].v-1)*100);const col=yoy>=0?"var(--good)":"var(--bad)";yoyLabels+='<text x="'+X(i).toFixed(2)+'" y="'+(Y(p.v)-3).toFixed(2)+'" font-size="2.8" text-anchor="middle" fill="'+col+'" font-weight="700">'+(yoy>=0?"+":"")+yoy+'%</text>';});
   let grid="";[0,0.33,0.67,1].forEach(f=>{const v=y0+(y1-y0)*f,gy=Y(v).toFixed(2);grid+='<line x1="'+mL+'" y1="'+gy+'" x2="'+(W-mR)+'" y2="'+gy+'" stroke="var(--line)" stroke-width="0.3"/>'+((f===0||f===0.5||f===1)?'<text x="0.5" y="'+(+gy+1)+"" + '" font-size="2.5" fill="var(--ink-soft)">'+Math.round(v/100)*100+'</text>':'');});
@@ -2046,15 +2168,15 @@ function renderPriceHistory(r){
   const totalV=pts.reduce((s,p)=>s+p.n,0);
   const nyr=last.y-first.y,cagr=nyr>0?((Math.pow(last.v/first.v,1/nyr)-1)*100):0;
   const barW=Math.min(6,(W-mL-mR)/pts.length*0.7),vmaxN=Math.max.apply(null,pts.map(p=>p.n));
-  const bars=pts.map((p,i)=>{const bh=(p.n/vmaxN)*7,bx=X(i)-barW/2,by=H-mB-bh;return '<rect x="'+bx.toFixed(2)+'" y="'+by.toFixed(2)+'" width="'+barW.toFixed(2)+'" height="'+bh.toFixed(2)+'" fill="var(--brand)" opacity="0.22" rx="0.5"/>';}).join("");
+  const bars=pts.map((p,i)=>{const bh=(p.n/vmaxN)*7,bx=X(i)-barW/2,by=H-mB-bh;return '<rect x="'+bx.toFixed(2)+'" y="'+by.toFixed(2)+'" width="'+barW.toFixed(2)+'" height="'+bh.toFixed(2)+'" fill="var(--brand-dark)" opacity="0.30" rx="0.5"/>';}).join("");
   const d=document.createElement("div");d.id="priceHistory";
   const dataJson=JSON.stringify(pts).replace(/"/g,"&quot;");
   d.innerHTML='<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">'+
     '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:5px"><span style="font-size:12px;font-weight:800;color:var(--ink)">\u00c9volution du prix m\u00e9dian /m\u00b2 <span class="real-tag" style="font-size:9px;padding:1px 5px">DVF r\u00e9el</span></span><span class="num" style="font-size:12px;font-weight:800;color:'+(evo>=0?"var(--good)":"var(--bad)")+'">\u00c9volution '+(evo>=0?"+":"")+evo+' % \u00b7 CAGR '+(cagr>=0?"+":"")+cagr.toFixed(1)+' %/an</span></div>'+
     '<div style="position:relative"><svg id="phSvg" viewBox="0 0 100 68" style="width:100%;height:150px;margin-top:6px;overflow:visible;touch-action:none" preserveAspectRatio="none" data-pts="'+dataJson+'">'+
       grid+bars+
-      '<path d="'+iqrPath+'" fill="var(--brand)" opacity="0.13"/>'+
-      '<path d="'+area+'" fill="var(--brand)" opacity="0.08"/>'+
+      '<path d="'+iqrPath+'" fill="var(--brand)" opacity="0.20" stroke="var(--brand)" stroke-width="0.25" stroke-opacity="0.4"/>'+
+      '<path d="'+area+'" fill="var(--brand)" opacity="0.07"/>'+
       '<path d="'+line+'" fill="none" stroke="var(--brand-dark)" stroke-width="1.8" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>'+
       yoyLabels+dots+
       '<line id="phCursor" x1="0" y1="'+mT+'" x2="0" y2="'+(H-mB)+'" stroke="var(--brand-dark)" stroke-width="0.5" stroke-dasharray="1.5 1.5" style="display:none"/>'+
@@ -2683,26 +2805,28 @@ function explainPanel(title,formula,rows,total,totalLbl,note){
     var wPct=w!=null?(w*100).toFixed(0)+" %":"\u2014";
     var cVal=contrib!=null?(typeof contrib==="number"?contrib.toFixed(1):contrib):"\u2014";
     return '<tr style="border-bottom:1px solid var(--line)">'+
-      '<td style="padding:6px 8px;font-size:11px;color:var(--ink);font-weight:600">'+lbl+
-        (src?'<div style="font-size:9.5px;color:var(--ink-soft);font-weight:400;margin-top:1px">'+src+'</div>':'')+'</td>'+
-      '<td style="padding:6px 8px;text-align:right;font-size:11.5px" class="num">'+val+'</td>'+
-      '<td style="padding:6px 8px;text-align:right;font-size:10.5px;color:var(--ink-soft)" class="num">'+wPct+'</td>'+
-      '<td style="padding:6px 8px;text-align:right;font-size:11.5px;font-weight:700;color:var(--brand-dark)" class="num">'+cVal+'</td>'+
+      '<td style="padding:6px 6px;font-size:10.5px;color:var(--ink);font-weight:600;word-break:break-word;overflow-wrap:anywhere;vertical-align:top">'+lbl+
+        (src?'<div style="font-size:9px;color:var(--ink-soft);font-weight:400;margin-top:2px;line-height:1.35;word-break:break-word;overflow-wrap:anywhere">'+src+'</div>':'')+'</td>'+
+      '<td style="padding:6px 6px;text-align:right;font-size:11px;vertical-align:top;white-space:nowrap" class="num">'+val+'</td>'+
+      '<td style="padding:6px 6px;text-align:right;font-size:10px;color:var(--ink-soft);vertical-align:top;white-space:nowrap" class="num">'+wPct+'</td>'+
+      '<td style="padding:6px 6px;text-align:right;font-size:11px;font-weight:700;color:var(--brand-dark);vertical-align:top;white-space:nowrap" class="num">'+cVal+'</td>'+
     '</tr>';
   }).join("");
-  return '<div style="margin-top:10px;padding:12px;background:var(--bg);border-radius:11px;border-left:3px solid var(--brand-dark)">'+
-    '<div style="font-weight:800;font-size:12px;color:var(--brand-dark);margin-bottom:4px">'+title+'</div>'+
-    (formula?'<div style="font-size:10.5px;color:var(--ink-soft);margin-bottom:8px;font-family:var(--num);line-height:1.4">'+formula+'</div>':'')+
-    '<table style="width:100%;border-collapse:collapse">'+
+  return '<div style="margin-top:10px;padding:12px;background:var(--bg);border-radius:11px;border-left:3px solid var(--brand-dark);overflow:hidden">'+
+    '<div style="font-weight:800;font-size:12px;color:var(--brand-dark);margin-bottom:4px;word-break:break-word">'+title+'</div>'+
+    (formula?'<div style="font-size:10.5px;color:var(--ink-soft);margin-bottom:8px;font-family:var(--num);line-height:1.4;word-break:break-word;overflow-wrap:anywhere">'+formula+'</div>':'')+
+    '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px;padding:0 4px">'+
+    '<table style="width:100%;border-collapse:collapse;table-layout:fixed;min-width:0">'+
+      '<colgroup><col style="width:46%"/><col style="width:19%"/><col style="width:15%"/><col style="width:20%"/></colgroup>'+
       '<thead><tr style="border-bottom:1.5px solid var(--line)">'+
-        '<th style="text-align:left;padding:5px 8px;font-size:9.5px;color:var(--ink-soft);text-transform:uppercase">Param\u00e8tre</th>'+
-        '<th style="text-align:right;padding:5px 8px;font-size:9.5px;color:var(--ink-soft);text-transform:uppercase">Valeur</th>'+
-        '<th style="text-align:right;padding:5px 8px;font-size:9.5px;color:var(--ink-soft);text-transform:uppercase">Poids</th>'+
-        '<th style="text-align:right;padding:5px 8px;font-size:9.5px;color:var(--ink-soft);text-transform:uppercase">Contrib.</th>'+
+        '<th style="text-align:left;padding:5px 6px;font-size:9px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.2px">Param\u00e8tre</th>'+
+        '<th style="text-align:right;padding:5px 6px;font-size:9px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.2px">Valeur</th>'+
+        '<th style="text-align:right;padding:5px 6px;font-size:9px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.2px">Poids</th>'+
+        '<th style="text-align:right;padding:5px 6px;font-size:9px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.2px">Contrib.</th>'+
       '</tr></thead><tbody>'+trs+'</tbody>'+
-      (total!=null?'<tfoot><tr style="border-top:2px solid var(--brand-dark)"><td colspan="3" style="padding:7px 8px;font-size:11.5px;font-weight:800;color:var(--ink)">'+(totalLbl||"Total")+'</td><td style="padding:7px 8px;text-align:right;font-size:14px;font-weight:800;color:var(--brand-dark)" class="num">'+total+'</td></tr></tfoot>':'')+
-    '</table>'+
-    (note?'<div class="hint" style="margin-top:7px">'+note+'</div>':'')+
+      (total!=null?'<tfoot><tr style="border-top:2px solid var(--brand-dark)"><td colspan="3" style="padding:7px 6px;font-size:11px;font-weight:800;color:var(--ink);word-break:break-word">'+(totalLbl||"Total")+'</td><td style="padding:7px 6px;text-align:right;font-size:13px;font-weight:800;color:var(--brand-dark);white-space:nowrap" class="num">'+total+'</td></tr></tfoot>':'')+
+    '</table></div>'+
+    (note?'<div class="hint" style="margin-top:7px;word-break:break-word;overflow-wrap:anywhere">'+note+'</div>':'')+
   '</div>';
 }
 function reliabilityIndex(r){
@@ -2747,6 +2871,13 @@ function priceFormation(r){
   const _vNote=(r.vefaCorr&&r.vefaCorr.corrPct>0)?" · corr. VEFA −"+r.vefaCorr.corrPct+" %":"";
   lines.push({k:"base",label:"Valeur de march\u00e9 de base",eur:L0,pct:100,note:eur0(r.sqmBase||0)+" \u20ac/m\u00b2 (multi-mod\u00e8les"+_vNote+") \u00d7 "+surf+" m\u00b2"});
   if(charac)lines.push({k:"carac",label:"Caract\u00e9ristiques du bien",eur:charac,pct:pct(charac),note:"\u00c9tat, DPE, \u00e9tage, exposition, standing\u2026 (effets contextuels)",sub:(r.rows||[]).filter(x=>x[1]&&Math.abs(x[1])>=0.005).map(x=>[x[0],(x[1]>0?"+":"")+(x[1]*100).toFixed(1)+" %"])});
+  // DIAGNOSTICS : afficher la decote dans la formation du prix
+  if(r.diagImpact&&r.diagImpact<0&&r.priceBeforeDiag){
+    const _dEur=r.price-r.priceBeforeDiag;
+    const _lbls=(r.diagActifs||[]).map(function(a){return a.lbl;}).join(", ");
+    lines.push({k:"diag",label:"D\u00e9cote diagnostics",eur:_dEur,pct:pct(_dEur),
+      note:_lbls+" \u00b7 d\u00e9cote de "+(r.diagImpact*100).toFixed(1).replace(".",",")+" % (risque, stigmatisation, difficult\u00e9 de revente \u2014 <b>hors co\u00fbt des travaux</b>)"});
+  }
   if(odVal){
     // POINT5c : detail chiffre de la surface economique
     const _bM=numv("balconM2"),_tM=numv("terrasseM2"),_jM=numv("jardinM2");
@@ -3447,7 +3578,14 @@ function computeAll(r){
 
   const bp=numv("prixAchat")||r.price;
   const charges=numv("iTaxe")+numv("iCopro")+numv("iPno")+numv("iDivers")+numv("iCompta")+numv("iCfe");$("chargesTot").textContent=eur(charges);
-  const ntxR=notaireRate();const notaire=bp*ntxR;$("notaireV").textContent=eur(notaire);
+  // POINT1 : frais d'acquisition calcules poste par poste (bareme reglemente)
+  const _fa=fraisAcquisition(bp);
+  const ntxR=_fa?_fa.taux:notaireRate();
+  const notaire=_fa?_fa.total:bp*ntxR;
+  $("notaireV").textContent=eur(notaire);
+  const _nrEl=$("notaireRate");
+  if(_nrEl)_nrEl.textContent="("+(ntxR*100).toFixed(2).replace(".",",")+" %)";
+  renderNotaireDetail(_fa);
   $("notaireRate").innerHTML=`(${(ntxR*100).toFixed(1).replace('.',',')} % \u00b7 ${state.type==="terrain"?"terrain":state.neuf==="neuf"?"neuf":"ancien"}${state.type!=="terrain"&&state.neuf!=="neuf"?" d\u00e9pt "+depFromCP():""})`+dmtoAuditWarning();
   const travaux=numv("iTravaux");
   const coutTotal=bp+notaire+travaux+numv("iDossier")+numv("iGarantie");$("coutTotalV").textContent=eur(coutTotal);
@@ -3505,6 +3643,25 @@ function computeAll(r){
   setMetric($("mBrute"),brute.toFixed(1)+" %",brute);
   setMetric($("mNette"),nette.toFixed(1)+" %",nette);
   setMetric($("mNetNet"),netnet.toFixed(1)+" %",netnet);
+  // POINT5 : expliquer le cas ou nette-nette DEPASSE nette (impot negatif = economie fiscale)
+  const _nnNote=$("netNetNote");
+  if(_nnNote){
+    if(tax<-0.5){
+      // Impot negatif : deficit foncier ou amortissement > resultat => economie d'impot
+      const _isDeficit=reg==="nue_reel";
+      _nnNote.style.display="";
+      _nnNote.innerHTML='<span style="color:var(--good);font-weight:700">\u2713 Nette-nette sup\u00e9rieure \u00e0 nette</span> \u2014 ce n\u2019est pas une erreur : votre imp\u00f4t locatif est <b>n\u00e9gatif</b> ('+eur(Math.abs(tax))+' \u20ac d\u2019<b>\u00e9conomie</b>). '+
+        (_isDeficit
+          ? 'Le <b>d\u00e9ficit foncier</b> (charges + int\u00e9r\u00eats > loyers) s\u2019impute sur vos autres revenus imposables, jusqu\u2019\u00e0 10 700 \u20ac/an. Vous payez donc <b>moins d\u2019imp\u00f4t global</b> gr\u00e2ce \u00e0 ce bien.'
+          : 'L\u2019<b>amortissement comptable</b> (LMNP r\u00e9el) efface le r\u00e9sultat fiscal et g\u00e9n\u00e8re un report d\u00e9ficitaire. Attention : ce report n\u2019est pas imputable sur vos autres revenus, il ne fait que neutraliser les loyers futurs.')+
+        ' Formule : (loyers \u2212 charges \u2212 imp\u00f4t) \u00f7 co\u00fbt total \u2014 avec un imp\u00f4t n\u00e9gatif, le num\u00e9rateur augmente.';
+    } else if(netnet>nette+0.05){
+      _nnNote.style.display="";
+      _nnNote.innerHTML='La rentabilit\u00e9 nette-nette d\u00e9passe la nette car l\u2019imp\u00f4t calcul\u00e9 est nul ou n\u00e9gatif sur cet exercice (charges d\u00e9ductibles \u2265 loyers imposables).';
+    } else {
+      _nnNote.style.display="none";
+    }
+  }
 
   const cashM=(rentY-charges-tax)/12-mensuTot;
   setMetric($("mCash"),(cashM>=0?"+":"")+eur(cashM),cashM,true);
@@ -3707,7 +3864,18 @@ function buildEstimation(data){
   // Base corrigée = base DVF × facteur (écarte la prime VEFA de la médiane de référence)
   const _adjBase=realBase&&vefaCorr.factor<1?Math.round(realBase*vefaCorr.factor):realBase;
   // ──────────────────────────────────────────────────────────────────────────────
-  const r=estimate(_adjBase,realStats);r.bandWidened=bandWidened;r.realPts=realPts;r.realStats=realStats;r.realCount=realStats?realStats.n:0;r.engines=engineData?engineData.engines:[];r.engineBase=engineData?engineData.base:realBase;r.engineTop=engineData?engineData.top:[];r.pxHedonic=r.price;r.vefaCorr=vefaCorr;r.sqmBaseRaw=realBase||0;lastResult=r;
+  const r=estimate(_adjBase,realStats);r.bandWidened=bandWidened;r.realPts=realPts;r.realStats=realStats;r.realCount=realStats?realStats.n:0;r.engines=engineData?engineData.engines:[];r.engineBase=engineData?engineData.base:realBase;r.engineTop=engineData?engineData.top:[];r.pxHedonic=r.price;r.vefaCorr=vefaCorr;r.sqmBaseRaw=realBase||0;
+  // DIAGNOSTICS : decote liee aux pathologies detectees (amiante, elec, termites, assainissement...)
+  var _dg=(typeof diagsTotal==="function")?diagsTotal():null;
+  if(_dg&&_dg.impact<0){
+    r.diagImpact=_dg.impact;r.diagCost=_dg.cost;r.diagActifs=_dg.actifs;
+    r.priceBeforeDiag=r.price;
+    r.price=Math.round(r.price*(1+_dg.impact));
+    r.low=Math.round(r.low*(1+_dg.impact));
+    r.high=Math.round(r.high*(1+_dg.impact));
+    if(r.surface>0)r.sqmBase=Math.round(r.price/r.surface);
+  }
+  lastResult=r;
   if(realBase){const _rent=getRentSqm(r);r.dyn.loyerM2=_rent;r.dyn.rendementMarche=+(_rent*12/r.sqmBase*100).toFixed(1);r.dyn.rentReal=true;
     const _tr=dvfTrend(realPts);if(_tr){r.dyn.evo12=_tr.evo12;r.dyn.evo5=_tr.evoTot;r.dyn.notairesEvo=_tr.evo12;r.dyn.evoSpan=_tr.span;r.dyn.trendReal=true;}}
   patchDynReal(r);updateBadges(r);
@@ -3762,10 +3930,10 @@ function renderFinSensitivity(r,askP){
   const cj=steps.findIndex(v=>Math.abs(v-curReval)<0.006);
   let cells='';
   for(let j=0;j<N;j++){for(let i=0;i<N;i++){
-    const fp=grid[j][i];
+    const prixFinancier=grid[j][i];
     const isCur=(i===ci&&j===cj);
-    if(!fp){cells+=`<rect x="${mx(i).toFixed(1)}" y="${my(j+1).toFixed(1)}" width="${cW.toFixed(1)}" height="${cH.toFixed(1)}" fill="#ccc" opacity=".4"/>`;continue;}
-    const ratio=fp/askP;
+    if(!prixFinancier){cells+=`<rect x="${mx(i).toFixed(1)}" y="${my(j+1).toFixed(1)}" width="${cW.toFixed(1)}" height="${cH.toFixed(1)}" fill="#ccc" opacity=".4"/>`;continue;}
+    const ratio=prixFinancier/askP;
     let fill;
     if(ratio>=1.10)fill='#0a7a5c';
     else if(ratio>=1.0)fill='#4db897';
@@ -3774,7 +3942,7 @@ function renderFinSensitivity(r,askP){
     const op=Math.min(0.85,0.3+Math.abs(ratio-1)*2).toFixed(2);
     cells+=`<rect x="${mx(i).toFixed(1)}" y="${my(j+1).toFixed(1)}" width="${cW.toFixed(1)}" height="${cH.toFixed(1)}" fill="${fill}" opacity="${op}"/>`;
     // Valeur au centre de chaque cellule (texte plus grand)
-    const lbl=fp>0?Math.round(fp/1000)+'k':'';
+    const lbl=prixFinancier>0?Math.round(prixFinancier/1000)+'k':'';
     const txtColor=isCur?'#fff':(op>0.6?'#fff':'var(--ink)');
     const fontW=isCur?'800':'600';
     cells+=`<text x="${(mx(i)+cW/2).toFixed(1)}" y="${(my(j+1)+cH/2+3.5).toFixed(1)}" text-anchor="middle" font-size="${isCur?11:9.5}" font-weight="${fontW}" fill="${txtColor}">${lbl}</text>`;
@@ -3790,9 +3958,9 @@ function renderFinSensitivity(r,askP){
   }
   const xLabels=steps.map((v,i)=>`<text x="${(mx(i)+cW/2).toFixed(1)}" y="${(B+15).toFixed(1)}" text-anchor="middle" font-size="9" fill="var(--ink-soft)" font-weight="${i===ci?'800':'400'}">${(v*100).toFixed(0)}%</text>`).join('');
   const yLabels=steps.map((v,j)=>`<text x="${(L-5).toFixed(1)}" y="${(my(j+1)+cH/2+3).toFixed(1)}" text-anchor="end" font-size="9" fill="var(--ink-soft)" font-weight="${j===cj?'800':'400'}">${(v*100).toFixed(0)}%</text>`).join('');
-  const curFp=(ci>=0&&cj>=0&&grid[cj][ci])?grid[cj][ci]:null;
+  const curPrixFin=(ci>=0&&cj>=0&&grid[cj][ci])?grid[cj][ci]:null;
   el.innerHTML=`<div style="font-weight:700;font-size:13px;color:var(--ink);margin-bottom:4px">Prix financier selon les hypothèses de croissance</div>`+
-    `<div style="font-size:11px;color:var(--ink-soft);margin-bottom:8px;line-height:1.45">Chaque case = prix d'achat plafond pour atteindre votre rendement exigé, selon la croissance des prix (vertical) et des loyers (horizontal). Le <b style="color:var(--brand-dark)">cadre bleu</b> = vos hypothèses actuelles${curFp?' (<b>'+eur0(curFp)+' €</b>)':''}.</div>`+
+    `<div style="font-size:11px;color:var(--ink-soft);margin-bottom:8px;line-height:1.45">Chaque case = prix d'achat plafond pour atteindre votre rendement exigé, selon la croissance des prix (vertical) et des loyers (horizontal). Le <b style="color:var(--brand-dark)">cadre bleu</b> = vos hypothèses actuelles${curPrixFin?' (<b>'+eur0(curPrixFin)+' €</b>)':''}.</div>`+
     `<svg viewBox="0 0 ${W} ${H+22}" width="100%" style="display:block;max-width:420px;margin:0 auto">`+
     `<rect x="${L}" y="${T}" width="${Rr-L}" height="${B-T}" fill="var(--bg)"/>`+
     cells+currentFrame+
@@ -3803,12 +3971,12 @@ function renderFinSensitivity(r,askP){
     `</svg>`+
     // Legende couleurs
     `<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;font-size:10px">`+
-      `<span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#0a7a5c;border-radius:2px;display:inline-block"></span>fp ≥ +10 % / demandé</span>`+
-      `<span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#4db897;border-radius:2px;display:inline-block"></span>fp ≥ demandé</span>`+
-      `<span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#F2D31C;border-radius:2px;display:inline-block"></span>proche</span>`+
-      `<span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:12px;background:#E8742A;border-radius:2px;display:inline-block"></span>fp &lt; demandé</span>`+
+      `<span style="display:flex;align-items:center;gap:5px;white-space:nowrap"><span style="width:12px;height:12px;background:#0a7a5c;border-radius:2px;display:inline-block;flex:none"></span>Prix financier &#8805; +10 % / prix demand&#233;</span>`+
+      `<span style="display:flex;align-items:center;gap:5px;white-space:nowrap"><span style="width:12px;height:12px;background:#4db897;border-radius:2px;display:inline-block;flex:none"></span>Prix financier &#8805; prix demand&#233;</span>`+
+      `<span style="display:flex;align-items:center;gap:5px;white-space:nowrap"><span style="width:12px;height:12px;background:#F2D31C;border-radius:2px;display:inline-block;flex:none"></span>Proche du prix demand&#233;</span>`+
+      `<span style="display:flex;align-items:center;gap:5px;white-space:nowrap"><span style="width:12px;height:12px;background:#E8742A;border-radius:2px;display:inline-block;flex:none"></span>Prix financier &lt; prix demand&#233;</span>`+
     `</div>`+
-    `<div class="hint" style="margin-top:8px">Prix demandé de référence : <b>${eur0(askP)} €</b>. Vert = à ce niveau de croissance, vous pouvez payer plus que le prix demandé tout en atteignant votre rendement. Orange = le prix demandé est trop élevé pour votre exigence. Recalculé si vous modifiez loyer, taux ou rendement exigé.</div>`;
+    `<div class="hint" style="margin-top:8px"><b>Prix financier</b> = prix d\u2019achat maximal auquel votre rendement exig\u00e9 est encore atteint (VAN = 0). Prix demand\u00e9 de r\u00e9f\u00e9rence : <b>${eur0(askP)} \u20ac</b>.<br>Vert : \u00e0 ce niveau de croissance, vous pouvez payer <b>plus</b> que le prix demand\u00e9 tout en atteignant votre rendement \u2014 l\u2019affaire est bonne. Orange : le prix demand\u00e9 est <b>trop \u00e9lev\u00e9</b> pour votre exigence de rendement. Recalcul\u00e9 automatiquement si vous modifiez le loyer, le taux ou le rendement exig\u00e9.</div>`;
 }
 /* Prix financier investisseur : prix d'achat maximal atteignant le rendement exige (VAN=0),
    revente incluse et ANCREE AU PRIX DE MARCHE (l'acheteur revend a la valeur du marche, pas au prix paye).
@@ -3904,7 +4072,7 @@ function renderAllPanels(r,_conf,realBase,diag){
   renderConfBreak(_conf);
   renderExplain(r);
   const fpn=$("finPriceNote");if(fpn)fpn.style.display="none"; // recalcule apres renseignement du loyer (voir renderRentalDefaults)
-  renderInsee(r);renderMarket(r);renderLocStats(r);renderDvfStats(r);renderPriceHistory(r);genComparables(r);renderEstimators(r);renderEngines(r);renderBienIndices(r);renderGlobalIndex(r);renderPriceFormation(r);renderContext(r);
+  renderInsee(r);renderMarket(r);renderLocStats(r);renderDvfStats(r);renderPriceHistory(r);genComparables(r);renderEstimators(r);renderEngines(r);renderBienIndices(r);renderGlobalIndex(r);renderPriceFormation(r);renderContext(r);renderOwnVsRent(r);renderDiagsImpact();if(typeof renderBenchmark==="function")renderBenchmark(r);
   $("locAddr").textContent=state.coord?.label||(($("ville").value||"")+" "+$("cp").value).trim();
   $("locCoord").textContent=state.coord?`${state.coord.lat.toFixed(4)}, ${state.coord.lon.toFixed(4)}${state.coord.alt!=null?" \u00b7 alt. "+state.coord.alt+" m":""} \u00b7 carte interactive dans la version h\u00e9berg\u00e9e`:"Carte interactive disponible dans la version h\u00e9berg\u00e9e";
   const dpeCostHi=renderDpe();
@@ -3918,7 +4086,7 @@ function setupAsyncCallbacks(r,enrichPromise,ctxProm){
   enrichPromise.then(e=>{state.enrich=e;if(lastResult===r){applyGeoDyn(r);renderLocStats(r);renderEnrich(r);renderMap(r);}}).catch(()=>{state.enrich={};if(lastResult===r){renderEnrich(r);renderMap(r);}});
   ctxProm.then(c=>{state.ctx2=c||{};if(lastResult===r){patchDynReal(r);
     const _lr=getRentSqm(r);if(r.sqmBase&&_lr!==r.dyn.loyerM2){r.dyn.loyerM2=_lr;r.dyn.rendementMarche=+(_lr*12/r.sqmBase*100).toFixed(1);}
-    updateBadges(r);computeAll(r);renderInsee(r);renderMarket(r);renderContext(r);}}).catch(()=>{state.ctx2={};if(lastResult===r)renderContext(r);});
+    updateBadges(r);computeAll(r);renderInsee(r);renderMarket(r);renderContext(r);if(typeof renderBenchmark==="function")renderBenchmark(r);}}).catch(()=>{state.ctx2={};if(lastResult===r)renderContext(r);});
   setShimmer("enrichPanel");setShimmer("contextPanel");
 }
 async function showResults(){
@@ -3938,6 +4106,13 @@ async function showResults(){
   $("results").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth",block:"start"});
 }
 $("btnEstim").addEventListener("click",showResults);
+if($("btnNewBien"))$("btnNewBien").addEventListener("click",resetForm);
+if($("notaireLine"))$("notaireLine").addEventListener("click",function(){
+  const d=$("notaireDetail");if(d)d.style.display=(d.style.display==="none")?"":"none";
+});
+if($("terrainVendeurPro"))$("terrainVendeurPro").addEventListener("change",function(){
+  if(lastResult){computeAll(lastResult);computeResale(lastResult);renderFinPrice(lastResult);}
+});
 /* ===== Assistant par etapes (wizard) \u2014 couche UX, n'affecte ni les champs ni les calculs ===== */
 (function(){
   const allSteps=[...document.querySelectorAll('.wstep')];
@@ -3972,9 +4147,9 @@ $("btnEstim").addEventListener("click",showResults);
   show(false);
 })();
 ["discRate"].forEach(id=>{$(id).addEventListener("input",()=>{if(lastResult){renderProjection(lastResult);renderFinPrice(lastResult);}});});
-["prixAchat","iRent","iTaxe","iCopro","iPno","iDivers","iCompta","iCfe","iApport","iTaux","iAssur","iDossier","iGarantie","iDuree","iTravaux","tmi","regime"].forEach(id=>{const h=()=>{if(lastResult){computeAll(lastResult);computeResale(lastResult);renderScatter(lastResult);updRentVsMkt();renderFinPrice(lastResult);}};$(id).addEventListener("input",h);$(id).addEventListener("change",h);});
+["prixAchat","iRent","iTaxe","iCopro","iPno","iDivers","iCompta","iCfe","iApport","iTaux","iAssur","iDossier","iGarantie","iDuree","iTravaux","tmi","regime"].forEach(id=>{const h=()=>{if(lastResult){computeAll(lastResult);computeResale(lastResult);renderScatter(lastResult);updRentVsMkt();renderFinPrice(lastResult);renderOwnVsRent(lastResult);}};$(id).addEventListener("input",h);$(id).addEventListener("change",h);});
 ["dispositif","dispoTravaux","dispoDuree","dispoZone","dispoNiveau","dispoNuDuree","sciNbAssoc","sciDistrib","sciFiscDiv","sciHolding"].forEach(id=>{const e=$(id);if(e){e.addEventListener("input",renderDispositif);e.addEventListener("change",renderDispositif);}});
-["holdYears","reval","fraisVente","gRent","gCharges"].forEach(id=>{const h=()=>{if(lastResult){computeResale(lastResult);renderFinPrice(lastResult);}};$(id).addEventListener("input",h);$(id).addEventListener("change",h);});
+["holdYears","reval","fraisVente","gRent","gCharges"].forEach(id=>{const h=()=>{if(lastResult){computeResale(lastResult);renderFinPrice(lastResult);renderOwnVsRent(lastResult);}};$(id).addEventListener("input",h);$(id).addEventListener("change",h);});
 bindSeg("segStatut","statut",()=>{const nr=state.statut==="nonresident";$("chkEEE").style.display=nr?"flex":"none";$("tmi").style.display=nr?"none":"";$("tmiNR").style.display=nr?"block":"none";$("tmiLabel").textContent=nr?"Imposition (non-r\u00e9sident)":"Tranche d'imp\u00f4t (TMI)";$("tmiNote").style.display=nr?"block":"none";if(lastResult){computeAll(lastResult);computeResale(lastResult);renderFinPrice(lastResult);}});
 bindSeg("segNeuf","neuf",()=>{if(lastResult){computeAll(lastResult);computeResale(lastResult);renderFinPrice(lastResult);}});
 bindSeg("segProfil","profil",()=>{if(lastResult)renderOperation(lastResult);});
@@ -4196,11 +4371,124 @@ async function fetchIRL(){
 const DPE_REFORME_DATE="2026-01-01";
 const CHAUFFAGE_ELEC=["indiv_elec","pac","reversible","plancher"]; // modes electriques => impactes
 function depFromCP(){let cp=($("cp").value||"").replace(/\D/g,"");if(!cp&&state.coord&&state.coord.insee)cp=state.coord.insee;return cp.length>=3&&cp.substring(0,2)==="97"?cp.substring(0,3):cp.substring(0,2);}
+/* ===== FRAIS D'ACQUISITION — calcul detaille (barème réglementé) =====
+ * Sources : décret n°78-262 modifié (tarif des notaires, tableau 5), art. 1594 D et 1584 CGI,
+ * art. 879 CGI (CSI). Barème des émoluments en vigueur depuis le 01/01/2021.
+ * Le calcul est fait poste par poste, pas via un taux forfaitaire.
+ */
+// Barème des émoluments proportionnels du notaire (vente d'immeuble, tableau 5)
+const EMOL_TRANCHES=[
+  {max:6500,   taux:0.03870},
+  {max:17000,  taux:0.01596},
+  {max:60000,  taux:0.01064},
+  {max:Infinity,taux:0.00799}
+];
+// Emoluments HT selon le bareme par tranches
+function emolumentsHT(prix){
+  if(!prix||prix<=0)return 0;
+  let reste=prix,bas=0,total=0;
+  for(const t of EMOL_TRANCHES){
+    const hauteur=Math.min(reste,t.max-bas);
+    if(hauteur<=0)break;
+    total+=hauteur*t.taux;
+    reste-=hauteur;bas=t.max;
+    if(reste<=0)break;
+  }
+  return total;
+}
+/* Calcul complet des frais d'acquisition, poste par poste.
+ * Retourne un objet detaille ; notaireRate() en derive le taux global pour la compatibilite. */
+function fraisAcquisition(prix){
+  const p=prix||0;
+  if(p<=0)return null;
+  const dep=depFromCP();
+  const depRate=(DEP_DMTO[dep]!=null?DEP_DMTO[dep]:0.05);
+  const isNeuf=(state.neuf==="neuf");
+  const isTerrain=(state.type==="terrain");
+  // Regime de TVA : le neuf (et le terrain a batir vendu par un pro) est soumis a TVA 20 %,
+  // qui est INCLUSE dans le prix affiche. Les droits de mutation sont alors reduits.
+  const vendeurPro=!!($("terrainVendeurPro")&&$("terrainVendeurPro").checked);
+  const regimeTVA=isNeuf||(isTerrain&&vendeurPro);
+
+  let dmto=0,dmtoLabel="",tpf=0,taxeCom=0,fraisAssiette=0;
+  if(regimeTVA){
+    // Taxe de publicite fonciere au taux reduit (art. 1594 F quinquies CGI)
+    tpf=p*0.00715;
+    dmto=tpf;
+    dmtoLabel="Taxe de publicit\u00e9 fonci\u00e8re r\u00e9duite 0,715 % (r\u00e9gime TVA)";
+  }else{
+    // Regime de droit commun (ancien, ou terrain vendu par un particulier)
+    const droitDep=p*depRate;
+    taxeCom=p*0.012;              // taxe communale additionnelle 1,20 % (art. 1584 CGI)
+    fraisAssiette=droitDep*0.0237; // frais d'assiette et de recouvrement 2,37 % du droit dep.
+    dmto=droitDep+taxeCom+fraisAssiette;
+    dmtoLabel="Droits de mutation : d\u00e9partement "+(depRate*100).toFixed(2).replace(".",",")+" % + commune 1,20 % + assiette 2,37 %";
+  }
+  // Emoluments du notaire (bareme reglemente) + TVA 20 %
+  const emolHT=emolumentsHT(p);
+  const emolTVA=emolHT*0.20;
+  const emolTTC=emolHT+emolTVA;
+  // Contribution de securite immobiliere (art. 879 CGI) : 0,10 % du prix, minimum 15 EUR
+  const csi=Math.max(15,p*0.001);
+  // Debours et formalites (documents d'urbanisme, cadastre, etat hypothecaire, publication)
+  // Forfait usuel : 800 a 1 400 EUR. On retient 1 200 EUR.
+  const debours=1200;
+  const total=dmto+emolTTC+csi+debours;
+  return{
+    prix:p,total:Math.round(total),taux:total/p,
+    regimeTVA,isNeuf,isTerrain,depRate,dep,
+    postes:[
+      {lbl:dmtoLabel,montant:Math.round(dmto),pct:dmto/p,
+       detail:regimeTVA?"Le prix inclut d\u00e9j\u00e0 la TVA \u00e0 20 % (support\u00e9e par le vendeur, r\u00e9percut\u00e9e dans le prix)":"Vers\u00e9s au Tr\u00e9sor public, pas au notaire"},
+      {lbl:"\u00c9moluments du notaire (TTC)",montant:Math.round(emolTTC),pct:emolTTC/p,
+       detail:"Bar\u00e8me r\u00e9glement\u00e9 par tranches : 3,870 % jusqu\u2019\u00e0 6 500 \u20ac, puis 1,596 %, 1,064 % et 0,799 % au-del\u00e0 de 60 000 \u20ac \u00b7 TVA 20 % incluse ("+eur0(Math.round(emolTVA))+" \u20ac)"},
+      {lbl:"Contribution de s\u00e9curit\u00e9 immobili\u00e8re",montant:Math.round(csi),pct:csi/p,
+       detail:"0,10 % du prix (art. 879 CGI) \u2014 finance la publicit\u00e9 fonci\u00e8re"},
+      {lbl:"D\u00e9bours et formalit\u00e9s",montant:debours,pct:debours/p,
+       detail:"Documents d\u2019urbanisme, extrait cadastral, \u00e9tat hypoth\u00e9caire, publication de l\u2019acte (forfait usuel 800\u20131 400 \u20ac)"}
+    ]
+  };
+}
+/* Rendu du panneau detaille des frais d'acquisition */
+function renderNotaireDetail(fa){
+  const el=$("notaireDetail");if(!el)return;
+  if(!fa){el.innerHTML="";return;}
+  const rows=fa.postes.map(function(p){
+    return '<tr style="border-bottom:1px solid var(--line)">'+
+      '<td style="padding:6px 4px;font-size:11px;color:var(--ink);font-weight:600;vertical-align:top">'+p.lbl+
+        '<div style="font-size:9.5px;color:var(--ink-soft);font-weight:400;margin-top:2px;line-height:1.35">'+p.detail+'</div></td>'+
+      '<td style="padding:6px 4px;text-align:right;font-size:11.5px;white-space:nowrap;vertical-align:top" class="num">'+eur0(p.montant)+' \u20ac</td>'+
+      '<td style="padding:6px 4px;text-align:right;font-size:10px;color:var(--ink-soft);white-space:nowrap;vertical-align:top" class="num">'+(p.pct*100).toFixed(2).replace(".",",")+' %</td>'+
+    '</tr>';
+  }).join("");
+  const regimeLbl=fa.regimeTVA
+    ? (fa.isNeuf?"Logement neuf / VEFA":"Terrain \u00e0 b\u00e2tir vendu par un professionnel")
+    : (fa.isTerrain?"Terrain vendu par un particulier":"Logement ancien");
+  const regimeNote=fa.regimeTVA
+    ? "Le prix affich\u00e9 <b>inclut la TVA \u00e0 20 %</b>. En contrepartie, les droits de mutation sont r\u00e9duits \u00e0 0,715 % au lieu de ~5,8 %."
+    : "Droits de mutation \u00e0 taux plein. Le d\u00e9partement "+fa.dep+" applique un droit de <b>"+(fa.depRate*100).toFixed(2).replace(".",",")+" %</b>"+dmtoAuditWarning()+".";
+  el.innerHTML=
+    '<div style="font-weight:800;font-size:11.5px;color:var(--brand-dark);margin-bottom:3px">D\u00e9tail des frais d\u2019acquisition</div>'+
+    '<div style="font-size:10.5px;color:var(--ink-soft);margin-bottom:8px">R\u00e9gime : <b style="color:var(--ink)">'+regimeLbl+'</b></div>'+
+    '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;table-layout:fixed">'+
+      '<colgroup><col style="width:58%"/><col style="width:26%"/><col style="width:16%"/></colgroup>'+
+      '<tbody>'+rows+'</tbody>'+
+      '<tfoot><tr style="border-top:2px solid var(--brand-dark)">'+
+        '<td style="padding:7px 4px;font-size:11.5px;font-weight:800;color:var(--ink)">Total</td>'+
+        '<td style="padding:7px 4px;text-align:right;font-size:13px;font-weight:800;color:var(--brand-dark);white-space:nowrap" class="num">'+eur0(fa.total)+' \u20ac</td>'+
+        '<td style="padding:7px 4px;text-align:right;font-size:11px;font-weight:800;color:var(--brand-dark);white-space:nowrap" class="num">'+(fa.taux*100).toFixed(2).replace(".",",")+' %</td>'+
+      '</tr></tfoot>'+
+    '</table></div>'+
+    '<div class="hint" style="margin-top:8px;line-height:1.5">'+regimeNote+'<br><br>'+
+      '<b>\u00c0 retenir</b> : les \u00ab frais de notaire \u00bb ne vont pas au notaire. Environ <b>'+Math.round(fa.postes[0].montant/fa.total*100)+' %</b> partent en imp\u00f4ts (Tr\u00e9sor public), et seulement <b>'+Math.round(fa.postes[1].montant/fa.total*100)+' %</b> r\u00e9mun\u00e8rent r\u00e9ellement le notaire (\u00e9moluments, dont 20 % de TVA revers\u00e9e \u00e0 l\u2019\u00c9tat).'+
+      (fa.prix>=150000?'<br><br><b>Remise possible</b> : au-del\u00e0 de 100 000 \u20ac, le notaire peut consentir une remise sur ses \u00e9moluments (jusqu\u2019\u00e0 20 % sur la tranche sup\u00e9rieure, art. A444-174 C. com.). Soit jusqu\u2019\u00e0 <b>'+eur0(Math.round(fa.postes[1].montant*0.15))+' \u20ac</b> d\u2019\u00e9conomie potentielle \u2014 \u00e0 n\u00e9gocier.':'')+
+    '</div>';
+}
+/* Taux global des frais d'acquisition. Conserve pour compatibilite avec le reste du code. */
 function notaireRate(){
-  if(state.neuf==="neuf"&&state.type!=="terrain")return 0.025; // neuf/VEFA : frais r\u00e9duits ~2,5%
-  const dep=depFromCP();const depRate=(DEP_DMTO[dep]!=null?DEP_DMTO[dep]:0.05);
-  const dmto=depRate+0.012+depRate*0.0237; // droit d\u00e9partemental + taxe communale 1,20% + frais d'assiette 2,37%
-  return dmto+0.008+0.001+0.006; // + \u00e9moluments notaire ~0,8% + CSI 0,10% + d\u00e9bours ~0,6%
+  const prix=numv("prixAchat")||(lastResult?lastResult.price:0)||200000;
+  const fa=fraisAcquisition(prix);
+  return fa?fa.taux:0.075;
 }
 function computeDynamics(city,cp){
   const cn=norm(city);const _lApt=state._localApt&&state._localApt.med>0?state._localApt.med:null;const apt=_lApt||CITY_APT[cn]||DEPT_APT[cp?cp.substring(0,2):""]||NAT_APT;const s=apt;
@@ -4849,6 +5137,9 @@ document.querySelectorAll(".card-head").forEach(h=>{
 const segM=$("segMode");if(segM)segM.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{segM.querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on");$("results").classList.toggle("simple",b.dataset.m==="simple");}));
 
 fillRegimes();updateTypeUI();
+if(typeof initMultiLot==="function")initMultiLot();
+if(typeof renderDiags==="function")renderDiags();
+if(typeof initWorksTabs==="function")initWorksTabs();
 // Charger l'IRL en arrière-plan
 fetchIRL().then(irl=>{
   if(!irl)return;
@@ -4871,8 +5162,8 @@ function _renderIrlNote(){
 /* ===== Mes biens : sauvegarde locale v72 — cards professionnelles ===== */
 /* ===== Constantes de sauvegarde locale ===== */
 const SAVED_KEY="estimo_biens_v1";
-const SAVED_VALUE_IDS=["adresse","cp","ville","surface","terrain","terrainType","terrainPente","terrainSol","terrainForme","floorExact","floorTotal","chambres","sdb","wcSep","balconM2","balconNb","terrasseM2","jardinM2","etat","standing","epoque","chauffage","vue","mitoyen","iRent","iTaxe","iCopro","iPno","iDivers","iCompta","iCfe","iApport","iTaux","iAssur","iDossier","iGarantie","iDuree","iTravaux","tmi","regime","prixAchat","reval","fraisVente","gRent","gCharges","holdYears","discRate","dispositif","dispoTravaux","dispoDuree","dispoZone","dispoNiveau","opSellTarget","opDureeMois","askPrice","dispoNuDuree"];
-const SAVED_CHK_IDS=["viabilise","viabEau","viabAssain","viabElec","viabVoirie","viabTelecom","asc","expoN","expoE","expoS","expoO","piscine","amenageable","parking","garage","cave","eee","creditInFine","multiLotToggle"];
+const SAVED_VALUE_IDS=["adresse","cp","ville","surface","terrain","terrainType","terrainPente","terrainSol","terrainForme","floorExact","floorTotal","chambres","sdb","wcSep","balconM2","balconNb","terrasseM2","jardinM2","etat","standing","epoque","chauffage","vue","mitoyen","iRent","iTaxe","iCopro","iPno","iDivers","iCompta","iCfe","iApport","iTaux","iAssur","iDossier","iGarantie","iDuree","iTravaux","tmi","regime","prixAchat","reval","fraisVente","gRent","gCharges","holdYears","discRate","dispositif","dispoTravaux","dispoDuree","dispoZone","dispoNiveau","opSellTarget","opDureeMois","askPrice","dispoNuDuree","sciNbAssoc","sciDistrib","sciFiscDiv","sciHolding","ovrEntretien","ovrPlacement"];
+const SAVED_CHK_IDS=["viabilise","viabEau","viabAssain","viabElec","viabVoirie","viabTelecom","asc","expoN","expoE","expoS","expoO","piscine","amenageable","parking","garage","cave","eee","creditInFine","multiLotToggle","terrainVendeurPro"];
 const SAVED_SEG_IDS=["segType","segNeuf","segPieces","segDpe","segGes","segLoc","segStatut","segProfil"];
 
 function loadSavedBiens(){try{const l=JSON.parse(localStorage.getItem(SAVED_KEY)||"[]");return Array.isArray(l)?l:[];}catch(_){return [];}}
@@ -4981,6 +5272,569 @@ function deleteBienById(id){
 }
 function openBien(){if(state.activeSnapId)openBienById(state.activeSnapId);}
 function deleteBien(){if(state.activeSnapId)deleteBienById(state.activeSnapId);}
+
+/* ============================================================================
+ * MODULE DIAGNOSTICS TECHNIQUES (autonome — ne pas fusionner avec le reste)
+ * Chaque diagnostic ouvre un questionnaire, produit un impact prix (%) et un cout travaux.
+ * Sources des couts : baremes FFB/CAPEB 2025, guides ANIL, arretes prefectoraux amiante.
+ * ==========================================================================*/
+const DIAGS=[
+  {
+    id:"amiante",
+    lbl:"Amiante d\u00e9tect\u00e9e",
+    icon:"\u2622\ufe0f",
+    hint:"Obligatoire pour tout logement dont le permis est ant\u00e9rieur au 01/07/1997",
+    questions:[
+      {id:"amLoc",lbl:"O\u00f9 se situe l'amiante ?",type:"select",
+       opts:[["flocage","Flocage / calorifugeage (le plus dangereux)"],["dalle","Dalles de sol vinyle-amiante"],["toiture","Toiture / plaques fibrociment"],["conduit","Conduits, gaines techniques"],["colle","Colle de carrelage / enduit"]]},
+      {id:"amEtat",lbl:"\u00c9tat de conservation (list\u00e9 au diagnostic)",type:"select",
+       opts:[["bon","Bon \u00e9tat \u2014 surveillance p\u00e9riodique (score 1)"],["degrade","D\u00e9grad\u00e9 \u2014 action corrective (score 2)"],["tresdeg","Tr\u00e8s d\u00e9grad\u00e9 \u2014 retrait obligatoire (score 3)"]]},
+      {id:"amSurf",lbl:"Surface concern\u00e9e",type:"number",unit:"m\u00b2",def:20}
+    ],
+    // Cout de desamiantage : varie fortement selon localisation et etat
+    cost:function(a,S){
+      const base={flocage:120,dalle:55,toiture:45,conduit:90,colle:70}[a.amLoc]||60; // EUR/m2 (retrait + evacuation en DD)
+      const mult={bon:0.25,degrade:0.7,tresdeg:1.0}[a.amEtat]||0.5; // si bon etat : encapsulage seulement
+      const surf=Math.max(1,+a.amSurf||20);
+      // Cout fixe : diagnostic avant travaux, plan de retrait, controle apres travaux
+      const fixe=a.amEtat==="tresdeg"?2500:a.amEtat==="degrade"?1200:400;
+      return Math.round((base*surf*mult+fixe)/50)*50;
+    },
+    // Impact sur le prix : decote au-dela du seul cout des travaux (stigmate + risque)
+    impact:function(a){
+      const m={bon:-0.005,degrade:-0.02,tresdeg:-0.045}[a.amEtat]||-0.015;
+      const loc={flocage:1.5,toiture:0.8,dalle:0.9,conduit:1.1,colle:0.7}[a.amLoc]||1;
+      return m*loc;
+    },
+    note:function(a){
+      if(a.amEtat==="tresdeg")return "Retrait obligatoire avant travaux. Entreprise certifi\u00e9e Qualibat 1552 requise. D\u00e9chets en installation class\u00e9e. <b>Bloquant pour la vente si non trait\u00e9.</b>";
+      if(a.amEtat==="degrade")return "Action corrective sous 3 ans. Encapsulage possible si l'\u00e9tat le permet (moins cher que le retrait), sinon retrait.";
+      return "Surveillance p\u00e9riodique tous les 3 ans. Pas de travaux imm\u00e9diats, mais \u00e0 traiter avant toute r\u00e9novation touchant la zone.";
+    }
+  },
+  {
+    id:"elec",
+    lbl:"Installation \u00e9lectrique non conforme",
+    icon:"\u26a1",
+    hint:"Diagnostic obligatoire si l'installation a plus de 15 ans",
+    questions:[
+      {id:"elNb",lbl:"Nombre d'anomalies relev\u00e9es",type:"select",
+       opts:[["1","1 \u00e0 2 anomalies mineures"],["3","3 \u00e0 5 anomalies"],["6","6 anomalies ou plus"],["total","Installation v\u00e9tuste \u2014 refonte compl\u00e8te"]]},
+      {id:"elTerre",lbl:"Mise \u00e0 la terre absente ou d\u00e9fectueuse",type:"check"},
+      {id:"elDiff",lbl:"Absence de dispositif diff\u00e9rentiel 30 mA",type:"check"},
+      {id:"elTableau",lbl:"Tableau \u00e9lectrique \u00e0 remplacer",type:"check"}
+    ],
+    cost:function(a,S){
+      const base={"1":600,"3":1800,"6":4000,"total":95*S}[a.elNb]||1500; // refonte : ~95 EUR/m2 (NF C 15-100)
+      let c=typeof base==="number"?base:1500;
+      if(a.elTerre)c+=900;   // creation prise de terre + liaisons equipotentielles
+      if(a.elDiff)c+=450;    // interrupteurs differentiels
+      if(a.elTableau)c+=1100; // tableau + disjoncteurs
+      return Math.round(c/50)*50;
+    },
+    impact:function(a){
+      const m={"1":-0.003,"3":-0.008,"6":-0.018,"total":-0.03}[a.elNb]||-0.008;
+      return m+(a.elTerre?-0.005:0);
+    },
+    note:function(a){
+      if(a.elNb==="total")return "Refonte compl\u00e8te selon NF C 15-100. Comptez 2 \u00e0 3 semaines de chantier. Attestation Consuel obligatoire. <b>Argument de n\u00e9gociation fort.</b>";
+      if(a.elTerre)return "L'absence de terre est une <b>non-conformit\u00e9 majeure</b> (risque d'\u00e9lectrisation). Sa cr\u00e9ation peut n\u00e9cessiter des travaux de terrassement.";
+      return "Anomalies courantes dans l'ancien. Mise en s\u00e9curit\u00e9 possible sans refonte compl\u00e8te. Non bloquant pour la vente.";
+    }
+  },
+  {
+    id:"assain",
+    lbl:"Assainissement non collectif (fosse)",
+    icon:"\ud83d\udebd",
+    hint:"Contr\u00f4le SPANC obligatoire, valable 3 ans \u00e0 la vente",
+    questions:[
+      {id:"asEtat",lbl:"Conclusion du contr\u00f4le SPANC",type:"select",
+       opts:[["conforme","Conforme \u2014 aucun travaux"],["nonconf","Non conforme sans danger \u2014 mise aux normes sous 4 ans"],["danger","Non conforme avec danger sanitaire \u2014 travaux sous 1 an"],["absent","Absence d'installation"]]},
+      {id:"asType",lbl:"Fili\u00e8re envisag\u00e9e",type:"select",
+       opts:[["trad","Fosse toutes eaux + \u00e9pandage (classique)"],["compact","Filtre compact (peu d'emprise)"],["micro","Micro-station d'\u00e9puration"]]},
+      {id:"asPieces",lbl:"Nombre de pi\u00e8ces principales (dimensionnement)",type:"number",unit:"p.",def:4}
+    ],
+    cost:function(a,S){
+      if(a.asEtat==="conforme")return 0;
+      const p=Math.max(3,+a.asPieces||4);
+      // Couts 2025 pose comprise, hors terrassement complexe (source : syndicats SPANC)
+      const base={trad:6500,compact:9000,micro:9500}[a.asType]||7500;
+      const parPiece={trad:700,compact:900,micro:800}[a.asType]||750;
+      let c=base+(p-3)*parPiece;
+      if(a.asEtat==="absent")c+=1500; // etude de sol + conception obligatoires
+      return Math.round(c/100)*100;
+    },
+    impact:function(a){
+      return {conforme:0,nonconf:-0.02,danger:-0.045,absent:-0.05}[a.asEtat]||0;
+    },
+    note:function(a){
+      if(a.asEtat==="conforme")return "Installation conforme : aucun impact. Le rapport SPANC de moins de 3 ans doit \u00eatre annex\u00e9 \u00e0 l'acte.";
+      if(a.asEtat==="danger")return "Travaux obligatoires <b>sous 1 an</b> apr\u00e8s la vente (art. L1331-1-1 CSP). Une \u00e9tude de sol (perm\u00e9abilit\u00e9) est n\u00e9cessaire avant conception. Certaines communes/agences de l'eau subventionnent jusqu'\u00e0 60 %.";
+      if(a.asEtat==="absent")return "Absence d'installation : <b>situation ill\u00e9gale</b>. \u00c9tude de sol + conception + r\u00e9alisation. V\u00e9rifiez l'\u00e9ligibilit\u00e9 au raccordement au r\u00e9seau collectif (souvent moins cher).";
+      return "Mise aux normes sous 4 ans apr\u00e8s la vente. D\u00e9lai confortable pour organiser les travaux et chercher des aides.";
+    }
+  },
+  {
+    id:"termites",
+    lbl:"Termites / m\u00e9rule",
+    icon:"\ud83e\udeb2",
+    hint:"Obligatoire en zone d\u00e9limit\u00e9e par arr\u00eat\u00e9 pr\u00e9fectoral",
+    questions:[
+      {id:"tmType",lbl:"Nature de l'infestation",type:"select",
+       opts:[["termite","Termites (insectes x\u00e9ylophages)"],["capricorne","Capricornes / vrillettes"],["merule","M\u00e9rule (champignon lignivore)"]]},
+      {id:"tmEtendue",lbl:"\u00c9tendue constat\u00e9e",type:"select",
+       opts:[["localisee","Localis\u00e9e (une pi\u00e8ce, un \u00e9l\u00e9ment)"],["partielle","Partielle (plusieurs zones)"],["generalisee","G\u00e9n\u00e9ralis\u00e9e (structure porteuse touch\u00e9e)"]]},
+      {id:"tmStruct",lbl:"Structure porteuse (poutres, planchers) atteinte",type:"check"}
+    ],
+    cost:function(a,S){
+      const base={termite:45,capricorne:35,merule:85}[a.tmType]||45; // EUR/m2 traite
+      const etendue={localisee:0.25,partielle:0.6,generalisee:1.0}[a.tmEtendue]||0.5;
+      let c=base*S*etendue;
+      if(a.tmStruct)c+=S*180; // remplacement d'elements de charpente/plancher
+      // Merule : necessite un traitement du bati + assechement (cout fixe eleve)
+      if(a.tmType==="merule")c+=3500;
+      return Math.round(c/100)*100;
+    },
+    impact:function(a){
+      const t={termite:-0.02,capricorne:-0.012,merule:-0.05}[a.tmType]||-0.02;
+      const e={localisee:0.4,partielle:0.8,generalisee:1.4}[a.tmEtendue]||0.8;
+      return t*e+(a.tmStruct?-0.03:0);
+    },
+    note:function(a){
+      if(a.tmType==="merule")return "<b>La m\u00e9rule est le cas le plus grave.</b> Elle se propage dans la ma\u00e7onnerie et n\u00e9cessite un traitement du b\u00e2ti entier + traitement de la cause (humidit\u00e9). D\u00e9claration en mairie obligatoire. Forte d\u00e9cote et difficult\u00e9 de revente.";
+      if(a.tmStruct)return "Structure porteuse atteinte : <b>expertise structure indispensable</b> avant achat. Le co\u00fbt peut exploser si la charpente ou les planchers doivent \u00eatre repris.";
+      return "Traitement curatif par injection + barri\u00e8re chimique. Garantie d\u00e9cennale possible. Le vendeur reste responsable s'il avait connaissance de l'infestation sans la d\u00e9clarer.";
+    }
+  },
+  {
+    id:"plomb",
+    lbl:"Plomb (CREP positif)",
+    icon:"\ud83e\uddea",
+    hint:"Obligatoire pour les logements construits avant 1949",
+    questions:[
+      {id:"pbClasse",lbl:"Classe des rev\u00eatements",type:"select",
+       opts:[["1","Classe 1 \u2014 non d\u00e9grad\u00e9"],["2","Classe 2 \u2014 non d\u00e9grad\u00e9 mais \u00e0 surveiller"],["3","Classe 3 \u2014 d\u00e9grad\u00e9, travaux obligatoires"]]},
+      {id:"pbSurf",lbl:"Surface de rev\u00eatements concern\u00e9e",type:"number",unit:"m\u00b2",def:30}
+    ],
+    cost:function(a,S){
+      if(a.pbClasse==="1")return 0;
+      const surf=Math.max(1,+a.pbSurf||30);
+      const base=a.pbClasse==="3"?85:35; // recouvrement (35) ou retrait complet (85) EUR/m2
+      return Math.round((base*surf+(a.pbClasse==="3"?800:200))/50)*50;
+    },
+    impact:function(a){
+      return {"1":0,"2":-0.005,"3":-0.02}[a.pbClasse]||0;
+    },
+    note:function(a){
+      if(a.pbClasse==="3")return "Travaux obligatoires (art. L1334-9 CSP) : recouvrement ou retrait des rev\u00eatements d\u00e9grad\u00e9s. <b>Risque de saturnisme, surtout avec de jeunes enfants.</b> Le vendeur doit avoir fait les travaux ou informer l'acqu\u00e9reur.";
+      if(a.pbClasse==="2")return "Surveillance requise. Aucun travaux obligatoire tant que le rev\u00eatement n'est pas d\u00e9grad\u00e9, mais \u00e0 traiter lors d'une r\u00e9novation.";
+      return "Plomb pr\u00e9sent mais rev\u00eatements en bon \u00e9tat : aucun risque imm\u00e9diat, aucun travaux obligatoire.";
+    }
+  },
+  {
+    id:"gaz",
+    lbl:"Installation gaz non conforme",
+    icon:"\ud83d\udd25",
+    hint:"Diagnostic obligatoire si l'installation a plus de 15 ans",
+    questions:[
+      {id:"gzNiv",lbl:"Niveau d'anomalie",type:"select",
+       opts:[["A1","A1 \u2014 anomalie mineure, \u00e0 corriger sans urgence"],["A2","A2 \u2014 \u00e0 corriger avant remise en service"],["DGI","DGI \u2014 danger grave imm\u00e9diat, coupure du gaz"]]},
+      {id:"gzChaud",lbl:"Chaudi\u00e8re \u00e0 remplacer",type:"check"}
+    ],
+    cost:function(a,S){
+      let c={A1:350,A2:900,DGI:2200}[a.gzNiv]||600;
+      if(a.gzChaud)c+=4500; // chaudiere gaz condensation posee (2025)
+      return Math.round(c/50)*50;
+    },
+    impact:function(a){
+      return ({A1:-0.002,A2:-0.006,DGI:-0.015}[a.gzNiv]||-0.005)+(a.gzChaud?-0.008:0);
+    },
+    note:function(a){
+      if(a.gzNiv==="DGI")return "<b>Danger grave imm\u00e9diat</b> : le distributeur coupe l'alimentation. Intervention d'un professionnel obligatoire avant toute remise en service.";
+      if(a.gzChaud)return "Remplacement de chaudi\u00e8re : v\u00e9rifiez l'\u00e9ligibilit\u00e9 \u00e0 MaPrimeR\u00e9nov' si vous passez \u00e0 une pompe \u00e0 chaleur (aide jusqu'\u00e0 5 000 \u20ac selon revenus).";
+      return "Anomalies corrigeables par un chauffagiste. Non bloquant pour la vente.";
+    }
+  }
+];
+
+// Etat des diagnostics selectionnes
+const diagsState={}; // {amiante:{on:true, amLoc:"dalle", ...}, ...}
+
+function renderDiags(){
+  const grid=$("diagsGrid");if(!grid)return;
+  grid.innerHTML=DIAGS.map(function(d){
+    const st=diagsState[d.id]||{};
+    const on=!!st.on;
+    let qHtml="";
+    if(on){
+      qHtml='<div style="margin-top:9px;padding-top:9px;border-top:1px dashed var(--line);display:flex;flex-direction:column;gap:8px">'+
+        d.questions.map(function(q){
+          const v=st[q.id]!=null?st[q.id]:(q.def!=null?q.def:(q.opts?q.opts[0][0]:false));
+          if(q.type==="select"){
+            return '<div><label class="lbl" style="font-size:11px;margin-bottom:3px">'+q.lbl+'</label>'+
+              '<select class="input" style="font-size:12.5px;padding:7px 9px" data-diag="'+d.id+'" data-q="'+q.id+'">'+
+              q.opts.map(function(o){return '<option value="'+o[0]+'"'+(v===o[0]?" selected":"")+'>'+o[1]+'</option>';}).join("")+
+              '</select></div>';
+          }
+          if(q.type==="number"){
+            return '<div><label class="lbl" style="font-size:11px;margin-bottom:3px">'+q.lbl+'</label>'+
+              '<div class="with-unit"><input class="input num" type="number" min="0" value="'+v+'" data-diag="'+d.id+'" data-q="'+q.id+'" style="font-size:12.5px;padding:7px 9px"/><span class="unit">'+(q.unit||"")+'</span></div></div>';
+          }
+          // check
+          return '<label class="chk" style="gap:7px;font-size:12px"><input type="checkbox" data-diag="'+d.id+'" data-q="'+q.id+'"'+(v?" checked":"")+'/><span>'+q.lbl+'</span></label>';
+        }).join("")+
+        '</div>';
+      // Note contextuelle + cout
+      const S=(lastResult&&lastResult.surface)||numv("surface")||70;
+      const cost=d.cost(st,S);
+      const imp=d.impact(st);
+      qHtml+='<div style="margin-top:9px;padding:9px 10px;background:#fff;border-radius:8px;border-left:3px solid '+(imp<-0.03?"var(--bad)":imp<-0.015?"var(--warn)":"var(--brand-dark)")+'">'+
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:5px">'+
+          '<span style="font-size:11px"><b>Travaux estim\u00e9s :</b> <span class="num" style="font-weight:800;color:var(--ink)">'+eur0(cost)+' \u20ac</span></span>'+
+          '<span style="font-size:11px"><b>Impact prix :</b> <span class="num" style="font-weight:800;color:'+(imp<0?"var(--bad)":"var(--ink)")+'">'+(imp*100).toFixed(1).replace(".",",")+' %</span></span>'+
+        '</div>'+
+        '<div style="font-size:10.5px;color:var(--ink-soft);line-height:1.5">'+d.note(st)+'</div>'+
+      '</div>';
+    }
+    return '<div style="border:1.5px solid '+(on?"var(--brand-dark)":"var(--line)")+';border-radius:10px;padding:9px 11px;background:'+(on?"#eef7f5":"var(--bg)")+'">'+
+      '<label class="chk" style="gap:8px;cursor:pointer"><input type="checkbox" class="diag-chk" data-diag="'+d.id+'"'+(on?" checked":"")+'/>'+
+        '<span style="flex:1"><span style="font-weight:700;font-size:12.5px">'+d.icon+' '+d.lbl+'</span>'+
+        '<div style="font-size:10px;color:var(--ink-soft);font-weight:400;margin-top:1px">'+d.hint+'</div></span></label>'+
+      qHtml+
+    '</div>';
+  }).join("");
+  bindDiagEvents();
+  renderDiagsImpact();
+}
+
+function bindDiagEvents(){
+  const grid=$("diagsGrid");if(!grid)return;
+  grid.querySelectorAll(".diag-chk").forEach(function(cb){
+    cb.addEventListener("change",function(){
+      const id=cb.dataset.diag;
+      diagsState[id]=diagsState[id]||{};
+      diagsState[id].on=cb.checked;
+      // Initialiser les valeurs par defaut
+      if(cb.checked){
+        const d=DIAGS.find(function(x){return x.id===id;});
+        d.questions.forEach(function(q){
+          if(diagsState[id][q.id]==null)diagsState[id][q.id]=(q.def!=null?q.def:(q.opts?q.opts[0][0]:false));
+        });
+      }
+      renderDiags();
+      if(lastResult)refreshAfterDiagChange();
+    });
+  });
+  grid.querySelectorAll("[data-q]").forEach(function(el){
+    const ev=el.type==="checkbox"?"change":(el.tagName==="SELECT"?"change":"input");
+    el.addEventListener(ev,function(){
+      const id=el.dataset.diag,q=el.dataset.q;
+      diagsState[id]=diagsState[id]||{};
+      diagsState[id][q]=el.type==="checkbox"?el.checked:el.value;
+      renderDiags();
+      if(lastResult)refreshAfterDiagChange();
+    });
+  });
+}
+
+// Total des impacts et couts
+function diagsTotal(){
+  const S=(lastResult&&lastResult.surface)||numv("surface")||70;
+  let cost=0,impact=0;
+  const actifs=[];
+  DIAGS.forEach(function(d){
+    const st=diagsState[d.id];
+    if(!st||!st.on)return;
+    const c=d.cost(st,S),i=d.impact(st);
+    cost+=c;impact+=i;
+    actifs.push({id:d.id,lbl:d.lbl,icon:d.icon,cost:c,impact:i});
+  });
+  // Plafonner la decote cumulee a -12 % (au-dela, le bien est un cas de renovation lourde
+  // et la decote se negocie globalement, pas poste par poste)
+  const impactPlafonne=Math.max(-0.12,impact);
+  return{cost:Math.round(cost),impact:impactPlafonne,impactBrut:impact,actifs,plafonne:impact<-0.12};
+}
+
+function renderDiagsImpact(){
+  const el=$("diagsImpact");if(!el)return;
+  const t=diagsTotal();
+  if(!t.actifs.length){el.style.display="none";return;}
+  el.style.display="";
+  const rows=t.actifs.map(function(a){
+    return '<tr style="border-bottom:1px solid var(--line)">'+
+      '<td style="padding:5px 4px;font-size:11px;color:var(--ink)">'+a.icon+' '+a.lbl+'</td>'+
+      '<td style="padding:5px 4px;text-align:right;font-size:11px;white-space:nowrap" class="num">'+eur0(a.cost)+' \u20ac</td>'+
+      '<td style="padding:5px 4px;text-align:right;font-size:11px;color:var(--bad);white-space:nowrap" class="num">'+(a.impact*100).toFixed(1).replace(".",",")+' %</td>'+
+    '</tr>';
+  }).join("");
+  const px=lastResult?lastResult.price:0;
+  const decoteEur=px?Math.round(px*t.impact):0;
+  el.innerHTML='<div style="padding:11px 12px;background:#fff5f2;border-radius:10px;border-left:4px solid var(--bad)">'+
+    '<div style="font-weight:800;font-size:12px;color:var(--bad);margin-bottom:7px">Impact global des diagnostics</div>'+
+    '<table style="width:100%;border-collapse:collapse;table-layout:fixed">'+
+      '<colgroup><col style="width:52%"/><col style="width:26%"/><col style="width:22%"/></colgroup>'+
+      '<thead><tr style="border-bottom:1.5px solid var(--line)">'+
+        '<th style="text-align:left;padding:4px;font-size:9px;color:var(--ink-soft);text-transform:uppercase">Diagnostic</th>'+
+        '<th style="text-align:right;padding:4px;font-size:9px;color:var(--ink-soft);text-transform:uppercase">Travaux</th>'+
+        '<th style="text-align:right;padding:4px;font-size:9px;color:var(--ink-soft);text-transform:uppercase">Prix</th>'+
+      '</tr></thead><tbody>'+rows+'</tbody>'+
+      '<tfoot><tr style="border-top:2px solid var(--bad)">'+
+        '<td style="padding:6px 4px;font-size:11.5px;font-weight:800">Total</td>'+
+        '<td style="padding:6px 4px;text-align:right;font-size:12.5px;font-weight:800;white-space:nowrap" class="num">'+eur0(t.cost)+' \u20ac</td>'+
+        '<td style="padding:6px 4px;text-align:right;font-size:12.5px;font-weight:800;color:var(--bad);white-space:nowrap" class="num">'+(t.impact*100).toFixed(1).replace(".",",")+' %</td>'+
+      '</tr></tfoot>'+
+    '</table>'+
+    (px?'<div style="margin-top:8px;padding:8px 10px;background:#fff;border-radius:8px;font-size:11.5px"><b>Sur votre estimation de '+eur0(px)+' \u20ac :</b> d\u00e9cote de <b style="color:var(--bad)">'+eur0(Math.abs(decoteEur))+' \u20ac</b> + <b>'+eur0(t.cost)+' \u20ac</b> de travaux \u2192 marge de n\u00e9gociation totale d\u2019environ <b style="color:var(--bad)">'+eur0(Math.abs(decoteEur)+t.cost)+' \u20ac</b>.</div>':'')+
+    (t.plafonne?'<div class="hint" style="margin-top:7px;color:var(--warn)"><b>D\u00e9cote plafonn\u00e9e \u00e0 \u221212 %.</b> Le cumul brut atteint '+(t.impactBrut*100).toFixed(1).replace(".",",")+' % : \u00e0 ce niveau, le bien rel\u00e8ve d\u2019une r\u00e9novation lourde et le prix se n\u00e9gocie globalement, pas poste par poste.</div>':'')+
+    '<div style="margin-top:8px"><button type="button" id="diagsToWorks" style="width:100%;padding:9px;border-radius:9px;border:1.5px solid var(--bad);background:#fff;color:var(--bad);font-weight:700;font-size:12.5px;cursor:pointer">Reporter '+eur0(t.cost)+' \u20ac dans \u00ab Travaux \u00e0 financer \u00bb</button></div>'+
+    '<div class="hint" style="margin-top:7px">La <b>d\u00e9cote</b> refl\u00e8te le risque, la stigmatisation et la difficult\u00e9 de revente \u2014 elle s\u2019ajoute au co\u00fbt des travaux. Les deux sont des arguments de n\u00e9gociation distincts et cumulables.</div>'+
+  '</div>';
+  const btn=$("diagsToWorks");
+  if(btn)btn.addEventListener("click",function(){
+    const cur=numv("iTravaux")||0;
+    $("iTravaux").value=cur+t.cost;
+    if(lastResult){computeAll(lastResult);computeResale(lastResult);renderFinPrice(lastResult);}
+    showSavedHint("\u2713 "+eur0(t.cost)+" \u20ac de travaux (diagnostics) ajout\u00e9s au financement.");
+  });
+}
+
+function refreshAfterDiagChange(){
+  if(!lastResult)return;
+  // Relancer l'estimation complete pour appliquer la decote au prix
+  if($("btnEstim"))$("btnEstim").click();
+}
+
+/* ===== POINT8 : Acheter vs Louer — point de bascule =====
+ * Compare le cout patrimonial cumule des deux options sur 30 ans.
+ *
+ * PROPRIETAIRE (cout net a l'annee N) :
+ *   = apport + frais + travaux + (mensualites x 12N) + charges cumulees
+ *     - valeur nette de revente a N (bien revalorise - frais de vente - CRD - impot PV)
+ *
+ * LOCATAIRE (cout net a l'annee N) :
+ *   = loyers cumules (indexes IRL) + assurance habitation
+ *     - capital place (apport + economie mensuelle) capitalise au taux sans risque
+ *
+ * Le point de bascule = 1ere annee ou le cout proprietaire < cout locataire.
+ */
+function ownVsRent(r){
+  if(!r||!r.price)return null;
+  const bp=numv("prixAchat")||r.price;
+  const surf=r.surface||1;
+  // Loyer de marche pour un bien equivalent (ce que paierait le locataire)
+  const mktRentSqm=state.mktRentSqm||marketRentSqm(r)||0;
+  const loyerMensuel=Math.round(mktRentSqm*surf);
+  if(loyerMensuel<=0)return null;
+
+  // --- Parametres proprietaire ---
+  const notaire=bp*notaireRate();
+  const travaux=numv("iTravaux");
+  const dossier=numv("iDossier"),garantie=numv("iGarantie");
+  const apport=numv("iApport");
+  const coutTotal=bp+notaire+travaux+dossier+garantie;
+  const emprunt=Math.max(0,coutTotal-apport);
+  const taux=numv("iTaux")/100,assurTaux=numv("iAssur")/100;
+  const duree=Number($("iDuree").value)||20;
+  const isIF=!!($("creditInFine")&&$("creditInFine").checked);
+  const im=taux/12,nm=duree*12;
+  const mensCredit=(duree>0&&emprunt>0)?(isIF?emprunt*taux/12:(im>0?emprunt*im/(1-Math.pow(1+im,-nm)):emprunt/nm)):0;
+  const mensAssur=emprunt*assurTaux/12;
+  const mensTot=mensCredit+mensAssur;
+  // Charges du proprietaire (taxe fonciere + copro + PNO + entretien)
+  const taxeF=numv("iTaxe"),copro=numv("iCopro"),pno=numv("iPno");
+  // Provision entretien/gros oeuvre. Defaut 0,6 %/an (fourchette courante 0,5-1 % ; 1 % concerne
+  // surtout l'ancien a renover). Parametrable via #ovrEntretien.
+  const entretienPct=(numv("ovrEntretien")/100);
+  const entretien=bp*(entretienPct>0?entretienPct:0.006);
+  const chargesProprioAn=taxeF+copro+pno+entretien;
+
+  // --- Parametres locataire ---
+  const gRent=numv("gRent")/100||0.025; // indexation IRL du loyer
+  const assurLoc=120; // assurance habitation locataire ~120 EUR/an
+  // Charges locatives recuperables : le locataire paie une partie des charges de copro
+  const chargesLocAn=copro*0.75+assurLoc; // ~75 % de la copro est recuperable sur le locataire
+
+  // --- Parametres communs ---
+  const reval=numv("reval")/100||0.02;   // revalorisation du bien
+  const fraisVente=numv("fraisVente")/100||0.04;
+  // Rendement NET du capital place par le locataire (apres fiscalite : PFU 30 % sur un fonds euros ~3 % brut)
+  // Parametrable par l'utilisateur via #ovrPlacement. Defaut 2 % net (prudent et realiste sur longue duree).
+  const tauxPlacement=(numv("ovrPlacement")/100)||0.02;
+  const ps=psRate();
+
+  // Fonctions de cout cumule
+  const crdAt=t=>{
+    if(duree<=0||emprunt<=0)return 0;
+    if(isIF)return t<duree?emprunt:0;
+    const k=Math.min(t*12,nm);
+    return Math.max(0,im>0?emprunt*Math.pow(1+im,k)-mensCredit*(Math.pow(1+im,k)-1)/im:emprunt-mensCredit*k);
+  };
+
+  const gCharges=numv("gCharges")/100||0.025;
+  const years=[];
+  let bascule=null;
+  // Les deux options partent du MEME capital initial (l'apport) et du MEME budget mensuel.
+  // On compare le PATRIMOINE NET accumule dans chaque scenario.
+  for(let t=1;t<=30;t++){
+    // ================= PROPRIETAIRE =================
+    // Ce qui sort de la poche, cumule
+    const mensCum=mensTot*12*Math.min(t,duree)+(isIF&&t>=duree?emprunt:0);
+    let chargesProprioCum=0;
+    for(let k=1;k<=t;k++)chargesProprioCum+=chargesProprioAn*Math.pow(1+gCharges,k-1);
+    const decaisseProprio=apport+notaire+travaux+dossier+garantie+mensCum+chargesProprioCum;
+    // Ce qu'il possede : la valeur nette du bien s'il revend
+    const valeurBien=bp*Math.pow(1+reval,t);
+    const fraisRevente=valeurBien*fraisVente;
+    const crd=crdAt(t);
+    const impotPV=0; // residence principale : exoneration (art. 150 U-II-1 CGI)
+    const valeurNette=valeurBien-fraisRevente-crd-impotPV;
+    // PATRIMOINE NET du proprietaire = ce qu'il possede - ce qu'il a decaisse
+    const patriProprio=valeurNette-decaisseProprio;
+
+    // ================= LOCATAIRE =================
+    // Hypothese cle : MEME capital de depart (apport + frais que le proprio aurait payes)
+    // et MEME budget mensuel. Le locataire place la difference.
+    let loyersCum=0,chargesLocCum=0;
+    // Capital initial place par le locataire : son APPORT seul.
+    // Les frais d'acquisition (notaire, garantie, dossier) ne sont PAS un capital : ce sont
+    // des couts definitivement perdus pour le proprietaire. Les crediter au locataire
+    // creerait un biais artificiel en sa faveur.
+    let capitalLoc=apport*Math.pow(1+tauxPlacement,t);
+    for(let k=1;k<=t;k++){
+      const loyerK=loyerMensuel*12*Math.pow(1+gRent,k-1);
+      const chLocK=chargesLocAn*Math.pow(1+gCharges,k-1);
+      loyersCum+=loyerK;chargesLocCum+=chLocK;
+      // Budget annuel du proprietaire cette annee-la
+      const budgetProprioK=(k<=duree?mensTot*12:0)+chargesProprioAn*Math.pow(1+gCharges,k-1);
+      const budgetLocK=loyerK+chLocK;
+      // Ecart : ce que le locataire epargne (ou doit puiser si negatif)
+      const ecart=budgetProprioK-budgetLocK;
+      capitalLoc+=ecart*Math.pow(1+tauxPlacement,t-k);
+    }
+    // PATRIMOINE NET du locataire = capital accumule - son apport de depart
+    // (meme base de comparaison que le proprietaire, dont on a deja soustrait tous les decaissements)
+    const patriLoc=capitalLoc-apport;
+
+    // Couts nets (positif = ce que l'option a coute au total)
+    const coutProprio=-patriProprio;
+    const coutLoc=-patriLoc;
+
+    years.push({t,coutProprio:Math.round(coutProprio),coutLoc:Math.round(coutLoc),
+      patriProprio:Math.round(patriProprio),patriLoc:Math.round(patriLoc),
+      valeurBien:Math.round(valeurBien),crd:Math.round(crd),valeurNette:Math.round(valeurNette),
+      loyersCum:Math.round(loyersCum),mensCum:Math.round(mensCum),decaisseProprio:Math.round(decaisseProprio)});
+    if(bascule===null&&patriProprio>patriLoc)bascule=t;
+  }
+  return{years,bascule,loyerMensuel,mensTot:Math.round(mensTot),apport,bp,
+    chargesProprioAn:Math.round(chargesProprioAn),chargesLocAn:Math.round(chargesLocAn),
+    reval,gRent,tauxPlacement,duree,entretien:Math.round(entretien)};
+}
+
+function renderOwnVsRent(r){
+  const el=$("ownVsRentPanel");if(!el)return;
+  const o=ownVsRent(r);
+  if(!o){el.innerHTML='<div class="hint">Renseignez le prix d\u2019achat et le financement pour comparer l\u2019achat \u00e0 la location.</div>';return;}
+  const B=o.bascule;
+
+  // --- Graphe : cout cumule proprietaire vs locataire ---
+  const W=340,H=200,mL=42,mR=10,mT=12,mB=26;
+  const data=o.years.slice(0,25);
+  const allV=data.reduce(function(a,y){a.push(y.coutProprio,y.coutLoc);return a;},[]);
+  const vmin=Math.min.apply(null,allV),vmax=Math.max.apply(null,allV);
+  const pad=(vmax-vmin)*0.08||1000;
+  const y0=vmin-pad,y1=vmax+pad;
+  const X=i=>mL+(i/(data.length-1))*(W-mL-mR);
+  const Y=v=>H-mB-((v-y0)/(y1-y0))*(H-mT-mB);
+  const lineP=data.map((y,i)=>(i?"L":"M")+X(i).toFixed(1)+" "+Y(y.coutProprio).toFixed(1)).join(" ");
+  const lineL=data.map((y,i)=>(i?"L":"M")+X(i).toFixed(1)+" "+Y(y.coutLoc).toFixed(1)).join(" ");
+  // Zone de gain (apres bascule)
+  let gainArea="";
+  if(B&&B<=data.length){
+    const seg=data.slice(B-1);
+    const up=seg.map((y,i)=>(i?"L":"M")+X(B-1+i).toFixed(1)+" "+Y(y.coutLoc).toFixed(1)).join(" ");
+    const dn=[...seg].reverse().map((y,i)=>"L"+X(data.length-1-i).toFixed(1)+" "+Y(y.coutProprio).toFixed(1)).join(" ");
+    gainArea='<path d="'+up+" "+dn+' Z" fill="var(--good)" opacity="0.16"/>';
+  }
+  // Ligne verticale de bascule
+  let basculeLine="";
+  if(B&&B<=data.length){
+    const bx=X(B-1);
+    basculeLine='<line x1="'+bx.toFixed(1)+'" y1="'+mT+'" x2="'+bx.toFixed(1)+'" y2="'+(H-mB)+'" stroke="var(--good)" stroke-width="1.5" stroke-dasharray="3 2"/>'+
+      '<circle cx="'+bx.toFixed(1)+'" cy="'+Y(data[B-1].coutProprio).toFixed(1)+'" r="3.5" fill="var(--good)" stroke="#fff" stroke-width="1.5"/>';
+  }
+  // Grille + labels
+  let grid="";
+  [0,0.5,1].forEach(function(f){
+    const v=y0+(y1-y0)*f,gy=Y(v);
+    grid+='<line x1="'+mL+'" y1="'+gy.toFixed(1)+'" x2="'+(W-mR)+'" y2="'+gy.toFixed(1)+'" stroke="var(--line)" stroke-width="0.5"/>'+
+      '<text x="'+(mL-4)+'" y="'+(gy+3).toFixed(1)+'" text-anchor="end" font-size="8" fill="var(--ink-soft)">'+Math.round(v/1000)+'k</text>';
+  });
+  let xLbl="";
+  [0,4,9,14,19,24].forEach(function(i){
+    if(i<data.length)xLbl+='<text x="'+X(i).toFixed(1)+'" y="'+(H-mB+12)+'" text-anchor="middle" font-size="8" fill="var(--ink-soft)">'+data[i].t+'</text>';
+  });
+
+  const verdict=B
+    ? '<div style="padding:12px 14px;background:var(--good-tint,#e8f7f0);border-radius:11px;border-left:4px solid var(--good);margin-bottom:12px"><div style="font-size:13.5px;font-weight:800;color:var(--good);margin-bottom:3px">\u2713 Acheter devient plus avantageux \u00e0 partir de la '+B+'<sup>'+(B===1?"re":"e")+'</sup> ann\u00e9e</div><div style="font-size:11.5px;color:var(--ink);line-height:1.5">Si vous gardez le bien <b>moins de '+B+' ans</b>, louer co\u00fbte moins cher (les frais d\u2019acquisition ne sont pas encore amortis). Au-del\u00e0, la propri\u00e9t\u00e9 l\u2019emporte.</div></div>'
+    : '<div style="padding:12px 14px;background:#fdf6e3;border-radius:11px;border-left:4px solid var(--warn);margin-bottom:12px"><div style="font-size:13.5px;font-weight:800;color:#8a5e10;margin-bottom:3px">\u26a0 Louer reste plus avantageux sur 30 ans</div><div style="font-size:11.5px;color:var(--ink);line-height:1.5">Avec ces hypoth\u00e8ses (prix, taux, revalorisation, loyer de march\u00e9), l\u2019achat ne rattrape jamais la location. Cela arrive quand le prix est \u00e9lev\u00e9 vs le loyer local, ou quand la revalorisation attendue est faible.</div></div>';
+
+  // KPI tiles
+  const y10=o.years[9]||o.years[o.years.length-1];
+  const kpis='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">'+
+    '<div style="flex:1;min-width:90px;background:var(--bg);border-radius:9px;padding:8px 10px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase">Loyer \u00e9quivalent</div><div class="num" style="font-size:15px;font-weight:800;color:var(--ink)">'+eur0(o.loyerMensuel)+' \u20ac</div><div style="font-size:9px;color:var(--ink-soft)">/mois (march\u00e9)</div></div>'+
+    '<div style="flex:1;min-width:90px;background:var(--bg);border-radius:9px;padding:8px 10px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase">Mensualit\u00e9 cr\u00e9dit</div><div class="num" style="font-size:15px;font-weight:800;color:var(--ink)">'+eur0(o.mensTot)+' \u20ac</div><div style="font-size:9px;color:var(--ink-soft)">/mois (+ charges)</div></div>'+
+    '<div style="flex:1;min-width:90px;background:var(--bg);border-radius:9px;padding:8px 10px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase">Bascule</div><div class="num" style="font-size:15px;font-weight:800;color:'+(B?"var(--good)":"var(--warn)")+'">'+(B?B+" ans":"> 30 ans")+'</div><div style="font-size:9px;color:var(--ink-soft)">seuil de rentabilit\u00e9</div></div>'+
+    '<div style="flex:1;min-width:90px;background:var(--bg);border-radius:9px;padding:8px 10px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase">\u00c9cart \u00e0 10 ans</div><div class="num" style="font-size:15px;font-weight:800;color:'+(y10.coutProprio<y10.coutLoc?"var(--good)":"var(--bad)")+'">'+(y10.coutProprio<y10.coutLoc?"\u2212":"+")+eur0(Math.abs(y10.coutProprio-y10.coutLoc))+'</div><div style="font-size:9px;color:var(--ink-soft)">'+(y10.coutProprio<y10.coutLoc?"en faveur de l\u2019achat":"en faveur de la location")+'</div></div>'+
+  '</div>';
+
+  // Tableau detaille (annees cles)
+  const keyYears=[1,3,5,10,15,20,25].filter(function(t){return t<=o.years.length;});
+  const tblRows=keyYears.map(function(t){
+    const y=o.years[t-1];
+    const diff=y.coutLoc-y.coutProprio;
+    const win=diff>0;
+    return '<tr style="border-bottom:1px solid var(--line)'+(B===t?';background:var(--brand-tint)':'')+'">'+
+      '<td style="padding:6px 6px;font-size:11px;font-weight:700;color:var(--ink)">'+t+' an'+(t>1?'s':'')+(B===t?' \u2190':'')+'</td>'+
+      '<td style="padding:6px 6px;text-align:right;font-size:11px" class="num">'+eur0(y.coutProprio)+'</td>'+
+      '<td style="padding:6px 6px;text-align:right;font-size:11px" class="num">'+eur0(y.coutLoc)+'</td>'+
+      '<td style="padding:6px 6px;text-align:right;font-size:11px;font-weight:700;color:'+(win?"var(--good)":"var(--bad)")+'" class="num">'+(win?"\u2212":"+")+eur0(Math.abs(diff))+'</td>'+
+    '</tr>';
+  }).join("");
+
+  el.innerHTML=verdict+kpis+
+    '<div style="font-weight:700;font-size:12.5px;color:var(--ink);margin-bottom:6px">Co\u00fbt patrimonial cumul\u00e9</div>'+
+    '<svg viewBox="0 0 '+W+' '+H+'" width="100%" style="display:block;max-width:460px;margin:0 auto">'+
+      grid+gainArea+
+      '<path d="'+lineL+'" fill="none" stroke="#E8742A" stroke-width="2" stroke-linejoin="round"/>'+
+      '<path d="'+lineP+'" fill="none" stroke="var(--brand-dark)" stroke-width="2.2" stroke-linejoin="round"/>'+
+      basculeLine+xLbl+
+      '<text x="'+(W/2)+'" y="'+(H-2)+'" text-anchor="middle" font-size="8.5" fill="var(--ink-soft)">Ann\u00e9es de d\u00e9tention</text>'+
+    '</svg>'+
+    '<div style="display:flex;gap:14px;justify-content:center;margin-top:6px;font-size:10.5px;flex-wrap:wrap">'+
+      '<span style="display:flex;align-items:center;gap:5px"><span style="width:16px;height:3px;background:var(--brand-dark);border-radius:2px;display:inline-block"></span>Propri\u00e9taire</span>'+
+      '<span style="display:flex;align-items:center;gap:5px"><span style="width:16px;height:3px;background:#E8742A;border-radius:2px;display:inline-block"></span>Locataire</span>'+
+      (B?'<span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:10px;background:var(--good);opacity:.3;border-radius:2px;display:inline-block"></span>Gain de l\u2019achat</span>':'')+
+    '</div>'+
+    '<div style="overflow-x:auto;margin-top:14px"><table style="width:100%;border-collapse:collapse;table-layout:fixed">'+
+      '<colgroup><col style="width:22%"/><col style="width:26%"/><col style="width:26%"/><col style="width:26%"/></colgroup>'+
+      '<thead><tr style="border-bottom:1.5px solid var(--line)">'+
+        '<th style="text-align:left;padding:5px 6px;font-size:9px;color:var(--ink-soft);text-transform:uppercase">Dur\u00e9e</th>'+
+        '<th style="text-align:right;padding:5px 6px;font-size:9px;color:var(--ink-soft);text-transform:uppercase">Co\u00fbt proprio</th>'+
+        '<th style="text-align:right;padding:5px 6px;font-size:9px;color:var(--ink-soft);text-transform:uppercase">Co\u00fbt locataire</th>'+
+        '<th style="text-align:right;padding:5px 6px;font-size:9px;color:var(--ink-soft);text-transform:uppercase">\u00c9cart</th>'+
+      '</tr></thead><tbody>'+tblRows+'</tbody>'+
+    '</table></div>'+
+    // Explication complete de la methode
+    '<div style="margin-top:14px;padding:12px;background:var(--bg);border-radius:11px;border-left:3px solid var(--brand-dark)">'+
+      '<div style="font-weight:800;font-size:12px;color:var(--brand-dark);margin-bottom:6px">Comment ce calcul est fait</div>'+
+      '<div style="font-size:11px;color:var(--ink);line-height:1.6">'+
+        '<b>C\u00f4t\u00e9 propri\u00e9taire</b>, on additionne tout ce qui sort de votre poche : apport ('+eur0(o.apport)+' \u20ac), frais de notaire, travaux, mensualit\u00e9s de cr\u00e9dit ('+eur0(o.mensTot)+' \u20ac/mois), taxe fonci\u00e8re, charges de copropri\u00e9t\u00e9, assurance et une provision d\u2019entretien de <b>'+eur0(o.entretien)+' \u20ac/an</b> (1 % du prix, usage courant pour le gros \u0153uvre). On <b>retranche</b> ensuite la valeur nette du bien si vous le revendiez cette ann\u00e9e-l\u00e0 : prix revaloris\u00e9 \u00e0 '+(o.reval*100).toFixed(1)+' %/an, moins les frais de vente, moins le capital restant d\u00fb. La plus-value est suppos\u00e9e <b>exon\u00e9r\u00e9e</b> (r\u00e9sidence principale, art. 150 U-II-1 CGI).<br><br>'+
+        '<b>C\u00f4t\u00e9 locataire</b>, on additionne les loyers vers\u00e9s (index\u00e9s \u00e0 '+(o.gRent*100).toFixed(1)+' %/an, votre hypoth\u00e8se IRL), les charges r\u00e9cup\u00e9rables et l\u2019assurance habitation. On <b>retranche</b> la valeur du capital qu\u2019il n\u2019a pas immobilis\u00e9 : son apport ('+eur0(o.apport)+' \u20ac) plac\u00e9 \u00e0 '+(o.tauxPlacement*100).toFixed(1)+' %/an, plus l\u2019\u00e9pargne mensuelle qu\u2019il r\u00e9alise quand son loyer est inf\u00e9rieur au co\u00fbt total du propri\u00e9taire, elle aussi capitalis\u00e9e.<br><br>'+
+        '<b>Le point de bascule</b> est la premi\u00e8re ann\u00e9e o\u00f9 le co\u00fbt cumul\u00e9 du propri\u00e9taire passe sous celui du locataire. Avant ce seuil, les frais d\u2019acquisition (notaire ~'+(notaireRate()*100).toFixed(1)+' %, garantie, dossier) ne sont pas encore amortis par la revalorisation du bien et le remboursement du capital.'+
+      '</div>'+
+      '<div class="hint" style="margin-top:9px"><b>Ce qui d\u00e9place le seuil :</b> une revalorisation plus forte, un loyer de march\u00e9 \u00e9lev\u00e9 ou un taux de cr\u00e9dit bas <b>avancent</b> la bascule. Des frais d\u2019acquisition \u00e9lev\u00e9s, un march\u00e9 atone ou un rendement du capital plac\u00e9 attractif la <b>reculent</b>. Modifiez le prix, le taux, la revalorisation ou la croissance des loyers ci-dessus pour tester votre sc\u00e9nario.</div>'+
+    '</div>';
+}
 
 /* ===== Vague 5 : Immeuble de rapport multi-lots ===== */
 state._lots=[]; // [{id,type,surface,loyer,dpe}]
@@ -5171,6 +6025,511 @@ refreshSavedSelect();renderCompare();
 if($("btnUpdateBien"))$("btnUpdateBien").addEventListener("click",updateBien);
 refreshSavedSelect();
 
+
+
+/* ============================================================================
+ * MODULE BENCHMARK — comparaison du secteur aux moyennes nationales
+ * N'effectue AUCUNE requete supplementaire : reutilise les donnees deja chargees
+ * (DVF, Filosofi, SSMSI, ARCEP, RPLS, Carte des loyers).
+ *
+ * REFERENCES NATIONALES (sources publiques, valeurs 2024-2025) :
+ *  - Prix median appartement France : 3 320 EUR/m2 (Notaires de France, T3-2025)
+ *  - Prix median maison France : 2 280 EUR/m2 (idem)
+ *  - Loyer median France : 13,8 EUR/m2/mois (Carte des loyers DHUP 2023)
+ *  - Revenu median par UC : 23 160 EUR/an (INSEE Filosofi 2022)
+ *  - Taux de chomage : 7,3 % (INSEE T3-2025)
+ *  - Taux de pauvrete : 14,4 % (INSEE Filosofi 2022)
+ *  - Atteintes aux biens : 32,4 pour 1 000 habitants (SSMSI 2024)
+ *  - Couverture fibre (FTTH) : 89 % des locaux (ARCEP T2-2025)
+ *  - Logement social : 17,3 % des residences principales (RPLS 2024)
+ *  - Vacance des logements : 8,2 % (INSEE RP 2022)
+ * ==========================================================================*/
+const BENCH_FR={
+  prixAppt:3320, prixMaison:2280, loyerM2:13.8,
+  revenuMedian:23160, chomage:7.3, pauvrete:14.4,
+  crime:32.4, fibre:89, social:17.3, vacance:8.2,
+  rendementBrut:5.0 // rendement locatif brut moyen France (loyer x 12 / prix)
+};
+
+function renderBenchmark(r){
+  const el=$("benchPanel");if(!el)return;
+  if(!r){el.innerHTML="";return;}
+  const d=r.dyn||{},ctx=state.ctx2||{};
+  const rows=[];
+
+  // --- 1. Prix au m2 ---
+  const refPrix=(r.type==="maison")?BENCH_FR.prixMaison:BENCH_FR.prixAppt;
+  const prixLocal=r.sqmBase||0;
+  if(prixLocal>0){
+    rows.push({
+      lbl:"Prix au m\u00b2",
+      local:eur0(prixLocal)+" \u20ac",
+      france:eur0(refPrix)+" \u20ac",
+      ecart:(prixLocal/refPrix-1),
+      // Un prix eleve n'est ni bon ni mauvais dans l'absolu : neutre
+      sens:"neutre",
+      note:prixLocal>refPrix*1.5?"March\u00e9 tr\u00e8s cher : ticket d'entr\u00e9e \u00e9lev\u00e9, mais souvent plus liquide"
+        :prixLocal<refPrix*0.6?"March\u00e9 tr\u00e8s abordable : rendement potentiellement \u00e9lev\u00e9, mais v\u00e9rifiez la demande locative"
+        :"Prix proche de la moyenne nationale"
+    });
+  }
+
+  // --- 2. Loyer au m2 ---
+  const loyerLocal=d.loyerM2||0;
+  if(loyerLocal>0){
+    rows.push({
+      lbl:"Loyer au m\u00b2 / mois",
+      local:loyerLocal.toFixed(1).replace(".",",")+" \u20ac",
+      france:BENCH_FR.loyerM2.toFixed(1).replace(".",",")+" \u20ac",
+      ecart:(loyerLocal/BENCH_FR.loyerM2-1),
+      sens:"haut",
+      note:d.loyerReal?"Source : Carte des loyers DHUP (donn\u00e9e r\u00e9elle)":"Estimation \u2014 donn\u00e9e DHUP indisponible pour cette commune"
+    });
+  }
+
+  // --- 3. Rendement locatif brut ---
+  if(prixLocal>0&&loyerLocal>0){
+    const rdt=(loyerLocal*12/prixLocal)*100;
+    rows.push({
+      lbl:"Rendement locatif brut",
+      local:rdt.toFixed(1).replace(".",",")+" %",
+      france:BENCH_FR.rendementBrut.toFixed(1).replace(".",",")+" %",
+      ecart:(rdt/BENCH_FR.rendementBrut-1),
+      sens:"haut",
+      note:rdt>6?"Rendement attractif \u2014 v\u00e9rifiez le risque de vacance et l'\u00e9tat du parc"
+        :rdt<3.5?"Rendement faible : ce march\u00e9 se joue sur la plus-value, pas sur le cash-flow"
+        :"Rendement dans la moyenne"
+    });
+  }
+
+  // --- 4. Revenu median (Filosofi) ---
+  const filo=ctx.filosofi;
+  if(filo&&filo.revenuMedian>0){
+    rows.push({
+      lbl:"Revenu m\u00e9dian par UC",
+      local:eur0(filo.revenuMedian)+" \u20ac",
+      france:eur0(BENCH_FR.revenuMedian)+" \u20ac",
+      ecart:(filo.revenuMedian/BENCH_FR.revenuMedian-1),
+      sens:"haut",
+      note:"Source : INSEE Filosofi \u2014 d\u00e9terminant de la solvabilit\u00e9 des locataires et des acqu\u00e9reurs"
+    });
+  }
+
+  // --- 5. Taux de pauvrete ---
+  if(filo&&filo.pauvrete>0){
+    rows.push({
+      lbl:"Taux de pauvret\u00e9",
+      local:filo.pauvrete.toFixed(1).replace(".",",")+" %",
+      france:BENCH_FR.pauvrete.toFixed(1).replace(".",",")+" %",
+      ecart:(filo.pauvrete/BENCH_FR.pauvrete-1),
+      sens:"bas", // plus bas = mieux
+      note:"Source : INSEE Filosofi \u2014 indicateur de fragilit\u00e9 socio-\u00e9conomique du secteur"
+    });
+  }
+
+  // --- 6. Criminalite (SSMSI) ---
+  const crime=ctx.crime;
+  if(crime&&crime.tauxBiens!=null){
+    rows.push({
+      lbl:"Atteintes aux biens",
+      local:crime.tauxBiens.toFixed(1).replace(".",",")+" \u2030",
+      france:BENCH_FR.crime.toFixed(1).replace(".",",")+" \u2030",
+      ecart:(crime.tauxBiens/BENCH_FR.crime-1),
+      sens:"bas",
+      note:"Source : SSMSI (minist\u00e8re de l'Int\u00e9rieur) \u2014 cambriolages, vols, d\u00e9gradations pour 1 000 habitants"
+    });
+  }
+
+  // --- 7. Couverture fibre (ARCEP) ---
+  const fibre=ctx.fibre;
+  if(fibre&&fibre.pct!=null){
+    rows.push({
+      lbl:"Couverture fibre (FTTH)",
+      local:Math.round(fibre.pct)+" %",
+      france:BENCH_FR.fibre+" %",
+      ecart:(fibre.pct/BENCH_FR.fibre-1),
+      sens:"haut",
+      note:"Source : ARCEP \u2014 crit\u00e8re devenu quasi \u00e9liminatoire pour les jeunes actifs et le t\u00e9l\u00e9travail"
+    });
+  }
+
+  // --- 8. Logement social (RPLS) ---
+  const rpls=ctx.rpls;
+  if(rpls&&rpls.pct!=null){
+    rows.push({
+      lbl:"Part de logement social",
+      local:rpls.pct.toFixed(1).replace(".",",")+" %",
+      france:BENCH_FR.social.toFixed(1).replace(".",",")+" %",
+      ecart:(rpls.pct/BENCH_FR.social-1),
+      sens:"neutre",
+      note:rpls.pct>30?"Forte pr\u00e9sence de logement social \u2014 peut peser sur la valorisation, mais assure une demande locative stable"
+        :rpls.pct<8?"Peu de logement social \u2014 commune souvent r\u00e9sidentielle, sous quota SRU (p\u00e9nalit\u00e9s possibles)"
+        :"Mixit\u00e9 proche de la moyenne (source : RPLS)"
+    });
+  }
+
+  // --- 9. Vacance des logements ---
+  const vac=ctx.vacance;
+  if(vac&&vac.taux!=null){
+    rows.push({
+      lbl:"Vacance des logements",
+      local:vac.taux.toFixed(1).replace(".",",")+" %",
+      france:BENCH_FR.vacance.toFixed(1).replace(".",",")+" %",
+      ecart:(vac.taux/BENCH_FR.vacance-1),
+      sens:"bas",
+      note:vac.taux>12?"Vacance \u00e9lev\u00e9e : signal d'alerte sur la demande locative et la liquidit\u00e9 \u00e0 la revente"
+        :"Source : "+(vac.source||"INSEE")+" \u2014 mesure la tension du march\u00e9 local"
+    });
+  }
+
+  if(!rows.length){
+    el.innerHTML='<div class="hint">Les donn\u00e9es de comparaison se chargent\u2026 Si elles n\u2019apparaissent pas, c\u2019est que les sources publiques ne couvrent pas cette commune.</div>';
+    return;
+  }
+
+  // Rendu : barre visuelle centree sur la moyenne nationale
+  const bars=rows.map(function(row){
+    // Position sur une echelle -100% a +100% (bornee)
+    const e=Math.max(-1,Math.min(1,row.ecart));
+    const pct=Math.abs(e)*50; // largeur de la barre (max 50 % de chaque cote)
+    // Couleur selon le sens de l'indicateur
+    let col="var(--ink-soft)";
+    if(row.sens==="haut")col=row.ecart>=0?"var(--good)":"var(--bad)";
+    else if(row.sens==="bas")col=row.ecart<=0?"var(--good)":"var(--bad)";
+    else col="var(--brand-dark)";
+    const isPos=row.ecart>=0;
+    const ecartLbl=(row.ecart>=0?"+":"")+Math.round(row.ecart*100)+" %";
+    return '<div style="margin-bottom:13px">'+
+      '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;gap:8px">'+
+        '<span style="font-size:12px;font-weight:700;color:var(--ink)">'+row.lbl+'</span>'+
+        '<span style="font-size:11px;color:var(--ink-soft);white-space:nowrap"><b class="num" style="color:var(--ink);font-size:12.5px">'+row.local+'</b> <span style="opacity:.6">vs</span> <span class="num">'+row.france+'</span> <span style="opacity:.6">France</span></span>'+
+      '</div>'+
+      // Barre divergente centree
+      '<div style="position:relative;height:16px;background:var(--bg);border-radius:8px;overflow:hidden">'+
+        '<div style="position:absolute;left:50%;top:0;bottom:0;width:1.5px;background:var(--line);z-index:2"></div>'+
+        '<div style="position:absolute;top:2px;bottom:2px;'+(isPos?'left:50%':'right:50%')+';width:'+pct+'%;background:'+col+';border-radius:5px;opacity:.85"></div>'+
+        '<div style="position:absolute;'+(isPos?'left:calc(50% + '+pct+'% + 5px)':'right:calc(50% + '+pct+'% + 5px)')+';top:0;bottom:0;display:flex;align-items:center;font-size:10px;font-weight:800;color:'+col+';z-index:3;white-space:nowrap">'+ecartLbl+'</div>'+
+      '</div>'+
+      '<div style="font-size:10px;color:var(--ink-soft);margin-top:3px;line-height:1.4">'+row.note+'</div>'+
+    '</div>';
+  }).join("");
+
+  // Synthese : combien d'indicateurs sont favorables
+  const scored=rows.filter(function(x){return x.sens!=="neutre";});
+  const fav=scored.filter(function(x){
+    return (x.sens==="haut"&&x.ecart>0)||(x.sens==="bas"&&x.ecart<0);
+  }).length;
+  const total=scored.length;
+  let verdict="";
+  if(total>0){
+    const pctFav=fav/total;
+    const lbl=pctFav>=0.75?"Secteur nettement au-dessus de la moyenne nationale"
+      :pctFav>=0.5?"Secteur globalement dans la moyenne, avec des atouts"
+      :pctFav>=0.25?"Secteur en retrait sur plusieurs indicateurs"
+      :"Secteur significativement en dessous de la moyenne nationale";
+    const col=pctFav>=0.6?"var(--good)":pctFav>=0.35?"var(--warn)":"var(--bad)";
+    verdict='<div style="padding:11px 13px;background:var(--bg);border-radius:11px;border-left:4px solid '+col+';margin-bottom:14px">'+
+      '<div style="font-size:13px;font-weight:800;color:'+col+';margin-bottom:2px">'+lbl+'</div>'+
+      '<div style="font-size:11.5px;color:var(--ink)"><b>'+fav+' indicateur'+(fav>1?"s":"")+' sur '+total+'</b> sont plus favorables que la moyenne fran\u00e7aise.</div>'+
+    '</div>';
+  }
+
+  el.innerHTML=verdict+bars+
+    '<div class="hint" style="margin-top:6px;line-height:1.5">'+
+      '<b>Comment lire :</b> chaque barre mesure l\u2019\u00e9cart de ce secteur \u00e0 la moyenne nationale. '+
+      '<span style="color:var(--good);font-weight:700">Vert</span> = favorable \u00e0 l\u2019investisseur, '+
+      '<span style="color:var(--bad);font-weight:700">rouge</span> = d\u00e9favorable, '+
+      '<span style="color:var(--brand-dark);font-weight:700">bleu</span> = neutre (ni bon ni mauvais dans l\u2019absolu : un prix \u00e9lev\u00e9 signale un march\u00e9 recherch\u00e9 mais r\u00e9duit le rendement).<br><br>'+
+      '<b>R\u00e9f\u00e9rences nationales :</b> prix Notaires de France T3-2025, loyers Carte des loyers DHUP, revenus et pauvret\u00e9 INSEE Filosofi 2022, d\u00e9linquance SSMSI 2024, fibre ARCEP T2-2025, logement social RPLS 2024, vacance INSEE RP 2022. Seuls les indicateurs r\u00e9ellement disponibles pour cette commune sont affich\u00e9s.'+
+    '</div>';
+}
+/* ============================================================================
+ * MODULE TRAVAUX EXPERT — BLOC AUTONOME
+ * Ne pas fusionner avec le reste du code. Dependances externes limitees a :
+ * $(), eur0(), numv(), lastResult, showSavedHint(), computeAll(), computeResale(), renderFinPrice()
+ *
+ * Baremes : prix de marche France 2025-2026, fourniture + pose, TTC.
+ * Sources : barometre FFB, indices CAPEB, Batiprix, retours artisans.
+ * TVA 10 % (renovation d'un logement de plus de 2 ans).
+ * Le mode "faire soi-meme" retire la main d'oeuvre et applique la TVA 20 %
+ * sur les fournitures achetees au detail (le taux reduit ne s'applique qu'aux
+ * travaux factures par une entreprise).
+ * ==========================================================================*/
+const WX=(function(){
+  "use strict";
+  const POSTES={
+    peinture:{cat:"Peinture & finitions",icon:"\uD83C\uDFA8",items:[
+      {id:"pMur",lbl:"Murs (2 couches + sous-couche)",unit:"m\u00b2",pu:32,four:0.28,diy:true,help:"Astuce : p\u00e9rim\u00e8tre \u00d7 hauteur sous plafond, moins les ouvertures."},
+      {id:"pPlaf",lbl:"Plafonds",unit:"m\u00b2",pu:38,four:0.26,diy:true,help:"Plus cher que les murs : travail en hauteur, plus de reprises."},
+      {id:"pBoise",lbl:"Boiseries (portes, plinthes, fen\u00eatres)",unit:"m\u00b2",pu:55,four:0.25,diy:true,help:"Comptez ~2 m\u00b2 par porte (2 faces), ~0,3 m\u00b2/m de plinthe."},
+      {id:"pEnduit",lbl:"Rebouchage / enduit de lissage",unit:"m\u00b2",pu:22,four:0.30,diy:true,help:"N\u00e9cessaire si les murs sont ab\u00eem\u00e9s. Ajoute 1 \u00e0 2 jours de s\u00e9chage."},
+      {id:"pPapier",lbl:"D\u00e9pose papier peint / toile",unit:"m\u00b2",pu:14,four:0.10,diy:true,help:"Ingrat mais sans technicit\u00e9 \u2014 gros potentiel d'\u00e9conomie en autonome."}
+    ]},
+    sols:{cat:"Sols",icon:"\uD83E\uDEB5",items:[
+      {id:"sParquet",lbl:"Parquet contrecoll\u00e9 (pose flottante)",unit:"m\u00b2",pu:85,four:0.60,diy:true,help:"Pose clipsable : accessible \u00e0 un bricoleur soigneux."},
+      {id:"sParquetM",lbl:"Parquet massif (coll\u00e9/clou\u00e9)",unit:"m\u00b2",pu:140,four:0.55,diy:false,help:"Pose technique. Se pon\u00e7e et se r\u00e9nove, dur\u00e9e de vie 50+ ans."},
+      {id:"sStrat",lbl:"Stratifi\u00e9",unit:"m\u00b2",pu:48,four:0.62,diy:true,help:"Meilleur rapport co\u00fbt/rapidit\u00e9. Sensible \u00e0 l'humidit\u00e9."},
+      {id:"sCarrel",lbl:"Carrelage (fourni + pos\u00e9)",unit:"m\u00b2",pu:95,four:0.45,diy:false,help:"Pose technique (chape, niveau, joints)."},
+      {id:"sPonce",lbl:"Pon\u00e7age + vitrification parquet existant",unit:"m\u00b2",pu:42,four:0.20,diy:true,help:"Alternative \u00e9conomique si le parquet est sain. Ponceuse ~80 \u20ac/jour."},
+      {id:"sChape",lbl:"Ragr\u00e9age / chape de nivellement",unit:"m\u00b2",pu:30,four:0.40,diy:false,help:"Indispensable si le sol n'est pas plan (\u00e9cart > 5 mm/2 m)."},
+      {id:"sDepose",lbl:"D\u00e9pose ancien rev\u00eatement + \u00e9vacuation",unit:"m\u00b2",pu:18,four:0.05,diy:true,help:"Attention : dalles vinyle avant 1997 = amiante possible (voir diagnostics)."}
+    ]},
+    murs:{cat:"Murs, cloisons & isolation",icon:"\uD83E\uDDF1",items:[
+      {id:"mCloison",lbl:"Cr\u00e9ation cloison BA13 (72/48 isol\u00e9e)",unit:"m\u00b2",pu:78,four:0.35,diy:false,help:"Ossature + isolant + double plaque. Par m\u00b2 de cloison."},
+      {id:"mDemol",lbl:"D\u00e9molition cloison non porteuse",unit:"m\u00b2",pu:42,four:0.05,diy:true,help:"V\u00e9rifiez qu'elle n'est pas porteuse. Inclut l'\u00e9vacuation des gravats."},
+      {id:"mOuvert",lbl:"Ouverture mur porteur (avec IPN)",unit:"u",pu:3800,four:0.30,diy:false,help:"\u00c9tude de structure obligatoire (BE ~800 \u20ac). Accord copro si immeuble."},
+      {id:"mITI",lbl:"Isolation par l'int\u00e9rieur (R \u2265 3,7)",unit:"m\u00b2",pu:95,four:0.40,diy:false,help:"Fait perdre ~10 cm par mur. \u00c9ligible MaPrimeR\u00e9nov'."},
+      {id:"mITE",lbl:"Isolation par l'ext\u00e9rieur (R \u2265 3,7)",unit:"m\u00b2",pu:190,four:0.35,diy:false,help:"Ne r\u00e9duit pas la surface habitable, supprime les ponts thermiques. Ravalement inclus."},
+      {id:"mComble",lbl:"Isolation combles perdus (R \u2265 7)",unit:"m\u00b2",pu:38,four:0.45,diy:true,help:"Meilleur rapport gain/co\u00fbt en r\u00e9novation \u00e9nerg\u00e9tique. Souffl\u00e9 : rapide."},
+      {id:"mDoublage",lbl:"Doublage placo sur mur existant",unit:"m\u00b2",pu:52,four:0.38,diy:false,help:"Sans isolation : pour redresser ou masquer un mur ab\u00eem\u00e9."}
+    ]},
+    menuiseries:{cat:"Menuiseries",icon:"\uD83E\uDE9F",items:[
+      {id:"nFenPVC",lbl:"Fen\u00eatre PVC double vitrage",unit:"u",pu:750,four:0.60,diy:false,help:"Fen\u00eatre standard 120\u00d7100. \u00c9ligible MaPrimeR\u00e9nov'."},
+      {id:"nFenAlu",lbl:"Fen\u00eatre aluminium double vitrage",unit:"u",pu:1150,four:0.62,diy:false,help:"Plus fin, plus durable, id\u00e9al grandes surfaces vitr\u00e9es."},
+      {id:"nFenBois",lbl:"Fen\u00eatre bois double vitrage",unit:"u",pu:1000,four:0.58,diy:false,help:"Souvent impos\u00e9e en secteur ABF. Entretien tous les 5-10 ans."},
+      {id:"nPorte",lbl:"Porte d'entr\u00e9e blind\u00e9e / isolante",unit:"u",pu:2200,four:0.65,diy:false,help:"Gain thermique et s\u00e9curit\u00e9. V\u00e9rifier le r\u00e8glement de copropri\u00e9t\u00e9."},
+      {id:"nPorteInt",lbl:"Porte int\u00e9rieure (bloc-porte)",unit:"u",pu:320,four:0.65,diy:true,help:"Bloc-porte pr\u00e9-mont\u00e9 : accessible en autonome."},
+      {id:"nVolet",lbl:"Volet roulant motoris\u00e9",unit:"u",pu:850,four:0.65,diy:false,help:"Confort et isolation. Solaire = pas de c\u00e2blage."}
+    ]},
+    chauffage:{cat:"Chauffage & \u00e9nergie",icon:"\uD83D\uDD25",items:[
+      {id:"cPAC",lbl:"Pompe \u00e0 chaleur air/eau",unit:"u",pu:14000,four:0.60,diy:false,help:"Gros levier DPE. MaPrimeR\u00e9nov' jusqu'\u00e0 5 000 \u20ac + CEE. Rentabilis\u00e9e en 8-12 ans."},
+      {id:"cPACair",lbl:"PAC air/air (clim r\u00e9versible)",unit:"u",pu:6500,four:0.65,diy:false,help:"Moins ch\u00e8re mais non \u00e9ligible MaPrimeR\u00e9nov'. Gain DPE limit\u00e9."},
+      {id:"cChaud",lbl:"Chaudi\u00e8re gaz \u00e0 condensation",unit:"u",pu:4800,four:0.62,diy:false,help:"Plus \u00e9ligible aux aides depuis 2023. \u00c0 \u00e9viter si vous visez un bon DPE 2030."},
+      {id:"cRadiat",lbl:"Radiateur (remplacement)",unit:"u",pu:480,four:0.60,diy:false,help:"\u00c0 inertie \u00e9lectrique ou eau chaude. ~1 par pi\u00e8ce."},
+      {id:"cPlancher",lbl:"Plancher chauffant hydraulique",unit:"m\u00b2",pu:110,four:0.45,diy:false,help:"Confort maximal, id\u00e9al avec une PAC. N\u00e9cessite une chape."},
+      {id:"cVMC",lbl:"VMC double flux",unit:"u",pu:5500,four:0.55,diy:false,help:"R\u00e9cup\u00e8re la chaleur de l'air extrait. Indispensable apr\u00e8s isolation performante."},
+      {id:"cBallon",lbl:"Chauffe-eau thermodynamique",unit:"u",pu:3500,four:0.65,diy:false,help:"Divise par 3 la conso d'eau chaude. \u00c9ligible aux aides."}
+    ]},
+    cuisine:{cat:"Cuisine",icon:"\uD83C\uDF73",items:[
+      {id:"kEntree",lbl:"Cuisine \u00e9quip\u00e9e entr\u00e9e de gamme",unit:"ml",pu:750,four:0.70,diy:true,help:"Par m\u00e8tre lin\u00e9aire de meubles. Kit type Ikea : montage possible soi-m\u00eame."},
+      {id:"kMilieu",lbl:"Cuisine \u00e9quip\u00e9e milieu de gamme",unit:"ml",pu:1400,four:0.68,diy:false,help:"Plan de travail \u00e9pais, \u00e9lectrom\u00e9nager encastr\u00e9 correct."},
+      {id:"kHaut",lbl:"Cuisine haut de gamme / sur-mesure",unit:"ml",pu:2800,four:0.65,diy:false,help:"Sur-mesure, plan pierre, \u00e9lectrom\u00e9nager premium."},
+      {id:"kPlomb",lbl:"Reprise plomberie + \u00e9vacuations",unit:"u",pu:900,four:0.35,diy:false,help:"N\u00e9cessaire si vous d\u00e9placez l'\u00e9vier."}
+    ]},
+    sdb:{cat:"Salle de bain & sanitaires",icon:"\uD83D\uDEBF",items:[
+      {id:"bComplete",lbl:"R\u00e9novation compl\u00e8te salle de bain",unit:"u",pu:8500,four:0.50,diy:false,help:"Plomberie, carrelage, sanitaires, meuble, \u00e9lec. Pour 5-7 m\u00b2."},
+      {id:"bDouche",lbl:"Douche \u00e0 l'italienne",unit:"u",pu:3200,four:0.45,diy:false,help:"\u00c9tanch\u00e9it\u00e9 critique : \u00e0 confier \u00e0 un pro. Valorisant \u00e0 la revente."},
+      {id:"bBaignoire",lbl:"Baignoire (pose + raccordements)",unit:"u",pu:1400,four:0.55,diy:false,help:"Appr\u00e9ci\u00e9e des familles avec jeunes enfants."},
+      {id:"bWC",lbl:"WC suspendu (b\u00e2ti-support)",unit:"u",pu:950,four:0.55,diy:false,help:"Gain de place et facilit\u00e9 d'entretien."},
+      {id:"bMeuble",lbl:"Meuble vasque + robinetterie",unit:"u",pu:900,four:0.72,diy:true,help:"Pose simple si les arriv\u00e9es sont en place."},
+      {id:"bFaience",lbl:"Fa\u00efence murale",unit:"m\u00b2",pu:85,four:0.45,diy:false,help:"Technique (d\u00e9coupes, joints, \u00e9tanch\u00e9it\u00e9)."}
+    ]},
+    elec:{cat:"\u00c9lectricit\u00e9 & plomberie",icon:"\u26A1",items:[
+      {id:"eRefonte",lbl:"Refonte \u00e9lectrique compl\u00e8te (NF C 15-100)",unit:"m\u00b2",pu:95,four:0.35,diy:false,help:"Tableau, r\u00e9seau, prises, terre. Attestation Consuel obligatoire."},
+      {id:"eTableau",lbl:"Remplacement tableau \u00e9lectrique",unit:"u",pu:1100,four:0.45,diy:false,help:"Mise en s\u00e9curit\u00e9 minimale. Diff\u00e9rentiels 30 mA obligatoires."},
+      {id:"ePrise",lbl:"Ajout point lumineux / prise",unit:"u",pu:110,four:0.30,diy:false,help:"Saign\u00e9es + reprises de mur incluses."},
+      {id:"pPlomb",lbl:"Refonte plomberie (colonnes + distribution)",unit:"m\u00b2",pu:75,four:0.40,diy:false,help:"Remplacement du plomb/cuivre ancien par du PER ou multicouche."},
+      {id:"pColonne",lbl:"Reprise colonne d'\u00e9vacuation (fonte)",unit:"u",pu:2500,four:0.35,diy:false,help:"En copro : v\u00e9rifiez si c'est une partie commune (\u00e0 la charge du syndic)."}
+    ]},
+    exterieur:{cat:"Ext\u00e9rieur & toiture",icon:"\uD83C\uDFE0",items:[
+      {id:"xToiture",lbl:"R\u00e9fection toiture compl\u00e8te (tuiles)",unit:"m\u00b2",pu:180,four:0.40,diy:false,help:"Surface de toiture \u2248 surface au sol \u00d7 1,15 \u00e0 1,3 selon la pente."},
+      {id:"xToitureZ",lbl:"R\u00e9fection toiture zinc / ardoise",unit:"m\u00b2",pu:280,four:0.38,diy:false,help:"Plus cher, plus durable (80-100 ans). Souvent impos\u00e9 par l'ABF."},
+      {id:"xCharpente",lbl:"Reprise / traitement charpente",unit:"m\u00b2",pu:75,four:0.35,diy:false,help:"Traitement fongicide/insecticide. Si pi\u00e8ces \u00e0 remplacer, le co\u00fbt double."},
+      {id:"xRavalem",lbl:"Ravalement de fa\u00e7ade",unit:"m\u00b2",pu:75,four:0.30,diy:false,help:"Surface de fa\u00e7ade = p\u00e9rim\u00e8tre \u00d7 hauteur. Obligatoire tous les 10 ans dans certaines communes."},
+      {id:"xGouttiere",lbl:"Goutti\u00e8res et descentes (zinc)",unit:"ml",pu:65,four:0.45,diy:false,help:"\u00c0 refaire syst\u00e9matiquement avec la toiture."},
+      {id:"xTerrasse",lbl:"Terrasse bois / composite",unit:"m\u00b2",pu:160,four:0.60,diy:true,help:"Sur lambourdes et plots. Faisable en autonome avec de la patience."},
+      {id:"xCloture",lbl:"Cl\u00f4ture / portail",unit:"ml",pu:130,four:0.60,diy:true,help:"D\u00e9claration pr\u00e9alable de travaux souvent n\u00e9cessaire."}
+    ]}
+  };
+  const TAUX_HORAIRE=45;
+  const COEF_LENTEUR=2.2;
+  function heuresPro(pu,four){return(pu*(1-four))/TAUX_HORAIRE;}
+  const st={};
+  let opened={};
+  function q(id){return(st[id]&&+st[id].qte)||0;}
+  function isDiy(id){return!!(st[id]&&st[id].diy);}
+  function coutItem(it){
+    const qte=q(it.id);
+    if(qte<=0)return{total:0,four:0,mo:0,eco:0,heures:0};
+    const totalPro=it.pu*qte;
+    const fourTTC10=totalPro*it.four;
+    const mo=totalPro-fourTTC10;
+    if(isDiy(it.id)&&it.diy){
+      const fourDIY=fourTTC10*(1.20/1.10);
+      const heures=heuresPro(it.pu,it.four)*qte*COEF_LENTEUR;
+      return{total:fourDIY,four:fourDIY,mo:0,eco:totalPro-fourDIY,heures:heures};
+    }
+    return{total:totalPro,four:fourTTC10,mo:mo,eco:0,heures:0};
+  }
+  function totalCat(k){let t=0;POSTES[k].items.forEach(function(it){t+=coutItem(it).total;});return t;}
+  function totalGeneral(){
+    let total=0,eco=0,heures=0,mo=0;
+    Object.keys(POSTES).forEach(function(k){
+      POSTES[k].items.forEach(function(it){
+        const c=coutItem(it);total+=c.total;eco+=c.eco;heures+=c.heures;mo+=c.mo;
+      });
+    });
+    return{total:Math.round(total),eco:Math.round(eco),heures:Math.round(heures),mo:Math.round(mo)};
+  }
+  function suggest(){
+    const S=(lastResult&&lastResult.surface)||numv("surface")||70;
+    const hsp=2.5;
+    const cote=Math.sqrt(S/1.4);
+    const perim=2*(cote+cote*1.4);
+    return{
+      murs:Math.round(perim*hsp*0.85),plafond:Math.round(S),sol:Math.round(S),
+      facade:Math.round(perim*hsp*1.1),toiture:Math.round(S*1.25),
+      fenetres:Math.max(2,Math.round(S/18)),portes:Math.max(2,Math.round(S/22))
+    };
+  }
+  function sugFor(it,sug){
+    if(it.id==="pMur")return sug.murs;
+    if(it.id==="pPlaf"||it.id==="mComble")return sug.plafond;
+    if(it.id==="xToiture"||it.id==="xToitureZ"||it.id==="xCharpente")return sug.toiture;
+    if(it.id==="xRavalem"||it.id==="mITE")return sug.facade;
+    if(it.id.charAt(0)==="s"||it.id==="cPlancher")return sug.sol;
+    if(it.id==="mITI"||it.id==="mDoublage")return sug.murs;
+    if(it.id.indexOf("nFen")===0)return sug.fenetres;
+    if(it.id==="nPorteInt")return sug.portes;
+    if(it.id==="eRefonte"||it.id==="pPlomb")return sug.sol;
+    return 0;
+  }
+  function render(){
+    const el=$("worksExpertPanel");if(!el)return;
+    const sug=suggest();
+    const S=(lastResult&&lastResult.surface)||numv("surface")||70;
+    const cats=Object.keys(POSTES).map(function(k){
+      const cat=POSTES[k];
+      const sum=totalCat(k);
+      const isOpen=!!opened[k];
+      let body="";
+      if(isOpen){
+        body='<div class="wx-cat-body">'+cat.items.map(function(it){
+          const c=coutItem(it),qte=q(it.id),diyOn=isDiy(it.id),sv=sugFor(it,sug);
+          let extra="";
+          if(qte>0){
+            extra='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px;flex-wrap:wrap;gap:6px">'+
+              '<span style="font-size:10px;color:var(--ink-soft)">'+eur0(it.pu)+' \u20ac/'+it.unit+' pos\u00e9 \u00b7 dont '+Math.round(it.four*100)+' % de fournitures</span>';
+            if(it.diy){
+              extra+='<label class="wx-diy"><input type="checkbox" data-wxdiy="'+it.id+'"'+(diyOn?" checked":"")+' style="accent-color:var(--good)"/> Je le fais moi-m\u00eame';
+              if(diyOn)extra+=' <span style="color:var(--good);font-weight:800">\u2212'+eur0(Math.round(c.eco))+' \u20ac \u00b7 ~'+Math.round(c.heures)+' h</span>';
+              extra+='</label>';
+            }else{
+              extra+='<span style="font-size:10px;color:var(--ink-soft);font-style:italic">Pro recommand\u00e9</span>';
+            }
+            extra+='</div>';
+          }
+          return '<div style="border-bottom:1px solid var(--line);padding-bottom:9px">'+
+            '<div class="wx-row">'+
+              '<div class="wx-f" style="flex:2.4;min-width:125px">'+
+                '<div class="wx-f-lbl">'+it.lbl+'</div>'+
+                '<div style="font-size:9.5px;color:var(--ink-soft);line-height:1.4;font-weight:400">'+it.help+'</div>'+
+              '</div>'+
+              '<div class="wx-f" style="flex:0 0 88px">'+
+                '<div class="wx-f-lbl">Qt\u00e9 ('+it.unit+')</div>'+
+                '<input type="number" min="0" step="0.5" value="'+(qte||"")+'" placeholder="'+(sv||0)+'" data-wx="'+it.id+'"/>'+
+              '</div>'+
+              '<div class="wx-f" style="flex:0 0 86px">'+
+                '<div class="wx-f-lbl">Co\u00fbt</div>'+
+                '<div style="font-family:var(--num);font-weight:800;font-size:13px;color:'+(c.total>0?(diyOn?"var(--good)":"var(--ink)"):"var(--ink-soft)")+';text-align:right;padding:6px 0">'+
+                  (c.total>0?eur0(Math.round(c.total))+" \u20ac":"\u2014")+
+                '</div>'+
+              '</div>'+
+            '</div>'+extra+
+          '</div>';
+        }).join("")+'</div>';
+      }
+      return '<div class="wx-cat">'+
+        '<div class="wx-cat-head" data-wxcat="'+k+'">'+
+          '<span style="font-size:15px">'+cat.icon+'</span>'+
+          '<span class="wx-cat-title">'+cat.cat+'</span>'+
+          (sum>0?'<span class="wx-cat-sum">'+eur0(Math.round(sum))+' \u20ac</span>':'')+
+          '<span style="color:var(--ink-soft);font-size:12px;margin-left:4px">'+(isOpen?"\u25B4":"\u25BE")+'</span>'+
+        '</div>'+body+
+      '</div>';
+    }).join("");
+    const t=totalGeneral();
+    const jours=Math.ceil(t.heures/7);
+    let synth;
+    if(t.total>0){
+      const parHeure=Math.round(t.eco/Math.max(1,t.heures));
+      let diyBlock="";
+      if(t.eco>0){
+        diyBlock='<div style="padding:10px 12px;background:#fff;border-radius:9px;font-size:11.5px;line-height:1.55;margin-bottom:9px">'+
+          '<b style="color:var(--good)">Auto-r\u00e9novation : '+eur0(t.eco)+' \u20ac \u00e9conomis\u00e9s</b> pour <b>'+t.heures+' heures</b> de travail (\u2248 '+jours+' jours pleins, ou '+Math.ceil(t.heures/16)+' week-ends).<br>'+
+          'Soit <b>'+eur0(parHeure)+' \u20ac par heure</b> de votre temps. '+
+          (parHeure>25?"C\u2019est rentable si vous \u00eates \u00e9quip\u00e9 et disponible.":"Rentabilit\u00e9 horaire faible \u2014 comparez au co\u00fbt d\u2019opportunit\u00e9 de votre temps.")+
+          '<br><span style="color:var(--ink-soft);font-size:10.5px">Rythme d\u2019amateur estim\u00e9 \u00e0 2,2\u00d7 celui d\u2019un pro. Les fournitures achet\u00e9es en magasin subissent une TVA de 20 % au lieu de 10 % \u2014 le taux r\u00e9duit ne s\u2019applique qu\u2019aux travaux factur\u00e9s par une entreprise.</span>'+
+        '</div>';
+      }
+      synth='<div style="margin-top:14px;padding:13px;background:var(--bg);border-radius:12px">'+
+        '<div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px">'+
+          '<div style="flex:1;min-width:92px;background:#fff;border-radius:9px;padding:9px 11px;text-align:center">'+
+            '<div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase">Budget total</div>'+
+            '<div class="num" style="font-size:17px;font-weight:800;color:var(--ink)">'+eur0(t.total)+' \u20ac</div></div>'+
+          '<div style="flex:1;min-width:92px;background:#fff;border-radius:9px;padding:9px 11px;text-align:center">'+
+            '<div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase">Prix / m\u00b2</div>'+
+            '<div class="num" style="font-size:17px;font-weight:800;color:var(--ink)">'+eur0(Math.round(t.total/S))+' \u20ac</div></div>'+
+          (t.eco>0?'<div style="flex:1;min-width:92px;background:#eaf7f0;border-radius:9px;padding:9px 11px;text-align:center">'+
+            '<div style="font-size:9px;color:var(--good);text-transform:uppercase;font-weight:700">\u00c9conomie DIY</div>'+
+            '<div class="num" style="font-size:17px;font-weight:800;color:var(--good)">'+eur0(t.eco)+' \u20ac</div></div>':"")+
+          (t.heures>0?'<div style="flex:1;min-width:92px;background:#eaf7f0;border-radius:9px;padding:9px 11px;text-align:center">'+
+            '<div style="font-size:9px;color:var(--good);text-transform:uppercase;font-weight:700">Votre temps</div>'+
+            '<div class="num" style="font-size:17px;font-weight:800;color:var(--good)">'+t.heures+' h</div>'+
+            '<div style="font-size:9px;color:var(--ink-soft)">\u2248 '+jours+' jours</div></div>':"")+
+        '</div>'+diyBlock+
+        '<button type="button" id="wxApply" style="width:100%;padding:11px;border-radius:10px;border:none;background:var(--brand-dark);color:#fff;font-weight:700;font-size:13px;cursor:pointer">Reporter '+eur0(t.total)+' \u20ac dans \u00ab Travaux \u00e0 financer \u00bb</button>'+
+      '</div>';
+    }else{
+      synth='<div class="hint" style="margin-top:12px">D\u00e9pliez une cat\u00e9gorie et renseignez les quantit\u00e9s. Les valeurs gris\u00e9es sont des suggestions calcul\u00e9es \u00e0 partir de la surface du bien ('+S+' m\u00b2) \u2014 saisissez vos m\u00e9tr\u00e9s r\u00e9els pour un chiffrage fiable.</div>';
+    }
+    el.innerHTML='<div class="hint" style="margin-bottom:11px;padding:10px 12px;background:var(--bg);border-radius:10px;line-height:1.5">'+
+      '<b>Mode expert :</b> saisissez les m\u00e9tr\u00e9s r\u00e9els (surfaces de murs, sols, toiture, nombre de fen\u00eatres\u2026). Prix moyens France 2025-2026, <b>fourniture et pose comprises, TTC</b> (TVA 10 % r\u00e9novation). '+
+      'Cochez \u00ab je le fais moi-m\u00eame \u00bb sur les postes accessibles pour chiffrer l\u2019\u00e9conomie et le temps \u00e0 y consacrer.'+
+    '</div>'+cats+synth;
+    bind();
+  }
+  function bind(){
+    const el=$("worksExpertPanel");if(!el)return;
+    el.querySelectorAll("[data-wxcat]").forEach(function(h){
+      h.addEventListener("click",function(){const k=h.dataset.wxcat;opened[k]=!opened[k];render();});
+    });
+    el.querySelectorAll("[data-wx]").forEach(function(inp){
+      inp.addEventListener("input",function(){
+        const id=inp.dataset.wx;
+        st[id]=st[id]||{};
+        st[id].qte=inp.value===""?0:Math.max(0,+inp.value);
+        const pos=inp.selectionStart;
+        render();
+        const again=$("worksExpertPanel").querySelector('[data-wx="'+id+'"]');
+        if(again){again.focus();try{again.setSelectionRange(pos,pos);}catch(e){}}
+      });
+    });
+    el.querySelectorAll("[data-wxdiy]").forEach(function(cb){
+      cb.addEventListener("change",function(){
+        const id=cb.dataset.wxdiy;
+        st[id]=st[id]||{};
+        st[id].diy=cb.checked;
+        render();
+      });
+    });
+    const ap=$("wxApply");
+    if(ap)ap.addEventListener("click",function(){
+      const t=totalGeneral();
+      $("iTravaux").value=t.total;
+      if(lastResult){computeAll(lastResult);computeResale(lastResult);renderFinPrice(lastResult);}
+      showSavedHint("\u2713 "+eur0(t.total)+" \u20ac report\u00e9s dans le financement"+(t.eco>0?" (dont "+eur0(t.eco)+" \u20ac \u00e9conomis\u00e9s en auto-r\u00e9novation)":"")+".");
+    });
+  }
+  function reset(){Object.keys(st).forEach(function(k){delete st[k];});opened={};render();}
+  return{render:render,reset:reset,total:totalGeneral};
+})();
+
+function initWorksTabs(){
+  const ts=$("worksTabSimple"),tx=$("worksTabExpert");
+  const ps=$("worksPanel"),px=$("worksExpertPanel");
+  if(!ts||!tx)return;
+  ts.addEventListener("click",function(){
+    ts.classList.add("wtab-on");tx.classList.remove("wtab-on");
+    ps.style.display="";px.style.display="none";
+  });
+  tx.addEventListener("click",function(){
+    tx.classList.add("wtab-on");ts.classList.remove("wtab-on");
+    ps.style.display="none";px.style.display="";
+    WX.render();
+  });
+}
+/* FIN DU MODULE TRAVAUX EXPERT */
 </script>
 </body>
 </html>
