@@ -31,7 +31,7 @@
   .logo-txt span{font-size:11.5px;color:#9fb3c4}
 
   .container{max-width:680px;margin:0 auto;padding:18px 16px 64px;overflow-x:hidden}
-  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:20px 18px;margin-bottom:16px;overflow-x:auto;max-width:100%}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:20px 18px;margin-bottom:16px;max-width:100%}
   .card-head{display:flex;align-items:center;gap:10px;margin-bottom:16px}
   .step-no{width:26px;height:26px;border-radius:8px;background:var(--brand-tint);color:var(--brand-dark);font-family:var(--display);font-weight:800;font-size:14px;display:grid;place-items:center;flex:0 0 auto}
   .card-head h2{font-family:var(--display);font-weight:700;font-size:17px;margin:0;letter-spacing:-.2px}
@@ -1085,7 +1085,7 @@ function resetForm(){
   // Desactiver le mode multi-lots
   const ml=$("multiLotToggle");if(ml&&ml.checked){ml.checked=false;const lp=$("lotsPanel");if(lp)lp.style.display="none";const sr=$("singleRentRow");if(sr)sr.style.display="";}
   // Masquer les resultats
-  const rz=$("results");if(rz)rz.style.display="none";
+  const rz=$("results");if(rz){rz.classList.remove("show");rz.style.display="";}
   const cv=$("cpVilleRow");if(cv)cv.style.display="none";
   const fe=$("formErr");if(fe)fe.classList.remove("show");
   // Rafraichir l'UI
@@ -4206,7 +4206,7 @@ async function showResults(){
     const {r,_conf,realBase,diag}=buildEstimation(data);
     renderAllPanels(r,_conf,realBase,diag);
     setupAsyncCallbacks(r,data.enrichPromise,data.ctxProm);
-    $("results").classList.add("show");
+    $("results").style.display="";$("results").classList.add("show");
     try{
       $("results").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth",block:"start"});
     }catch(_){}
@@ -5389,8 +5389,8 @@ function openBienById(id){
   if(typeof renderDiags==="function")renderDiags();
   if(typeof WX!=="undefined"&&WX.reset)WX.reset();
   state.mktRentSqm=0;lastResult=null;
-  // Masquer les resultats pour un etat propre
-  const rz=$("results");if(rz){rz.classList.remove("show");rz.style.display="none";}
+  // Masquer les resultats pour un etat propre (classe CSS uniquement, pas d'inline)
+  const rz=$("results");if(rz){rz.classList.remove("show");rz.style.display="";}
   state.activeSnapId=entry.id;restoreForm(entry.snap);refreshSavedSelect();
   // Fix1 : forcer le wizard sur la derniere etape pour que le bouton Estimer soit visible
   if(typeof window.__wizShow==="function"){window.__wizCur=999;window.__wizShow(false);}
