@@ -30,8 +30,8 @@
   .logo-txt b{font-family:var(--display);font-weight:800;font-size:18px;letter-spacing:-.3px;display:block;line-height:1.1}
   .logo-txt span{font-size:11.5px;color:#9fb3c4}
 
-  .container{max-width:680px;margin:0 auto;padding:18px 16px 64px}
-  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:20px 18px;margin-bottom:16px}
+  .container{max-width:680px;margin:0 auto;padding:18px 16px 64px;overflow-x:hidden}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:20px 18px;margin-bottom:16px;overflow-x:auto;max-width:100%}
   .card-head{display:flex;align-items:center;gap:10px;margin-bottom:16px}
   .step-no{width:26px;height:26px;border-radius:8px;background:var(--brand-tint);color:var(--brand-dark);font-family:var(--display);font-weight:800;font-size:14px;display:grid;place-items:center;flex:0 0 auto}
   .card-head h2{font-family:var(--display);font-weight:700;font-size:17px;margin:0;letter-spacing:-.2px}
@@ -294,8 +294,9 @@
 .compare-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 13px;background:var(--brand-tint);border-radius:11px;margin-top:8px;flex-wrap:wrap;gap:8px}
 .compare-bar-left{font-size:12.5px;font-weight:700;color:var(--brand-dark)}
 .compare-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:12px}
-.compare-table th{padding:8px 10px;background:var(--bg);font-size:11px;font-weight:700;text-align:center;color:var(--ink-soft);border-bottom:2px solid var(--line);min-width:100px}
-.compare-table th.ct-lbl{text-align:left;min-width:130px;color:var(--ink)}
+.compare-table th{padding:8px 10px;background:var(--bg);font-size:11px;font-weight:700;text-align:center;color:var(--ink-soft);border-bottom:2px solid var(--line);min-width:70px}
+.compare-table th.ct-lbl{text-align:left;min-width:90px;color:var(--ink)}
+@media(max-width:480px){.compare-table th{min-width:55px;padding:6px 5px;font-size:10px}.compare-table td{padding:5px 5px;font-size:11px}}
 .compare-table td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:center;vertical-align:middle}
 .compare-table td.ct-lbl{text-align:left;font-size:11px;color:var(--ink-soft);font-weight:600}
 .compare-table tr:last-child td{border-bottom:none}
@@ -1090,6 +1091,8 @@ function resetForm(){
   // Rafraichir l'UI
   updateTypeUI();fillRegimes();refreshSavedSelect();
   if(typeof _renderIrlNote==="function")_renderIrlNote();
+  // Remettre le wizard sur l'etape 0
+  if(typeof window.__wizShow==="function"){window.__wizCur=0;window.__wizShow(false);}
   // Remonter en haut
   window.scrollTo({top:0,behavior:"smooth"});
   const ad=$("adresse");if(ad)ad.focus();
@@ -1499,7 +1502,12 @@ function parsePts(arr,type){
     const _nat=String(recVal(o,["libnatmut","nature_mutation","natmut","codnature"])||"").toLowerCase();
     if(_nat.length>0)natSeen=true;
     const _isVefa=_nat.length>0&&(_nat.indexOf("futur")>=0||_nat.indexOf("vefa")>=0||_nat.indexOf("\u00e9tat futur")>=0);
-    if(_isVefa){ptsNeuf.push({ppm,surf:s});return;} // VEFA : compté mais exclu du corpus
+    if(_isVefa){
+      const _lat8v=(o._lat!=null?o._lat:null)||(recVal(o,['lat','latitude','lat_centparce','y_centroid'])||null);
+      const _lon8v=(o._lon!=null?o._lon:null)||(recVal(o,['lon','longitude','lng','lon_centparce','x_centroid'])||null);
+      ptsNeuf.push({ppm,surf:s,price:v,rooms:Number(recVal(o,['nbpprinc','nblocapt']))||null,date:recVal(o,['datemut','date_mutation']),lat:_lat8v!=null?parseFloat(_lat8v):null,lon:_lon8v!=null?parseFloat(_lon8v):null,vefa:true});
+      return; // VEFA : compté mais exclu du corpus de calcul
+    }
     // Fix8 : extraction adresse élargie + lat/lon multi-champs
     const _lat8=(o._lat!=null?o._lat:null)||(recVal(o,['lat','latitude','lat_centparce','y_centroid'])||null);
     const _lon8=(o._lon!=null?o._lon:null)||(recVal(o,['lon','longitude','lng','lon_centparce','x_centroid'])||null);
@@ -1511,7 +1519,7 @@ function parsePts(arr,type){
     const _addr8=_addrBase?(_com&&_addrBase.indexOf(_com)<0?_addrBase+', '+_com:_addrBase):(_com||null);
     pts.push({ppm,surf:s,price:v,rooms:Number(recVal(o,['nbpprinc','nblocapt']))||null,date:recVal(o,['datemut','date_mutation']),lat:_lat8!=null?parseFloat(_lat8):null,lon:_lon8!=null?parseFloat(_lon8):null,addr:_addr8});
   });
-  return {pts, nNeuf:ptsNeuf.length, nTotal:pts.length+ptsNeuf.length, natSeen};
+  return {pts, ptsNeuf, nNeuf:ptsNeuf.length, nTotal:pts.length+ptsNeuf.length, natSeen};
 }
 function parsePtsTerrain(arr){
   const pts=[];
@@ -1577,7 +1585,7 @@ async function fetchDvf(coord,type){
         }else garr=extractArr(g1.json);
         const _gres=type==="terrain"?{pts:parsePtsTerrain(garr),nNeuf:0,nTotal:0,natSeen:false}:parsePts(garr,type);
         if(DEBUG)dbg("DVF bbox ~1 km : "+(gcount||garr.length)+" mutations, "+_gres.pts.length+" anciennes exploitables"+(_gres.nNeuf>0?" ("+_gres.nNeuf+" VEFA exclus)":""));
-        if(_gres.pts.length>=30)return{pts:_gres.pts,nNeuf:_gres.nNeuf,nTotal:_gres.nTotal,natSeen:_gres.natSeen,status:"ok",scope:"bbox"};
+        if(_gres.pts.length>=30)return{pts:_gres.pts,ptsNeuf:_gres.ptsNeuf||[],nNeuf:_gres.nNeuf,nTotal:_gres.nTotal,natSeen:_gres.natSeen,status:"ok",scope:"bbox"};
       }
     }catch(_){/* repli commune */}
   }
@@ -1605,7 +1613,7 @@ async function fetchDvf(coord,type){
   }else arr=extractArr(r1.json);
   const _res=type==="terrain"?{pts:parsePtsTerrain(arr),nNeuf:0,nTotal:0,natSeen:false}:parsePts(arr,type);
   if(DEBUG)dbg("Ventes "+type+" anciennes exploitables: "+_res.pts.length+(_res.nNeuf>0?" ("+_res.nNeuf+" VEFA exclus)":""));
-  return _res.pts.length>0?{pts:_res.pts,nNeuf:_res.nNeuf,nTotal:_res.nTotal,natSeen:_res.natSeen,status:"ok",scope:"commune"}:{pts:null,status:"no-data"};
+  return _res.pts.length>0?{pts:_res.pts,ptsNeuf:_res.ptsNeuf||[],nNeuf:_res.nNeuf,nTotal:_res.nTotal,natSeen:_res.natSeen,status:"ok",scope:"commune"}:{pts:null,status:"no-data"};
 }
 
 /* ===== Estimation ===== */
@@ -2364,6 +2372,13 @@ function renderScatter(r){
     else{cl={fill:p.surf>=ssurf*0.75&&p.surf<=ssurf*1.25?"#0FB39E":"#7EC8BC",op:0.5};}
     const distStr=(_dists&&p.lat!=null&&p.lon!=null)?(_dists[i]<1?Math.round(_dists[i]*1000)+" m":_dists[i].toFixed(2).replace('.',',')+" km"):"";
     return `<circle cx="${mx(p.surf).toFixed(1)}" cy="${my(p.price).toFixed(1)}" r="3.2" fill="${cl.fill}" fill-opacity="${cl.op.toFixed(2)}" class="scDot" data-s="${Math.round(p.surf)}" data-p="${Math.round(p.price)}" data-r="${p.rooms||''}" data-d="${p.date?String(p.date).slice(0,7):''}" data-a="${esc(p.addr||'')}" data-lat="${p.lat!=null?p.lat:''}" data-lon="${p.lon!=null?p.lon:''}" data-dist="${distStr}"/>`;}).join("");
+  // Fix5 : points VEFA (losanges rouges) — affichés mais clairement distincts
+  const vefaPts=(r.ptsVefa||[]).filter(p=>p.surf>0&&p.price>0&&p.surf>=xmin&&p.surf<=xmax&&p.price>=ymin&&p.price<=ymax);
+  const vefaDots=vefaPts.map(p=>{
+    const cx=mx(p.surf).toFixed(1),cy=my(p.price).toFixed(1);
+    return `<g class="scDot" data-s="${Math.round(p.surf)}" data-p="${Math.round(p.price)}" data-r="${p.rooms||''}" data-d="${p.date?String(p.date).slice(0,7):''}" data-a="" data-lat="${p.lat!=null?p.lat:''}" data-lon="${p.lon!=null?p.lon:''}" data-dist="" data-vefa="1"><rect x="${(+cx-3.5).toFixed(1)}" y="${(+cy-3.5).toFixed(1)}" width="7" height="7" fill="#E0402E" fill-opacity="0.65" transform="rotate(45 ${cx} ${cy})" stroke="#fff" stroke-width="0.6"/></g>`;
+  }).join("");
+  const hasVefa=vefaPts.length>0;
   let _rsx=0,_rsy=0,_rsxy=0,_rsxx=0;all.forEach(p=>{_rsx+=p.surf;_rsy+=p.price;_rsxy+=p.surf*p.price;_rsxx+=p.surf*p.surf;});
   const _rn=all.length,_rden=_rn*_rsxx-_rsx*_rsx;
   const regSlope=_rden!==0?(_rn*_rsxy-_rsx*_rsy)/_rden:0,regInt=(_rsy-regSlope*_rsx)/_rn;
@@ -2376,7 +2391,7 @@ function renderScatter(r){
   box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block">`+
     `<defs><clipPath id="scClip"><rect x="${L}" y="${T}" width="${Rr-L}" height="${B-T}"/></clipPath></defs>`+
     `<rect x="${L}" y="${T}" width="${Rr-L}" height="${B-T}" fill="var(--bg)" stroke="var(--line)"/>`+
-    dots+regLine+
+    dots+vefaDots+regLine+
     `<line x1="${sx}" y1="${T}" x2="${sx}" y2="${B}" stroke="var(--brand-dark)" stroke-width="1.3" stroke-dasharray="4 3"/>`+
     `<line x1="${L}" y1="${sy}" x2="${Rr}" y2="${sy}" stroke="var(--brand-dark)" stroke-width="1.3" stroke-dasharray="4 3"/>`+
     `<circle cx="${sx}" cy="${sy}" r="6" fill="var(--brand-dark)" stroke="#fff" stroke-width="2"/>`+
@@ -2390,18 +2405,25 @@ function renderScatter(r){
     `<text x="2" y="${B}" font-size="8" fill="var(--ink-soft)">${k(ymin)}\u20ac</text>`+
     `<text x="${(L+Rr)/2}" y="${B+13}" font-size="8.5" text-anchor="middle" fill="var(--ink-soft)">Surface \u2192   Prix \u2191</text>`+
     `</svg>`+
-    `<div style="margin-top:8px;padding:8px 10px;background:#fff5ef;border-left:3px solid #E8742A;border-radius:0 8px 8px 0;font-size:11.5px;line-height:1.55;color:var(--ink)">Droite de tendance (orange) : <b class="num">Prix &#8776; ${eur0(Math.round(regSlope))} &#8364;/m&#178; &#215; surface ${regInt>=0?"+":"&#8722;"} ${eur0(Math.abs(Math.round(regInt)))} &#8364;</b><br>&#201;cart moyen au mod&#232;le : <b class="num">&#177; ${eur0(Math.round(regMae))} &#8364;</b> &#183; R&#178; <b class="num">${regR2.toFixed(2).replace('.',',')}</b> <span style="color:var(--ink-soft)">(part du prix expliquee par la surface)</span></div>`+
-    `<div class="hint" style="margin-top:6px;line-height:1.5"><b style="color:var(--brand-dark)">${pExp}%</b> des ventes sont plus ch\u00e8res que votre prix \u00b7 <b style="color:var(--brand-dark)">${pBig}%</b> portent sur un bien plus grand${nOut>0?' <span style="color:var(--ink-soft)">\u00b7 '+nOut+' valeur(s) extr\u00eame(s) masqu\u00e9e(s)</span>':''}.</div>`+
-    `<div id="scTip" style="display:none;margin-top:8px;padding:10px 13px;background:var(--ink);color:#fff;border-radius:10px;line-height:1.4;box-shadow:0 3px 12px rgba(0,0,0,.2)"></div>`+
-    (_dists?'<div style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:10.5px;color:var(--ink-soft)"><svg width="80" height="10"><defs><linearGradient id="dg" x1="0" x2="1"><stop offset="0" stop-color="#0FB39E"/><stop offset="1" stop-color="#93BED0"/></linearGradient></defs><rect width="80" height="10" rx="4" fill="url(#dg)"/></svg><span>Proche</span><span style="margin-left:auto">Loin</span></div>':'');
+    // Fix5 : légende directement sous le graphique, pas plus bas
+    `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:4px;font-size:10.5px;color:var(--ink-soft)">`+
+      (_dists?'<span style="display:inline-flex;align-items:center;gap:4px"><svg width="50" height="8"><defs><linearGradient id="dg" x1="0" x2="1"><stop offset="0" stop-color="#0FB39E"/><stop offset="1" stop-color="#93BED0"/></linearGradient></defs><rect width="50" height="8" rx="3" fill="url(#dg)"/></svg>Proche \u2192 Loin</span>':'')+
+      (hasVefa?'<span style="display:inline-flex;align-items:center;gap:4px"><svg width="10" height="10"><rect x="1.5" y="1.5" width="7" height="7" fill="#E0402E" fill-opacity="0.65" transform="rotate(45 5 5)" stroke="#fff" stroke-width="0.6"/></svg><b style="color:#E0402E">VEFA</b> (neuf, exclu du calcul)</span>':'')+
+      '<span style="display:inline-flex;align-items:center;gap:4px"><svg width="10" height="10"><line x1="0" y1="5" x2="10" y2="5" stroke="#E8742A" stroke-width="2"/></svg>Tendance</span>'+
+      '<span style="display:inline-flex;align-items:center;gap:4px"><svg width="10" height="10"><circle cx="5" cy="5" r="4" fill="var(--brand-dark)" stroke="#fff" stroke-width="1.5"/></svg>Votre bien</span>'+
+    `</div>`+
+    `<div style="margin-top:6px;padding:8px 10px;background:#fff5ef;border-left:3px solid #E8742A;border-radius:0 8px 8px 0;font-size:11.5px;line-height:1.55;color:var(--ink)">Droite de tendance (orange) : <b class="num">Prix &#8776; ${eur0(Math.round(regSlope))} &#8364;/m&#178; &#215; surface ${regInt>=0?"+":"&#8722;"} ${eur0(Math.abs(Math.round(regInt)))} &#8364;</b><br>&#201;cart moyen au mod&#232;le : <b class="num">&#177; ${eur0(Math.round(regMae))} &#8364;</b> &#183; R&#178; <b class="num">${regR2.toFixed(2).replace('.',',')}</b> <span style="color:var(--ink-soft)">(part du prix expliquee par la surface)</span></div>`+
+    `<div class="hint" style="margin-top:6px;line-height:1.5"><b style="color:var(--brand-dark)">${pExp}%</b> des ventes sont plus ch\u00e8res que votre prix \u00b7 <b style="color:var(--brand-dark)">${pBig}%</b> portent sur un bien plus grand${nOut>0?' <span style="color:var(--ink-soft)">\u00b7 '+nOut+' valeur(s) extr\u00eame(s) masqu\u00e9e(s)</span>':''}${hasVefa?' \u00b7 <span style="color:#E0402E;font-weight:700">'+vefaPts.length+' VEFA</span> affich\u00e9(s) mais exclus du calcul':''}.</div>`+
+    `<div id="scTip" style="display:none;margin-top:8px;padding:10px 13px;background:var(--ink);color:#fff;border-radius:10px;line-height:1.4;box-shadow:0 3px 12px rgba(0,0,0,.2)"></div>`;
   box.querySelectorAll('.scDot').forEach(c=>{
     const show=()=>{const tip=box.querySelector('#scTip');if(!tip)return;
       const s=c.dataset.s,p=c.dataset.p,rms=c.dataset.r,dt=c.dataset.d;
       tip.style.display='';
       // Point11 : tooltip structure multi-lignes, plus lisible
       const ppm=eur0(Math.round(+p/(+s||1)));
-      const l1='<div style="font-size:13px;font-weight:800;margin-bottom:2px">'+eur(+p)+' <span style="opacity:.7;font-weight:600">('+ppm+' \u20ac/m\u00b2)</span></div>';
-      const l2='<div style="font-size:11px;opacity:.9">'+s+' m\u00b2'+(rms?' \u00b7 '+rms+' pi\u00e8ce'+(+rms>1?'s':''):'')+(dt?' \u00b7 vendu '+dt.split("-").reverse().join("/"):'')+'</div>';
+      const isVefa=c.dataset.vefa==="1";
+      const l1='<div style="font-size:13px;font-weight:800;margin-bottom:2px">'+eur(+p)+' <span style="opacity:.7;font-weight:600">('+ppm+' \u20ac/m\u00b2)</span>'+(isVefa?' <span style="background:#E0402E;color:#fff;padding:1px 6px;border-radius:5px;font-size:9px;font-weight:800;vertical-align:middle">VEFA</span>':'')+'</div>';
+      const l2='<div style="font-size:11px;opacity:.9">'+s+' m\u00b2'+(rms?' \u00b7 '+rms+' pi\u00e8ce'+(+rms>1?'s':''):'')+(dt?' \u00b7 vendu '+dt.split("-").reverse().join("/"):'')+(isVefa?' \u00b7 <span style="color:#f08080">neuf, exclu du calcul</span>':'')+'</div>';
       let l3='';
       if(c.dataset.dist)l3+='<div style="font-size:11px;color:#7fe3d4;font-weight:700;margin-top:2px">\ud83d\udccd '+c.dataset.dist+' du bien analys\u00e9</div>';
       if(c.dataset.a)l3+='<div style="font-size:10.5px;opacity:.85;margin-top:2px;max-width:240px;white-space:normal;line-height:1.35">'+esc(c.dataset.a)+'</div>';
@@ -2853,8 +2875,8 @@ function explainPanel(title,formula,rows,total,totalLbl,note){
     '<div style="font-weight:800;font-size:12px;color:var(--brand-dark);margin-bottom:4px;word-break:break-word">'+title+'</div>'+
     (formula?'<div style="font-size:10.5px;color:var(--ink-soft);margin-bottom:8px;font-family:var(--num);line-height:1.4;word-break:break-word;overflow-wrap:anywhere">'+formula+'</div>':'')+
     '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px;padding:0 4px">'+
-    '<table style="width:100%;border-collapse:collapse;table-layout:fixed;min-width:0">'+
-      '<colgroup><col style="width:46%"/><col style="width:19%"/><col style="width:15%"/><col style="width:20%"/></colgroup>'+
+    '<table style="width:100%;border-collapse:collapse;table-layout:auto;min-width:0">'+
+      '<colgroup><col style="width:auto"/><col style="width:auto"/><col style="width:auto"/><col style="width:auto"/></colgroup>'+
       '<thead><tr style="border-bottom:1.5px solid var(--line)">'+
         '<th style="text-align:left;padding:5px 6px;font-size:9px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.2px">Param\u00e8tre</th>'+
         '<th style="text-align:right;padding:5px 6px;font-size:9px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.2px">Valeur</th>'+
@@ -3812,6 +3834,7 @@ async function fetchAllData(coord){
         if(b.length>=10)band=b;else out.bandWidened=false;
       }
       out.vefaInfo={nNeuf:res.nNeuf||0,nTotal:res.nTotal||0,natSeen:!!res.natSeen};
+      out.ptsVefa=res.ptsNeuf||[];
       out.realStats=dvfStats(band,surf>0?surf:null);
       out.engineData=estimationEngines(out.realStats.clean,surf,out.realStats);
       out.realBase=out.engineData.base||out.realStats.west||Math.round(out.realStats.med);
@@ -3902,7 +3925,7 @@ function buildEstimation(data){
   // Base corrigée = base DVF × facteur (écarte la prime VEFA de la médiane de référence)
   const _adjBase=realBase&&vefaCorr.factor<1?Math.round(realBase*vefaCorr.factor):realBase;
   // ──────────────────────────────────────────────────────────────────────────────
-  const r=estimate(_adjBase,realStats);r.bandWidened=bandWidened;r.realPts=realPts;r.realStats=realStats;r.realCount=realStats?realStats.n:0;r.engines=engineData?engineData.engines:[];r.engineBase=engineData?engineData.base:realBase;r.engineTop=engineData?engineData.top:[];r.pxHedonic=r.price;r.vefaCorr=vefaCorr;r.sqmBaseRaw=realBase||0;
+  const r=estimate(_adjBase,realStats);r.bandWidened=bandWidened;r.realPts=realPts;r.ptsVefa=data.ptsVefa||[];r.realStats=realStats;r.realCount=realStats?realStats.n:0;r.engines=engineData?engineData.engines:[];r.engineBase=engineData?engineData.base:realBase;r.engineTop=engineData?engineData.top:[];r.pxHedonic=r.price;r.vefaCorr=vefaCorr;r.sqmBaseRaw=realBase||0;
   // DIAGNOSTICS : decote liee aux pathologies detectees (amiante, elec, termites, assainissement...)
   var _dg=(typeof diagsTotal==="function")?diagsTotal():null;
   if(_dg&&_dg.impact<0){
@@ -4238,7 +4261,11 @@ if($("terrainVendeurPro"))$("terrainVendeurPro").addEventListener("change",funct
   if(next)next.addEventListener('click',()=>{if(!valid())return;clr();cur++;show(true);});
   if(prev)prev.addEventListener('click',()=>{clr();cur=Math.max(0,cur-1);show(true);});
   const segT=$("segType");if(segT)segT.addEventListener('click',()=>setTimeout(()=>show(false),0));
-  window.__wizShow=show;
+  window.__wizShow=function(scroll){
+    // Permet de forcer l'etape depuis l'exterieur via window.__wizCur
+    if(window.__wizCur!=null){cur=Math.min(window.__wizCur,last());window.__wizCur=null;}
+    show(scroll);
+  };
   show(false);
 })();
 ["discRate"].forEach(id=>{$(id).addEventListener("input",()=>{if(lastResult){renderProjection(lastResult);renderFinPrice(lastResult);}});});
@@ -5354,9 +5381,21 @@ function updateBien(){
 }
 function openBienById(id){
   const entry=loadSavedBiens().find(b=>b.id===id);if(!entry)return;
+  // Fix4 : reinitialiser l'etat interne AVANT de restaurer un nouveau bien
+  state.coord=null;state.ctx2={};state.enrich={};state.live={};
+  state._localApt=null;state._lots=[];state._restoring=false;state._restoredVals=null;
+  state._pendingAskPrice=null;state._dpeReformeWarn=false;state._dpePreRefDate="";
+  Object.keys(diagsState).forEach(function(k){delete diagsState[k];});
+  if(typeof renderDiags==="function")renderDiags();
+  if(typeof WX!=="undefined"&&WX.reset)WX.reset();
+  state.mktRentSqm=0;lastResult=null;
+  // Masquer les resultats pour un etat propre
+  const rz=$("results");if(rz){rz.classList.remove("show");rz.style.display="none";}
   state.activeSnapId=entry.id;restoreForm(entry.snap);refreshSavedSelect();
+  // Fix1 : forcer le wizard sur la derniere etape pour que le bouton Estimer soit visible
+  if(typeof window.__wizShow==="function"){window.__wizCur=999;window.__wizShow(false);}
   showSavedHint("&#10003; <b>"+esc(entry.label)+"</b> chargé — estimation en cours…");
-  setTimeout(()=>{if($("btnEstim"))$("btnEstim").click();},60);
+  setTimeout(()=>{if($("btnEstim"))$("btnEstim").click();},80);
 }
 function deleteBienById(id){
   if(!confirm("Supprimer ce bien de vos sauvegardes ?\nCette action est irr\u00e9versible."))return;
