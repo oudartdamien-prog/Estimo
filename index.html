@@ -147,6 +147,7 @@
   .btn-sm.primary{background:var(--brand);border-color:var(--brand);color:#fff}
   .btn-sm.danger{color:var(--bad);border-color:var(--bad-tint);background:var(--bad-tint)}
   .btn-sm:disabled{opacity:.4;cursor:not-allowed}
+.btn-sm.is-active{background:var(--brand-tint);border-color:var(--brand);color:var(--brand-dark)}
   .saved-note{font-size:10.5px;color:var(--ink-soft);margin-top:9px;line-height:1.4}
 
   #results{display:none}#results.show{display:flex;flex-direction:column;animation:fade .4s ease}
@@ -262,6 +263,62 @@
 .card-head::after{content:"\0025be";position:absolute;right:4px;top:50%;transform:translateY(-50%);color:var(--ink-soft);font-size:13px;transition:transform .2s}
 .card.is-collapsed>.card-head::after{transform:translateY(-50%) rotate(-90deg)}
 .card.is-collapsed>:not(.card-head){display:none}
+/* Mes biens v72 : cards professionnelles */
+.saved-list{display:flex;flex-direction:column;gap:9px;margin:4px 0}
+.saved-empty{padding:16px 14px;background:var(--bg);border:1.5px dashed var(--line);border-radius:var(--r-sm);text-align:center;font-size:12.5px;color:var(--ink-soft);line-height:1.5}
+.bien-card{background:var(--bg);border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;transition:border-color .15s,box-shadow .15s}
+.bien-card.is-active{border-color:var(--brand);background:var(--brand-tint);box-shadow:0 0 0 3px rgba(15,179,158,.14)}
+.bien-card-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:3px}
+.bien-card-name{font-size:13.5px;font-weight:800;color:var(--ink);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:6px}
+.bien-card-date{font-size:11px;color:var(--ink-soft);flex:none}
+.bien-card-addr{font-size:11.5px;color:var(--ink-soft);margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bien-card-meta{font-size:11px;color:var(--brand-dark);font-weight:600;margin-bottom:9px}
+.bien-card-actions{display:flex;gap:7px;flex-wrap:wrap}
+.bien-active-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--brand);flex:none}
+.saved-new-row{display:flex;gap:8px;align-items:center;margin-top:10px;padding-top:12px;border-top:1px solid var(--line);flex-wrap:wrap}
+.saved-new-row input{flex:1;min-width:160px}
+/* Terrain v72 : saisie professionnelle */
+.terrain-params{display:flex;flex-direction:column;gap:11px;margin-top:8px}
+.terrain-section{padding:12px 14px;background:var(--bg);border-radius:11px}
+.terrain-section-lbl{font-size:11px;font-weight:800;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px}
+.terrain-viab-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px}
+.viab-chk{display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid var(--line);border-radius:9px;padding:8px 11px;font-size:13px;font-weight:600;color:var(--ink-soft);cursor:pointer;transition:.12s;user-select:none}
+.viab-chk:has(input:checked){border-color:var(--brand);background:var(--brand-tint);color:var(--brand-dark)}
+.terrain-charac-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+@media(max-width:400px){.terrain-charac-row{grid-template-columns:1fr 1fr}}
+.terrain-charac-lbl{font-size:11.5px;font-weight:700;color:var(--ink);margin-bottom:5px}
+.terrain-build-note{padding:10px 13px;background:rgba(15,179,158,.08);border-left:3px solid var(--brand);border-radius:0 9px 9px 0;font-size:12px;line-height:1.55;color:var(--ink)}
+/* Comparaison multi-biens v76 */
+.compare-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 13px;background:var(--brand-tint);border-radius:11px;margin-top:8px;flex-wrap:wrap;gap:8px}
+.compare-bar-left{font-size:12.5px;font-weight:700;color:var(--brand-dark)}
+.compare-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:12px}
+.compare-table th{padding:8px 10px;background:var(--bg);font-size:11px;font-weight:700;text-align:center;color:var(--ink-soft);border-bottom:2px solid var(--line);min-width:100px}
+.compare-table th.ct-lbl{text-align:left;min-width:130px;color:var(--ink)}
+.compare-table td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:center;vertical-align:middle}
+.compare-table td.ct-lbl{text-align:left;font-size:11px;color:var(--ink-soft);font-weight:600}
+.compare-table tr:last-child td{border-bottom:none}
+.compare-table .ct-best{color:var(--good);font-weight:800}
+.compare-table .ct-worst{color:var(--bad)}
+.compare-table .ct-num{font-family:var(--num);font-weight:700;color:var(--ink)}
+.cmp-score-pill{display:inline-block;padding:2px 7px;border-radius:8px;font-size:11px;font-weight:700;color:#fff}
+/* Multi-lots immeuble de rapport v77 */
+.lots-panel{margin:12px 0 8px}
+.lots-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.lots-header-title{font-size:12px;font-weight:800;color:var(--brand-dark);text-transform:uppercase;letter-spacing:.3px}
+.lot-row{display:flex;gap:6px;align-items:flex-end;padding:8px 10px;background:var(--bg);border-radius:10px;margin-bottom:6px;flex-wrap:wrap}
+.lot-row:nth-child(even){background:#f0f4f7}
+.lot-field{display:flex;flex-direction:column;gap:3px}
+.lot-field-lbl{font-size:10px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.2px}
+.lot-field select,.lot-field input{font-family:var(--body);font-size:13px;padding:6px 8px;border:1.5px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+.lot-field input{width:70px;text-align:right}
+.lot-field select{min-width:65px}
+.lot-del{border:none;background:none;color:var(--bad);cursor:pointer;font-size:16px;padding:4px 6px;border-radius:6px;line-height:1}
+.lot-del:hover{background:var(--bad-tint)}
+.lots-total{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--brand-tint);border-radius:10px;font-size:13px;font-weight:700;color:var(--brand-dark);margin-top:4px}
+.lots-total-val{font-family:var(--num);font-size:16px;font-weight:800}
+.lots-add-btn{width:100%;padding:9px;border:1.5px dashed var(--brand);background:transparent;border-radius:10px;cursor:pointer;font-family:var(--body);font-weight:700;font-size:13px;color:var(--brand-dark);margin-top:4px;transition:.12s}
+.lots-add-btn:hover{background:var(--brand-tint)}
+@media(max-width:480px){.lot-row{flex-direction:column;align-items:stretch}.lot-field input{width:100%}}
 /* Rappel #2 : lisibilite mobile. L'app etant utilisee quasi exclusivement sur telephone,
    les libelles/notes en 9-10.5px inline (annotations "reel"/"estimation", unites, hints)
    remontent a 11-11.5px sous 480px. N'affecte ni les valeurs chiffrees principales (deja
@@ -283,23 +340,22 @@
 
 <main class="container">
 
-  <!-- MES BIENS (sauvegarde locale) -->
-  <section class="card saved-card" id="savedCard">
-    <div class="card-head"><div class="step-no">&#128190;</div><div><h2>Mes biens</h2><div class="sub">Enregistrez un bien pour le retrouver et l'actualiser plus tard, sans tout ressaisir</div></div></div>
-    <div class="saved-row">
-      <select class="saved-select" id="savedSelect"><option value="">Aucun bien sauvegard&#233; pour l'instant</option></select>
-      <button type="button" class="btn-sm" id="btnLoadBien" disabled>Ouvrir</button>
-      <button type="button" class="btn-sm danger" id="btnDeleteBien" disabled>Suppr.</button>
-    </div>
-    <div class="saved-row">
-      <input class="input" id="bienLabel" type="text" placeholder="Nom du bien (ex : T3 Lyon 7e)" maxlength="60" style="flex:1" />
-      <button type="button" class="btn-sm primary" id="btnSaveBien">Sauvegarder</button>
-      <button type="button" class="btn-sm" id="btnUpdateBien" style="display:none">Mettre &#224; jour</button>
-    </div>
-    <div id="savedHint" class="hint" style="display:none"></div>
-    <div class="saved-note">Sauvegarde locale, sur cet appareil et ce navigateur uniquement (aucun envoi de donn&#233;es \u00e0 un serveur).</div>
-  </section>
 
+  <!-- MES BIENS (sauvegarde locale) - design v72 -->
+  <section class="card saved-card" id="savedCard">
+    <div class="card-head" style="margin-bottom:8px">
+      <div class="step-no">&#128190;</div>
+      <div style="flex:1"><h2>Mes biens</h2><div class="sub">Retrouvez, actualisez ou comparez vos biens enregistr&#233;s</div></div>
+    </div>
+    <div id="savedList" class="saved-list"></div>
+    <div class="saved-new-row">
+      <input class="input" id="bienLabel" type="text" placeholder="Nom (ex&#160;: T3 Lyon 7e, Maison Bordeaux&#8230;)" maxlength="60" aria-label="Nom du nouveau bien &#224; sauvegarder" />
+      <button type="button" class="btn-sm primary" id="btnSaveBien" title="Sauvegarder (financement et prix inclus)">+ Sauvegarder</button>
+      <button type="button" class="btn-sm" id="btnUpdateBien" style="display:none" title="Mettre &#224; jour le bien actif">Mettre &#224; jour</button>
+    </div>
+    <div id="savedHint" class="hint" style="display:none;margin-top:8px"></div>
+    <div class="saved-note">&#128274;&#160;Sauvegarde locale sur cet appareil uniquement &#8212; aucun envoi serveur. Tous les param&#232;tres conserv&#233;s (financement, prix, fiscalit&#233;).</div>
+  </section>
   <!-- 1 &#183; LE BIEN -->
   <section class="card">
     <div class="card-head"><div class="step-no">1</div><div><h2>Le bien</h2><div class="sub">Plus vous d&#233;taillez, plus l'estimation est pr&#233;cise</div></div></div>
@@ -329,23 +385,43 @@
     <div class="field"><div class="row">
       <div id="wrapSurface"><label class="lbl" for="surface">Surface habitable</label><div class="with-unit"><input class="input num" id="surface" type="number" min="1" placeholder="65" /><span class="unit">m&#178;</span></div></div>
       <div id="wrapTerrain" style="display:none"><label class="lbl" for="terrain">Surface terrain</label><div class="with-unit"><input class="input num" id="terrain" type="number" min="0" placeholder="300" /><span class="unit">m&#178;</span></div></div>
-      <div id="wrapViab" style="display:none">
-        <div style="font-size:12px;font-weight:700;color:var(--ink);margin:10px 0 6px">Type de terrain</div>
-        <select class="input" id="terrainType"><option value="batir" selected>&#192; b&#226;tir libre</option><option value="lotissement">En lotissement</option><option value="division">Division d'une propri&#233;t&#233;</option><option value="agricole_pc">Agricole avec PC obtenu</option><option value="demolir">Avec construction &#224; d&#233;molir</option></select>
-        <div style="font-size:12px;font-weight:700;color:var(--ink);margin:10px 0 6px">R&#233;seaux disponibles en limite de parcelle</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
-          <label class="chk"><input type="checkbox" id="viabEau" /><span>Eau potable</span></label>
-          <label class="chk"><input type="checkbox" id="viabAssain" /><span>Assainissement collectif</span></label>
-          <label class="chk"><input type="checkbox" id="viabElec" /><span>&#201;lectricit&#233;</span></label>
-          <label class="chk"><input type="checkbox" id="viabVoirie" /><span>Voirie goudronn&#233;e</span></label>
-          <label class="chk"><input type="checkbox" id="viabTelecom" /><span>Fibre / t&#233;l&#233;com</span></label>
-          <input type="checkbox" id="viabilise" style="display:none" />
+      <div id="wrapViab" class="terrain-params" style="display:none">
+        <!-- Type de terrain -->
+        <div class="terrain-section">
+          <div class="terrain-section-lbl">Type de terrain</div>
+          <select class="input" id="terrainType">
+            <option value="batir" selected>&#192; b&#226;tir libre</option>
+            <option value="lotissement">En lotissement</option>
+            <option value="division">Division d'une propri&#233;t&#233;</option>
+            <option value="agricole_pc">Agricole avec PC obtenu</option>
+            <option value="demolir">Avec construction &#224; d&#233;molir</option>
+          </select>
         </div>
-        <div id="viabCostNote" class="hint" style="margin-top:6px">S&#233;lectionnez les r&#233;seaux pr&#233;sents en limite de la parcelle.</div>
-        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-          <div style="flex:1;min-width:100px"><div style="font-size:11.5px;font-weight:700;color:var(--ink);margin-bottom:4px">Pente</div><select class="input" id="terrainPente"><option value="plat" selected>Plat (&lt;&#160;4&#160;%)</option><option value="legere">L&#233;g&#232;re (4&#8211;12&#160;%)</option><option value="forte">Forte (&gt;&#160;12&#160;%)</option></select></div>
-          <div style="flex:1;min-width:100px"><div style="font-size:11.5px;font-weight:700;color:var(--ink);margin-bottom:4px">Nature du sol</div><select class="input" id="terrainSol"><option value="normal" selected>Normal</option><option value="argileux">Argileux</option><option value="rocheux">Rocheux</option><option value="remblai">Remblai</option></select></div>
-          <div style="flex:1;min-width:100px"><div style="font-size:11.5px;font-weight:700;color:var(--ink);margin-bottom:4px">Forme</div><select class="input" id="terrainForme"><option value="reguliere" selected>R&#233;guli&#232;re</option><option value="allongee">Allong&#233;e</option><option value="atypique">Atypique</option></select></div>
+        <!-- R&#233;seaux en limite de parcelle -->
+        <div class="terrain-section">
+          <div class="terrain-section-lbl">R&#233;seaux disponibles en limite de parcelle</div>
+          <div class="terrain-viab-grid">
+            <label class="viab-chk"><input type="checkbox" id="viabEau" /><span>&#128167; Eau potable</span></label>
+            <label class="viab-chk"><input type="checkbox" id="viabAssain" /><span>&#9851;&#65039; Assainissement</span></label>
+            <label class="viab-chk"><input type="checkbox" id="viabElec" /><span>&#9889; &#201;lectricit&#233;</span></label>
+            <label class="viab-chk"><input type="checkbox" id="viabVoirie" /><span>&#128739;&#65039; Voirie</span></label>
+            <label class="viab-chk"><input type="checkbox" id="viabTelecom" /><span>&#128225; Fibre / t&#233;l&#233;com</span></label>
+            <input type="checkbox" id="viabilise" style="display:none" />
+          </div>
+          <div id="viabCostNote" class="hint">S&#233;lectionnez les r&#233;seaux pr&#233;sents &#8212; co&#251;t de raccordement estim&#233; automatiquement.</div>
+        </div>
+        <!-- Caract&#233;ristiques physiques -->
+        <div class="terrain-section">
+          <div class="terrain-section-lbl">Caract&#233;ristiques physiques</div>
+          <div class="terrain-charac-row">
+            <div><div class="terrain-charac-lbl">Pente</div><select class="input" id="terrainPente"><option value="plat" selected>Plat (&lt;&#160;4&#160;%)</option><option value="legere">L&#233;g&#232;re (4&#8211;12&#160;%)</option><option value="forte">Forte (&gt;&#160;12&#160;%)</option></select></div>
+            <div><div class="terrain-charac-lbl">Nature du sol</div><select class="input" id="terrainSol"><option value="normal" selected>Normal</option><option value="argileux">Argileux</option><option value="rocheux">Rocheux</option><option value="remblai">Remblai</option></select></div>
+            <div><div class="terrain-charac-lbl">Forme parcelle</div><select class="input" id="terrainForme"><option value="reguliere" selected>R&#233;guli&#232;re</option><option value="allongee">Allong&#233;e</option><option value="atypique">Atypique</option></select></div>
+          </div>
+        </div>
+        <!-- Note construction neuve -->
+        <div class="terrain-build-note">
+          <b>&#127959;&#65039; Projet de construction neuve ?</b><br>Renseignez le co&#251;t de construction dans le champ <b>Travaux</b> (section Analyse locative &amp; financement). L'estimation affich&#233;e repr&#233;sente la <b>valeur fonciere seule</b>. La simulation de revente reste disponible pour projeter la valeur future du projet complet.
         </div>
       </div>
       <div id="cadastreNote" style="display:none;font-size:11.5px;color:var(--ink-soft);margin-top:5px;padding:5px 9px;background:var(--bg);border-radius:7px;line-height:1.5"></div>
@@ -495,6 +571,7 @@
         </div>
       </div>
       <div class="hint" style="margin-top:6px">Les deux &#233;tiquettes figurent sur tout DPE depuis 2021. A = tr&#232;s performant, G = passoire thermique (obligation de travaux).</div>
+      <div id="dpeReformeNote" class="banner warn" style="display:none;margin-top:8px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="flex:none"><circle cx="12" cy="12" r="9" stroke="#8a5e10" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#8a5e10" stroke-width="2" stroke-linecap="round"/></svg><span><b>R&#233;forme DPE du 01/01/2026 :</b> ce DPE date d'avant le changement du coefficient &#233;lectrique (2,58 &#8594; 1,79 kWhep/kWhef). Si le bien est chauffage &#233;lectrique, la classe r&#233;elle est probablement meilleure d'une &#224; deux lettres. Modifiez manuellement la lettre affich&#233;e ou commandez un nouveau DPE.</span></div>
     </div>
 
     </div>
@@ -523,11 +600,33 @@
     <section class="card expert-only" id="contextCard" style="order:7"><div class="card-head"><div class="step-no">&#129517;</div><div><h2>Contexte &amp; signaux</h2><div class="sub">Donn&#233;es publiques, indices compl&#233;mentaires et anomalies &#8212; sans impact sur le prix</div></div></div><div id="contextPanel"></div></section>
     <section class="card expert-only" id="vendorCard" style="order:95"><div class="card-head"><div class="step-no">&#127991;&#65039;</div><div><h2>C&#244;t&#233; vendeur</h2><div class="sub">Strat&#233;gie de prix de mise en march&#233;</div></div></div><div id="vendorPanel"></div></section>
     <section class="card expert-only" id="fiscalCard" style="order:6"><div class="card-head"><div class="step-no">&#9878;&#65039;</div><div><h2>Comparateur fiscal</h2><div class="sub">Tous les r&#233;gimes compar&#233;s &#8212; recommandation automatique</div></div></div><div id="fiscalPanel"></div></section>
-    <section class="card expert-only" id="dispositifCard" style="order:6"><div class="card-head"><div class="step-no">&#127963;&#65039;</div><div><h2>Dispositifs de d&#233;fiscalisation</h2><div class="sub">Pinel, Denormandie, Malraux, Monuments Historiques, holding</div></div></div>
-      <div><label class="lbl" for="dispositif">Dispositif</label><select class="input" id="dispositif"><option value="none">Aucun (droit commun)</option><option value="pinel">Pinel (neuf, 2024)</option><option value="pinelplus">Pinel+ (neuf, qualit&#233;)</option><option value="denormandie">Denormandie (ancien + travaux)</option><option value="malraux">Malraux (restauration SPR)</option><option value="mh">Monuments Historiques</option><option value="holding">Holding (structuration)</option></select></div>
+    <section class="card expert-only" id="dispositifCard" style="order:6"><div class="card-head"><div class="step-no">&#127963;&#65039;</div><div><h2>Dispositifs de d&#233;fiscalisation</h2><div class="sub">SCI IS, Nue-propri\u00e9t\u00e9, Loc'Avantages, Pinel, Denormandie, Malraux, MH, holding</div></div></div>
+      <div><label class="lbl" for="dispositif">Dispositif</label><select class="input" id="dispositif"><option value="none">Aucun (droit commun)</option><option value="pinel">Pinel (neuf, 2024)</option><option value="pinelplus">Pinel+ (neuf, qualit&#233;)</option><option value="denormandie">Denormandie (ancien + travaux)</option><option value="malraux">Malraux (restauration SPR)</option><option value="mh">Monuments Historiques</option><option value="locavantages">Loc'Avantages (ANAH)</option><option value="nupropriete">Nue-propri&#233;t&#233; (d&#233;membrement)</option><option value="sciis">SCI &#224; l'IS (analyse d&#233;taill&#233;e)</option><option value="holding">Holding (structuration)</option></select></div>
       <div id="dispoTravauxRow" style="display:none;margin-top:10px"><label class="lbl" for="dispoTravaux">Montant des travaux</label><div class="with-unit"><input class="input num" id="dispoTravaux" type="number" min="0" /><span class="unit">&#8364;</span></div></div>
       <div id="dispoDureeRow" style="display:none;margin-top:10px"><label class="lbl" for="dispoDuree">Engagement de location</label><select class="input" id="dispoDuree"><option value="6">6 ans</option><option value="9" selected>9 ans</option><option value="12">12 ans</option></select></div>
       <div id="dispoZoneRow" style="display:none;margin-top:10px"><label class="lbl" for="dispoZone">Secteur (Malraux)</label><select class="input" id="dispoZone"><option value="0.30">PSMV / secteur sauvegard&#233; (30 %)</option><option value="0.22">PVAP / autre SPR (22 %)</option></select></div>
+      <div id="dispoNuDureeRow" style="display:none;margin-top:10px">
+        <label class="lbl" for="dispoNuDuree","sciNbAssoc","sciDistrib","sciFiscDiv","sciHolding">Dur&#233;e du d&#233;membrement</label>
+        <select class="input" id="dispoNuDuree">
+          <option value="10">10 ans (d&#233;cote &#8776; 23 %)</option>
+          <option value="15" selected>15 ans (d&#233;cote &#8776; 35 %)</option>
+          <option value="20">20 ans (d&#233;cote &#8776; 46 %)</option>
+          <option value="25">25 ans (d&#233;cote &#8776; 56 %)</option>
+          <option value="30">30 ans (d&#233;cote &#8776; 69 %)</option>
+        </select>
+      </div>
+      <div id="dispoSciIsRow" style="display:none;margin-top:10px">
+        <div class="row" style="margin-bottom:10px">
+          <div><label class="lbl" for="sciNbAssoc">Nombre d'associ&#233;s</label><select class="input" id="sciNbAssoc"><option value="1">1 (seul)</option><option value="2" selected>2</option><option value="3">3</option><option value="4">4</option></select></div>
+          <div><label class="lbl" for="sciDistrib">Distribution des b&#233;n&#233;fices</label><select class="input" id="sciDistrib"><option value="100" selected>100 % distribu&#233;s</option><option value="50">50 % distribu&#233;s</option><option value="0">0 % (mise en r&#233;serve)</option></select></div>
+        </div>
+        <div class="row" style="margin-bottom:6px">
+          <div><label class="lbl" for="sciFiscDiv">Fiscalit&#233; des dividendes</label><select class="input" id="sciFiscDiv"><option value="pfu" selected>Flat tax 30 % (PFU)</option><option value="bareme">Bar&#232;me IR + 17,2 % PS</option></select></div>
+          <div><label class="lbl" for="sciHolding">D&#233;tention via holding</label><select class="input" id="sciHolding"><option value="0" selected>Non (personnes physiques)</option><option value="1">Oui (r&#233;gime m&#232;re-fille)</option></select></div>
+        </div>
+        <div class="hint" style="margin-bottom:2px">Mère-fille : si la SCI est d&#233;tenue &#224; &#8805;5 % par une holding IS, 95 % des dividendes remont&#233;s sont exon&#233;r&#233;s d'IS (quote-part de frais 5 %).</div>
+      </div>
+      <div id="dispoNiveauRow" style="display:none;margin-top:10px"><label class="lbl" for="dispoNiveau">Niveau de convention Loc'Avantages</label><select class="input" id="dispoNiveau"><option value="interm_ab1">Interm&#233;diaire &#8212; zone A, Abis, B1 (d&#233;d. 20 %)</option><option value="interm_b2c">Interm&#233;diaire &#8212; zone B2/C (d&#233;d. 15 %)</option><option value="social_ab1">Social &#8212; zone A, Abis, B1 (d&#233;d. 50 %)</option><option value="social_b2c">Social &#8212; zone B2/C (d&#233;d. 35 %)</option><option value="tressocial">Tr&#232;s social &#8212; toutes zones (d&#233;d. 65 %)</option></select></div>
       <div id="dispoResult"></div>
     </section>
 
@@ -616,7 +715,7 @@
     </section>
 
     <!-- ANALYSE LOCATIVE -->
-    <section class="card" style="order:2">
+    <section class="card" style="order:2" id="rentalCard">
       <div class="card-head"><div class="step-no">5</div><div><h2>Analyse locative & rentabilit&#233;</h2><div class="sub">Loyer, fiscalit&#233;, financement, cash-flow</div></div></div>
 
       <div class="metrics three">
@@ -626,7 +725,22 @@
       </div>
 
       <div class="subhead">Loyer</div>
-      <div class="line-item"><span class="li-l">Loyer mensuel estim&#233;</span><span class="li-input"><input class="num" id="iRent" type="number" min="0" /></span></div>
+      <div style="margin-bottom:10px">
+        <label class="chk" style="gap:8px"><input type="checkbox" id="multiLotToggle" /><span style="font-weight:700;font-size:13px">Immeuble de rapport (multi-lots)</span></label>
+        <div class="hint" style="margin-top:4px">Activez pour saisir les lots individuellement. Le loyer total est calcul&#233; automatiquement.</div>
+      </div>
+      <div id="lotsPanel" class="lots-panel" style="display:none">
+        <div class="lots-header">
+          <span class="lots-header-title">D&#233;tail des lots</span>
+          <span id="lotsCount" style="font-size:11px;color:var(--ink-soft)"></span>
+        </div>
+        <div id="lotsGrid"></div>
+        <button type="button" class="lots-add-btn" id="btnAddLot">+ Ajouter un lot</button>
+        <div class="lots-total"><span>Loyer total (tous lots)</span><span class="lots-total-val" id="lotsTotalRent">&#8212;</span></div>
+        <div id="lotsKpis" style="display:none;margin-top:6px"></div>
+        <button type="button" id="btnAutoLoyers" class="btn-sm" style="margin-top:6px;width:100%" title="Pr&#233;-remplir les loyers depuis la Carte des loyers DHUP (loyers m&#233;dians d'annonces par commune et type)">&#128269; Auto-remplir les loyers (Carte des loyers DHUP)</button>
+      </div>
+      <div class="line-item" id="singleRentRow"><span class="li-l">Loyer mensuel estim&#233;</span><span class="li-input"><input class="num" id="iRent" type="number" min="0" /></span></div>
       <div id="rentVsMkt" class="hint" style="margin-top:2px"></div>
       <div class="line-item"><span class="li-l">Loyer annuel</span><span class="num" id="rentYear">&#8212;</span></div>
       <div class="banner" id="encBanner" style="display:none;margin-top:12px"></div>
@@ -671,6 +785,10 @@
       </div>
       <div class="field" style="margin-bottom:14px"><label class="lbl" for="iDuree">Dur&#233;e du pr&#234;t</label>
         <select class="input" id="iDuree"><option value="0">Achat comptant (sans pr&#234;t)</option><option value="15">15 ans</option><option value="20" selected>20 ans</option><option value="25">25 ans</option></select>
+        <div style="margin-top:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <label class="chk" style="flex:none;gap:7px"><input type="checkbox" id="creditInFine" /><span style="font-weight:700">Crédit in fine</span></label>
+          <span class="hint" style="margin:0;flex:1;min-width:120px">Intérêts seuls — capital remboursé en fin de prêt (fiscalité locative optimisée)</span>
+        </div>
       </div>
 
       <div class="line-item"><span class="li-l">Frais de notaire <span id="notaireRate" style="font-weight:500;color:var(--ink-soft)">(~7,8 %)</span></span><span class="num" id="notaireV">&#8212;</span></div>
@@ -687,7 +805,7 @@
     </section>
 
     <!-- REVENTE -->
-    <section class="card" style="order:5">
+    <section class="card" style="order:5" id="resaleCard">
       <div class="card-head"><div class="step-no">6</div><div><h2>Simulation de revente</h2><div class="sub">Plus-value, fiscalit&#233; et rendement global</div></div></div>
       <div class="subhead" style="margin-top:0">Hypoth&#232;ses d'&#233;volution annuelle</div>
       <div class="row" style="margin-bottom:10px">
@@ -698,7 +816,8 @@
         <div><label class="lbl" for="gRent">Loyers /an</label><div class="with-unit"><input class="input num" id="gRent" type="number" step="0.1" /><span class="unit">%</span></div></div>
         <div><label class="lbl" for="gCharges">Charges /an</label><div class="with-unit"><input class="input num" id="gCharges" type="number" step="0.1" /><span class="unit">%</span></div></div>
       </div>
-      <div class="hint" style="margin-bottom:10px">Valeurs par d&#233;faut prudentes : prix ~2 % (historique long terme nominal), loyers ~2,5 % (&#8776; IRL, INSEE 5 ans), charges ~2,5 % (&#8776; inflation, INSEE 5 ans). Modifiables.</div>
+      <div id="irlNote" class="hint" style="display:none;margin-bottom:4px;color:var(--brand-dark)"></div>
+      <div class="hint" style="margin-bottom:10px">Valeurs par d&#233;faut : prix ~2 % (historique long terme), loyers = IRL actuel (charg&#233; automatiquement depuis l'INSEE), charges ~2,5 % (&#8776; inflation). Modifiables.</div>
       <div class="field" style="margin-bottom:6px"><label class="lbl" for="fraisVente">Frais de vente (agence, diagnostics)</label><div class="with-unit"><input class="input num" id="fraisVente" type="number" step="0.1" placeholder="4" /><span class="unit">%</span></div></div>
       <div class="line-item"><span class="li-l">Prix de revente projet&#233;</span><span class="num" id="rvPrice">&#8212;</span></div>
       <div class="line-item"><span class="li-l">Plus-value brute</span><span class="num" id="rvPV">&#8212;</span></div>
@@ -719,11 +838,16 @@
         <div style="display:flex;gap:10px;align-items:flex-end"><div style="flex:1"><label class="lbl" for="repLogo">Logo (optionnel)</label><input class="input" id="repLogo" type="file" accept="image/*" /></div><div><label class="lbl" for="repColor">Couleur</label><input id="repColor" type="color" value="#0A8C7D" style="width:48px;height:42px;border:1px solid var(--line);border-radius:8px;padding:2px;background:#fff" /></div></div>
         <img id="repLogoPrev" alt="" style="display:none;max-height:46px;max-width:170px;object-fit:contain" />
         <button id="btnReport" style="width:100%;padding:12px;border-radius:10px;border:none;background:var(--brand-dark);color:#fff;font-weight:700;font-size:14px;cursor:pointer">G&#233;n&#233;rer le rapport PDF</button>
-        <div class="hint">Ouvre un document imprimable : choisissez &#171; Enregistrer en PDF &#187; dans la fen&#234;tre d'impression. Logo et couleur m&#233;moris&#233;s sur cet appareil.</div>
+        <button id="btnExportXlsx" style="width:100%;padding:11px;border-radius:10px;border:1.5px solid var(--brand-dark);background:#fff;color:var(--brand-dark);font-weight:700;font-size:13px;cursor:pointer;margin-top:4px">&#128202; Exporter Excel (.xlsx) &#8212; synth&#232;se + amortissement + projection</button>
+        <div class="hint">PDF : document imprimable (Enregistrer en PDF). Excel : fichier structuré avec 3 onglets pour vos propres calculs. Logo et couleur mémorisés sur cet appareil.</div>
       </div>
     </section>
-    <section class="card" style="order:6" id="opCard">
-      <div class="card-head"><div class="step-no">8</div><div><h2>Op&#233;ration achat-revente</h2><div class="sub">Prix de revient, marge nette et rentabilit&#233; de l'op&#233;ration</div></div></div>
+    <section class="card" style="order:98" id="compareCard" style="display:none">
+      <div class="card-head"><div class="step-no">&#9878;</div><div><h2>Comparaison de biens</h2><div class="sub">Analyse c&#244;te &#224; c&#244;te des biens s&#233;lectionn&#233;s</div></div></div>
+      <div id="comparePanel"></div>
+    </section>
+    <section class="card" style="order:97" id="opCard">
+      <div class="card-head"><div class="step-no">8</div><div><h2>Op&#233;ration achat-revente</h2><div class="sub">Prix de revient, marge nette &#8212; calcul&#233; sur la dur&#233;e r&#233;elle du flip (champ « Dur&#233;e »)</div></div></div>
       <div class="seg" id="segProfil" style="margin-bottom:8px"><button data-v="particulier" class="on">Particulier</button><button data-v="mdb">Marchand de biens</button></div>
       <div class="hint" id="opProfilNote" style="margin-bottom:12px"></div>
       <div class="field" style="margin-bottom:14px"><label class="lbl" for="opSellTarget">Prix de revente vis&#233; (post-travaux) &#8212; optionnel</label><input class="input num" id="opSellTarget" type="number" min="0" placeholder="vide = projection par l'appr&#233;ciation du march&#233;" /></div>
@@ -807,7 +931,7 @@ const DEPT_APT={"75":10200,"92":7800,"93":3900,"94":4900,"77":3200,"78":4300,"91
 const NAT_APT=3050;
 function getRentSqm(r){
   const lo=(state.ctx2||{}).loyers;
-  if(lo&&lo.loyerM2>0){if(r&&r.dyn)r.dyn.loyerReal=true;return lo.loyerM2;}
+  if(lo&&lo.loyerM2>0){if(r&&r.dyn){r.dyn.loyerReal=true;r.dyn.loyerSource=lo.source||"Carte des loyers";r.dyn.loyerAnnee=lo.annee||null;r.dyn.loyerNbObs=lo.nbObs||null;}if(state.loc==="meuble"&&lo.loyerMeuble>0)return lo.loyerMeuble;return lo.loyerM2;}
   if(r&&r.dyn)r.dyn.loyerReal=false;
   const cn=norm((r&&r.city)||'');
   return CITY_RENT[cn]||mktRentSqm((r&&r.sqmBase)||0);
@@ -835,22 +959,36 @@ function bindSeg(wrapId,key,cb){const w=$(wrapId);w.querySelectorAll("button").f
 bindSeg("segType","type",updateTypeUI);
 ["viabEau","viabAssain","viabElec","viabVoirie","viabTelecom"].forEach(id=>{const el=$(id);if(el)el.addEventListener("change",updateViabCost);});
 bindSeg("segPieces","pieces");
-$("segDpe").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{$("segDpe").querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on");state.dpe=b.dataset.v;}));
+$("segDpe").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{$("segDpe").querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on");state.dpe=b.dataset.v;_updateDpeReformeNote();}));
+function _updateDpeReformeNote(){
+  // Afficher le banner réforme 2026 si : DPE E/F/G + chauffage électrique + DPE pre-réforme
+  const warn=$("dpeReformeNote");if(!warn)return;
+  const isElecChauf=CHAUFFAGE_ELEC.includes($("chauffage").value);
+  const isDpeElecZone=["E","F","G"].includes(state.dpe||"D");
+  const preReforme=state._dpeReformeWarn||(state._dpePreRefDate&&state._dpePreRefDate<DPE_REFORME_DATE);
+  warn.style.display=(isElecChauf&&isDpeElecZone&&preReforme)?"":"none";
+}
+$("chauffage").addEventListener("change",_updateDpeReformeNote);
 [$("parking"),$("garage"),$("cave"),$("asc")].forEach(c=>{if(c)c.addEventListener("change",()=>c.closest(".chk").classList.toggle("on",c.checked));});
 $("segGes").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{$("segGes").querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on");state.ges=b.dataset.v;}));
 [$("piscine"),$("amenageable")].forEach(c=>c&&c.addEventListener("change",()=>c.closest(".chk").classList.toggle("on",c.checked)));
 ["expoN","expoE","expoS","expoO"].forEach(id=>{const c=$(id);if(c)c.addEventListener("change",()=>c.closest(".chk").classList.toggle("on",c.checked));});
 
-function updateTypeUI(){const t=state.type;
+function updateTypeUI(){const t=state.type,isTerrain=(t==="terrain");
   $("wrapTerrain").style.display=(t==="maison"||t==="terrain")?"":"none";
-  const _wv=$("wrapViab");if(_wv)_wv.style.display=(t==="terrain")?"":"none";
-  if(t==="terrain")updateViabCost();
-  $("wrapSurface").style.display=(t==="terrain")?"none":"";
-  ["wrapPieces","wrapEtat","wrapDpe","accCarac"].forEach(id=>$(id).style.display=(t==="terrain")?"none":"");
+  const _wv=$("wrapViab");if(_wv)_wv.style.display=isTerrain?"":"none";
+  if(isTerrain)updateViabCost();
+  $("wrapSurface").style.display=isTerrain?"none":"";
+  ["wrapPieces","wrapEtat","wrapDpe","accCarac"].forEach(id=>$(id).style.display=isTerrain?"none":"");
   $("wrapEtage").style.display=(t==="appartement")?"":"none";
   $("wrapJardin").style.display=(t==="appartement")?"none":"";
   $("wrapMaison").style.display=(t==="maison")?"":"none";
-  $("wrapNeuf").style.display=(t==="terrain")?"none":"";
+  $("wrapNeuf").style.display=isTerrain?"none":"";
+  // Terrain : masquer les sections exclusivement locatives (loyer, fiscalite LMNP, financement locatif)
+  // Conserver : revente (utile pour projeter la valeur du projet), travaux (viabilisation), achat-revente
+  ["rentalCard","proKpiCard","fiscalCard","dispositifCard"].forEach(id=>{const el=$(id);if(el)el.style.display=isTerrain?"none":"";});
+  // En mode terrain : afficher un message explicatif en haut de la revente
+  const rc=$("resaleCard");if(rc){const bn=rc.querySelector(".terrain-resale-note");if(isTerrain&&!bn){const d=document.createElement("div");d.className="banner good terrain-resale-note";d.style.marginBottom="12px";d.innerHTML="<span>&#127961;&#65039; Mode terrain : la simulation de revente projette la valeur fonciere apres revalorisation. Ajoutez les travaux pour inclure le cout de viabilisation ou de construction.</span>";rc.insertBefore(d,rc.querySelector(".card-head").nextSibling);}else if(!isTerrain&&bn)bn.remove();}
 }
 
 /* Autocomplete BAN */
@@ -869,7 +1007,7 @@ async function autoFillFromAddress(coord){
   const [rAlt,rAdeme,rCad]=await Promise.allSettled([
     dvfFetch("https://api.open-meteo.com/v1/elevation?latitude="+coord.lat+"&longitude="+coord.lon),
     (async()=>{
-      const sel=encodeURIComponent("etiquette_dpe,etiquette_ges,annee_construction,type_batiment,date_etablissement_dpe,surface_habitable_logement,adresse_ban");
+      const sel=encodeURIComponent("etiquette_dpe,etiquette_ges,annee_construction,type_batiment,date_etablissement_dpe,surface_habitable_logement,adresse_ban,type_energie_principale_logement");
       const url="https://data.ademe.fr/data-fair/api/v1/datasets/dpe-v2-logements-existants/lines?geo_distance="+coord.lon+","+coord.lat+",400m&size=1&sort=-date_etablissement_dpe&select="+sel;
       const d=await dvfFetch(url);
       if(DEBUG&&d&&d.raw)dbg("ADEME brut:\n"+d.raw.slice(0,280));
@@ -895,7 +1033,17 @@ function autofillApply(o){
   window._afApplying=false;
   if(done.length){
     const dt=o.date_etablissement_dpe?(" du "+String(o.date_etablissement_dpe).slice(0,10)):"";
-    const note=$("autofillNote");if(note){note.textContent="\u2139\ufe0f Pre-rempli depuis un DPE public proche"+dt+" : "+done.join(", ")+". Verifiez et corrigez si besoin.";note.style.display="";}
+    // DPE 2026 : detecter si le DPE est antérieur à la réforme et le logement chauffé à l'électricité
+    const _dpeDateStr=String(o.date_etablissement_dpe||"").slice(0,10);
+    const _dpePreReforme=_dpeDateStr&&_dpeDateStr<DPE_REFORME_DATE;
+    const _typeEnergie=String(o.type_energie_principale_logement||o.type_energie||"").toLowerCase();
+    const _isElec=_typeEnergie.includes("lect")&&!_typeEnergie.includes("gaz");
+    state._dpeReformeWarn=_dpePreReforme&&(_isElec||CHAUFFAGE_ELEC.includes($("chauffage").value))&&["F","G","E"].includes(dpe);
+    state._dpePreRefDate=_dpeDateStr||"";
+    const note=$("autofillNote");if(note){
+      let msg="\u2139\ufe0f Pre-rempli depuis un DPE public proche"+dt+" : "+done.join(", ")+". V\u00e9rifiez et corrigez si besoin.";
+      if(state._dpeReformeWarn)msg+=" \u26a0 DPE ant\u00e9rieur \u00e0 la r\u00e9forme 01/01/2026 — si le chauffage est \u00e9lectrique, la classe r\u00e9elle est peut-\u00eatre meilleure (voir note ci-dessous).";
+      note.textContent=msg;note.style.display="";}
     if(DEBUG)dbg("Autofill applique: "+done.join(", "));
   }
 }
@@ -1193,6 +1341,35 @@ function parsePtsTerrain(arr){
   });
   return pts;
 }
+/* ===== G : Prix median DVF communal — graine dynamique pour baseSqm() =====
+ * Interroge l’API Cerema sur la commune entiere et calcule le median /m2
+ * des 3 dernieres annees. Cache par INSEE pour la session. */
+const _localAptCache={};
+async function fetchCommuneMedian(insee,type){
+  if(!insee)return null;
+  const _key=insee+"_"+type;
+  if(_localAptCache[_key]!=null)return _localAptCache[_key];
+  try{
+    const url=DVF_BASE+"?code_insee="+insee+"&page_size=500";
+    const r=await dvfFetch(url);if(!r||!r.json)return null;
+    let arr=extractArr(r.json);
+    const count=r.json.count||0;
+    if(count>500&&arr.length<100){const r2=await dvfFetch(url+"&page=2");if(r2)arr=arr.concat(extractArr(r2.json));}
+    const parsed=(type==="maison"?parsePts(arr,"maison"):parsePts(arr,"appartement"));
+    const pts=parsed.pts||[];
+    if(pts.length<8)return null;
+    const now=new Date().getFullYear();
+    const recent=pts.filter(p=>p.year&&p.year>=now-3);
+    const src=recent.length>=8?recent:pts;
+    const ppm=src.map(p=>p.ppm).filter(p=>p>500&&p<30000).sort((a,b)=>a-b);
+    if(ppm.length<5)return null;
+    const med=ppm[Math.floor(ppm.length/2)];
+    if(med<NAT_APT*0.3||med>NAT_APT*6)return null;
+    const result={med:Math.round(med),n:ppm.length,annee:now-1,source:"DVF Cerema"};
+    _localAptCache[_key]=result;
+    return result;
+  }catch(_){return null;}
+}
 async function fetchDvf(coord,type){
   if(!coord||!coord.insee)return {pts:null,status:"no-conn"};
   if(coord.lat!=null&&coord.lon!=null){
@@ -1402,8 +1579,16 @@ function dvfTrend(pts){
   return{evo12:+perYear.toFixed(1),evoTot:+((med(byY[last])/med(byY[first])-1)*100).toFixed(0),span,fromY:first,toY:last,nYears:ys.length,smoothed:true};
 }
 function baseSqm(city,cp,type){const cn=norm(city);const dep=cp?cp.substring(0,2):null;let base,conf;
-  if(type==="terrain"){let apt=CITY_APT[cn]||DEPT_APT[dep]||NAT_APT;return{sqm:Math.round(apt*0.14),conf:CITY_APT[cn]?"moyenne":"faible"};}
-  if(CITY_APT[cn]){base=CITY_APT[cn];conf="\u00e9lev\u00e9e";}else if(dep&&DEPT_APT[dep]){base=DEPT_APT[dep];conf="moyenne";}else{base=NAT_APT;conf="faible";}
+  // Priorité 1 : prix DVF communal calculé dynamiquement (state._localApt)
+  const localM=state._localApt&&state._localApt.med>0?state._localApt.med:null;
+  if(type==="terrain"){
+    let apt=localM||CITY_APT[cn]||DEPT_APT[dep]||NAT_APT;
+    return{sqm:Math.round(apt*0.14),conf:localM?"DVF réel":CITY_APT[cn]?"moyenne":"faible"};
+  }
+  if(localM){base=localM;conf="DVF réel";}
+  else if(CITY_APT[cn]){base=CITY_APT[cn];conf="élevée";}
+  else if(dep&&DEPT_APT[dep]){base=DEPT_APT[dep];conf="moyenne";}
+  else{base=NAT_APT;conf="faible";}
   if(type==="maison")base=Math.round(base*HOUSE_FACTOR);
   return{sqm:base,conf};
 }
@@ -1696,11 +1881,12 @@ function renderMarket(r){const d=r.dyn;const sign=x=>(x>=0?"+":"")+x;
     `<div class="stat"><span class="sl">${d.trendReal?'Tendance prix /an (liss\u00e9e) <span style="color:var(--brand-dark);font-weight:700;font-size:9px">r\u00e9el</span>':'\u00c9volution prix 12 mois'}</span><span class="sv num ${cls}">${arr} ${Math.abs(d.evo12)} %</span></div>`+
     `<div class="stat"><span class="sl">\u00c9volution sur ${d.trendReal?d.evoSpan:5} ans${d.trendReal?' <span style="color:var(--brand-dark);font-weight:700;font-size:9px">r\u00e9el</span>':''}</span><span class="sv num">${sign(d.evo5)} %</span></div>`+
     `<div class="stat"><span class="sl">${d.trendReal?"Tendance DVF (/an, liss\u00e9e)":"Indice Notaires-INSEE (1 an)"}</span><span class="sv num ${ncls}">${sign(d.notairesEvo)} %</span></div>`+
-    `<div class="stat"><span class="sl">Loyer de march\u00e9${d.loyerReal?' <span style="color:var(--good);font-weight:700;font-size:9px">r\u00e9el (Carte des loyers)</span>':d.rentReal?' <span style="color:var(--brand-dark);font-weight:700;font-size:9px">ancr\u00e9 DVF</span>':''}</span><span class="sv num">${d.loyerM2.toFixed(1).replace('.',',')} \u20ac/m\u00b2/mois</span></div>`+
+    `<div class="stat"><span class="sl">Loyer de march\u00e9${d.loyerReal?(' <span style="color:var(--good);font-weight:700;font-size:9px">\u2713 Carte des loyers DHUP'+(d.loyerAnnee?' '+d.loyerAnnee:'')+'</span>'):d.rentReal?' <span style="color:var(--brand-dark);font-weight:700;font-size:9px">ancr\u00e9 DVF</span>':''}</span><span class="sv num">${d.loyerM2.toFixed(1).replace('.',',')} \u20ac/m\u00b2/mois${d.loyerReal&&d.loyerNbObs?' <span style="color:var(--ink-soft);font-size:9px">('+ d.loyerNbObs+' obs.)':' </span>'}</span></div>`+
     `<div class="stat"><span class="sl">Rendement locatif brut de march\u00e9</span><span class="sv num">${d.rendementMarche.toFixed(1).replace('.',',')} %</span></div>`+
     `<div class="stat"><span class="sl">Stock d'annonces en vente</span><span class="sv num">${d.liquiditeReal?eur0(d.stockAnnonces)+'<span style="color:var(--ink-soft);font-size:9px;margin-left:3px">mod\u00e9lis\u00e9 (0,3 % du parc)</span>':'\u2014 <span style="color:var(--ink-soft);font-weight:400;font-size:9px">n.d.</span>'}</span></div>`+
     `<div class="stat"><span class="sl">${d.liquiditeReal?"Transactions DVF /an (typ.)":"Transactions annuelles"}</span><span class="sv num">${eur0(d.txAn)}${d.liquiditeReal?'<span style="color:var(--brand-dark);font-weight:700;font-size:9px;margin-left:3px">r\u00e9el</span>':'<span style="color:var(--ink-soft);font-size:9px;margin-left:3px">estimation</span>'}</span></div>`+
     `<div class="stat"><span class="sl">Ratio offre / ventes</span><span class="sv num">${d.liquiditeReal?d.ratioOV.toFixed(2).replace('.',',')+' \u00b7 '+mois+' mois<span style="color:var(--brand-dark);font-weight:700;font-size:9px;margin-left:3px">d\u00e9riv\u00e9 DVF</span>':'\u2014 <span style="color:var(--ink-soft);font-weight:400;font-size:9px">n.d.</span>'}</span></div>`+
+    `<div class="stat"><span class="sl">Vacance locative${d.vacanceReal?' <span style="color:var(--good);font-weight:700;font-size:9px">\u2713 '+( d.vacanceSource||"INSEE")+( d.vacanceAnnee?' '+d.vacanceAnnee:'')+ '</span>':''} (commune)</span><span class="sv num">${d.vacance!=null?d.vacance.toFixed(1).replace('.',',')+' %':"n.d."}</span></div>`+
     `<div class="stat"><span class="sl">D\u00e9lai de vente m\u00e9dian</span><span class="sv num">${d.liquiditeReal?d.delai+' jours<span style="color:var(--brand-dark);font-weight:700;font-size:9px;margin-left:3px">d\u00e9riv\u00e9 DVF</span>':'\u2014 <span style="color:var(--ink-soft);font-weight:400;font-size:9px">n.d.</span>'}</span></div>`+
     `<div class="stat"><span class="sl">Rapport de force</span><span class="sv">${d.liquiditeReal?(d.ratioOV>8?'March\u00e9 acheteur':d.ratioOV<4?'March\u00e9 vendeur':'March\u00e9 \u00e9quilibr\u00e9'):'\u2014 <span style="color:var(--ink-soft);font-weight:400;font-size:9px">n.d.</span>'}</span></div>`+
     `<div class="stat"><span class="sl">Taux cr\u00e9dit moyen (20 ans)</span><span class="sv num">${RATE20.toFixed(2).replace('.',',')} %<span style="color:var(--ink-soft);font-size:9px;margin-left:3px">hypoth\u00e8se</span></span></div>`+
@@ -1758,37 +1944,45 @@ function renderPriceHistory(r){
   const ys=Object.keys(byY).map(Number).filter(y=>byY[y].length>=6).sort((a,b)=>a-b);
   if(ys.length<3)return;
   const med=a=>{const s=[...a].sort((x,z)=>x-z);return s[s.length>>1];};
-  const pts=ys.map(y=>{const a=byY[y];return{y,v:med(a),n:a.length,lo:Math.min.apply(null,a),hi:Math.max.apply(null,a)};});
-  const vmin=Math.min.apply(null,pts.map(p=>p.v)),vmax=Math.max.apply(null,pts.map(p=>p.v)),pad=(vmax-vmin)*0.2||vmax*0.06;
-  const y0=vmin-pad,y1=vmax+pad,W=100,H=52,mL=1,mR=1,mT=4,mB=10;
+  const pts=ys.map(y=>{const a=[...byY[y]].sort((x,z)=>x-z);const q=p=>a[Math.min(a.length-1,Math.floor(a.length*p))];return{y,v:q(0.5),n:a.length,lo:a[0],hi:a[a.length-1],q1:q(0.25),q3:q(0.75)};});
+  // Plage Y englobant Q1/Q3 pour que la bande IQR soit visible
+  const vmin=Math.min.apply(null,pts.map(p=>p.q1)),vmax=Math.max.apply(null,pts.map(p=>p.q3));
+  const pad=(vmax-vmin)*0.18||vmax*0.06;
+  const y0=vmin-pad,y1=vmax+pad,W=100,H=68,mL=1,mR=1,mT=6,mB=10;
   const X=i=>mL+i/(pts.length-1)*(W-mL-mR),Y=v=>mT+(1-(v-y0)/(y1-y0))*(H-mT-mB);
   const line=pts.map((p,i)=>(i?"L":"M")+X(i).toFixed(2)+" "+Y(p.v).toFixed(2)).join(" ");
   const area=line+" L"+X(pts.length-1).toFixed(2)+" "+(H-mB)+" L"+X(0).toFixed(2)+" "+(H-mB)+" Z";
-  let grid="",ylab="";[0,0.5,1].forEach(f=>{const v=y0+(y1-y0)*f,gy=Y(v).toFixed(2);grid+='<line x1="'+mL+'" y1="'+gy+'" x2="'+(W-mR)+'" y2="'+gy+'" stroke="var(--line)" stroke-width="0.3"/>';});
-  const dots=pts.map((p,i)=>'<circle cx="'+X(i).toFixed(2)+'" cy="'+Y(p.v).toFixed(2)+'" r="1.7" fill="#fff" stroke="var(--brand-dark)" stroke-width="1.2" class="phDot" data-i="'+i+'"/>').join("");
+  // Bande Q1-Q3 (fourchette de marche)
+  const iqrPath=pts.map((p,i)=>(i?"L":"M")+X(i).toFixed(2)+" "+Y(p.q3).toFixed(2)).join(" ")+" "+[...pts].reverse().map((p,i)=>(i?"L":"M")+X(pts.length-1-i).toFixed(2)+" "+Y(p.q1).toFixed(2)).join(" ")+" Z";
+  // Deltas year-over-year sur chaque point
+  let yoyLabels="";pts.forEach((p,i)=>{if(i===0)return;const yoy=Math.round((p.v/pts[i-1].v-1)*100);const col=yoy>=0?"var(--good)":"var(--bad)";yoyLabels+='<text x="'+X(i).toFixed(2)+'" y="'+(Y(p.v)-3).toFixed(2)+'" font-size="2.8" text-anchor="middle" fill="'+col+'" font-weight="700">'+(yoy>=0?"+":"")+yoy+'%</text>';});
+  let grid="";[0,0.33,0.67,1].forEach(f=>{const v=y0+(y1-y0)*f,gy=Y(v).toFixed(2);grid+='<line x1="'+mL+'" y1="'+gy+'" x2="'+(W-mR)+'" y2="'+gy+'" stroke="var(--line)" stroke-width="0.3"/>'+((f===0||f===0.5||f===1)?'<text x="0.5" y="'+(+gy+1)+"" + '" font-size="2.5" fill="var(--ink-soft)">'+Math.round(v/100)*100+'</text>':'');});
+  const dots=pts.map((p,i)=>'<circle cx="'+X(i).toFixed(2)+'" cy="'+Y(p.v).toFixed(2)+'" r="2" fill="#fff" stroke="var(--brand-dark)" stroke-width="1.3" class="phDot" data-i="'+i+'"/>').join("");
   const first=pts[0],last=pts[pts.length-1],evo=Math.round((last.v/first.v-1)*100);
   const totalV=pts.reduce((s,p)=>s+p.n,0);
   const nyr=last.y-first.y,cagr=nyr>0?((Math.pow(last.v/first.v,1/nyr)-1)*100):0;
-  const barW=Math.min(6,(W-mL-mR)/pts.length*0.5),vmaxN=Math.max.apply(null,pts.map(p=>p.n));
-  const bars=pts.map((p,i)=>{const bh=(p.n/vmaxN)*6,bx=X(i)-barW/2,by=H-mB-bh;return '<rect x="'+bx.toFixed(2)+'" y="'+by.toFixed(2)+'" width="'+barW.toFixed(2)+'" height="'+bh.toFixed(2)+'" fill="var(--brand)" opacity="0.18" rx="0.4"/>';}).join("");
+  const barW=Math.min(6,(W-mL-mR)/pts.length*0.7),vmaxN=Math.max.apply(null,pts.map(p=>p.n));
+  const bars=pts.map((p,i)=>{const bh=(p.n/vmaxN)*7,bx=X(i)-barW/2,by=H-mB-bh;return '<rect x="'+bx.toFixed(2)+'" y="'+by.toFixed(2)+'" width="'+barW.toFixed(2)+'" height="'+bh.toFixed(2)+'" fill="var(--brand)" opacity="0.22" rx="0.5"/>';}).join("");
   const d=document.createElement("div");d.id="priceHistory";
   const dataJson=JSON.stringify(pts).replace(/"/g,"&quot;");
   d.innerHTML='<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">'+
-    '<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:11.5px;font-weight:800;color:var(--ink)">\u00c9volution du prix m\u00e9dian /m\u00b2 <span style="color:var(--brand-dark);font-weight:700;font-size:9px">r\u00e9el</span></span><span class="num" style="font-size:11px;font-weight:800;color:'+(evo>=0?"var(--good)":"var(--bad)")+'">'+(evo>=0?"+":"")+evo+' % sur '+nyr+' ans</span></div>'+
-    '<div style="position:relative"><svg id="phSvg" viewBox="0 0 100 52" style="width:100%;height:118px;margin-top:6px;overflow:visible;touch-action:none" preserveAspectRatio="none" data-pts="'+dataJson+'">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:5px"><span style="font-size:12px;font-weight:800;color:var(--ink)">\u00c9volution du prix m\u00e9dian /m\u00b2 <span class="real-tag" style="font-size:9px;padding:1px 5px">DVF r\u00e9el</span></span><span class="num" style="font-size:12px;font-weight:800;color:'+(evo>=0?"var(--good)":"var(--bad)")+'">\u00c9volution '+(evo>=0?"+":"")+evo+' % \u00b7 CAGR '+(cagr>=0?"+":"")+cagr.toFixed(1)+' %/an</span></div>'+
+    '<div style="position:relative"><svg id="phSvg" viewBox="0 0 100 68" style="width:100%;height:150px;margin-top:6px;overflow:visible;touch-action:none" preserveAspectRatio="none" data-pts="'+dataJson+'">'+
       grid+bars+
-      '<path d="'+area+'" fill="var(--brand)" opacity="0.10"/>'+
-      '<path d="'+line+'" fill="none" stroke="var(--brand-dark)" stroke-width="1.6" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>'+
-      dots+
+      '<path d="'+iqrPath+'" fill="var(--brand)" opacity="0.13"/>'+
+      '<path d="'+area+'" fill="var(--brand)" opacity="0.08"/>'+
+      '<path d="'+line+'" fill="none" stroke="var(--brand-dark)" stroke-width="1.8" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>'+
+      yoyLabels+dots+
       '<line id="phCursor" x1="0" y1="'+mT+'" x2="0" y2="'+(H-mB)+'" stroke="var(--brand-dark)" stroke-width="0.5" stroke-dasharray="1.5 1.5" style="display:none"/>'+
-    '</svg><div id="phTip" style="position:absolute;display:none;pointer-events:none;background:var(--ink);color:#fff;font-size:10px;font-weight:600;padding:5px 8px;border-radius:7px;white-space:nowrap;box-shadow:0 3px 10px rgba(0,0,0,.25);z-index:5;transform:translate(-50%,-115%)"></div></div>'+
+    '</svg><div id="phTip" style="position:absolute;display:none;pointer-events:none;background:var(--ink);color:#fff;font-size:10.5px;font-weight:600;padding:5px 9px;border-radius:7px;white-space:nowrap;box-shadow:0 3px 10px rgba(0,0,0,.25);z-index:5;transform:translate(-50%,-115%)"></div></div>'+
     '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--ink-soft);margin-top:2px"><span>'+first.y+'</span><span>'+last.y+'</span></div>'+
     '<div style="display:flex;gap:6px;margin-top:8px">'+
-      '<div style="flex:1;background:var(--bg);border-radius:8px;padding:6px 8px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase">Tendance /an (CAGR)</div><div class="num" style="font-size:13px;font-weight:800;color:'+(cagr>=0?"var(--good)":"var(--bad)")+'">'+(cagr>=0?"+":"")+cagr.toFixed(1)+' %</div><div style="font-size:9px;color:var(--ink-soft)">'+first.y+'\u2192'+last.y+'</div></div>'+
-      '<div style="flex:1;background:var(--bg);border-radius:8px;padding:6px 8px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase">M\u00e9diane '+last.y+'</div><div class="num" style="font-size:13px;font-weight:800;color:var(--ink)">'+eur0(last.v)+'</div><div style="font-size:9px;color:var(--ink-soft)">\u20ac/m\u00b2</div></div>'+
-      '<div style="flex:1;background:var(--bg);border-radius:8px;padding:6px 8px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase">Moy. ventes/an</div><div class="num" style="font-size:13px;font-weight:800;color:var(--ink)">'+Math.round(totalV/ys.length)+'</div><div style="font-size:9px;color:var(--ink-soft)">('+totalV+' sur '+nyr+' ans)</div></div>'+
+      '<div style="flex:1;background:var(--bg);border-radius:8px;padding:7px 9px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase">M\u00e9diane '+last.y+'</div><div class="num" style="font-size:14px;font-weight:800;color:var(--ink)">'+eur0(last.v)+'</div><div style="font-size:9px;color:var(--ink-soft)">\u20ac/m\u00b2</div></div>'+
+      '<div style="flex:1;background:var(--bg);border-radius:8px;padding:7px 9px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase">CAGR '+first.y+'\u2192'+last.y+'</div><div class="num" style="font-size:14px;font-weight:800;color:'+(cagr>=0?"var(--good)":"var(--bad)")+'">\u00b1 '+(cagr>=0?"+":"")+cagr.toFixed(1)+' %/an</div></div>'+
+      '<div style="flex:1;background:var(--bg);border-radius:8px;padding:7px 9px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase">Fourchette '+last.y+'</div><div class="num" style="font-size:11px;font-weight:700;color:var(--ink)">'+eur0(last.q1)+'\u2013'+eur0(last.q3)+'</div><div style="font-size:9px;color:var(--ink-soft)">\u20ac/m\u00b2 (Q1\u2013Q3)</div></div>'+
     '</div>'+
-    '<div class="hint" style="margin-top:6px">M\u00e9diane annuelle des ventes DVF (barres claires = volume). Survolez ou touchez la courbe pour le d\u00e9tail par ann\u00e9e.</div></div>';
+    '<div style="display:flex;gap:10px;margin-top:5px;font-size:10px;color:var(--ink-soft);flex-wrap:wrap"><span>&#9632; Zone ombre = fourchette Q1\u2013Q3 (50 % des ventes)</span><span>% sur point = variation ann\u00e9e</span></div>'+
+    '<div class="hint" style="margin-top:5px">M\u00e9diane annuelle DVF. Touchez ou survolez pour d\u00e9tail ann\u00e9e (valeur, fourchette, nb ventes).</div></div>';
   box.appendChild(d);
   const svg=$("phSvg"),tip=$("phTip"),cur=$("phCursor");
   if(svg&&tip){
@@ -1798,8 +1992,9 @@ function renderPriceHistory(r){
       const idx=Math.round(fx*(data.length-1)),p=data[idx];
       const cx=X(idx),cy=Y(p.v);
       cur.setAttribute("x1",cx);cur.setAttribute("x2",cx);cur.style.display="";
-      tip.style.display="";tip.style.left=(cx/100*rect.width)+"px";tip.style.top=((cy/52)*rect.height)+"px";
-      tip.innerHTML='<b>'+p.y+'</b> \u00b7 '+eur0(p.v)+' \u20ac/m\u00b2<br><span style="opacity:.8;font-weight:400">'+p.n+' ventes \u00b7 '+eur0(p.lo)+'\u2013'+eur0(p.hi)+'</span>';
+      tip.style.display="";tip.style.left=(cx/100*rect.width)+"px";tip.style.top=((cy/68)*rect.height)+"px";
+      const _yoy=i>0?Math.round((p.v/data[i-1].v-1)*100):null;
+      tip.innerHTML='<b>'+p.y+'</b> · <b>'+eur0(p.v)+'</b> €/m²'+(_yoy!=null?' → <span style="color:'+(+_yoy>=0?'#7fe3d4':'#f08080')+'">'+(_yoy>=0?"+":"")+_yoy+'%/an</span>':'')+'<br><span style="opacity:.8;font-weight:400">Q1–Q3 : '+eur0(p.q1)+'–'+eur0(p.q3)+' · '+p.n+' ventes</span>';
     };
     const hide=()=>{tip.style.display="none";cur.style.display="none";};
     svg.addEventListener("mousemove",e=>show(e.clientX));
@@ -1871,6 +2066,20 @@ function renderDvfStats(r){
    `<div style="margin-top:13px;padding:11px 13px;background:var(--brand-tint);border-radius:10px;font-size:11.5px;color:var(--ink-soft);line-height:1.6"><b style="color:var(--ink)">S\u00e9lection des comparables</b><br>\u2022 M\u00eame type (<b>${typeLbl}</b>) ${state.dvfScope==="bbox"?`dans un <b>rayon ~1 km</b> autour du bien \u2014 DVF/Cerema (g\u00e9olocalis\u00e9)`:`dans la <b>commune</b> ${r.city||""} \u2014 DVF/Cerema (pas de rayon en m\u00e8tres)`}<br>\u2022 Stats ci-dessus : ventes \u00e0 <b>surface proche</b> de la v\u00f4tre (r\u00e9centes, pond\u00e9r\u00e9es)<br>${r.bandWidened?"\u2022 <b>Fen\u00eatre de surface \u00e9largie automatiquement</b> (peu de ventes \u00e0 surface proche)<br>":""}\u2022 Nuage : <b>toutes</b> les ventes r\u00e9centes du type<br>\u2022 Aberrations de prix/m\u00b2 exclues (IQR de Tukey)</div>`;
   renderScatter(r);
 }
+/* Distance geographique (vol d'oiseau) entre deux coords WGS84 */
+function haversineKm(lat1,lon1,lat2,lon2){
+  const R=6371,dLat=(lat2-lat1)*Math.PI/180,dLon=(lon2-lon1)*Math.PI/180;
+  const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+// Couleur d'un point selon la distance (proche=vert intense, loin=bleu-gris pale)
+function _dotColor(distKm,maxKm){
+  if(!maxKm||maxKm<=0)return{fill:"#0FB39E",op:0.5};
+  const t=Math.min(1,distKm/maxKm); // 0=proche, 1=loin
+  // Interpolation #0FB39E (brand) -> #93BED0 (bleu-gris)
+  const r=Math.round(0x0F+(0x93-0x0F)*t),g=Math.round(0xB3+(0xBE-0xB3)*t),b=Math.round(0x9E+(0xD0-0x9E)*t);
+  return{fill:'rgb('+r+','+g+','+b+')',op:0.75-t*0.45};
+}
 /* Nuage de points : surface (x) vs prix (y), croix sur le bien envisage, % par quadrant */
 function renderScatter(r){
   const box=$("dvfScatter");if(!box)return;
@@ -1896,8 +2105,16 @@ function renderScatter(r){
   const trq=pc(cnt(s=>s>ssurf,p=>p>sprice)),brq=pc(cnt(s=>s>ssurf,p=>p<sprice)),tlq=pc(cnt(s=>s<ssurf,p=>p>sprice)),blq=pc(cnt(s=>s<ssurf,p=>p<sprice));
   const pBig=pc(all.filter(p=>p.surf>ssurf).length),pExp=pc(all.filter(p=>p.price>sprice).length);
   const sx=mx(ssurf).toFixed(1),sy=my(sprice).toFixed(1);
-  const dots=pts.map((p,i)=>{const ro=p.surf>=ssurf*0.75&&p.surf<=ssurf*1.25?"#0FB39E":"#7EC8BC";
-    return `<circle cx="${mx(p.surf).toFixed(1)}" cy="${my(p.price).toFixed(1)}" r="3" fill="${ro}" fill-opacity=".45" class="scDot" data-s="${Math.round(p.surf)}" data-p="${Math.round(p.price)}" data-r="${p.rooms||''}" data-d="${p.date?String(p.date).slice(0,7):''}" data-a="${esc(p.addr||'')}" data-lat="${p.lat!=null?p.lat:''}" data-lon="${p.lon!=null?p.lon:''}"/>`;}).join("");
+  // Distance à vol d'oiseau depuis les coords du bien
+  const _uc=state.coord;
+  const _dists=(_uc&&_uc.lat!=null)?pts.map(p=>haversineKm(_uc.lat,_uc.lon,p.lat||_uc.lat,p.lon||_uc.lon)):null;
+  const _maxDist=_dists?Math.max.apply(null,_dists.filter(d=>d<50)):0; // plafonner à 50 km pour échelle couleur
+  const dots=pts.map((p,i)=>{
+    let cl;
+    if(_dists&&p.lat!=null&&p.lon!=null){cl=_dotColor(_dists[i],_maxDist);}
+    else{cl={fill:p.surf>=ssurf*0.75&&p.surf<=ssurf*1.25?"#0FB39E":"#7EC8BC",op:0.5};}
+    const distStr=(_dists&&p.lat!=null&&p.lon!=null)?(_dists[i]<1?Math.round(_dists[i]*1000)+" m":_dists[i].toFixed(2).replace('.',',')+" km"):"";
+    return `<circle cx="${mx(p.surf).toFixed(1)}" cy="${my(p.price).toFixed(1)}" r="3.2" fill="${cl.fill}" fill-opacity="${cl.op.toFixed(2)}" class="scDot" data-s="${Math.round(p.surf)}" data-p="${Math.round(p.price)}" data-r="${p.rooms||''}" data-d="${p.date?String(p.date).slice(0,7):''}" data-a="${esc(p.addr||'')}" data-lat="${p.lat!=null?p.lat:''}" data-lon="${p.lon!=null?p.lon:''}" data-dist="${distStr}"/>`;}).join("");
   let _rsx=0,_rsy=0,_rsxy=0,_rsxx=0;all.forEach(p=>{_rsx+=p.surf;_rsy+=p.price;_rsxy+=p.surf*p.price;_rsxx+=p.surf*p.surf;});
   const _rn=all.length,_rden=_rn*_rsxx-_rsx*_rsx;
   const regSlope=_rden!==0?(_rn*_rsxy-_rsx*_rsy)/_rden:0,regInt=(_rsy-regSlope*_rsx)/_rn;
@@ -1926,13 +2143,15 @@ function renderScatter(r){
     `</svg>`+
     `<div style="margin-top:8px;padding:8px 10px;background:#fff5ef;border-left:3px solid #E8742A;border-radius:0 8px 8px 0;font-size:11.5px;line-height:1.55;color:var(--ink)">Droite de tendance (orange) : <b class="num">Prix &#8776; ${eur0(Math.round(regSlope))} &#8364;/m&#178; &#215; surface ${regInt>=0?"+":"&#8722;"} ${eur0(Math.abs(Math.round(regInt)))} &#8364;</b><br>&#201;cart moyen au mod&#232;le : <b class="num">&#177; ${eur0(Math.round(regMae))} &#8364;</b> &#183; R&#178; <b class="num">${regR2.toFixed(2).replace('.',',')}</b> <span style="color:var(--ink-soft)">(part du prix expliquee par la surface)</span></div>`+
     `<div class="hint" style="margin-top:6px;line-height:1.5"><b style="color:var(--brand-dark)">${pExp}%</b> des ventes sont plus ch\u00e8res que votre prix \u00b7 <b style="color:var(--brand-dark)">${pBig}%</b> portent sur un bien plus grand${nOut>0?' <span style="color:var(--ink-soft)">\u00b7 '+nOut+' valeur(s) extr\u00eame(s) masqu\u00e9e(s)</span>':''}.</div>`+
-    `<div id="scTip" style="display:none;margin-top:6px;padding:8px 11px;background:var(--ink);color:#fff;border-radius:9px;font-size:11.5px;line-height:1.5"></div>`;
+    `<div id="scTip" style="display:none;margin-top:6px;padding:8px 11px;background:var(--ink);color:#fff;border-radius:9px;font-size:11.5px;line-height:1.5"></div>`+
+    (_dists?'<div style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:10.5px;color:var(--ink-soft)"><svg width="80" height="10"><defs><linearGradient id="dg" x1="0" x2="1"><stop offset="0" stop-color="#0FB39E"/><stop offset="1" stop-color="#93BED0"/></linearGradient></defs><rect width="80" height="10" rx="4" fill="url(#dg)"/></svg><span>Proche</span><span style="margin-left:auto">Loin</span></div>':'');
   box.querySelectorAll('.scDot').forEach(c=>{
     const show=()=>{const tip=box.querySelector('#scTip');if(!tip)return;
       const s=c.dataset.s,p=c.dataset.p,rms=c.dataset.r,dt=c.dataset.d;
       tip.style.display='';
       const addrTxt=c.dataset.a?' \u00b7 <span style="opacity:.8">'+esc(c.dataset.a)+'</span>':(c.dataset.resolving?' \u00b7 <span style="opacity:.6">adresse\u2026</span>':'');
-      tip.innerHTML='<b>'+eur(+p)+'</b> \u00b7 '+s+' m\u00b2'+(rms?' \u00b7 '+rms+' pi\u00e8ce'+(+rms>1?'s':''):'')+(dt?' \u00b7 '+dt:'')+addrTxt;};
+      const distStr=c.dataset.dist?' \u00b7 <span style="color:#7fe3d4;font-weight:700">'+c.dataset.dist+' du bien</span>':"";
+      tip.innerHTML='<b>'+eur(+p)+'</b> \u00b7 <b>'+eur0(Math.round(+p/(+s||1)))+'</b> \u20ac/m\u00b2 \u00b7 '+s+' m\u00b2'+(rms?' \u00b7 '+rms+' p.':'')+(dt?' \u00b7 '+dt:'')+distStr+addrTxt;};
     const sel=()=>{box.querySelectorAll('.scDot.sel').forEach(x=>{x.classList.remove('sel');x.setAttribute('fill',x.dataset.of||'#7EC8BC');x.setAttribute('r','3');});
       c.dataset.of=c.getAttribute('fill');c.classList.add('sel');c.setAttribute('fill','#E8742A');c.setAttribute('r','5');};
     c.addEventListener('click',()=>{sel();show();
@@ -2051,6 +2270,9 @@ function renderDispositif(){
   $("dispoTravauxRow").style.display=(d==="denormandie"||d==="malraux"||d==="mh")?"":"none";
   $("dispoDureeRow").style.display=(d==="pinel"||d==="pinelplus"||d==="denormandie")?"":"none";
   $("dispoZoneRow").style.display=(d==="malraux")?"":"none";
+  $("dispoNiveauRow").style.display=(d==="locavantages")?"":"none";
+  $("dispoNuDureeRow").style.display=(d==="nupropriete")?"":"none";
+  $("dispoSciIsRow").style.display=(d==="sciis")?"":"none";
   const box=(title,total,annual,years,cond,warn)=>`<div style="margin-top:10px;padding:12px 13px;background:#eef7f3;border-radius:11px;border-left:4px solid var(--good)"><div style="font-weight:800;color:#0a8f7e;font-size:13.5px">${title}</div><div style="display:flex;gap:18px;margin-top:6px;flex-wrap:wrap"><div><div style="font-size:10px;color:var(--ink-soft);text-transform:uppercase">Avantage total</div><div class="num" style="font-size:20px;font-weight:800;color:#0a8f7e">${eur0(total)}</div></div><div><div style="font-size:10px;color:var(--ink-soft);text-transform:uppercase">Par an${years?" (~"+years+" ans)":""}</div><div class="num" style="font-size:20px;font-weight:800;color:var(--ink)">${eur0(annual)}</div></div></div></div><div style="margin-top:9px;font-size:11.5px;color:var(--ink);line-height:1.55"><b>Conditions cl\u00e9s :</b><ul style="margin:4px 0 0;padding-left:18px">${cond.map(c=>`<li style="margin-top:2px">${c}</li>`).join("")}</ul></div><div class="hint" style="margin-top:8px">${warn}</div>`;
   if(d==="none"){el.innerHTML='<div class="hint" style="margin-top:8px">S\u00e9lectionnez un dispositif pour estimer l\'avantage fiscal. Calculs indicatifs supposant l\'\u00e9ligibilit\u00e9 remplie.</div>';return;}
   if(d==="pinel"||d==="pinelplus"){
@@ -2074,15 +2296,221 @@ function renderDispositif(){
     el.innerHTML=box("Monuments Historiques \u2014 \u00e9conomie d'imp\u00f4t",saving,saving,1,
       ["Immeuble class\u00e9 ou inscrit aux Monuments Historiques","Travaux et int\u00e9r\u00eats d\u00e9ductibles \u00e0 100 % du revenu global, sans plafond","\u00c9conomie &#8776; travaux ("+eur0(trav)+") &#215; taux marginal ("+Math.round(tmi*100)+" %)","R\u00e9gime sp\u00e9cifique selon que le bien est lou\u00e9 ou non"],
       "Tr\u00e8s efficace \u00e0 TMI \u00e9lev\u00e9e : l'avantage est l'imp\u00f4t \u00e9vit\u00e9 sur le revenu global. Indicatif \u2014 \u00e0 valider avec un conseil sp\u00e9cialis\u00e9.");
+  } else if(d==="locavantages"){
+    // Loc'Avantages (ex-Cosse) — art. 31 CGI, dispositif ANAH actif depuis 2022
+    // Déduction sur revenus bruts fonciers selon niveau de convention et zone
+    const niv=($("dispoNiveau")&&$("dispoNiveau").value)||"interm_ab1";
+    const RATES={"interm_ab1":0.20,"interm_b2c":0.15,"social_ab1":0.50,"social_b2c":0.35,"tressocial":0.65};
+    const taux_ded=RATES[niv]||0.20;
+    const rentY=numv("iRent")*12;
+    if(rentY<=0){el.innerHTML='<div class="hint" style="margin-top:8px">Renseignez un loyer mensuel pour calculer l\'avantage Loc\'Avantages.</div>';return;}
+    const deduction=rentY*taux_ded,economie=deduction*tmi;
+    const isInterm=niv.startsWith("interm");
+    const zoneStr=niv.endsWith("b2c")?" zone B2/C":niv==="tressocial"?" toutes zones":" zone A/Abis/B1";
+    const plafLoyer=niv==="tressocial"?"Loyers plafonnés ANAH très social (~6–12 €/m²)":isInterm?"Loyers plafonnés ANAH intermédiaire (~10–18 €/m²)":"Loyers plafonnés ANAH social (~7–14 €/m²)";
+    el.innerHTML=box("Loc'Avantages — déduction "+Math.round(taux_ded*100)+" %"+zoneStr+" sur revenus fonciers",economie,economie,1,
+      [plafLoyer,
+       "Ressources des locataires plafonnées (barème ANAH)",
+       "Convention ANAH 6 ans minimum (reconductible)",
+       "Loyers bruts : "+eur0(rentY)+" €/an × déduction "+Math.round(taux_ded*100)+" % = "+eur0(deduction)+" € déduits",
+       "Économie d'impôt ≈ "+eur0(deduction)+" × TMI "+Math.round(tmi*100)+" % = "+eur0(economie)+" €/an"],
+      "Cumulable avec le déficit foncier au réel. Réservé aux propriétaires personnes physiques (pas en LMNP/société). Nécessite signature d'une convention ANAH. Indicatif — à confirmer auprès de l'ANAH.");
+  } else if(d==="nupropriete"){
+    // Nue-propriété / Démembrement temporaire (art. 669 CGI)
+    // Acquisiçon de la nue-propriété : pas de revenus pendant la durée, pas de fiscalité locative
+    // Récupération pleine propriété à l'échéance, sans frais supplémentaires
+    const nuDuree=+($("dispoNuDuree")?$("dispoNuDuree").value:15);
+    // Barème fiscal : 23% par tranche de 10 ans
+    const usufFiscal=Math.min(0.92,Math.ceil(nuDuree/10)*0.23);
+    const nuDecote=usufFiscal; // décote = valeur de l'usufruit
+    const nuPrixPP=bp; // prix "pleine propriété" (valeur marché)
+    const nuPrixNP=Math.round(nuPrixPP*(1-nuDecote));
+    // Barème économique (plus précis) : usufruit = loyer net actualisé
+    const rentY=numv("iRent")*12;
+    const charges=numv("iTaxe")+numv("iCopro")+numv("iPno")+numv("iDivers");
+    const loyerNet=rentY-charges;
+    const tauxActu=0.035; // taux d'actualisation standard
+    const usufEco=loyerNet>0?loyerNet*(1-Math.pow(1+tauxActu,-nuDuree))/tauxActu:0;
+    const nuPrixEco=Math.round(nuPrixPP-usufEco);
+    const decoteEcoPct=usufEco>0?Math.round(usufEco/nuPrixPP*100):0;
+    // Rendement du NP à l'échéance
+    const reval=numv("reval")/100||0.02;
+    const valeurFin=Math.round(nuPrixPP*Math.pow(1+reval,nuDuree));
+    const triNP=nuPrixNP>0?((Math.pow(valeurFin/nuPrixNP,1/nuDuree)-1)*100):0;
+    const pvNette=valeurFin-nuPrixNP;
+    el.innerHTML=box("Nue-propri\u00e9t\u00e9 \u2014 d\u00e9membrement "+nuDuree+" ans",pvNette,pvNette/nuDuree,1,[
+      "Bar\u00e8me fiscal (art. 669 CGI) : d\u00e9cote "+Math.round(nuDecote*100)+" % \u2192 prix NP \u2248 "+eur0(nuPrixNP)+" \u20ac",
+      loyerNet>0?"Bar\u00e8me \u00e9conomique (loyer net actualis\u00e9) : d\u00e9cote "+decoteEcoPct+" % \u2192 prix NP \u2248 "+eur0(nuPrixEco)+" \u20ac":"Renseignez un loyer pour le bar\u00e8me \u00e9conomique",
+      "Aucun loyer per\u00e7u pendant "+nuDuree+" ans (pas de fiscalit\u00e9 locative)",
+      "Pas de taxe fonci\u00e8re ni de charges pendant le d\u00e9membrement",
+      "Valeur r\u00e9cup\u00e9r\u00e9e en pleine propri\u00e9t\u00e9 : "+eur0(valeurFin)+" \u20ac (hyp. "+((reval*100).toFixed(1))+" %/an)",
+      "Plus-value latente : "+eur0(pvNette)+" \u20ac \u00b7 TRI du nu-propri\u00e9taire \u2248 "+triNP.toFixed(1)+" %/an",
+    ], "Strat\u00e9gie patrimoniale : pas de revenus \u2192 pas d'imp\u00f4t \u2192 capitalisation pure. Id\u00e9al en pr\u00e9paration de retraite ou d\u00e9fiscalisation (IFI r\u00e9duit \u00e0 la valeur NP). Notez que le bar\u00e8me \u00e9conomique (actuariel) est souvent diff\u00e9rent du bar\u00e8me fiscal. \u00c0 valider avec un notaire.");
+  } else if(d==="sciis"){
+    // SCI a l'IS - analyse detaillee multi-associes
+    var R=numv("iRent")*12,C=numv("iTaxe")+numv("iCopro")+numv("iPno")+numv("iDivers");
+    var taux=numv("iTaux")/100,apport=numv("iApport");
+    var coutTot=bp+bp*notaireRate()+numv("iTravaux")+numv("iDossier")+numv("iGarantie");
+    var emprunt=Math.max(0,coutTot-apport),I=emprunt*taux,ins=emprunt*(numv("iAssur")/100);
+    var amort=state._amortTotal||(bp*0.85/30);
+    if(R<=0){el.innerHTML='<div class="hint" style="margin-top:8px">Renseignez un loyer pour l\'analyse SCI \u00e0 l\'IS.</div>';return;}
+    el.innerHTML=_renderSciIsAvancee(R,C,I,ins,amort,bp);
   } else if(d==="holding"){
     el.innerHTML=`<div style="margin-top:10px;padding:12px 13px;background:var(--bg);border-radius:11px;border-left:4px solid var(--brand-dark)"><div style="font-weight:800;color:var(--brand-dark);font-size:13.5px">Holding patrimoniale \u2014 outil de structuration</div><div style="font-size:12px;color:var(--ink);line-height:1.6;margin-top:5px">Une holding (SAS/SARL) d\u00e9tenant vos soci\u00e9t\u00e9s (SCI, SARL de famille) n'est pas un dispositif de d\u00e9fiscalisation, mais un cadre d'optimisation :</div><ul style="margin:6px 0 0;padding-left:18px;font-size:11.5px;color:var(--ink);line-height:1.6"><li><b>R\u00e9gime m\u00e8re-fille</b> : 95 % des dividendes remont\u00e9s exon\u00e9r\u00e9s d'IS</li><li><b>Int\u00e9gration fiscale</b> (d\u00e9tention &#8805; 95 %) : compensation des r\u00e9sultats du groupe</li><li><b>Effet de levier</b> : la holding emprunte, rembours\u00e9e par les dividendes des filiales</li><li><b>Report d'imposition</b> (apport-cession, art. 150-0 B ter) \u00e0 la transmission</li></ul></div><div class="hint" style="margin-top:8px">Pertinent pour un patrimoine important multi-biens. \u00c0 faire valider par un avocat fiscaliste. Pas de chiffrage automatique (d\u00e9pend de la structure globale).</div>`;
   }
+}
+/* ===== Vague 7 : SCI IS multi-associes, mere-fille, arbitrage distribution ===== */
+// Simulation SCI IS avancee : IS societe + repartition + distribution + mere-fille
+function sciIsAvancee(params){
+  var R=params.R,C=params.C,I=params.I,ins=params.ins,amort=params.amort;
+  var nbAssoc=params.nbAssoc||2;
+  var distribPct=(params.distribPct!=null?params.distribPct:100)/100;
+  var ficDiv=params.ficDiv||"pfu"; // pfu | bareme
+  var viaHolding=!!params.viaHolding;
+  var tmi=params.tmi||0.30;
+  // 1. Resultat fiscal de la SCI (avec amortissement)
+  var resultatFiscal=Math.max(0,R-C-I-ins-amort);
+  // 2. IS societe
+  var is=_isCalc(resultatFiscal);
+  var beneficeNet=resultatFiscal-is;
+  // 3. Montant distribue (le reste va en reserve)
+  var distribue=beneficeNet*distribPct;
+  var miseEnReserve=beneficeNet-distribue;
+  // 4. Fiscalite des dividendes
+  var taxeDiv=0,detailDiv="";
+  if(distribue>0){
+    if(viaHolding){
+      // Regime mere-fille : 95% exonere, quote-part de frais 5% taxee a l'IS
+      var qpf=distribue*0.05; // quote-part de frais et charges
+      taxeDiv=_isCalc(qpf); // IS sur la QPF uniquement
+      detailDiv="M\u00e8re-fille : 95 % exon\u00e9r\u00e9, IS sur QPF 5 % ("+eur0(Math.round(qpf))+" \u20ac) = "+eur0(Math.round(taxeDiv))+" \u20ac";
+    }else if(ficDiv==="pfu"){
+      // Flat tax 30% (12.8% IR + 17.2% PS)
+      taxeDiv=distribue*0.30;
+      detailDiv="Flat tax 30 % (PFU) sur "+eur0(Math.round(distribue))+" \u20ac = "+eur0(Math.round(taxeDiv))+" \u20ac";
+    }else{
+      // Bareme : abattement 40% sur dividendes pour l'IR, + PS 17.2% sur brut
+      var baseIR=distribue*0.60; // abattement 40%
+      var irDiv=baseIR*tmi;
+      var psDiv=distribue*0.172;
+      taxeDiv=irDiv+psDiv;
+      detailDiv="Bar\u00e8me : IR "+Math.round(tmi*100)+" % sur base abattue 40 % ("+eur0(Math.round(irDiv))+" \u20ac) + PS 17,2 % ("+eur0(Math.round(psDiv))+" \u20ac) = "+eur0(Math.round(taxeDiv))+" \u20ac";
+    }
+  }
+  // 5. Cout fiscal total annuel et net percu
+  var coutFiscalTotal=is+taxeDiv;
+  var netPercu=distribue-taxeDiv;
+  var netParAssoc=netPercu/nbAssoc;
+  // 6. Taux de prelevement global
+  var tauxGlobal=resultatFiscal>0?coutFiscalTotal/resultatFiscal*100:0;
+  return{
+    resultatFiscal:Math.round(resultatFiscal),
+    is:Math.round(is),
+    beneficeNet:Math.round(beneficeNet),
+    distribue:Math.round(distribue),
+    miseEnReserve:Math.round(miseEnReserve),
+    taxeDiv:Math.round(taxeDiv),
+    detailDiv:detailDiv,
+    coutFiscalTotal:Math.round(coutFiscalTotal),
+    netPercu:Math.round(netPercu),
+    netParAssoc:Math.round(netParAssoc),
+    tauxGlobal:tauxGlobal.toFixed(1),
+    nbAssoc:nbAssoc
+  };
+}
+// Comparer les strategies de distribution (0%, 50%, 100%)
+function sciIsArbitrage(baseParams){
+  var strategies=[0,50,100].map(function(pct){
+    var p=Object.assign({},baseParams,{distribPct:pct});
+    var r=sciIsAvancee(p);
+    return{pct:pct,label:pct===0?"Tout en r\u00e9serve":pct===100?"Tout distribu\u00e9":pct+" % distribu\u00e9",sim:r};
+  });
+  return strategies;
+}
+function _renderSciIsAvancee(R,C,I,ins,amort,bp){
+  var nbAssoc=+($("sciNbAssoc")?$("sciNbAssoc").value:2);
+  var distribPct=+($("sciDistrib")?$("sciDistrib").value:100);
+  var ficDiv=$("sciFiscDiv")?$("sciFiscDiv").value:"pfu";
+  var viaHolding=$("sciHolding")?$("sciHolding").value==="1":false;
+  var tmi=(parseInt($("tmi").value,10)||30)/100;
+  var params={R:R,C:C,I:I,ins:ins,amort:amort,nbAssoc:nbAssoc,distribPct:distribPct,ficDiv:ficDiv,viaHolding:viaHolding,tmi:tmi};
+  var sim=sciIsAvancee(params);
+  var arb=sciIsArbitrage(params);
+  // Bloc principal
+  var kpiTiles='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">'+
+    '<div style="flex:1;min-width:80px;background:#fff;padding:7px 9px;border-radius:8px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase">R\u00e9sultat fiscal</div><div class="num" style="font-size:14px;font-weight:800">'+eur0(sim.resultatFiscal)+'</div></div>'+
+    '<div style="flex:1;min-width:80px;background:#fff;padding:7px 9px;border-radius:8px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase">IS soci\u00e9t\u00e9</div><div class="num" style="font-size:14px;font-weight:800">'+eur0(sim.is)+'</div></div>'+
+    '<div style="flex:1;min-width:80px;background:#fff;padding:7px 9px;border-radius:8px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase">Fisc. dividendes</div><div class="num" style="font-size:14px;font-weight:800">'+eur0(sim.taxeDiv)+'</div></div>'+
+    '<div style="flex:1;min-width:80px;background:#fff;padding:7px 9px;border-radius:8px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase">Taux global</div><div class="num" style="font-size:14px;font-weight:800;color:#7A5AF8">'+sim.tauxGlobal+' %</div></div>'+
+    '</div>';
+  // Repartition par associe
+  var repartHtml=sim.distribue>0?'<div style="font-size:11px;color:var(--ink);margin-bottom:8px"><b>Net per\u00e7u apr\u00e8s fiscalit\u00e9</b> : '+eur0(sim.netPercu)+' \u20ac r\u00e9partis entre '+sim.nbAssoc+' associ\u00e9'+(sim.nbAssoc>1?'s':'')+' = <b>'+eur0(sim.netParAssoc)+' \u20ac/associ\u00e9</b> (quote-part \u00e9gale).</div>':'<div style="font-size:11px;color:var(--ink-soft);margin-bottom:8px">Aucune distribution : b\u00e9n\u00e9fice net mis en r\u00e9serve ('+eur0(sim.miseEnReserve)+' \u20ac), report\u00e9 sur les exercices suivants.</div>';
+  // Detail fiscalite dividendes
+  var divDetailHtml=sim.detailDiv?'<div class="hint" style="margin-bottom:8px">'+sim.detailDiv+'</div>':'';
+  // Tableau d'arbitrage distribution
+  var arbRows=arb.map(function(s){
+    var isOpt=s.pct===distribPct;
+    return '<tr'+(isOpt?' style="background:var(--brand-tint);font-weight:700"':'')+'><td style="padding:6px 8px;font-size:11px">'+s.label+(isOpt?' \u2190':'')+'</td><td style="padding:6px 8px;text-align:right;font-size:11px" class="num">'+eur0(s.sim.coutFiscalTotal)+'</td><td style="padding:6px 8px;text-align:right;font-size:11px" class="num">'+eur0(s.sim.netPercu)+'</td><td style="padding:6px 8px;text-align:right;font-size:11px" class="num">'+s.sim.tauxGlobal+' %</td></tr>';
+  }).join("");
+  var arbTable='<div style="font-weight:700;font-size:11.5px;color:var(--ink);margin:10px 0 5px">Arbitrage distribution vs r\u00e9serve</div>'+
+    '<table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="border-bottom:1.5px solid var(--line)"><th style="text-align:left;padding:5px 8px;font-size:10px;color:var(--ink-soft)">Strat\u00e9gie</th><th style="text-align:right;padding:5px 8px;font-size:10px;color:var(--ink-soft)">Co\u00fbt fiscal</th><th style="text-align:right;padding:5px 8px;font-size:10px;color:var(--ink-soft)">Net per\u00e7u</th><th style="text-align:right;padding:5px 8px;font-size:10px;color:var(--ink-soft)">Taux</th></tr></thead><tbody>'+arbRows+'</tbody></table>';
+  return '<div style="margin-top:10px;padding:13px;background:var(--bg);border-radius:11px;border-left:4px solid #7A5AF8">'+
+    '<div style="font-weight:800;color:#7A5AF8;font-size:13.5px;margin-bottom:9px">SCI \u00e0 l\u2019IS \u2014 analyse multi-associ\u00e9s'+(viaHolding?' (via holding, m\u00e8re-fille)':'')+'</div>'+
+    kpiTiles+repartHtml+divDetailHtml+arbTable+
+    '<div class="hint" style="margin-top:10px"><b>Lecture</b> : la mise en r\u00e9serve \u00e9vite la fiscalit\u00e9 des dividendes mais bloque le cash dans la soci\u00e9t\u00e9. La distribution donne acc\u00e8s au cash mais ajoute la flat tax (ou le bar\u00e8me). Le r\u00e9gime m\u00e8re-fille est optimal si les dividendes financent un r\u00e9investissement via la holding. \u26a0 N\u2019int\u00e8gre pas la PV de cession (voir SCI IS mono-associ\u00e9). \u00c0 valider avec un expert-comptable.</div>'+
+    '</div>';
+}
+/* ===== Vague 6 : SCI IS mono-associe amelioree ===== */
+// Calcul IS societes : 15 % jusqu'a 42 500 EUR, 25 % au-dela (art. 219 CGI)
+function _isCalc(resultat){
+  if(resultat<=0)return 0;
+  if(resultat<=42500)return resultat*0.15;
+  return 42500*0.15+(resultat-42500)*0.25;
+}
+// Detail textuel du calcul IS
+function _sciIsDetail(prof){
+  if(prof<=0)return "0 \u20ac (r\u00e9sultat nul ou d\u00e9ficitaire)";
+  if(prof<=42500)return eur0(Math.round(prof*0.15))+" \u20ac (15 % sur "+eur0(Math.round(prof))+" \u20ac)";
+  const is1=42500*0.15,is2=(prof-42500)*0.25;
+  return eur0(Math.round(is1+is2))+" \u20ac (15 % sur 42 500 + 25 % sur "+eur0(Math.round(prof-42500))+" \u20ac)";
+}
+// Simulation complete SCI IS sur N annees (IS + distribution flat tax)
+function sciIsSimulation(rentY,charges,interets,assurAn,amort,bp,reval,duree){
+  const years=duree||20;
+  let totalIS=0,totalDiv=0,totalFlatTax=0,reserve=0;
+  for(let t=1;t<=years;t++){
+    const rY=rentY*Math.pow(1.02,t-1); // croissance loyers 2%
+    const chY=charges*Math.pow(1.025,t-1);
+    const intY=t<=20?interets*(1-t/(20*2)):0; // interets degressifs approx
+    const resultat=Math.max(0,rY-chY-intY-assurAn-amort);
+    const is=_isCalc(resultat);
+    const benefNet=resultat-is;
+    totalIS+=is;
+    // Distribution : 100% du benefice net en dividendes
+    const flatTax=benefNet*0.30;
+    totalDiv+=benefNet;
+    totalFlatTax+=flatTax;
+    reserve+=benefNet-benefNet; // tout distribue
+  }
+  // Plus-value a la revente : IS sur PV (prix revente - valeur nette comptable)
+  const valeurRevente=bp*Math.pow(1+(reval||0.02),years);
+  const vnc=Math.max(0,bp-amort*years); // valeur nette comptable
+  const pvBrute=Math.max(0,valeurRevente-vnc);
+  const isPV=_isCalc(pvBrute);
+  return{
+    years,totalIS:Math.round(totalIS),totalDiv:Math.round(totalDiv),
+    totalFlatTax:Math.round(totalFlatTax),
+    totalFiscalAnnuel:Math.round((totalIS+totalFlatTax)/years),
+    pvBrute:Math.round(pvBrute),isPV:Math.round(isPV),
+    vnc:Math.round(vnc),valeurRevente:Math.round(valeurRevente),
+    coutTotalFiscal:Math.round(totalIS+totalFlatTax+isPV)
+  };
 }
 /* ===== Vague 6 : comparateur fiscal des regimes de revenus locatifs ===== */
 function compareRegimes(R,C,I,ins,amort){
   const t_nm=fiscalTax("nue_micro",R,C,I,ins,amort),t_nr=fiscalTax("nue_reel",R,C,I,ins,amort);
   const t_mm=fiscalTax("meuble_micro",R,C,I,ins,amort),t_mr=fiscalTax("meuble_reel",R,C,I,ins,amort);
-  const prof=Math.max(0,R-C-I-ins-amort),is=prof<=42500?prof*0.15:42500*0.15+(prof-42500)*0.25,t_is=is+(prof-is)*0.30;
+  const prof=Math.max(0,R-C-I-ins-amort),is=_isCalc(prof),t_is=is+(prof-is)*0.30;
   return [
     {k:"nue_micro",lbl:"Location nue \u00b7 micro-foncier",t:t_nm,note:"Abattement 30 %. Simple, sans comptabilit\u00e9. Plafond 15 000 \u20ac/an."},
     {k:"nue_reel",lbl:"Location nue \u00b7 r\u00e9el (d\u00e9ficit foncier)",t:t_nr,note:"Charges et int\u00e9r\u00eats d\u00e9duits ; d\u00e9ficit imputable sur le revenu global (10 700 \u20ac/an)."},
@@ -2090,8 +2518,27 @@ function compareRegimes(R,C,I,ins,amort){
     {k:"meuble_micro",lbl:"LMNP \u00b7 micro-BIC",t:t_mm,note:"Abattement 50 %. Pour petits loyers meubl\u00e9s. Plafond 77 700 \u20ac/an."},
     {k:"meuble_reel",lbl:"LMNP \u00b7 r\u00e9el (amortissement)",t:t_mr,note:"Amortissement du bien : imp\u00f4t souvent nul plusieurs ann\u00e9es."},
     {k:"sarl_famille",lbl:"SARL de famille (meubl\u00e9)",t:t_mr,note:"Meubl\u00e9 en soci\u00e9t\u00e9, IR transparent : fiscalit\u00e9 proche du LMNP r\u00e9el, cadre soci\u00e9taire."},
-    {k:"sci_is",lbl:"SCI \u00e0 l'IS",t:t_is,note:"IS 15/25 % puis flat tax 30 % si distribution. Amortissement \u2192 imp\u00f4t annuel faible, MAIS plus-value de cession tax\u00e9e \u00e0 l'IS sur la valeur amortie (souvent d\u00e9favorable en revente)."}
+    {k:"sci_is",lbl:"SCI \u00e0 l'IS",t:t_is,note:"IS "+_sciIsDetail(prof)+". Amortissement comptable ("+eur0(Math.round(amort))+"/an) \u2192 r\u00e9sultat fiscal r\u00e9duit. Si distribution : flat tax 30 % sur dividendes (PFU). Attention : PV de cession tax\u00e9e \u00e0 l'IS sur la valeur nette amortie."}
   ];
+}
+function _renderSciIsDetail(R,C,I,ins,amort,bp){
+  const reval=numv("reval")/100||0.02;
+  const duree=Number($("holdYears").value)||20;
+  const sim=sciIsSimulation(R,C,I,ins,amort,bp,reval,duree);
+  return '<div style="margin-top:14px;padding:13px;background:var(--bg);border-radius:11px;border-left:4px solid #7A5AF8">'+
+    '<div style="font-weight:800;color:#7A5AF8;font-size:13px;margin-bottom:8px">D\u00e9tail SCI \u00e0 l\u2019IS \u2014 simulation sur '+sim.years+' ans</div>'+
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">'+
+    '<div style="flex:1;min-width:90px;background:#fff;padding:7px 9px;border-radius:8px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase">IS cumul\u00e9</div><div class="num" style="font-size:14px;font-weight:800">'+eur0(sim.totalIS)+' \u20ac</div></div>'+
+    '<div style="flex:1;min-width:90px;background:#fff;padding:7px 9px;border-radius:8px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase">Flat tax div.</div><div class="num" style="font-size:14px;font-weight:800">'+eur0(sim.totalFlatTax)+' \u20ac</div></div>'+
+    '<div style="flex:1;min-width:90px;background:#fff;padding:7px 9px;border-radius:8px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase">IS sur PV revente</div><div class="num" style="font-size:14px;font-weight:800;color:var(--bad)">'+eur0(sim.isPV)+' \u20ac</div></div>'+
+    '<div style="flex:1;min-width:90px;background:#fff;padding:7px 9px;border-radius:8px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase">Co\u00fbt fiscal total</div><div class="num" style="font-size:14px;font-weight:800;color:#7A5AF8">'+eur0(sim.coutTotalFiscal)+' \u20ac</div></div>'+
+    '</div>'+
+    '<div style="font-size:11px;color:var(--ink);line-height:1.55">'+
+    '<b>Amortissement comptable</b> : '+eur0(Math.round(amort))+' \u20ac/an (bien amorti sur ~30 ans, 80 % du prix hors terrain).<br>'+
+    '<b>Valeur nette comptable</b> apr\u00e8s '+sim.years+' ans : '+eur0(sim.vnc)+' \u20ac (valeur amortie).<br>'+
+    '<b>PV de cession</b> (IS) : prix de vente '+eur0(sim.valeurRevente)+' \u2212 VNC '+eur0(sim.vnc)+' = <b>'+eur0(sim.pvBrute)+' \u20ac</b> tax\u00e9e \u00e0 l\u2019IS \u2192 '+eur0(sim.isPV)+' \u20ac.<br>'+
+    '<b>\u26a0 Pi\u00e8ge classique SCI IS</b> : l\u2019amortissement r\u00e9duit l\u2019imp\u00f4t annuel mais gonfle la PV de cession. Sur longue dur\u00e9e, le co\u00fbt fiscal total est souvent sup\u00e9rieur \u00e0 la location nue au r\u00e9el (abattement pour dur\u00e9e en IR).'+
+    '</div></div>';
 }
 function renderFiscalCompare(r){
   const el=$("fiscalPanel");if(!el)return;
@@ -2105,6 +2552,8 @@ function renderFiscalCompare(r){
     return `<div style="margin-top:9px;padding:9px 11px;border-radius:10px;background:${isBest?'#eaf6ef':'var(--bg)'};border-left:4px solid ${color}"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><span style="font-weight:700;font-size:12.5px;color:var(--ink)">${o.lbl}${isBest?' <span style="font-size:9px;color:#0a8f7e;font-weight:800">&#9733; OPTIMAL</span>':''}${o.k===cur?' <span style="font-size:9px;color:var(--brand-dark)">(actuel)</span>':''}</span><span class="num" style="font-weight:800;font-size:13px;color:${color};white-space:nowrap">${fmt(o.t)}/an</span></div><div style="font-size:10px;color:var(--ink-soft);line-height:1.4;margin-top:3px">${o.note}</div></div>`;};
   el.innerHTML=`<div style="padding:11px 13px;background:#eaf6ef;border-radius:11px;border-left:4px solid var(--good)"><div style="font-weight:800;color:#0a8f7e;font-size:13.5px">R\u00e9gime conseill\u00e9 : ${best.lbl}</div><div style="font-size:12px;color:var(--ink);margin-top:3px;line-height:1.5">Imp\u00f4t locatif annuel le plus faible (${best.t<-0.5?"gain de "+eur0(-best.t):eur0(best.t)+" /an"})${eco>100?", soit environ "+eur0(eco)+" d'\u00e9conomie/an vs le r\u00e9gime le moins favorable":""}.</div></div>`+
     list.map(row).join("")+
+    _renderSciIsDetail(R,C,I,ins,amort,bp)+
+    `<div id="sciIsDetailPanel" style="display:none;margin-top:14px;padding:13px;background:var(--bg);border-radius:11px;border-left:4px solid #7A5AF8"></div>`+
     `<div class="hint" style="margin-top:11px">Comparaison de l'<b>imp\u00f4t annuel</b> sur les revenus locatifs (m\u00eames loyers, charges et int\u00e9r\u00eats). Les r\u00e9gimes \u00e0 <b>amortissement</b> (LMNP r\u00e9el, SARL famille, SCI IS) minimisent l'imp\u00f4t annuel mais le r\u00e9int\u00e8grent \u00e0 la <b>plus-value de cession</b> : sur longue d\u00e9tention avec revente, comparez le co\u00fbt total, pas seulement l'annuel. Pinel, Denormandie, Malraux, Monuments Historiques et holding (li\u00e9s \u00e0 un investissement sp\u00e9cifique) seront ajout\u00e9s s\u00e9par\u00e9ment. Indicatif \u2014 \u00e0 valider avec un expert-comptable.</div>`;
 }
 /* ===== Vague 5 : tableau de bord investisseur (ratios financiers pro) ===== */
@@ -2279,12 +2728,26 @@ async function provPlu(coord){
 async function provLoyers(insee,type){
   if(!insee)return null;
   try{
-    const u="https://public.opendatasoft.com/api/explore/v2.1/catalog/datasets/carte-des-loyers-indicateurs-de-loyers-dannonce-par-commune/records?where=insee_com%3D%22"+insee+"%22&limit=1&select=loym%2Cloymapt%2Cloymmai";
+    // Carte des loyers DRIHL/DHUP : loyers medians d'annonces par commune
+    // Source officielle publiee annuellement sur opendatasoft (gratuit, sans cle)
+    const u="https://public.opendatasoft.com/api/explore/v2.1/catalog/datasets/carte-des-loyers-indicateurs-de-loyers-dannonce-par-commune/records?where=insee_com%3D%22"+insee+"%22&limit=1&select=loym%2Cloymapt%2Cloymmai%2Cnb_obs%2Cnommun%2Cannee_ref";
     const d=await dvfFetch(u);const r=(d&&d.json&&d.json.results&&d.json.results[0])||null;
     if(!r)return null;
-    const apt=r.loymapt||null,mai=r.loymmai||null,all=r.loym||null;
+    const apt=r.loymapt?+r.loymapt:null,mai=r.loymmai?+r.loymmai:null,all=r.loym?+r.loym:null;
     const val=type==="maison"?(mai||all):(apt||all);
-    return val>0?{loyerM2:+parseFloat(val).toFixed(1)}:null;
+    if(!val||val<=0)return null;
+    const loyerM2=+parseFloat(val).toFixed(1);
+    const premium=typeof FURNISHED_PREMIUM!=="undefined"?FURNISHED_PREMIUM:0.15;
+    return{
+      loyerM2,
+      loyerAppt:apt?+apt.toFixed(1):null,
+      loyerMaison:mai?+mai.toFixed(1):null,
+      loyerMeuble:+(loyerM2*(1+premium)).toFixed(1),
+      nbObs:r.nb_obs?+r.nb_obs:null,
+      commune:r.nommun||"",
+      annee:r.annee_ref||null,
+      source:"Carte des loyers DHUP"
+    };
   }catch(_){return null;}
 }
 async function provFilosofi(insee){
@@ -2342,12 +2805,26 @@ async function provCrime(insee){
   }catch(_){}
   return{tx:com.tx,year:com.year,depTx:depTx,dep:dep};
 }
+async function provVacance(insee){
+  if(!insee)return null;
+  try{
+    const u="https://public.opendatasoft.com/api/explore/v2.1/catalog/datasets/logements-locatifs-vacants-en-france@public-statistiques/records?where=depcom%3D%22"+insee+"%22&limit=1&select=taux_vacance_loc%2Cnb_loc_vac%2Cannee";
+    const d=await dvfFetch(u);const r=(d&&d.json&&d.json.results&&d.json.results[0])||null;
+    if(r&&r.taux_vacance_loc!=null)return{taux:+parseFloat(r.taux_vacance_loc).toFixed(1),nbVac:r.nb_loc_vac||null,annee:r.annee||null,source:"INSEE RFL"};
+  }catch(_){}
+  try{
+    const u2="https://public.opendatasoft.com/api/explore/v2.1/catalog/datasets/recensement-de-la-population-logements-par-commune/records?where=code_commune_insee%3D%22"+insee+"%22&limit=1&select=log_vac%2Clog_tot%2Cannee";
+    const d=await dvfFetch(u2);const r=(d&&d.json&&d.json.results&&d.json.results[0])||null;
+    if(r&&r.log_vac!=null&&r.log_tot>0)return{taux:+(r.log_vac/r.log_tot*100).toFixed(1),source:"INSEE RP"};
+  }catch(_){}
+  return null;
+}
 async function fetchContextProviders(coord){
   if(!coord)return{};
-  const res=await Promise.allSettled([provDemo(coord.insee),provEntreprises(coord.insee),provPlu(coord),provFilosofi(coord.insee),provLoyers(coord.insee,state.type),provRPLS(coord.insee),provFibre(coord.insee),provCrime(coord.insee)]);
+  const res=await Promise.allSettled([provDemo(coord.insee),provEntreprises(coord.insee),provPlu(coord),provFilosofi(coord.insee),provLoyers(coord.insee,state.type),provRPLS(coord.insee),provFibre(coord.insee),provCrime(coord.insee),provVacance(coord.insee)]);
   const v=i=>res[i]&&res[i].status==="fulfilled"?res[i].value:null;
-  const ctx={},iris=v(0),ent=v(1),plu=v(2),filo=v(3),loy=v(4),rpls=v(5),fib=v(6),crime=v(7);
-  if(iris)ctx.iris=iris;if(ent)ctx.sirene=ent;if(plu)ctx.plu=plu;if(filo)ctx.filosofi=filo;if(loy)ctx.loyers=loy;if(rpls)ctx.rpls=rpls;if(fib)ctx.fibre=fib;if(crime)ctx.crime=crime;
+  const ctx={},iris=v(0),ent=v(1),plu=v(2),filo=v(3),loy=v(4),rpls=v(5),fib=v(6),crime=v(7),vac=v(8);
+  if(iris)ctx.iris=iris;if(ent)ctx.sirene=ent;if(plu)ctx.plu=plu;if(filo)ctx.filosofi=filo;if(loy)ctx.loyers=loy;if(rpls)ctx.rpls=rpls;if(fib)ctx.fibre=fib;if(crime)ctx.crime=crime;if(vac)ctx.vacance=vac;
   return ctx;
 }
 // ===== Reconciliation ChatGPT x Grok \u2014 W1 : socle contextuel (additif, ZERO impact prix) =====
@@ -2489,7 +2966,8 @@ function multiEstimators(r){
     const dvfMed=Math.round(stats.med*_vcF2);
     const dvf=Math.round(dvfMed*surf);
     const dvfNote=_vcF2<1?" (m\u00e9diane DVF × facteur VEFA "+r.vefaCorr.factor.toFixed(3)+")":"";
-    est.push(Object.assign({key:"dvf",label:"Estimateur DVF",price:dvf,conf:Math.round(Math.min(65,(stats.n||0)/40*65)),justif:eur0(dvfMed)+" \u20ac/m\u00b2 (m\u00e9diane DVF nettoy\u00e9e sur "+(stats.n||0)+" ventes"+dvfNote+") \u00d7 "+surf+" m\u00b2 = "+eur0(dvf)+" \u20ac"},iv(dvf,1.1)));
+  const _srcTag=state._localApt&&state._localApt.med>0?" [ref. commune DVF "+state._localApt.annee+"]":"";
+  est.push(Object.assign({key:"dvf",label:"Estimateur DVF",price:dvf,conf:Math.round(Math.min(65,(stats.n||0)/40*65)),justif:eur0(dvfMed)+" \u20ac/m\u00b2 (m\u00e9diane DVF nettoy\u00e9e sur "+(stats.n||0)+" ventes"+dvfNote+") \u00d7 "+surf+" m\u00b2 = "+eur0(dvf)+" \u20ac"},iv(dvf,1.1)));
     const compE=eng.find(x=>x.key==="comp"),cppm=pick("comp"),cp=Math.round(cppm*surf);est.push(Object.assign({key:"comp",label:"Estimateur comparables",price:cp,conf:Math.round(Math.min(100,(compE?compE.w:0.5)*100)),justif:eur0(cppm)+" \u20ac/m\u00b2 (ventes similaires pond\u00e9r\u00e9es surface+r\u00e9cence"+(compE&&compE.detail?", "+compE.detail:"")+") \u00d7 "+surf+" m\u00b2 = "+eur0(cp)+" \u20ac"},iv(cp,1)));
     const reg=eng.find(x=>x.key==="reg");if(reg){const st=Math.round(reg.ppm*surf),r2=parseFloat(reg.detail.replace(/[^0-9.]/g,""))||0;est.push(Object.assign({key:"stat",label:"Estimateur statistique",price:st,conf:Math.round(r2*100),justif:"R\u00e9gression DVF surface\u2192prix : "+eur0(reg.ppm)+" \u20ac/m\u00b2 \u00d7 "+surf+" m\u00b2 = "+eur0(st)+" \u20ac (R\u00b2 "+r2.toFixed(2)+", part du prix expliqu\u00e9e par la surface)"},iv(st,1.15)));}
   }
@@ -2693,16 +3171,38 @@ function computeAll(r){
   const duree=Number($("iDuree").value),taux=numv("iTaux")/100,assurTaux=numv("iAssur")/100,apport=numv("iApport");
   let emprunt=Math.max(0,coutTotal-apport);$("empruntV").textContent=eur(emprunt);
   let mensuCredit=0,interetsTot=0,assurMensu=0;
-  if(duree>0&&emprunt>0){const im=taux/12,n=duree*12;mensuCredit=im>0?emprunt*im/(1-Math.pow(1+im,-n)):emprunt/n;interetsTot=mensuCredit*n-emprunt;assurMensu=emprunt*assurTaux/12;}
+  const isInFine=$("creditInFine")&&$("creditInFine").checked;
+  if(duree>0&&emprunt>0){
+    if(isInFine){
+      // In fine : mensualité = intérêts seuls; capital intégral remboursé en fin
+      mensuCredit=emprunt*taux/12;
+      interetsTot=mensuCredit*duree*12; // intérêts constants, pas d'amortissement
+    }else{
+      const im=taux/12,n=duree*12;
+      mensuCredit=im>0?emprunt*im/(1-Math.pow(1+im,-n)):emprunt/n;
+      interetsTot=mensuCredit*n-emprunt;
+    }
+    assurMensu=emprunt*assurTaux/12;
+  }
   const mensuTot=mensuCredit+assurMensu;
   const coutCredit=interetsTot+assurMensu*(duree*12);
-  $("coutCreditV").textContent=duree>0?eur(coutCredit):"\u2014";
-  $("mMensu").textContent=duree>0?eur(mensuTot):"\u2014";
-  if(duree>0&&emprunt>0){const nm=duree*12;const fees=numv("iDossier")+numv("iGarantie");const flows=[emprunt-fees];for(let k=0;k<nm;k++)flows.push(-mensuTot);const im=irr(flows);$("taeg").textContent=im!=null?(((Math.pow(1+im,12)-1)*100).toFixed(2).replace('.',',')+" %"):"\u2014";}
-  else $("taeg").textContent="\u2014";
+  $("coutCreditV").textContent=duree>0?eur(coutCredit):"—";
+  const mMensuEl=$("mMensu");
+  if(mMensuEl){if(duree>0){mMensuEl.textContent=eur(mensuTot);
+    if(isInFine)mMensuEl.title="In fine : intérêts ("+eur(mensuCredit)+"/mois) + assur. Capital "+eur(emprunt)+" remboursé à l'échéance";
+    else mMensuEl.removeAttribute("title");}
+  else mMensuEl.textContent="—";}
+  if(duree>0&&emprunt>0){
+    const nm=duree*12,fees=numv("iDossier")+numv("iGarantie");
+    const flows=[emprunt-fees];
+    if(isInFine){for(let k=0;k<nm-1;k++)flows.push(-mensuTot);flows.push(-mensuTot-emprunt);}
+    else{for(let k=0;k<nm;k++)flows.push(-mensuTot);}
+    const im2=irr(flows);$("taeg").textContent=im2!=null?(((Math.pow(1+im2,12)-1)*100).toFixed(2).replace('.',',')+' %'):"—";
+  }else $("taeg").textContent="—";
 
   const reg=$("regime").value;
-  const interetsAn=emprunt*taux; // approx ann\u00e9e 1
+  // Intérêts annuels déductibles : in fine = constants (capital entier × taux) ; amortissable = approx an 1
+  const interetsAn=isInFine?emprunt*taux:emprunt*taux; // même valeur an 1, distincte en années suivantes via projCore
   const assurAn=emprunt*assurTaux;
   const amortImmo=bp*0.85/30;
   const amortMobilier=state.loc==="meuble"?bp*0.10/7:0;
@@ -2758,6 +3258,12 @@ function okIcon(){return '<svg width="18" height="18" viewBox="0 0 24 24" fill="
 
 let lastResult=null;
 function patchDynReal(r){
+  const _vac=(state.ctx2||{}).vacance;
+  if(_vac&&_vac.taux!=null&&r.dyn){
+    r.dyn.vacance=_vac.taux;r.dyn.vacanceReal=true;
+    r.dyn.vacanceSource=_vac.source||"INSEE";r.dyn.vacanceAnnee=_vac.annee||null;
+    if(_vac.taux>8&&r.dyn.risque<2)r.dyn.risque=Math.min(3,r.dyn.risque+1);
+  }
   if(!r||!r.dyn)return;
   const d=r.dyn,lv=state.live||{},x2=state.ctx2||{};
   const popReal=lv.pop||null;if(popReal){d.pop=popReal;d.popReal=true;d.logements=Math.round(popReal/2.3);}
@@ -2813,6 +3319,10 @@ async function fetchAllData(coord){
   else if(state.type==="terrain"){out.diag="terrain : pas de comparable b\u00e2ti DVF";}
   else{
     const res=await fetchDvf(coord,state.type);
+    // G: Calcul du prix médian communal DVF — graine dynamique pour baseSqm()
+    fetchCommuneMedian(coord.insee,state.type).then(med=>{
+      if(med&&med.med>0){state._localApt={med:med.med,n:med.n,source:med.source,annee:med.annee};}
+    }).catch(()=>{});
     state.dvfScope=res.scope||null;
     if(res.pts&&res.pts.length){
       out.realPts=res.pts;
@@ -3114,6 +3624,7 @@ async function showResults(){
   if(!surface||surface<=0){err.textContent="Renseignez une surface valide.";err.classList.add("show");return;}
   err.classList.remove("show");
   const btn=$("btnEstim");const oldTxt=btn.textContent;btn.textContent="Recherche des ventes r\u00e9elles\u2026";btn.disabled=true;
+  state._localApt=null; // G: reset prix communal DVF a chaque nouvelle estimation
   const coord=await geocode();dbg("Coordonnees BAN: "+JSON.stringify(coord));
   const data=await fetchAllData(coord);
   btn.textContent=oldTxt;btn.disabled=false;
@@ -3159,7 +3670,7 @@ $("btnEstim").addEventListener("click",showResults);
 })();
 ["discRate"].forEach(id=>{$(id).addEventListener("input",()=>{if(lastResult){renderProjection(lastResult);renderFinPrice(lastResult);}});});
 ["prixAchat","iRent","iTaxe","iCopro","iPno","iDivers","iCompta","iCfe","iApport","iTaux","iAssur","iDossier","iGarantie","iDuree","iTravaux","tmi","regime"].forEach(id=>{const h=()=>{if(lastResult){computeAll(lastResult);computeResale(lastResult);renderScatter(lastResult);updRentVsMkt();renderFinPrice(lastResult);}};$(id).addEventListener("input",h);$(id).addEventListener("change",h);});
-["dispositif","dispoTravaux","dispoDuree","dispoZone"].forEach(id=>{const e=$(id);if(e){e.addEventListener("input",renderDispositif);e.addEventListener("change",renderDispositif);}});
+["dispositif","dispoTravaux","dispoDuree","dispoZone","dispoNiveau","dispoNuDuree","sciNbAssoc","sciDistrib","sciFiscDiv","sciHolding"].forEach(id=>{const e=$(id);if(e){e.addEventListener("input",renderDispositif);e.addEventListener("change",renderDispositif);}});
 ["holdYears","reval","fraisVente","gRent","gCharges"].forEach(id=>{const h=()=>{if(lastResult){computeResale(lastResult);renderFinPrice(lastResult);}};$(id).addEventListener("input",h);$(id).addEventListener("change",h);});
 bindSeg("segStatut","statut",()=>{const nr=state.statut==="nonresident";$("chkEEE").style.display=nr?"flex":"none";$("tmi").style.display=nr?"none":"";$("tmiNR").style.display=nr?"block":"none";$("tmiLabel").textContent=nr?"Imposition (non-r\u00e9sident)":"Tranche d'imp\u00f4t (TMI)";$("tmiNote").style.display=nr?"block":"none";if(lastResult){computeAll(lastResult);computeResale(lastResult);renderFinPrice(lastResult);}});
 bindSeg("segNeuf","neuf",()=>{if(lastResult){computeAll(lastResult);computeResale(lastResult);renderFinPrice(lastResult);}});
@@ -3169,6 +3680,150 @@ $("btnFiche").addEventListener("click",()=>{if(lastResult)printFiche(lastResult)
 if($("repLogo"))$("repLogo").addEventListener("change",e=>{const f=e.target.files&&e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{repLogoData=rd.result;if($("repLogoPrev")){$("repLogoPrev").src=rd.result;$("repLogoPrev").style.display="block";}try{localStorage.setItem("estimo_logo",rd.result);}catch(_){}};rd.readAsDataURL(f);});
 if($("repName"))$("repName").addEventListener("input",()=>{try{localStorage.setItem("estimo_repname",$("repName").value);}catch(_){}});
 if($("repColor"))$("repColor").addEventListener("input",()=>{try{localStorage.setItem("estimo_repcolor",$("repColor").value);}catch(_){}});
+// ===== Export Excel (SheetJS CE, Apache 2.0) =====
+let _xlsxLoaded=false;
+function loadSheetJS(cb){
+  if(typeof XLSX!=="undefined"){cb();return;}
+  if(_xlsxLoaded){setTimeout(()=>typeof XLSX!=="undefined"&&cb(),300);return;}
+  _xlsxLoaded=true;
+  const s=document.createElement("script");
+  s.src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
+  s.onload=cb;
+  s.onerror=()=>alert("Impossible de charger SheetJS. Vérifiez votre connexion internet.");
+  document.head.appendChild(s);
+}
+function exportXlsx(){
+  const r=lastResult;if(!r){alert("Lancez d'abord une estimation.");return;}
+  loadSheetJS(()=>{
+    try{_doExportXlsx(r);}catch(e){console.error(e);alert("Erreur lors de la génération du fichier Excel.");}
+  });
+}
+function _doExportXlsx(r){
+  const wb=XLSX.utils.book_new();
+  const bp=numv("prixAchat")||r.price;
+  const taux=numv("iTaux")/100,assurTaux=numv("iAssur")/100;
+  const duree=Number($("iDuree").value);
+  const apport=numv("iApport");
+  const notaire=bp*notaireRate();
+  const travaux=numv("iTravaux");
+  const coutTotal=bp+notaire+travaux+numv("iDossier")+numv("iGarantie");
+  const emprunt=Math.max(0,coutTotal-apport);
+  const rentY=numv("iRent")*12;
+  const charges=numv("iTaxe")+numv("iCopro")+numv("iPno")+numv("iDivers");
+  const reg=$("regime").value;
+  const isIF=!!($("creditInFine")&&$("creditInFine").checked);
+  const im=taux/12,nm=duree*12;
+  const mensCredit=(duree>0&&emprunt>0)?(isIF?emprunt*taux/12:(im>0?emprunt*im/(1-Math.pow(1+im,-nm)):emprunt/nm)):0;
+  const mensAssur=emprunt*assurTaux/12;
+  const mensTot=mensCredit+mensAssur;
+
+  // ----- ONGLET 1 : Synthese -----
+  const s1=[
+    ["ESTIMO — Synthèse de l'estimation",""],
+    ["",""],
+    ["Bien",""],
+    ["Adresse",$("adresse").value||r.city||""],
+    ["Type",state.type],
+    ["Surface",(r.surface||0)+" m²"],
+    ["DPE",state.dpe],
+    ["",""],
+    ["Valeurs clés",""],
+    ["Prix estimé (Estimo)",r.price],
+    ["Prix acheté (saisi)",bp],
+    ["Fourchette basse",r.low],
+    ["Fourchette haute",r.high],
+    ["Prix /m²",r.sqmBase],
+    ["",""],
+    ["Coûts d'acquisition",""],
+    ["Frais de notaire",notaire],
+    ["Travaux",travaux],
+    ["Coût total",coutTotal],
+    ["Apport",apport],
+    ["Montant emprunté",emprunt],
+    ["",""],
+    ["Rentabilité",""],
+    ["Loyer annuel",rentY],
+    ["Charges annuelles",charges],
+    ["Rendement brut (%)",bp>0?Math.round(rentY/bp*1000)/10:0],
+    ["Rendement net (%)",coutTotal>0?Math.round((rentY-charges)/coutTotal*1000)/10:0],
+    ["Régime fiscal",reg],
+    ["",""],
+    ["Crédit",""],
+    ["Durée (ans)",duree],
+    ["Taux (%)",taux*100],
+    ["Assurance (%)",assurTaux*100],
+    ["Type de crédit",isIF?"In fine":"Amortissable"],
+    ["Mensualité totale",Math.round(mensTot)],
+    ["",""],
+    ["Multi-lots",""],
+    ["Nombre de lots",state._lots?state._lots.length:0],
+    ["Surface totale lots",state._lots?state._lots.reduce(function(s,l){return s+(+l.surface||0);},0):0],
+  ];
+  const ws1=XLSX.utils.aoa_to_sheet(s1);
+  ws1["!cols"]=[{wch:35},{wch:20}];
+  XLSX.utils.book_append_sheet(wb,ws1,"Synthèse");
+
+  // ----- ONGLET 2 : Tableau d'amortissement -----
+  if(duree>0&&emprunt>0){
+    const s2=[["Année","Mois","CRD début","Mensualité","Intérêts","Capital amorti","CRD fin","Assurance"]];
+    let crd=emprunt;
+    for(let k=1;k<=nm;k++){
+      const yr=Math.ceil(k/12),mois=((k-1)%12)+1;
+      let intM,capM;
+      if(isIF){intM=crd*taux/12;capM=k===nm?crd:0;}
+      else{intM=crd*im;capM=mensCredit-intM;}
+      const crdFin=Math.max(0,crd-capM);
+      s2.push([yr,mois,Math.round(crd),Math.round(mensTot),Math.round(intM),Math.round(capM),Math.round(crdFin),Math.round(mensAssur)]);
+      crd=crdFin;
+    }
+    const ws2=XLSX.utils.aoa_to_sheet(s2);
+    ws2["!cols"]=[{wch:8},{wch:6},{wch:14},{wch:14},{wch:12},{wch:14},{wch:14},{wch:12}];
+    XLSX.utils.book_append_sheet(wb,ws2,"Amortissement");
+  }
+
+  // ----- ONGLET LOTS (si multi-lots actif) -----
+  if(state._lots&&state._lots.length>0){
+    const sL=[["Lot #","Type","Surface m\u00b2","Loyer \u20ac/mois","Loyer \u20ac/an","Loyer \u20ac/m\u00b2","DPE","Rdt brut lot (%)"]];
+    const bpLot=bp/Math.max(1,state._lots.length);
+    state._lots.forEach(function(lot,idx){
+      const loyerAn=(+lot.loyer||0)*12;
+      const loyerM2=lot.surface>0?Math.round((+lot.loyer||0)/lot.surface*10)/10:0;
+      const rdtBrut=bpLot>0?Math.round(loyerAn/bpLot*1000)/10:0;
+      sL.push([idx+1,lot.type||"",lot.surface||0,lot.loyer||0,loyerAn,loyerM2,lot.dpe||"",rdtBrut]);
+    });
+    const totSurf=state._lots.reduce(function(s,l){return s+(+l.surface||0);},0);
+    const totLoyer=state._lots.reduce(function(s,l){return s+(+l.loyer||0);},0);
+    sL.push(["TOTAL","",totSurf,totLoyer,totLoyer*12,totSurf>0?Math.round(totLoyer/totSurf*10)/10:0,"",bp>0?Math.round(totLoyer*12/bp*1000)/10:0]);
+    const wsL=XLSX.utils.aoa_to_sheet(sL);
+    wsL["!cols"]=[{wch:6},{wch:10},{wch:12},{wch:14},{wch:14},{wch:12},{wch:6},{wch:14}];
+    XLSX.utils.book_append_sheet(wb,wsL,"D\u00e9tail lots");
+  }
+
+  // ----- ONGLET 3 : Projection annuelle -----
+  const P=projParams(r);
+  const s3=[["Année","Loyers","Charges","Intérêts","Impôt","Annuités","Cash-flow","Valeur estimée","CRD","Equity"]];
+  for(let t=1;t<=Math.min(P.H,30);t++){
+    const rY=P.rentY*Math.pow(1+P.gRent,t-1)*(1-P.vac/12);
+    const chY=P.charges*Math.pow(1+P.gCharges,t-1);
+    const crdT=(()=>{if(duree<=0||emprunt<=0)return 0;if(isIF)return t<=duree?emprunt:0;const k=Math.min(t*12,nm);return Math.max(0,im>0?emprunt*Math.pow(1+im,k)-mensCredit*(Math.pow(1+im,k)-1)/im:emprunt-mensCredit*k);})();
+    const intY=(t<=duree)?Math.max(0,mensTot*12-(crdT-Math.max(0,im>0?emprunt*Math.pow(1+im,(t-1)*12)-mensCredit*(Math.pow(1+im,(t-1)*12)-1)/im:emprunt-mensCredit*(t-1)*12))):0;
+    const insY=(t<=duree)?emprunt*assurTaux:0;
+    const tax=fiscalTax(reg,rY,chY,Math.max(0,intY),insY,state._amortTotal||(bp*0.85/30));
+    const payY=(t<=duree)?(isIF?mensTot*12+(t===duree?emprunt:0):mensTot*12):0;
+    const cf=rY-chY-tax-payY;
+    const valeur=Math.round(bp*Math.pow(1+P.reval,t));
+    const equity=Math.max(0,valeur-crdT);
+    s3.push([t,Math.round(rY),Math.round(chY),Math.round(intY),Math.round(tax),Math.round(payY),Math.round(cf),valeur,Math.round(crdT),equity]);
+  }
+  const ws3=XLSX.utils.aoa_to_sheet(s3);
+  ws3["!cols"]=[{wch:8},{wch:10},{wch:10},{wch:12},{wch:10},{wch:10},{wch:12},{wch:16},{wch:12},{wch:12}];
+  XLSX.utils.book_append_sheet(wb,ws3,"Projection");
+
+  // Télécharger
+  const fname="estimo_"+((r.city||"bien").replace(/\s+/g,"-").toLowerCase())+"_"+new Date().toISOString().slice(0,10)+".xlsx";
+  XLSX.writeFile(wb,fname);
+}
+if($("btnExportXlsx"))$("btnExportXlsx").addEventListener("click",exportXlsx);
 if($("btnReport"))$("btnReport").addEventListener("click",generateReport);
 $("btnExportComps").addEventListener("click",()=>{if(lastResult)exportComps(lastResult);});
 ["opSellTarget","opDureeMois"].forEach(id=>{$(id).addEventListener("input",()=>{if(lastResult)renderOperation(lastResult);});$(id).addEventListener("change",()=>{if(lastResult)renderOperation(lastResult);});});
@@ -3205,6 +3860,38 @@ const DEP_DMTO={
 const DMTO_AUDIT_DATE=new Date("2026-02-15T00:00:00");
 function dmtoAuditAgeMonths(){return(Date.now()-DMTO_AUDIT_DATE.getTime())/(1000*60*60*24*30.44);}
 function dmtoAuditWarning(){const m=dmtoAuditAgeMonths();return m>6?` <span style="color:var(--warn);font-weight:700" title="Liste des taux DMTO d\u00e9partementaux v\u00e9rifi\u00e9e il y a ${Math.round(m)} mois \u2014 les conseils d\u00e9partementaux peuvent avoir d\u00e9lib\u00e9r\u00e9 depuis. A revalider aupr\u00e8s de la DGFiP.">\u26a0 taux \u00e0 revalider (${Math.round(m)} mois)</span>`:"";}
+// DPE 2026 : coefficient electricite passe de 2.58 a 1.79 kWhep/kWhef au 01/01/2026.
+// Impacts : ~850 000 logements F/G chauffes a l'electricite peuvent gagner 1-2 classes.
+// Ref : note DHUP du 18/12/2025, Arrete du 27/11/2025, entree en vigueur 01/01/2026.
+// IRL : Indice de Référence des Loyers (INSEE, publié trimestriellement)
+// Valeur de repli : IRL Q3-2025 = 142,89 (source : INSEE BDM, serie 001759959)
+// Variation annuelle T3-2025 : +2,47 % (12 mois) — base 2022=100
+const IRL_FALLBACK={val:142.89,trimestre:"T3-2025",var12:2.47,source:"INSEE (repli)"}; 
+state._irl=null; // sera renseigné par fetchIRL()
+
+async function fetchIRL(){
+  // Essaie l'API opendatasoft INSEE sans clé
+  try{
+    const u="https://public.opendatasoft.com/api/explore/v2.1/catalog/datasets/indices_irl@public-statistiques/records?limit=2&order_by=periode+DESC&select=periode%2Cindice%2Ctaux_annuel";
+    const d=await dvfFetch(u);
+    const rows=(d&&d.json&&d.json.results)||[];
+    if(rows.length){
+      const r=rows[0];
+      const val=r.indice?+r.indice:IRL_FALLBACK.val;
+      const var12=r.taux_annuel?+parseFloat(r.taux_annuel).toFixed(2):null;
+      // Calculer la variation si absente (sur 2 points)
+      const prev=rows[1];const calcVar12=prev&&prev.indice?+((val/+prev.indice-1)*100*4).toFixed(2):null;
+      state._irl={val,trimestre:r.periode||"",var12:var12||calcVar12||IRL_FALLBACK.var12,source:"INSEE (opendatasoft)"};
+      return state._irl;
+    }
+  }catch(_){}
+  // Fallback sur constante embarquée
+  state._irl=Object.assign({},IRL_FALLBACK);
+  return state._irl;
+}
+
+const DPE_REFORME_DATE="2026-01-01";
+const CHAUFFAGE_ELEC=["indiv_elec","pac","reversible","plancher"]; // modes electriques => impactes
 function depFromCP(){let cp=($("cp").value||"").replace(/\D/g,"");if(!cp&&state.coord&&state.coord.insee)cp=state.coord.insee;return cp.length>=3&&cp.substring(0,2)==="97"?cp.substring(0,3):cp.substring(0,2);}
 function notaireRate(){
   if(state.neuf==="neuf"&&state.type!=="terrain")return 0.025; // neuf/VEFA : frais r\u00e9duits ~2,5%
@@ -3213,7 +3900,7 @@ function notaireRate(){
   return dmto+0.008+0.001+0.006; // + \u00e9moluments notaire ~0,8% + CSI 0,10% + d\u00e9bours ~0,6%
 }
 function computeDynamics(city,cp){
-  const cn=norm(city);const apt=CITY_APT[cn]||DEPT_APT[cp?cp.substring(0,2):""]||NAT_APT;const s=apt;
+  const cn=norm(city);const _lApt=state._localApt&&state._localApt.med>0?state._localApt.med:null;const apt=_lApt||CITY_APT[cn]||DEPT_APT[cp?cp.substring(0,2):""]||NAT_APT;const s=apt;
   const revenu=Math.round((18000+apt*1.9)/100)*100;
   const pop=Math.round((apt>5000?180000:apt>3000?60000:20000)*(0.6+rng(s)*0.8));
   const popVar5=+(rng(s+1)*8-3).toFixed(1);
@@ -3256,7 +3943,15 @@ function computeDynamics(city,cp){
 function abatIR(y){if(y<6)return 0;if(y>=22)return 1;return (y-5)*0.06;}
 function abatPS(y){if(y<6)return 0;if(y>=30)return 1;if(y<=21)return (y-5)*0.0165;if(y===22)return 0.28;return 0.28+(y-22)*0.09;}
 function surtaxePV(pv){if(pv<=50000)return 0;const t=pv<=100000?0.02:pv<=150000?0.03:pv<=200000?0.04:pv<=250000?0.05:0.06;return pv*t;}
-function renderResaleDefaults(r){$("reval").value="2.0";$("gRent").value="2.5";$("gCharges").value="2.5";$("fraisVente").value=4;computeResale(r);}
+function renderResaleDefaults(r){
+  $("reval").value="2.0";
+  // Utiliser l'IRL réel si disponible, sinon 2.5 par défaut
+  const irlVal=state._irl&&state._irl.var12?state._irl.var12.toFixed(1):"2.5";
+  $("gRent").value=irlVal;
+  $("gCharges").value="2.5";$("fraisVente").value=4;
+  computeResale(r);
+  _renderIrlNote();
+}
 function computeResale(r){
   const bp=numv("prixAchat")||r.price;
   const years=Number($("holdYears").value);const reval=numv("reval")/100;const fv=numv("fraisVente")/100;
@@ -3364,7 +4059,8 @@ function opCalc(r,sellPrice,works){
   const opYears=(numv("opDureeMois")||12)/12;
   const duree=Number($("iDuree").value),taux=numv("iTaux")/100,apport=numv("iApport");
   const chargesAn=numv("iTaxe")+numv("iCopro")+numv("iPno")+numv("iDivers");
-  const acqRate=profil==="mdb"?notaireRateMdB(years):notaireRate();
+  // Fix#5b : l'engagement MdB est la duree du flip (opYears), pas holdYears
+  const acqRate=profil==="mdb"?notaireRateMdB(opYears):notaireRate();
   const fraisAcq=bp*acqRate;
   const fraisVente=sellPrice*fv;
   const chargesDet=chargesAn*opYears;
@@ -3405,7 +4101,11 @@ function opCalc(r,sellPrice,works){
 function margeColor(t){return t>=15?"#0a7a5c":t>=7?"#b4541f":"#c0392b";}
 function renderOperation(r){
   const years=Number($("holdYears").value),reval=numv("reval")/100,travaux=numv("iTravaux");
-  const bp=numv("prixAchat")||r.price;const targetSell=numv("opSellTarget");const sell=targetSell>0?targetSell:bp*Math.pow(1+reval,years);
+  const bp=numv("prixAchat")||r.price;const targetSell=numv("opSellTarget");
+  // Fix#5 : le flip utilise opDureeMois (pas holdYears=50 ans par defaut).
+  // Ex avant : bp*(1+reval)^50 = 400k pour un flip d'1 mois -> erreur economique
+  const _opDurYrs=(numv("opDureeMois")||12)/12;
+  const sell=targetSell>0?targetSell:bp*Math.pow(1+reval,_opDurYrs);
   const o=opCalc(r,sell,travaux);
   $("opAchat").textContent=eur(o.bp);
   $("opAcqRate").textContent=" \u00b7 "+(o.acqRate*100).toFixed(1).replace(".",",")+" %";
@@ -3641,18 +4341,19 @@ function projParams(r){
   const bp=numv("prixAchat")||r.price;
   const mkt=r.dyn?(r.dyn.score<40?0.004:r.dyn.score<66?0.002:0):0.002,rsk=r.dyn?r.dyn.risque*0.0015:0.0015;
   const autoRate=OAT10/100+0.006+mkt+rsk,over=numv("discRate")>0;
-  return {bp:bp,apport:numv("iApport"),taux:numv("iTaux")/100,assur:numv("iAssur")/100,duree:Number($("iDuree").value),reg:$("regime").value,rentY:numv("iRent")*12,charges:numv("iTaxe")+numv("iCopro")+numv("iPno")+numv("iDivers"),reval:numv("reval")/100,fv:numv("fraisVente")/100,gRent:numv("gRent")/100,gCharges:numv("gCharges")/100,H:Number($("holdYears").value),travaux:numv("iTravaux"),dossier:numv("iDossier"),garantie:numv("iGarantie"),vac:0,rate:over?numv("discRate")/100:autoRate};
+  return {bp:bp,apport:numv("iApport"),taux:numv("iTaux")/100,assur:numv("iAssur")/100,duree:Number($("iDuree").value),inFine:!!($("creditInFine")&&$("creditInFine").checked),reg:$("regime").value,rentY:numv("iRent")*12,charges:numv("iTaxe")+numv("iCopro")+numv("iPno")+numv("iDivers"),reval:numv("reval")/100,fv:numv("fraisVente")/100,gRent:numv("gRent")/100,gCharges:numv("gCharges")/100,H:Number($("holdYears").value),travaux:numv("iTravaux"),dossier:numv("iDossier"),garantie:numv("iGarantie"),vac:0,rate:over?numv("discRate")/100:autoRate};
 }
 function projCore(p){
   const notaire=p.bp*notaireRate(),cout=p.bp+notaire+p.travaux+p.dossier+p.garantie;
+  const isIF=p.inFine&&p.duree>0&&emprunt>0;
   const emprunt=Math.max(0,cout-p.apport),im=p.taux/12,nm=p.duree*12;
-  const mens=(p.duree>0&&emprunt>0)?(im>0?emprunt*im/(1-Math.pow(1+im,-nm)):emprunt/nm):0,ps=psRate();
-  const crdAt=t=>{if(p.duree<=0||emprunt<=0)return 0;const k=Math.min(t*12,nm);return Math.max(0,im>0?emprunt*Math.pow(1+im,k)-mens*(Math.pow(1+im,k)-1)/im:emprunt-mens*k);};
+  const mens=(p.duree>0&&emprunt>0)?(isIF?emprunt*p.taux/12:(im>0?emprunt*im/(1-Math.pow(1+im,-nm)):emprunt/nm)):0,ps=psRate();
+  const crdAt=t=>{if(p.duree<=0||emprunt<=0)return 0;if(isIF)return t<p.duree?emprunt:0;const k=Math.min(t*12,nm);return Math.max(0,im>0?emprunt*Math.pow(1+im,k)-mens*(Math.pow(1+im,k)-1)/im:emprunt-mens*k);};
   const cfArr=[];
   for(let t=1;t<=50;t++){
     const rY=p.rentY*Math.pow(1+p.gRent,t-1)*(1-p.vac/12),chY=p.charges*Math.pow(1+p.gCharges,t-1);
     const intY=(t<=p.duree)?Math.max(0,mens*12-(crdAt(t-1)-crdAt(t))):0;
-    const insY=(t<=p.duree)?emprunt*p.assur:0,payY=(t<=p.duree)?(mens*12+emprunt*p.assur):0;
+    const insY=(t<=p.duree)?emprunt*p.assur:0,payY=(t<=p.duree)?(isIF?mens*12+emprunt*p.assur+(t===p.duree?emprunt:0):mens*12+emprunt*p.assur):0;
     const amY=(p.reg==="meuble_reel"&&t<=30)?((state._amortTotal||(p.bp*0.85/30))):0;
     cfArr.push(rY-chY-fiscalTax(p.reg,rY,chY,intY,insY,amY)-payY);
   }
@@ -3833,11 +4534,30 @@ document.querySelectorAll(".card-head").forEach(h=>{
 const segM=$("segMode");if(segM)segM.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{segM.querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on");$("results").classList.toggle("simple",b.dataset.m==="simple");}));
 
 fillRegimes();updateTypeUI();
+// Charger l'IRL en arrière-plan
+fetchIRL().then(irl=>{
+  if(!irl)return;
+  // Mettre à jour le champ gRent et son label si vide
+  const gRentEl=$("gRent");
+  if(gRentEl&&(!gRentEl.value||parseFloat(gRentEl.value)===2.5)){
+    gRentEl.value=irl.var12.toFixed(1);
+    // Recalculer si une estimation est déjà affichée
+    if(lastResult){computeResale(lastResult);renderFinPrice(lastResult);}
+  }
+  _renderIrlNote();
+});
+function _renderIrlNote(){
+  const irl=state._irl;if(!irl)return;
+  const el=$("irlNote");if(!el)return;
+  el.textContent="IRL "+irl.trimestre+" : "+irl.val.toFixed(2).replace(".",",")+" ("+String(irl.source||"").replace("(opendatasoft)","INSEE")+" · +"+(irl.var12).toFixed(2).replace(".",",")+" %/an sur 12 mois). Valeur utilisée pour la croissance des loyers.";
+  el.style.display="";
+}
 
-/* ===== Mes biens : sauvegarde locale (localStorage), pour retrouver et actualiser un bien plus tard ===== */
+/* ===== Mes biens : sauvegarde locale v72 — cards professionnelles ===== */
+/* ===== Constantes de sauvegarde locale ===== */
 const SAVED_KEY="estimo_biens_v1";
-const SAVED_VALUE_IDS=["adresse","cp","ville","surface","terrain","terrainType","terrainPente","terrainSol","terrainForme","floorExact","floorTotal","chambres","sdb","wcSep","balconM2","balconNb","terrasseM2","jardinM2","etat","standing","epoque","chauffage","vue","mitoyen","iRent","iTaxe","iCopro","iPno","iDivers","iCompta","iCfe","iApport","iTaux","iAssur","iDossier","iGarantie","iDuree","iTravaux","tmi","regime","prixAchat","reval","fraisVente","gRent","gCharges","holdYears","discRate","dispositif","dispoTravaux","dispoDuree","dispoZone","opSellTarget","opDureeMois","askPrice"];
-const SAVED_CHK_IDS=["viabilise","viabEau","viabAssain","viabElec","viabVoirie","viabTelecom","asc","expoN","expoE","expoS","expoO","piscine","amenageable","parking","garage","cave","eee"];
+const SAVED_VALUE_IDS=["adresse","cp","ville","surface","terrain","terrainType","terrainPente","terrainSol","terrainForme","floorExact","floorTotal","chambres","sdb","wcSep","balconM2","balconNb","terrasseM2","jardinM2","etat","standing","epoque","chauffage","vue","mitoyen","iRent","iTaxe","iCopro","iPno","iDivers","iCompta","iCfe","iApport","iTaux","iAssur","iDossier","iGarantie","iDuree","iTravaux","tmi","regime","prixAchat","reval","fraisVente","gRent","gCharges","holdYears","discRate","dispositif","dispoTravaux","dispoDuree","dispoZone","dispoNiveau","opSellTarget","opDureeMois","askPrice","dispoNuDuree"];
+const SAVED_CHK_IDS=["viabilise","viabEau","viabAssain","viabElec","viabVoirie","viabTelecom","asc","expoN","expoE","expoS","expoO","piscine","amenageable","parking","garage","cave","eee","creditInFine","multiLotToggle"];
 const SAVED_SEG_IDS=["segType","segNeuf","segPieces","segDpe","segGes","segLoc","segStatut","segProfil"];
 
 function loadSavedBiens(){try{const l=JSON.parse(localStorage.getItem(SAVED_KEY)||"[]");return Array.isArray(l)?l:[];}catch(_){return [];}}
@@ -3847,75 +4567,291 @@ function snapshotForm(){
   const vals={};SAVED_VALUE_IDS.forEach(id=>{const el=$(id);if(el)vals[id]=el.value;});
   const chks={};SAVED_CHK_IDS.forEach(id=>{const el=$(id);if(el)chks[id]=el.checked;});
   const segs={};SAVED_SEG_IDS.forEach(id=>{const el=$(id);if(!el)return;const on=el.querySelector("button.on");if(on)segs[id]=on.dataset.v;});
-  return{vals,chks,segs,coord:state.coord||null};
+  // Capturer les KPIs du lastResult pour comparaison
+  let kpi=null;
+  if(lastResult){
+    const r=lastResult;
+    try{
+      const P=projParams(r),b=projCore(P);
+      const charges=numv("iTaxe")+numv("iCopro")+numv("iPno")+numv("iDivers");
+      const rentY=numv("iRent")*12,bp=numv("prixAchat")||r.price;
+      const coutTotal=bp+bp*notaireRate()+numv("iTravaux")+numv("iDossier")+numv("iGarantie");
+      const gi=globalIndex(r);
+      kpi={price:r.price,low:r.low,high:r.high,sqm:r.sqmBase,conf:r.confScore,nbLots:state._lots.length||0,surfLots:_lotsTotalSurface(),marketScore:r.dyn?r.dyn.score:null,globalScore:gi?gi.global:null,rendBrut:bp>0?Math.round(rentY/bp*1000)/10:null,rendNet:coutTotal>0?Math.round((rentY-charges)/coutTotal*1000)/10:null,van:b?Math.round(b.van):null,tri:b&&b.tri?Math.round(b.tri*1000)/10:null,cfMois:b?Math.round(b.cf1m):null,city:r.city,surface:r.surface,type:r.type,dpe:state.dpe};
+    }catch(_){}
+  }
+  return{vals,chks,segs,coord:state.coord||null,kpi};
 }
 function restoreForm(snap){
   if(!snap)return;
-  const NOEVT=["adresse","cp","ville"]; // evite de re-declencher l'autocomplete BAN qui efface state.coord
+  const NOEVT=["adresse","cp","ville"];
   Object.keys(snap.vals||{}).forEach(id=>{const el=$(id);const v=snap.vals[id];if(v==null)return;
     if(!el){if(id==="askPrice")state._pendingAskPrice=v;return;}
     el.value=v;
     if(NOEVT.indexOf(id)===-1){el.dispatchEvent(new Event("input",{bubbles:true}));el.dispatchEvent(new Event("change",{bubbles:true}));}});
-  // askPrice n'existe qu'apres une premiere estimation (cree dans negoPanel) : toujours preparer la reprise differee
   if(snap.vals&&snap.vals.askPrice!=null)state._pendingAskPrice=snap.vals.askPrice;
   Object.keys(snap.chks||{}).forEach(id=>{const el=$(id);if(!el)return;el.checked=!!snap.chks[id];el.dispatchEvent(new Event("change",{bubbles:true}));});
   Object.keys(snap.segs||{}).forEach(id=>{const el=$(id);if(!el)return;const v=snap.segs[id];
     const btn=[...el.querySelectorAll("button")].find(b=>b.dataset.v===v);if(btn)btn.click();});
-  if(snap.coord)state.coord=snap.coord; // restaure apres les champs, pour ne pas etre efface par leurs ecouteurs
+  if(snap.coord)state.coord=snap.coord;
   if($("cpVilleRow")&&((snap.vals&&snap.vals.cp)||(snap.vals&&snap.vals.ville)))$("cpVilleRow").style.display="";
 }
+// Extrait les meta-infos d'un snap pour affichage dans la card
+function _bienCardMeta(b){
+  const snap=b.snap||{};
+  const addr=(snap.coord&&snap.coord.label)||(snap.vals&&snap.vals.adresse)||"";
+  const type=(snap.segs&&snap.segs.segType)||"appartement";
+  const surf=type==="terrain"?(snap.vals&&snap.vals.terrain?snap.vals.terrain+" m² terrain":""):(snap.vals&&snap.vals.surface?snap.vals.surface+" m²":"");
+  const nlots=snap.lots&&snap.lots.length>0?snap.lots.length:0;
+  const typeLbl=nlots>0?(nlots+" lots"):({appartement:"Appt",maison:"Maison",terrain:"Terrain"}[type]||"");
+  const price=snap.vals&&snap.vals.prixAchat&&+snap.vals.prixAchat>0?eur0(+snap.vals.prixAchat)+" €":"";
+  return{addr,typeLbl,surf,price};
+}
 function refreshSavedSelect(){
-  const sel=$("savedSelect");if(!sel)return;
+  const el=$("savedList");if(!el)return;
   const list=loadSavedBiens();
-  sel.innerHTML=list.length?list.map(b=>{const isAct=b.id===state.activeSnapId;return '<option value="'+esc(b.id)+'">'+(isAct?'\u25cf ':'')+esc(b.label)+" \u00b7 "+new Date(b.savedAt).toLocaleDateString("fr-FR")+"</option>";}).join(""):'<option value="">Aucun bien sauvegard\u00e9 pour l\u2019instant</option>';
-  if(state.activeSnapId)sel.value=state.activeSnapId;
-  const has=list.length>0;if($("btnLoadBien"))$("btnLoadBien").disabled=!has;if($("btnDeleteBien"))$("btnDeleteBien").disabled=!has;
-  // "Sauvegarder" toujours visible (nouveau bien) ; "Mettre à jour" visible si bien actif
+  if(!list.length){
+    el.innerHTML='<div class="saved-empty">Aucun bien sauvegardé — remplissez le formulaire puis cliquez <b>+ Sauvegarder</b>.</div>';
+  }else{
+    el.innerHTML=list.map(b=>{
+      const isAct=b.id===state.activeSnapId;
+      const isInCmp=_cmpSet.has(b.id);
+      const dt=new Date(b.savedAt).toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit",year:"2-digit"});
+      const m=_bienCardMeta(b);
+      const metaStr=[m.typeLbl,m.surf,m.price].filter(Boolean).join(" · ");
+      const addrHtml=m.addr?'<div class="bien-card-addr" title="'+esc(m.addr)+'">&#128205; '+esc(m.addr)+'</div>':"";
+      const actBtn=isAct?'<button type="button" class="btn-sm" onclick="updateBien()">Mettre à jour</button>':"";
+      const dotHtml=isAct?'<span class="bien-active-dot" title="Bien actif"></span>':"";
+      const cmpDot=isInCmp?'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--brand);margin-left:4px" title="En comparaison"></span>':'';
+      return '<div class="bien-card'+(isAct?' is-active':'')+'" data-bid="'+esc(b.id)+'"><div class="bien-card-top"><div class="bien-card-name">'+dotHtml+'<span>'+esc(b.label)+'</span>'+cmpDot+'</div><div class="bien-card-date">'+dt+'</div></div>'+addrHtml+'<div class="bien-card-meta">'+metaStr+'</div><div class="bien-card-actions"><button type="button" class="btn-sm primary" onclick="openBienById(&apos;'+esc(b.id)+'&apos;)">Ouvrir</button>'+actBtn+'<button type="button" class="btn-sm" onclick="toggleCompare(&apos;'+esc(b.id)+'&apos;)">'+(isInCmp?'\u2611\u00a0Compar\u00e9':'\u2610\u00a0Comparer')+'</button><button type="button" class="btn-sm danger" onclick="deleteBienById(&apos;'+esc(b.id)+'&apos;)">&#10005;</button></div></div>';
+    }).join("");
+  }
   const btnU=$("btnUpdateBien");if(btnU)btnU.style.display=state.activeSnapId?"":"none";
 }
 function showSavedHint(msg,isErr){
   const el=$("savedHint");if(!el)return;
-  el.style.display="flex";el.style.color=isErr?"var(--bad)":"var(--ink-soft)";el.textContent=msg;
-  clearTimeout(showSavedHint._t);showSavedHint._t=setTimeout(()=>{el.style.display="none";},4500);
+  el.style.display="";el.style.color=isErr?"var(--bad)":"var(--brand-dark)";el.innerHTML=msg;
+  clearTimeout(showSavedHint._t);showSavedHint._t=setTimeout(()=>{el.style.display="none";},5000);
 }
+function _getLabel(){return(($("bienLabel")&&$("bienLabel").value)||"").trim()||(($("adresse")&&$("adresse").value)||"").trim()||(($("ville")&&$("ville").value)||"").trim()||"Bien sans nom";}
 function saveBien(){
-  // Toujours créer un NOUVEAU bien (peu importe l'état actif)
-  const label=(($("bienLabel")&&$("bienLabel").value)||"").trim()||(($("adresse")&&$("adresse").value)||"").trim()||(($("ville")&&$("ville").value)||"").trim()||"Bien sans nom";
-  const list=loadSavedBiens();
+  const label=_getLabel(),list=loadSavedBiens();
   const entry={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),label:label.slice(0,60),savedAt:Date.now(),snap:snapshotForm()};
   list.unshift(entry);if(list.length>30)list.length=30;
-  if(persistSavedBiens(list)){state.activeSnapId=entry.id;if($("bienLabel"))$("bienLabel").value="";refreshSavedSelect();$("savedSelect").value=entry.id;showSavedHint("Bien \u00ab "+entry.label+" \u00bb sauvegard\u00e9 sur cet appareil.");}
-  else showSavedHint("Sauvegarde impossible (stockage plein ou indisponible sur ce navigateur).",true);
+  if(persistSavedBiens(list)){state.activeSnapId=entry.id;if($("bienLabel"))$("bienLabel").value="";refreshSavedSelect();showSavedHint("&#10003; <b>"+esc(entry.label)+"</b> sauvegardé — financement &amp; prix inclus.");}
+  else showSavedHint("Sauvegarde impossible (stockage plein ou indisponible).",true);
 }
 function updateBien(){
-  // Mettre à jour le bien ACTIF uniquement (bouton distinct)
   if(!state.activeSnapId)return;
-  const label=(($("bienLabel")&&$("bienLabel").value)||"").trim()||(($("adresse")&&$("adresse").value)||"").trim()||(($("ville")&&$("ville").value)||"").trim()||"Bien sans nom";
-  const list=loadSavedBiens();
+  const label=_getLabel(),list=loadSavedBiens();
   const idx=list.findIndex(b=>b.id===state.activeSnapId);
-  if(idx<0){showSavedHint("Bien introuvable \u2014 utilisez Sauvegarder pour cr\u00e9er une nouvelle entr\u00e9e.",true);return;}
+  if(idx<0){showSavedHint("Bien introuvable — utilisez + Sauvegarder pour créer.",true);return;}
   list[idx]={...list[idx],label:label.slice(0,60),savedAt:Date.now(),snap:snapshotForm()};
-  if(persistSavedBiens(list)){if($("bienLabel"))$("bienLabel").value="";refreshSavedSelect();$("savedSelect").value=state.activeSnapId;showSavedHint("Bien \u00ab "+label+" \u00bb mis \u00e0 jour.");}
-  else showSavedHint("Mise \u00e0 jour impossible.",true);
+  if(persistSavedBiens(list)){if($("bienLabel"))$("bienLabel").value="";refreshSavedSelect();showSavedHint("&#10003; <b>"+esc(label)+"</b> mis à jour.");}
+  else showSavedHint("Mise à jour impossible.",true);
 }
-function openBien(){
-  const sel=$("savedSelect");const id=sel?sel.value:"";if(!id)return;
+function openBienById(id){
   const entry=loadSavedBiens().find(b=>b.id===id);if(!entry)return;
-  state.activeSnapId=entry.id; // Bien actif : "Sauvegarder" mettra à jour cet enregistrement
-  restoreForm(entry.snap);
-  refreshSavedSelect(); // Met en évidence le bien actif
-  showSavedHint("Bien \u00ab "+entry.label+" \u00bb charg\u00e9. Modifications sauvegardables avec le bouton Sauvegarder.");
+  state.activeSnapId=entry.id;restoreForm(entry.snap);refreshSavedSelect();
+  showSavedHint("&#10003; <b>"+esc(entry.label)+"</b> chargé — estimation en cours…");
   setTimeout(()=>{if($("btnEstim"))$("btnEstim").click();},60);
 }
-function deleteBien(){
-  const sel=$("savedSelect");const id=sel?sel.value:"";if(!id)return;
+function deleteBienById(id){
+  if(!confirm("Supprimer ce bien de vos sauvegardes ?\nCette action est irr\u00e9versible."))return;
   const list=loadSavedBiens().filter(b=>b.id!==id);
-  persistSavedBiens(list);refreshSavedSelect();showSavedHint("Bien supprim\u00e9.");
+  if(state.activeSnapId===id)state.activeSnapId=null;
+  persistSavedBiens(list);refreshSavedSelect();showSavedHint("Bien supprimé.");
+}
+function openBien(){if(state.activeSnapId)openBienById(state.activeSnapId);}
+function deleteBien(){if(state.activeSnapId)deleteBienById(state.activeSnapId);}
+
+/* ===== Vague 5 : Immeuble de rapport multi-lots ===== */
+state._lots=[]; // [{id,type,surface,loyer,dpe}]
+let _lotIdCounter=0;
+function _newLotId(){return "lot_"+(++_lotIdCounter);}
+function _defaultLot(){return{id:_newLotId(),type:"T2",surface:40,loyer:500,dpe:"D"};}
+function initMultiLot(){
+  const toggle=$("multiLotToggle");if(!toggle)return;
+  toggle.addEventListener("change",function(){
+    var on=toggle.checked;
+    $("lotsPanel").style.display=on?"":"none";
+    $("singleRentRow").style.display=on?"none":"";
+    if(on&&state._lots.length===0){addLot();addLot();}
+    if(!on){var sum=state._lots.reduce(function(s,l){return s+(+l.loyer||0);},0);if(sum>0)$("iRent").value=sum;}
+    _syncLotsTotal();
+  });
+  $("btnAddLot").addEventListener("click",function(){addLot();});
+  if($("btnAutoLoyers"))$("btnAutoLoyers").addEventListener("click",autoFillLotsLoyers);
+}
+function addLot(data){
+  var lot=data||_defaultLot();
+  if(!lot.id)lot.id=_newLotId();
+  state._lots.push(lot);
+  renderLotsGrid();
+  _syncLotsTotal();
+}
+
+function autoFillLotsLoyers(){
+  if(!state._lots.length){showSavedHint("Ajoutez au moins un lot.",true);return;}
+  var loyers=(state.ctx2||{}).loyers;
+  if(!loyers||!loyers.loyerM2){showSavedHint("Loyers DHUP non disponibles. Lancez une estimation d'abord.",true);return;}
+  var base=loyers.loyerM2;
+  // Coefficients par type : T1 plus cher/m2 que T5 (economies d'echelle)
+  var coefs={Studio:1.18,T1:1.12,T2:1.0,T3:0.92,T4:0.86,T5:0.82,"T6+":0.78,Commerce:0.75,Bureau:0.85,Parking:0.15};
+  var updated=0;
+  state._lots.forEach(function(lot){
+    var coef=coefs[lot.type]||1.0;
+    var surf=+lot.surface||30;
+    lot.loyer=Math.round(base*coef*surf);
+    updated++;
+  });
+  renderLotsGrid();_syncLotsTotal();
+  showSavedHint("\u2713 "+updated+" lot"+(updated>1?"s":"")+" : loyers depuis Carte des loyers DHUP ("+base.toFixed(1)+" \u20ac/m\u00b2"+(loyers.annee?" "+loyers.annee:"")+")");
+}
+function removeLot(id){
+  state._lots=state._lots.filter(function(l){return l.id!==id;});
+  renderLotsGrid();
+  _syncLotsTotal();
+}
+function updateLotField(id,field,value){
+  var lot=state._lots.find(function(l){return l.id===id;});
+  if(!lot)return;
+  lot[field]=(field==="loyer"||field==="surface")?+value:value;
+  _syncLotsTotal();
+}
+function renderLotsGrid(){
+  var grid=$("lotsGrid");if(!grid)return;
+  var types=["Studio","T1","T2","T3","T4","T5","T6+","Commerce","Bureau","Parking"];
+  var dpes=["A","B","C","D","E","F","G"];
+  grid.innerHTML=state._lots.map(function(lot,i){
+    var typeOpts=types.map(function(t){return '<option value="'+t+'"'+(lot.type===t?" selected":"")+'>'+t+'</option>';}).join("");
+    var dpeOpts=dpes.map(function(d){return '<option value="'+d+'"'+(lot.dpe===d?" selected":"")+'>'+d+'</option>';}).join("");
+    return '<div class="lot-row" data-lid="'+lot.id+'">'+
+      '<div class="lot-field" style="flex:none;min-width:24px;align-self:center"><span style="font-size:11px;font-weight:800;color:var(--ink-soft)">#'+(i+1)+'</span></div>'+
+      '<div class="lot-field"><div class="lot-field-lbl">Type</div><select onchange="updateLotField(\''+lot.id+'\',\'type\',this.value)">'+typeOpts+'</select></div>'+
+      '<div class="lot-field"><div class="lot-field-lbl">Surface</div><input type="number" min="1" value="'+(lot.surface||"")+'" onchange="updateLotField(\''+lot.id+'\',\'surface\',this.value)" oninput="updateLotField(\''+lot.id+'\',\'surface\',this.value)"/></div>'+
+      '<div class="lot-field"><div class="lot-field-lbl">Loyer \u20ac</div><input type="number" min="0" value="'+(lot.loyer||"")+'" onchange="updateLotField(\''+lot.id+'\',\'loyer\',this.value)" oninput="updateLotField(\''+lot.id+'\',\'loyer\',this.value)"/></div>'+
+      '<div class="lot-field"><div class="lot-field-lbl">DPE</div><select onchange="updateLotField(\''+lot.id+'\',\'dpe\',this.value)">'+dpeOpts+'</select></div>'+
+      '<button type="button" class="lot-del" onclick="removeLot(\''+lot.id+'\')" title="Supprimer">\u2715</button>'+
+    '</div>';
+  }).join("");
+  $("lotsCount").textContent=state._lots.length+" lot"+(state._lots.length>1?"s":"");
+}
+function _syncLotsTotal(){
+  var on=$("multiLotToggle")&&$("multiLotToggle").checked;
+  var el=$("lotsTotalRent");
+  var kpiEl=$("lotsKpis");
+  if(!on){if(el)el.textContent="\u2014";if(kpiEl)kpiEl.style.display="none";return;}
+  var sum=state._lots.reduce(function(s,l){return s+(+l.loyer||0);},0);
+  var surfTot=_lotsTotalSurface();
+  if(el)el.textContent=eur(sum)+" \u20ac/mois";
+  var rentEl=$("iRent");if(rentEl)rentEl.value=sum;
+  // KPIs synthétiques multi-lots
+  if(kpiEl&&state._lots.length>=2){
+    kpiEl.style.display="";
+    var bp=numv("prixAchat")||(lastResult?lastResult.price:0);
+    var rendBrut=bp>0?(sum*12/bp*100).toFixed(1):"?";
+    var loyerM2=surfTot>0?(sum/surfTot).toFixed(1):"?";
+    // DPE moyen pondéré par surface
+    var dpeValues={A:1,B:2,C:3,D:4,E:5,F:6,G:7};
+    var dpeLabels=["","A","B","C","D","E","F","G"];
+    var dpeSum=0,dpeSurfSum=0;
+    state._lots.forEach(function(l){if(l.dpe&&l.surface>0&&dpeValues[l.dpe]){dpeSum+=dpeValues[l.dpe]*l.surface;dpeSurfSum+=l.surface;}});
+    var dpeMoy=dpeSurfSum>0?dpeLabels[Math.round(dpeSum/dpeSurfSum)]:"?";
+    var dpeColors={A:"#2E9C46",B:"#5BB848",C:"#B6D43A",D:"#F2D31C",E:"#F0A828",F:"#E8742A",G:"#E0402E"};
+    // Lot le plus rentable et le moins
+    var lotsByRent=state._lots.filter(function(l){return l.surface>0&&l.loyer>0;}).map(function(l){return{type:l.type,rend:l.loyer/l.surface};}).sort(function(a,b){return b.rend-a.rend;});
+    var bestLot=lotsByRent[0],worstLot=lotsByRent[lotsByRent.length-1];
+    kpiEl.innerHTML='<div style="display:flex;gap:6px;flex-wrap:wrap">'+
+      '<div style="flex:1;min-width:80px;background:var(--bg);border-radius:9px;padding:7px 10px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase">Rdt brut</div><div class="num" style="font-size:15px;font-weight:800;color:var(--ink)">'+rendBrut+' %</div></div>'+
+      '<div style="flex:1;min-width:80px;background:var(--bg);border-radius:9px;padding:7px 10px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase">Loyer moy.</div><div class="num" style="font-size:15px;font-weight:800;color:var(--ink)">'+loyerM2+' \u20ac/m\u00b2</div></div>'+
+      '<div style="flex:1;min-width:80px;background:var(--bg);border-radius:9px;padding:7px 10px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase">DPE moy.</div><div style="font-size:15px;font-weight:800"><span class="cmp-score-pill" style="background:'+(dpeColors[dpeMoy]||"#ccc")+'">'+dpeMoy+'</span></div></div>'+
+      '<div style="flex:1;min-width:80px;background:var(--bg);border-radius:9px;padding:7px 10px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase">Surface tot.</div><div class="num" style="font-size:15px;font-weight:800;color:var(--ink)">'+surfTot+' m\u00b2</div></div>'+
+    '</div>'+
+    (bestLot&&worstLot&&bestLot.type!==worstLot.type?'<div class="hint" style="margin-top:5px">Meilleur loyer/m\u00b2 : <b>'+esc(bestLot.type)+'</b> ('+bestLot.rend.toFixed(1)+' \u20ac) \u00b7 Plus faible : <b>'+esc(worstLot.type)+'</b> ('+worstLot.rend.toFixed(1)+' \u20ac)</div>':'')+
+    '<div class="hint" style="margin-top:3px">Surface totale habitable des lots. Prix d\u2019achat / nb lots = \u2248 '+eur0(Math.round(bp/Math.max(1,state._lots.length)))+' \u20ac / lot en moyenne.</div>';
+  }else if(kpiEl)kpiEl.style.display="none";
+  if(lastResult){computeAll(lastResult);updRentVsMkt();computeResale(lastResult);renderFinPrice(lastResult);}
+}
+function _snapshotLots(){return state._lots.map(function(l){return{type:l.type,surface:l.surface,loyer:l.loyer,dpe:l.dpe};});}
+function _restoreLots(arr){
+  if(!arr||!arr.length)return;
+  state._lots=arr.map(function(l){return Object.assign({id:_newLotId()},l);});
+  var toggle=$("multiLotToggle");
+  if(toggle){toggle.checked=true;toggle.dispatchEvent(new Event("change"));}
+  renderLotsGrid();
+  _syncLotsTotal();
+}
+function _lotsTotalSurface(){return state._lots.reduce(function(s,l){return s+(+l.surface||0);},0);}
+
+/* ===== Vague 4 : Comparaison multi-biens ===== */
+const _cmpSet=new Set(); // IDs des biens en comparaison (session, max 3)
+function toggleCompare(id){
+  if(_cmpSet.has(id)){_cmpSet.delete(id);}
+  else{
+    if(_cmpSet.size>=3){showSavedHint("Maximum 3 biens en comparaison \u2014 retirez-en un d'abord.",true);return;}
+    _cmpSet.add(id);
+  }
+  refreshSavedSelect();
+  renderCompare();
+}
+function renderCompare(){
+  const card=$("compareCard");const panel=$("comparePanel");
+  if(!card||!panel)return;
+  if(_cmpSet.size<2){card.style.display="none";return;}
+  card.style.display="";
+  const all=loadSavedBiens();
+  const biens=[];_cmpSet.forEach(id=>{const b=all.find(x=>x.id===id);if(b)biens.push(b);});
+  if(biens.length<2){card.style.display="none";return;}
+  const kv=(b,f)=>{const ki=b.snap&&b.snap.kpi;return ki&&ki[f]!=null?ki[f]:null;};
+  const fEur=v=>v!=null?eur0(v)+"\u00a0\u20ac":"n.d.";
+  const fPct=v=>v!=null?v.toFixed(1).replace(".",",")+"\u00a0%":"n.d.";
+  const fSc=v=>v!=null?Math.round(v)+"/100":"n.d.";
+  const fCf=v=>v!=null?(v>=0?"<span style='color:var(--good)'>+"+eur0(v)+"\u00a0\u20ac</span>":"<span style='color:var(--bad)'>"+eur0(v)+"\u00a0\u20ac</span>"):"n.d.";
+  const fVan=v=>v!=null?(v>=0?"<span style='color:var(--good)'>"+eur0(v)+"\u00a0\u20ac</span>":"<span style='color:var(--bad)'>"+eur0(v)+"\u00a0\u20ac</span>"):"n.d.";
+  const fEcart=b=>{const est=kv(b,"price"),pay=+(b.snap&&b.snap.vals&&b.snap.vals.prixAchat)||0;if(!est||!pay)return"n.d.";const d=Math.round((pay/est-1)*100);return d>0?"<span style='color:var(--bad)'>+"+d+"\u00a0%</span>":d<0?"<span style='color:var(--good)'>"+d+"\u00a0%</span>":"=";};
+  // Lignes : [label, getter numérique pour best/worst, formatter HTML, goodHigh|null]
+  const rows=[
+    ["Adresse / ville",b=>(b.snap&&b.snap.coord&&b.snap.coord.label)||(b.snap&&b.snap.vals&&b.snap.vals.adresse)||"\u2014",v=>esc(v),null],
+    ["Type",b=>{const ki=b.snap&&b.snap.kpi;const t=ki?ki.type:(b.snap&&b.snap.segs&&b.snap.segs.segType)||"";return t+" \u00b7 "+((ki&&ki.surface)||(b.snap&&b.snap.vals&&b.snap.vals.surface)||"?")+"\u00a0m\u00b2";},v=>esc(v),null],
+    ["DPE",b=>kv(b,"dpe")||(b.snap&&b.snap.segs&&b.snap.segs.segDpe)||"?",v=>{const c={A:"#2E9C46",B:"#5BB848",C:"#B6D43A",D:"#F2D31C",E:"#F0A828",F:"#E8742A",G:"#E0402E"};return '<span class="cmp-score-pill" style="background:'+(c[v]||"#ccc")+'">'+(v||"?")+'</span>';},null],
+    ["Prix estim\u00e9",b=>kv(b,"price"),fEur,false],
+    ["Prix pay\u00e9",b=>+(b.snap&&b.snap.vals&&b.snap.vals.prixAchat)||kv(b,"price"),fEur,false],
+    ["\u00c9cart (pay\u00e9 / estim\u00e9)",b=>{const est=kv(b,"price"),pay=+(b.snap&&b.snap.vals&&b.snap.vals.prixAchat)||0;return(est&&pay>0)?Math.round((pay/est-1)*100):null;},fEcart,null],
+    ["Prix /m\u00b2",b=>kv(b,"sqm"),fEur,false],
+    ["Rendement brut",b=>kv(b,"rendBrut"),fPct,true],
+    ["Rendement net",b=>kv(b,"rendNet"),fPct,true],
+    ["Cash-flow /mois",b=>kv(b,"cfMois"),fCf,true],
+    ["VAN",b=>kv(b,"van"),fVan,true],
+    ["TRI",b=>kv(b,"tri"),fPct,true],
+    ["Confiance estimateur",b=>kv(b,"conf"),fSc,true],
+    ["Score march\u00e9",b=>kv(b,"marketScore"),fSc,true],
+    ["Score bien global",b=>kv(b,"globalScore"),fSc,true],
+  ];
+  const ths=biens.map(b=>'<th>'+esc(b.label)+'<div style="font-size:10px;font-weight:400;color:var(--ink-soft)">'+new Date(b.savedAt).toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit",year:"2-digit"})+'</div></th>').join("");
+  const trs=rows.map(([label,getter,fmt,goodHigh])=>{
+    const vals=biens.map(getter);
+    const nums=vals.map(v=>typeof v==="number"?v:null);
+    const hasN=nums.some(n=>n!=null);
+    let bestI=-1,worstI=-1;
+    if(hasN&&goodHigh!=null){
+      const valid=nums.map((n,i)=>n!=null?{n,i}:null).filter(Boolean);
+      if(valid.length>=2){const s=valid.slice().sort((a,b2)=>goodHigh?b2.n-a.n:a.n-b2.n);bestI=s[0].i;worstI=s[s.length-1].i;}
+    }
+    const tds=vals.map((v,i)=>{
+      const cls=hasN&&goodHigh!=null?(i===bestI?"ct-best":i===worstI?"ct-worst":"ct-num"):"ct-num";
+      return '<td class="'+cls+'">'+fmt(v)+'</td>';
+    }).join("");
+    return '<tr><td class="ct-lbl">'+label+'</td>'+tds+'</tr>';
+  }).join("");
+  panel.innerHTML='<div class="compare-bar"><span class="compare-bar-left">'+biens.length+' bien'+(biens.length>1?"s":"")+' compar\u00e9s</span><button type="button" class="btn-sm danger" onclick="_cmpSet.clear();refreshSavedSelect();renderCompare()">Effacer</button></div>'+
+    '<div style="overflow-x:auto;margin-top:8px"><table class="compare-table"><thead><tr><th class="ct-lbl">Indicateur</th>'+ths+'</tr></thead><tbody>'+trs+'</tbody></table></div>'+
+    '<div class="hint" style="margin-top:8px">&#128994; = meilleur \u00b7 &#128308; = moins bon. Valeurs issues des KPIs sauvegard\u00e9s au moment de la derni\u00e8re sauvegarde. Lancez une estimation et re-sauvegardez pour mettre \u00e0 jour.</div>';
 }
 if($("btnSaveBien"))$("btnSaveBien").addEventListener("click",saveBien);
+// Comparer : initialiser la carte au chargement (cas d'un refresh avec biens déjà cochés)
+refreshSavedSelect();renderCompare();
 if($("btnUpdateBien"))$("btnUpdateBien").addEventListener("click",updateBien);
-if($("btnLoadBien"))$("btnLoadBien").addEventListener("click",openBien);
-if($("btnDeleteBien"))$("btnDeleteBien").addEventListener("click",deleteBien);
 refreshSavedSelect();
 
 </script>
