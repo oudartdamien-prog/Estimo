@@ -276,7 +276,9 @@
 .bien-card-actions{display:flex;gap:7px;flex-wrap:wrap}
 .bien-active-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--brand);flex:none}
 .saved-new-row{display:flex;gap:8px;align-items:center;margin-top:10px;padding-top:12px;border-top:1px solid var(--line);flex-wrap:wrap}
-.saved-new-row input{flex:1;min-width:160px}
+.saved-new-row input{flex:1;min-width:150px}
+#btnNewBien{border-color:var(--line);color:var(--ink-soft)}
+#btnNewBien:hover{border-color:var(--brand-dark);color:var(--brand-dark);background:var(--brand-tint)}
 /* Terrain v72 : saisie professionnelle */
 .terrain-params{display:flex;flex-direction:column;gap:11px;margin-top:8px}
 .terrain-section{padding:12px 14px;background:var(--bg);border-radius:11px}
@@ -371,6 +373,7 @@
       <input class="input" id="bienLabel" type="text" placeholder="Nom (ex&#160;: T3 Lyon 7e, Maison Bordeaux&#8230;)" maxlength="60" aria-label="Nom du nouveau bien &#224; sauvegarder" />
       <button type="button" class="btn-sm primary" id="btnSaveBien" title="Sauvegarder (financement et prix inclus)">+ Sauvegarder</button>
       <button type="button" class="btn-sm" id="btnUpdateBien" style="display:none" title="Mettre &#224; jour le bien actif">Mettre &#224; jour</button>
+      <button type="button" class="btn-sm" id="btnNewBien" title="Effacer tous les champs et repartir de z&#233;ro pour analyser un autre bien">&#8635; Nouveau bien</button>
     </div>
     <div id="savedHint" class="hint" style="display:none;margin-top:8px"></div>
     <div class="saved-note">&#128274;&#160;Sauvegarde locale sur cet appareil uniquement &#8212; aucun envoi serveur. Tous les param&#232;tres conserv&#233;s (financement, prix, fiscalit&#233;).</div>
@@ -608,10 +611,7 @@
     </div>
 
     <div class="wnav" id="wNav"><button id="wPrev" type="button">Pr&#233;c&#233;dent</button><button id="wNext" type="button">Suivant</button></div>
-    <div style="display:flex;gap:8px;align-items:stretch">
-      <button class="cta" id="btnEstim" style="flex:1">Estimer le bien</button>
-      <button type="button" id="btnNewBien" title="Effacer tous les champs et repartir de z&#233;ro" style="flex:none;padding:0 16px;border:1.5px solid var(--line);background:#fff;color:var(--ink-soft);border-radius:var(--r);font-family:var(--body);font-weight:700;font-size:13px;cursor:pointer;transition:.12s;white-space:nowrap">&#8635; Nouveau</button>
-    </div>
+    <button class="cta" id="btnEstim">Estimer le bien</button>
     <div class="err" id="formErr"></div>
     <div class="hint">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#5B7186" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#5B7186" stroke-width="2" stroke-linecap="round"/></svg>
@@ -847,6 +847,10 @@
     </section>
     <section class="card" style="order:6" id="ownVsRentCard">
       <div class="card-head"><div class="step-no">&#127968;</div><div><h2>Acheter ou louer&#160;?</h2><div class="sub">&#192; partir de quand la propri&#233;t&#233; devient-elle plus avantageuse&#160;?</div></div></div>
+      <div class="row" style="margin-bottom:12px">
+        <div><label class="lbl" for="ovrEntretien">Entretien annuel</label><div class="with-unit"><input class="input num" id="ovrEntretien" type="number" step="0.1" min="0" value="0.6" /><span class="unit">%</span></div><div class="hint" style="margin-top:4px">du prix / an &#8212; gros &#339;uvre, ravalement (0,5&#8211;1 %)</div></div>
+        <div><label class="lbl" for="ovrPlacement">Rendement du capital plac&#233;</label><div class="with-unit"><input class="input num" id="ovrPlacement" type="number" step="0.1" min="0" value="2.0" /><span class="unit">%</span></div><div class="hint" style="margin-top:4px">net de fiscalit&#233; &#8212; ce que le locataire obtient en pla&#231;ant son apport</div></div>
+      </div>
       <div id="ownVsRentPanel"></div>
     </section>
     <section class="card" style="order:5" id="resaleCard">
@@ -1001,7 +1005,7 @@ function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").repl
 const eur=n=>Math.round(n).toLocaleString("fr-FR")+" \u20ac";
 const eur0=n=>Math.round(n).toLocaleString("fr-FR");
 const norm=s=>(s||"").toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/^st /,"saint-");
-const numv=id=>Number($(id).value)||0;
+const numv=id=>{const _e=$(id);return _e?(Number(_e.value)||0):0;};
 
 const state={type:"appartement",pieces:3,dpe:"D",ges:"D",loc:"nue",statut:"resident",neuf:"ancien",profil:"particulier",coord:null,live:null,enrich:null,mktRentSqm:0,activeSnapId:null};
 
@@ -4107,6 +4111,7 @@ async function showResults(){
 }
 $("btnEstim").addEventListener("click",showResults);
 if($("btnNewBien"))$("btnNewBien").addEventListener("click",resetForm);
+["ovrEntretien","ovrPlacement"].forEach(function(id){const e=$(id);if(!e)return;const h=function(){if(lastResult&&typeof renderOwnVsRent==="function")renderOwnVsRent(lastResult);};e.addEventListener("input",h);e.addEventListener("change",h);});
 if($("notaireLine"))$("notaireLine").addEventListener("click",function(){
   const d=$("notaireDetail");if(d)d.style.display=(d.style.display==="none")?"":"none";
 });
@@ -5137,9 +5142,8 @@ document.querySelectorAll(".card-head").forEach(h=>{
 const segM=$("segMode");if(segM)segM.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{segM.querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on");$("results").classList.toggle("simple",b.dataset.m==="simple");}));
 
 fillRegimes();updateTypeUI();
-if(typeof initMultiLot==="function")initMultiLot();
-if(typeof renderDiags==="function")renderDiags();
-if(typeof initWorksTabs==="function")initWorksTabs();
+// Initialisations differees en fin de script (voir bloc BOOT) — les modules DIAGS/WX
+// sont declares avec const plus bas : les appeler ici provoquerait une TDZ error.
 // Charger l'IRL en arrière-plan
 fetchIRL().then(irl=>{
   if(!irl)return;
@@ -6530,6 +6534,16 @@ function initWorksTabs(){
   });
 }
 /* FIN DU MODULE TRAVAUX EXPERT */
+/* ============================================================================
+ * BOOT — initialisations qui dependent de modules declares avec `const`
+ * (DIAGS, WX). Elles doivent imperativement s'executer APRES leur declaration,
+ * sinon on declenche une TDZ error qui casse tout le script (dont le bouton Estimer).
+ * ==========================================================================*/
+(function boot(){
+  try{ if(typeof initMultiLot==="function") initMultiLot(); }catch(e){ console.warn("initMultiLot:",e); }
+  try{ if(typeof renderDiags==="function")  renderDiags();  }catch(e){ console.warn("renderDiags:",e); }
+  try{ if(typeof initWorksTabs==="function")initWorksTabs();}catch(e){ console.warn("initWorksTabs:",e); }
+})();
 </script>
 </body>
 </html>
