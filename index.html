@@ -103,7 +103,7 @@
   .cta:hover{transform:translateY(-1px);box-shadow:0 12px 22px rgba(15,179,158,.34)}
   .cta:active{transform:translateY(0)}
 
-  .hint{font-size:12px;color:var(--ink-soft);margin-top:9px;display:flex;gap:6px;align-items:flex-start}
+  .hint{font-size:12px;color:var(--ink-soft);margin-top:9px;line-height:1.5}
   .hint svg{flex:0 0 auto;margin-top:1px}
   .err{font-size:12.5px;color:var(--bad);margin-top:8px;display:none}.err.show{display:block}
 
@@ -718,7 +718,7 @@
       <div class="hint" style="margin-top:8px">VAN, TRI et co&#251;t total repris ici pour la lecture rapide &#8212; d&#233;tail complet (Cap Rate, DSCR, LTV, sensibilit&#233;, explications) dans le Tableau de bord investisseur ci-dessous.</div>
       <div class="chart-wrap"><h4>D&#233;composition du gain (cumul&#233; sur la p&#233;riode)</h4><div class="csub">De l'apport au gain net &#8212; chaque brique ajoute (+) ou retranche (&#8722;)</div><div id="chartWf"></div><div class="cinterp" id="iWf"></div></div>
       <details class="acc"><summary><span>D&#233;composition actualis&#233;e &#8594; VAN (avanc&#233;)</span><span class="chev">&#9656;</span></summary><div class="acc-body"><div class="csub">M&#234;mes briques que le gain net, mais actualis&#233;es ; le solde final correspond &#224; la VAN.</div><div id="chartWfD"></div></div></details>
-      <div class="hint" style="margin-top:10px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#5B7186" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#5B7186" stroke-width="2" stroke-linecap="round"/></svg>Verdict bas&#233; sur la VAN (le projet bat-il votre taux d'actualisation ?), le cash-flow et la valorisation. Indicatif.</div>
+      <div class="hint" style="display:flex;gap:6px;align-items:flex-start;margin-top:10px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#5B7186" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#5B7186" stroke-width="2" stroke-linecap="round"/></svg>Verdict bas&#233; sur la VAN (le projet bat-il votre taux d'actualisation ?), le cash-flow et la valorisation. Indicatif.</div>
     </section>
 
     <!-- INSEE -->
@@ -838,7 +838,7 @@
         <div class="metric"><div class="ml">Mensualit&#233; (cr&#233;dit + assurance)</div><div class="mv" id="mMensu" style="font-size:21px">&#8212;</div></div>
         <div class="metric"><div class="ml">Cash-flow mensuel (apr&#232;s imp&#244;t)</div><div class="mv" id="mCash" style="font-size:21px">&#8212;</div></div>
       </div>
-      <div class="hint" style="margin-top:14px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#5B7186" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#5B7186" stroke-width="2" stroke-linecap="round"/></svg>Calculs fiscaux simplifi&#233;s et indicatifs (LMNP r&#233;el : amortissement estim&#233;). Tout est recalcul&#233; en direct quand vous modifiez un champ.</div>
+      <div class="hint" style="display:flex;gap:6px;align-items:flex-start;margin-top:14px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#5B7186" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#5B7186" stroke-width="2" stroke-linecap="round"/></svg>Calculs fiscaux simplifi&#233;s et indicatifs (LMNP r&#233;el : amortissement estim&#233;). Tout est recalcul&#233; en direct quand vous modifiez un champ.</div>
     </section>
 
     <!-- REVENTE -->
@@ -876,7 +876,7 @@
       <div class="line-item total"><span>Net de revente (apr&#232;s cr&#233;dit &amp; imp&#244;t)</span><span class="num" id="rvNet">&#8212;</span></div>
       <div class="metric" style="margin-top:14px"><div class="ml">Rendement global annualis&#233; de l'op&#233;ration</div><div class="mv" id="rvRend" style="font-size:22px">&#8212;</div><div class="mh">cash-flows nets + plus-value, rapport&#233;s &#224; l'apport</div></div>
       <div class="banner" id="rvLmnp" style="display:none;margin-top:12px"></div>
-      <div class="hint" style="margin-top:12px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#5B7186" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#5B7186" stroke-width="2" stroke-linecap="round"/></svg>Plus-value des r&#233;sidences secondaires/locatives. Bar&#232;mes indicatifs (exon&#233;ration IR &#224; 22 ans, pr&#233;l&#232;vements sociaux &#224; 30 ans ; surtaxe au-del&#224; de 50 000 &#8364; de plus-value imposable). &#192; confirmer.</div>
+      <div class="hint" style="display:flex;gap:6px;align-items:flex-start;margin-top:12px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#5B7186" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#5B7186" stroke-width="2" stroke-linecap="round"/></svg>Plus-value des r&#233;sidences secondaires/locatives. Bar&#232;mes indicatifs (exon&#233;ration IR &#224; 22 ans, pr&#233;l&#232;vements sociaux &#224; 30 ans ; surtaxe au-del&#224; de 50 000 &#8364; de plus-value imposable). &#192; confirmer.</div>
     </section>
 
     <!-- OP&#201;RATION ACHAT-REVENTE -->
@@ -944,7 +944,7 @@
       <div class="subhead">Travaux conseill&#233;s</div>
       <div id="dpeWorks"></div>
       <div class="line-item total" style="margin-top:10px"><span>Co&#251;t indicatif des travaux</span><span class="num" id="dpeCost">&#8212;</span></div>
-      <div class="hint" style="margin-top:14px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#5B7186" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#5B7186" stroke-width="2" stroke-linecap="round"/></svg>Aides possibles (MaPrimeR&#233;nov', &#233;co-PTZ). &#192; confirmer par un audit &#233;nerg&#233;tique.</div>
+      <div class="hint" style="display:flex;gap:6px;align-items:flex-start;margin-top:14px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#5B7186" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#5B7186" stroke-width="2" stroke-linecap="round"/></svg>Aides possibles (MaPrimeR&#233;nov', &#233;co-PTZ). &#192; confirmer par un audit &#233;nerg&#233;tique.</div>
     </section>
 
     <!-- PROJECTION -->
@@ -961,7 +961,7 @@
       <div class="chart-wrap"><h4>Cash-flow d'exploitation</h4><div class="csub">Par an (barres) et cumul&#233; (ligne), hors revente</div><div id="chartCF"></div><div class="chart-legend"><span><i style="background:#0FB39E"></i>CF annuel</span><span><i style="background:#0F2A43"></i>CF cumul&#233;</span></div><div class="cinterp" id="iCF"></div></div>
       <details class="acc"><summary><span>Cash-flow actualis&#233; (avanc&#233;)</span><span class="chev">&#9656;</span></summary><div class="acc-body"><div class="csub">M&#234;mes flux que ci-dessus mais actualis&#233;s (ramen&#233;s &#224; aujourd'hui) ; la ligne cumule la VAN. Apport en ann&#233;e 0, revente en derni&#232;re ann&#233;e.</div><div id="chartDCF"></div><div class="chart-legend"><span><i style="background:#7FB0E0"></i>Flux actualis&#233;</span><span><i style="background:#0F2A43"></i>VAN cumul&#233;e</span></div></div></details>
       <div class="chart-wrap"><h4>VAN selon l'ann&#233;e de revente</h4><div class="csub">Revendre cette ann&#233;e-l&#224; &#8658; quelle VAN ? <b style="color:#0a7a5c">Barre verte</b> = ann&#233;e o&#249; la VAN devient positive (seuil de rentabilit&#233;) ; sommet = dur&#233;e optimale</div><div id="chartVanYear"></div><div class="chart-legend"><span><i style="background:#7A5AF8"></i>VAN si revente l'ann&#233;e N</span><span><i style="background:#0a7a5c"></i>Seuil VAN positive</span></div><div class="cinterp" id="iVan"></div></div><div class="csub">Valeur du bien vs capital restant d&#251;</div><div id="chartEq"></div><div class="chart-legend"><span><i style="background:#0FB39E"></i>Valeur du bien</span><span><i style="background:#E0402E"></i>Capital restant d&#251;</span></div><div class="cinterp" id="iEq"></div></div>
-      <div class="hint" style="margin-top:10px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#5B7186" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#5B7186" stroke-width="2" stroke-linecap="round"/></svg>Hypoth&#232;ses : cash-flow d'exploitation suppos&#233; stable, revalorisation annuelle constante, fiscalit&#233; de l'ann&#233;e 1 reconduite. La VAN > 0 signifie que le projet bat votre co&#251;t du capital. Mod&#232;le indicatif.</div>
+      <div class="hint" style="display:flex;gap:6px;align-items:flex-start;margin-top:10px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#5B7186" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#5B7186" stroke-width="2" stroke-linecap="round"/></svg>Hypoth&#232;ses : cash-flow d'exploitation suppos&#233; stable, revalorisation annuelle constante, fiscalit&#233; de l'ann&#233;e 1 reconduite. La VAN > 0 signifie que le projet bat votre co&#251;t du capital. Mod&#232;le indicatif.</div>
     </section>
 
     <section class="card expert-only" id="scnCard" style="order:7">
@@ -2072,10 +2072,11 @@ function renderMarket(r){const d=r.dyn;const sign=x=>(x>=0?"+":"")+x;
   const cls=d.evo12>=0?"trend-up":"trend-down";const arr=d.evo12>=0?"\u25b2":"\u25bc";const ncls=d.notairesEvo>=0?"trend-up":"trend-down";
   const cap=mtCapacity(1000,RATE20/100,20),capUp=mtCapacity(1000,(RATE20+1)/100,20);const effet=Math.round((1-capUp/cap)*100);
   const mois=(d.ratioOV*12).toFixed(0);
-  let html=`<div class="stat"><span class="sl">Prix de base retenu (multi-mod\u00e8les)</span><span class="sv num">${eur0(r.sqmBase)} /m\u00b2</span></div>`+
-    `<div class="stat"><span class="sl">${d.trendReal?'Tendance prix /an (liss\u00e9e) <span style="color:var(--brand-dark);font-weight:700;font-size:9px">r\u00e9el</span>':'\u00c9volution prix 12 mois'}</span><span class="sv num ${cls}">${arr} ${Math.abs(d.evo12)} %</span></div>`+
-    `<div class="stat"><span class="sl">\u00c9volution sur ${d.trendReal?d.evoSpan:5} ans${d.trendReal?' <span style="color:var(--brand-dark);font-weight:700;font-size:9px">r\u00e9el</span>':''}</span><span class="sv num">${sign(d.evo5)} %</span></div>`+
-    `<div class="stat"><span class="sl">${d.trendReal?"Tendance DVF (/an, liss\u00e9e)":"Indice Notaires-INSEE (1 an)"}</span><span class="sv num ${ncls}">${sign(d.notairesEvo)} %</span></div>`+
+  let html=`<div class="stat" title="Prix /m\u00b2 m\u00e9dian issu du calcul multi-mod\u00e8les (DVF, m\u00e9diane, r\u00e9gression, moteurs IA). Base avant ajustements DPE/\u00e9tat/\u00e9tage."><span class="sl">Prix de base retenu (multi-mod\u00e8les)</span><span class="sv num">${eur0(r.sqmBase)} /m\u00b2</span></div>`+
+    `<div class="stat" title="${d.trendReal?'Croissance annuelle moyenne liss\u00e9e des prix m\u00e9dians DVF sur '+d.evoSpan+' ans, corrig\u00e9e de l\u2019inflation (INSEE IPC). Mesure la vraie appr\u00e9ciation du march\u00e9 local en \u20ac constants.':'Variation du prix /m\u00b2 sur les 12 derniers mois (nominal, non corrig\u00e9 de l\u2019inflation).'}"><span class="sl">${d.trendReal?'Tendance prix /an (liss\u00e9e) <span style="color:var(--brand-dark);font-weight:700;font-size:9px">r\u00e9el</span>':'\u00c9volution prix 12 mois'}</span><span class="sv num ${cls}">${arr} ${Math.abs(d.evo12)} %</span></div>`+
+    `<div class="stat" title="${d.trendReal?'\u00c9volution cumul\u00e9e du prix m\u00e9dian DVF sur '+d.evoSpan+' ans en \u20ac constants (corrig\u00e9e inflation). Ex : +6 % = le bien a gagn\u00e9 6 % de pouvoir d\u2019achat sur la p\u00e9riode.':'\u00c9volution cumul\u00e9e du prix /m\u00b2 sur 5 ans (nominal).'}"><span class="sl">\u00c9volution sur ${d.trendReal?d.evoSpan:5} ans${d.trendReal?' <span style="color:var(--brand-dark);font-weight:700;font-size:9px">r\u00e9el</span>':''}</span><span class="sv num">${sign(d.evo5)} %</span></div>`+
+    `<div class="stat" title="${d.trendReal?'Tendance annuelle liss\u00e9e calcul\u00e9e directement \u00e0 partir des transactions DVF (CAGR des m\u00e9dianes), en \u20ac courants. Diff\u00e8re de la tendance r\u00e9elle ci-dessus car elle inclut l\u2019inflation.':'Variation de l\u2019indice Notaires-INSEE sur 12 mois (r\u00e9f\u00e9rence nationale/d\u00e9partementale).'}"><span class="sl">${d.trendReal?"Tendance DVF (/an, liss\u00e9e)":"Indice Notaires-INSEE (1 an)"}</span><span class="sv num ${ncls}">${sign(d.notairesEvo)} %</span></div>`+
+    (d.trendReal?`<div style="margin:6px 0 2px;padding:8px 10px;background:#f4f8fb;border-radius:8px;font-size:10.5px;line-height:1.55;color:var(--ink-soft)"><b style="color:var(--ink)">Comprendre ces 3 indicateurs :</b> <b>Tendance r\u00e9elle</b> = croissance annuelle moyenne des prix DVF, corrig\u00e9e de l\u2019inflation (pouvoir d\u2019achat r\u00e9el). <b>\u00c9volution ${d.evoSpan} ans</b> = variation cumul\u00e9e r\u00e9elle sur la p\u00e9riode. <b>Tendance DVF nominale</b> = m\u00eame calcul mais en \u20ac courants (inclut l\u2019inflation). Si tendance r\u00e9elle \u2248 0 et nominale > 0, les prix suivent l\u2019inflation sans r\u00e9elle appr\u00e9ciation.</div>`:'')+
     `<div class="stat"><span class="sl">Loyer de march\u00e9${d.loyerReal?(' <span style="color:var(--good);font-weight:700;font-size:9px">\u2713 Carte des loyers DHUP'+(d.loyerAnnee?' '+d.loyerAnnee:'')+'</span>'):d.rentReal?' <span style="color:var(--brand-dark);font-weight:700;font-size:9px">ancr\u00e9 DVF</span>':''}</span><span class="sv num">${d.loyerM2.toFixed(1).replace('.',',')} \u20ac/m\u00b2/mois${d.loyerReal&&d.loyerNbObs?' <span style="color:var(--ink-soft);font-size:9px">('+ d.loyerNbObs+' obs.)':' </span>'}</span></div>`+
     `<div class="stat"><span class="sl">Rendement locatif brut de march\u00e9</span><span class="sv num">${d.rendementMarche.toFixed(1).replace('.',',')} %</span></div>`+
     `<div class="stat"><span class="sl">Stock d'annonces en vente</span><span class="sv num">${d.liquiditeReal?eur0(d.stockAnnonces)+'<span style="color:var(--ink-soft);font-size:9px;margin-left:3px">mod\u00e9lis\u00e9 (0,3 % du parc)</span>':'\u2014 <span style="color:var(--ink-soft);font-weight:400;font-size:9px">n.d.</span>'}</span></div>`+
@@ -3819,7 +3820,7 @@ async function fetchAllData(coord){
   else if(state.type==="terrain"){out.diag="terrain : pas de comparable b\u00e2ti DVF";}
   else{
     // Chaque etape est bornee dans le temps : une API muette ne doit jamais figer l'estimation.
-    const res=(await _withTimeout(fetchDvf(coord,state.type),9000,null))||{status:"no-conn",pts:null};
+    const res=(await _withTimeout(fetchDvf(coord,state.type),15000,null))||{status:"no-conn",pts:null};
     // G: Calcul du prix médian communal DVF — graine dynamique pour baseSqm()
     _withTimeout(fetchCommuneMedian(coord.insee,state.type),10000,null).then(med=>{
       if(med&&med.med>0){state._localApt={med:med.med,n:med.n,source:med.source,annee:med.annee};}
@@ -4153,7 +4154,7 @@ function setupAsyncCallbacks(r,enrichPromise,ctxProm){
 /* Garde-fou : empeche une estimation de rester bloquee si une API publique ne repond pas.
  * Le bouton est TOUJOURS restaure (try/finally), et un timeout global borne l'attente. */
 let _estimRunning=false;
-const ESTIM_TIMEOUT_MS=13000; // filet de securite ultime : chaque etape a deja son propre timeout
+const ESTIM_TIMEOUT_MS=22000; // filet de securite ultime : chaque etape a deja son propre timeout
 
 function _withTimeout(promise,ms,fallback){
   return Promise.race([
@@ -4187,7 +4188,7 @@ async function showResults(){
   },1000);
 
   try{
-    const coord=await _withTimeout(geocode(),8000,null);
+    const coord=await _withTimeout(geocode(),12000,null);
     dbg("Coordonnees BAN: "+JSON.stringify(coord));
     btn.textContent="Recherche des ventes r\u00e9elles\u2026";
 
@@ -5821,8 +5822,17 @@ function ownVsRent(r){
     const crd=crdAt(t);
     const impotPV=0; // residence principale : exoneration (art. 150 U-II-1 CGI)
     const valeurNette=valeurBien-fraisRevente-crd-impotPV;
-    // PATRIMOINE NET du proprietaire = ce qu'il possede - ce qu'il a decaisse
-    const patriProprio=valeurNette-decaisseProprio;
+    // Epargne post-credit : apres la fin du credit, le proprietaire place le
+    // budget mensuel libere (mensTot/mois) au meme taux que le locataire.
+    // Sans cela, le modele avantage artificiellement le locataire apres la duree du credit.
+    let epargneProprio=0;
+    if(t>duree&&duree>0){
+      for(let k=duree+1;k<=t;k++){
+        epargneProprio+=mensTot*12*Math.pow(1+tauxPlacement,t-k);
+      }
+    }
+    // PATRIMOINE NET du proprietaire = bien + epargne post-credit - decaissements
+    const patriProprio=valeurNette+epargneProprio-decaisseProprio;
 
     // ================= LOCATAIRE =================
     // Hypothese cle : MEME capital de depart (apport + frais que le proprio aurait payes)
@@ -5961,7 +5971,7 @@ function renderOwnVsRent(r){
     '<div style="margin-top:14px;padding:12px;background:var(--bg);border-radius:11px;border-left:3px solid var(--brand-dark)">'+
       '<div style="font-weight:800;font-size:12px;color:var(--brand-dark);margin-bottom:6px">Comment ce calcul est fait</div>'+
       '<div style="font-size:11px;color:var(--ink);line-height:1.6">'+
-        '<b>C\u00f4t\u00e9 propri\u00e9taire</b>, on additionne tout ce qui sort de votre poche : apport ('+eur0(o.apport)+' \u20ac), frais de notaire, travaux, mensualit\u00e9s de cr\u00e9dit ('+eur0(o.mensTot)+' \u20ac/mois), taxe fonci\u00e8re, charges de copropri\u00e9t\u00e9, assurance et une provision d\u2019entretien de <b>'+eur0(o.entretien)+' \u20ac/an</b> (1 % du prix, usage courant pour le gros \u0153uvre). On <b>retranche</b> ensuite la valeur nette du bien si vous le revendiez cette ann\u00e9e-l\u00e0 : prix revaloris\u00e9 \u00e0 '+(o.reval*100).toFixed(1)+' %/an, moins les frais de vente, moins le capital restant d\u00fb. La plus-value est suppos\u00e9e <b>exon\u00e9r\u00e9e</b> (r\u00e9sidence principale, art. 150 U-II-1 CGI).<br><br>'+
+        '<b>C\u00f4t\u00e9 propri\u00e9taire</b>, on additionne tout ce qui sort de votre poche : apport ('+eur0(o.apport)+' \u20ac), frais de notaire, travaux, mensualit\u00e9s de cr\u00e9dit ('+eur0(o.mensTot)+' \u20ac/mois), taxe fonci\u00e8re, charges de copropri\u00e9t\u00e9, assurance et une provision d\u2019entretien de <b>'+eur0(o.entretien)+' \u20ac/an</b> (1 % du prix, usage courant pour le gros \u0153uvre). On <b>retranche</b> ensuite la valeur nette du bien si vous le revendiez cette ann\u00e9e-l\u00e0 : prix revaloris\u00e9 \u00e0 '+(o.reval*100).toFixed(1)+' %/an, moins les frais de vente, moins le capital restant d\u00fb. Apr\u00e8s la fin du cr\u00e9dit ('+o.duree+' ans), le budget mensuel lib\u00e9r\u00e9 est <b>plac\u00e9</b> au m\u00eame taux que le locataire ('+(o.tauxPlacement*100).toFixed(1)+' %/an), \u00e9vitant un biais en faveur de la location. La plus-value est suppos\u00e9e <b>exon\u00e9r\u00e9e</b> (r\u00e9sidence principale, art. 150 U-II-1 CGI).<br><br>'+
         '<b>C\u00f4t\u00e9 locataire</b>, on additionne les loyers vers\u00e9s (index\u00e9s \u00e0 '+(o.gRent*100).toFixed(1)+' %/an, votre hypoth\u00e8se IRL), les charges r\u00e9cup\u00e9rables et l\u2019assurance habitation. On <b>retranche</b> la valeur du capital qu\u2019il n\u2019a pas immobilis\u00e9 : son apport ('+eur0(o.apport)+' \u20ac) plac\u00e9 \u00e0 '+(o.tauxPlacement*100).toFixed(1)+' %/an, plus l\u2019\u00e9pargne mensuelle qu\u2019il r\u00e9alise quand son loyer est inf\u00e9rieur au co\u00fbt total du propri\u00e9taire, elle aussi capitalis\u00e9e.<br><br>'+
         '<b>Le point de bascule</b> est la premi\u00e8re ann\u00e9e o\u00f9 le co\u00fbt cumul\u00e9 du propri\u00e9taire passe sous celui du locataire. Avant ce seuil, les frais d\u2019acquisition (notaire ~'+(notaireRate()*100).toFixed(1)+' %, garantie, dossier) ne sont pas encore amortis par la revalorisation du bien et le remboursement du capital.'+
       '</div>'+
