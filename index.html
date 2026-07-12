@@ -351,16 +351,50 @@
   [style*="font-size:10px"]{font-size:11.5px!important}
   [style*="font-size:10.5px"]{font-size:11.5px!important}
 }
+/* R2 : digestibilite — sommaire sticky, synthese 60 s, chiffre-cle de carte */
+#tocBar{display:none;gap:6px;overflow-x:auto;padding:8px 2px 9px;position:sticky;z-index:40;top:0;background:linear-gradient(var(--bg) 78%,rgba(246,248,250,0));-webkit-overflow-scrolling:touch;scrollbar-width:none}
+#tocBar.show{display:flex}
+#tocBar::-webkit-scrollbar{display:none}
+.toc-chip{flex:none;font:700 12px/1 var(--body);color:var(--ink-soft);background:#fff;border:1.5px solid var(--line);border-radius:16px;padding:8px 12px;cursor:pointer;white-space:nowrap;transition:.12s}
+.toc-chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.toc-chip.toc-tool{color:var(--brand-dark);border-color:var(--brand)}
+.card-kv{margin-left:auto;font:800 12px/1.2 var(--body);color:var(--brand-dark);white-space:nowrap;flex:none}
+.card.is-collapsed .card-kv{color:var(--ink)}
+.synth-row{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line);cursor:pointer}
+.synth-row:last-child{border-bottom:none}
+.synth-row:active{background:var(--brand-tint)}
+.synth-ic{width:30px;height:30px;border-radius:9px;background:var(--bg);display:grid;place-items:center;font-size:15px;flex:none}
+.synth-main{flex:1;min-width:0}
+.synth-lbl{font-size:11px;color:var(--ink-soft);font-weight:600}
+.synth-val{font:800 14.5px/1.25 var(--body);color:var(--ink);margin-top:1px}
+.synth-val small{font-weight:600;font-size:11px;color:var(--ink-soft)}
+.synth-val.pos{color:var(--good)}.synth-val.neg{color:var(--bad)}.synth-val.warn{color:#9a6a12}
+.synth-go{flex:none;font-size:11px;font-weight:700;color:var(--brand-dark);white-space:nowrap}
+@keyframes cardFlash{0%{box-shadow:0 0 0 3px rgba(15,179,158,.55)}100%{box-shadow:var(--shadow)}}
+.card-flash{animation:cardFlash 1.2s ease}
+
+/* ===== R6 Accessibilite : focus-visible sur tous les controles =====
+ * :focus-visible = focus clavier seulement (pas au clic souris). */
+:focus-visible{outline:none}
+.cta:focus-visible,.btn-sm:focus-visible,.seg button:focus-visible,
+.dpe-seg button:focus-visible,.bchips button:focus-visible,
+.chk:focus-visible,.toc-chip:focus-visible,.synth-row:focus-visible,
+details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible{
+  outline:none;box-shadow:0 0 0 3px var(--brand-tint);border-color:var(--brand)!important}
+.skip-link{position:absolute;top:-100px;left:12px;z-index:999;background:var(--ink);color:#fff;
+  padding:10px 16px;border-radius:var(--r-sm);font-weight:700;font-size:14px;
+  text-decoration:none;transition:top .15s}
+.skip-link:focus{top:8px}
 </style>
 </head>
 <body>
-
-<header class="appbar">
+<a href="#estimo-main" class="skip-link">Aller au contenu principal</a>
+<header class="appbar" role="banner">
   <div class="logo-mark">E</div>
   <div class="logo-txt"><b>Estimo</b><span>Estimez et analysez un bien immobilier</span></div>
 </header>
 
-<main class="container">
+<main class="container" id="estimo-main" role="main">
 
 
   <!-- MES BIENS (sauvegarde locale) - design v72 -->
@@ -399,10 +433,10 @@
 
     <div class="wstep" data-s="2">
     <div class="field"><label class="lbl">Type de bien</label>
-      <div class="seg" id="segType"><button data-v="appartement" class="on">Appartement</button><button data-v="maison">Maison</button><button data-v="terrain">Terrain</button></div>
+      <div class="seg" id="segType" role="group" aria-label="Type de bien"><button data-v="appartement" class="on">Appartement</button><button data-v="maison">Maison</button><button data-v="terrain">Terrain</button></div>
     </div>
     <div class="field" id="wrapNeuf"><label class="lbl">&#201;tat du bien &#224; l'achat <span style="font-weight:500;color:var(--ink-soft)">(impacte les frais de notaire)</span></label>
-      <div class="seg" id="segNeuf"><button data-v="ancien" class="on">Ancien</button><button data-v="neuf">Neuf / VEFA (&lt; 5 ans)</button></div>
+      <div class="seg" id="segNeuf" role="group" aria-label="État du bien"><button data-v="ancien" class="on">Ancien</button><button data-v="neuf">Neuf / VEFA (&lt; 5 ans)</button></div>
     </div>
 
     <div class="field"><div class="row">
@@ -455,7 +489,7 @@
     </div></div>
 
     <div class="field" id="wrapPieces"><label class="lbl">Nombre de pi&#232;ces</label>
-      <div class="seg" id="segPieces"><button data-v="1">1</button><button data-v="2">2</button><button data-v="3" class="on">3</button><button data-v="4">4</button><button data-v="5">5</button><button data-v="6">6+</button></div>
+      <div class="seg" id="segPieces" role="group" aria-label="Nombre de pièces"><button data-v="1" aria-label="1 pièce">1</button><button data-v="2" aria-label="2 pièces">2</button><button data-v="3" class="on" aria-label="3 pièces">3</button><button data-v="4" aria-label="4 pièces">4</button><button data-v="5" aria-label="5 pièces">5</button><button data-v="6" aria-label="6 pièces ou plus">6+</button></div>
     </div>
 
     </div>
@@ -590,15 +624,15 @@
       <div style="display:flex;flex-direction:column;gap:8px">
         <div>
           <div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:4px;font-weight:600">&#128267; DPE &#8212; &#233;nergie (kWh/m&#178;/an)</div>
-          <div class="dpe-seg" id="segDpe"><button data-v="A" class="dpe-a">A</button><button data-v="B" class="dpe-b">B</button><button data-v="C" class="dpe-c">C</button><button data-v="D" class="dpe-d on">D</button><button data-v="E" class="dpe-e">E</button><button data-v="F" class="dpe-f">F</button><button data-v="G" class="dpe-g">G</button></div>
+          <div class="dpe-seg" id="segDpe" role="group" aria-label="Étiquette DPE énergie"><button data-v="A" aria-label="DPE A - Très performant" class="dpe-a">A</button><button data-v="B" aria-label="DPE B - Performant" class="dpe-b">B</button><button data-v="C" aria-label="DPE C - Peu énergivore" class="dpe-c">C</button><button data-v="D" aria-label="DPE D - Assez énergivore" class="dpe-d on">D</button><button data-v="E" aria-label="DPE E - Énergivore" class="dpe-e">E</button><button data-v="F" aria-label="DPE F - Très énergivore" class="dpe-f">F</button><button data-v="G" aria-label="DPE G - Extrêmement énergivore" class="dpe-g">G</button></div>
         </div>
         <div>
           <div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:4px;font-weight:600">&#127811; GES &#8212; &#233;missions CO&#178; (kgCO&#178;/m&#178;/an)</div>
-          <div class="dpe-seg" id="segGes"><button data-v="A" class="dpe-a">A</button><button data-v="B" class="dpe-b">B</button><button data-v="C" class="dpe-c">C</button><button data-v="D" class="dpe-d on">D</button><button data-v="E" class="dpe-e">E</button><button data-v="F" class="dpe-f">F</button><button data-v="G" class="dpe-g">G</button></div>
+          <div class="dpe-seg" id="segGes" role="group" aria-label="Étiquette GES émissions CO₂"><button data-v="A" aria-label="GES classe A" class="dpe-a">A</button><button data-v="B" aria-label="GES classe B" class="dpe-b">B</button><button data-v="C" aria-label="GES classe C" class="dpe-c">C</button><button data-v="D" aria-label="GES classe D" class="dpe-d on">D</button><button data-v="E" aria-label="GES classe E" class="dpe-e">E</button><button data-v="F" aria-label="GES classe F" class="dpe-f">F</button><button data-v="G" aria-label="GES classe G" class="dpe-g">G</button></div>
         </div>
       </div>
       <div class="hint" style="margin-top:6px">Les deux &#233;tiquettes figurent sur tout DPE depuis 2021. A = tr&#232;s performant, G = passoire thermique (obligation de travaux).</div>
-      <div id="dpeReformeNote" class="banner warn" style="display:none;margin-top:8px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="flex:none"><circle cx="12" cy="12" r="9" stroke="#8a5e10" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#8a5e10" stroke-width="2" stroke-linecap="round"/></svg><span><b>R&#233;forme DPE du 01/01/2026 :</b> ce DPE date d'avant le changement du coefficient &#233;lectrique (2,58 &#8594; 1,79 kWhep/kWhef). Si le bien est chauffage &#233;lectrique, la classe r&#233;elle est probablement meilleure d'une &#224; deux lettres. Modifiez manuellement la lettre affich&#233;e ou commandez un nouveau DPE.</span></div>
+      <div id="dpeReformeNote" class="banner warn" style="display:none;margin-top:8px"><svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 24 24" fill="none" style="flex:none"><circle cx="12" cy="12" r="9" stroke="#8a5e10" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#8a5e10" stroke-width="2" stroke-linecap="round"/></svg><span><b>R&#233;forme DPE du 01/01/2026 :</b> ce DPE date d'avant le changement du coefficient &#233;lectrique (2,58 &#8594; 1,79 kWhep/kWhef). Si le bien est chauffage &#233;lectrique, la classe r&#233;elle est probablement meilleure d'une &#224; deux lettres. Modifiez manuellement la lettre affich&#233;e ou commandez un nouveau DPE.</span></div>
     </div>
 
     <div class="field" id="wrapDiags">
@@ -615,7 +649,7 @@
     <button class="cta" id="btnEstim">Estimer le bien</button>
     <div class="err" id="formErr"></div>
     <div class="hint">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#5B7186" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#5B7186" stroke-width="2" stroke-linecap="round"/></svg>
+      <svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#5B7186" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#5B7186" stroke-width="2" stroke-linecap="round"/></svg>
       Prix, comparables et statistiques&#160;: <b>DVF r&#233;el (Cerema)</b>. Population et g&#233;orisques&#160;: <b>r&#233;els</b>. Revenus et ch&#244;mage&#160;: <b>Filosofi (quand disponible)</b>. Tendances de prix&#160;: <b>DVF r&#233;el</b>. Taux de cr&#233;dit&#160;: <b>hypoth&#232;se modifiable</b>.
     </div>
   </section>
@@ -623,7 +657,9 @@
   <!-- R&#201;SULTATS -->
   <div id="results" class="simple">
 
-    <div id="modeBar" style="order:-1"><div class="seg" id="segMode"><button data-m="simple" class="on">Mode Simple</button><button data-m="expert">Mode Expert</button></div><div class="hint" style="margin-top:6px">Mode Simple : l'essentiel pour d&#233;cider (verdict, prix conseille, negociation, risques). Mode Expert : tous les calculs detailles.</div></div>
+    <div id="modeBar" style="order:-1"><div class="seg" id="segMode" role="group" aria-label="Mode d'affichage"><button data-m="simple" class="on">Mode Simple</button><button data-m="expert">Mode Expert</button></div><div class="hint" style="margin-top:6px">Mode Simple : l'essentiel pour d&#233;cider (verdict, prix conseille, negociation, risques). Mode Expert : tous les calculs detailles.</div></div>
+    <div id="tocBar" style="order:-1"></div>
+    <section class="card" id="synthCard" style="order:0"><div class="card-head"><div class="step-no">&#9889;</div><div><h2>Synth&#232;se en 60 secondes</h2><div class="sub">L'essentiel pour d&#233;cider &#8212; touchez une ligne pour ouvrir le d&#233;tail</div></div></div><div id="synth60Panel"></div></section>
     <section class="card" id="decisionCard" style="order:0"><div id="decisionPanel"></div><div class="hint" style="padding:0 2px">Score d'acquisition : synth&#232;se multicrit&#232;re (prix, rentabilit&#233;, march&#233;, DPE, cash-flow, risque). Distinct du verdict fond&#233; sur la seule VAN affich&#233; plus bas dans la Synth&#232;se de l'investissement.</div></section>
     <section class="card expert-only" id="reportCard" style="order:7"><div class="card-head"><div class="step-no">&#128221;</div><div><h2>Rapport d'analyse</h2><div class="sub">Synth&#232;se r&#233;dig&#233;e automatiquement &#224; partir de vos donn&#233;es</div></div></div><div id="reportPanel"></div></section>
     <section class="card expert-only" id="formationCard" style="order:4"><div class="card-head"><div class="step-no">&#128269;</div><div><h2>Fiabilit&#233; &amp; formation du prix</h2><div class="sub">Fourchettes probabilistes, fiabilit&#233; des donn&#233;es et explication d&#233;taill&#233;e</div></div></div><div id="formationPanel"></div></section>
@@ -665,7 +701,7 @@
       <div id="dispoResult"></div>
     </section>
 
-    <section class="card price-card" style="order:1">
+    <section class="card price-card" id="priceCard" style="order:1">
       <div class="pc-eyebrow">Estimation</div>
       <div class="pc-price num" id="pcPrice">&#8212;</div>
       <div class="pc-margin">marge d'erreur estim&#233;e : <b class="num" id="pcMargin">&#8212;</b></div>
@@ -691,10 +727,10 @@
       <label class="lbl" for="prixAchat" style="display:block;margin-bottom:6px">Prix d'achat envisag&#233;</label>
       <div class="with-unit" style="max-width:240px"><input class="input num" id="prixAchat" type="number" min="0" style="font-size:22px;font-weight:800;letter-spacing:-.5px" /><span class="unit">&#8364;</span></div>
       <div class="bchips" id="buyChips" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
-        <button type="button" data-pct="-10">&#8722;10 %</button>
-        <button type="button" data-pct="-5">&#8722;5 %</button>
-        <button type="button" data-pct="0">= estimation</button>
-        <button type="button" data-pct="5">+5 %</button>
+        <button type="button" data-pct="-10" aria-label="Prix moins 10 %">&#8722;10 %</button>
+        <button type="button" data-pct="-5" aria-label="Prix moins 5 %">&#8722;5 %</button>
+        <button type="button" data-pct="0" aria-label="Prix égal à l'estimation">= estimation</button>
+        <button type="button" data-pct="5" aria-label="Prix plus 5 %">+5 %</button>
       </div>
       <div class="hint" id="prixGap" style="margin-top:10px"></div>
     </section>
@@ -702,7 +738,7 @@
     <!-- DASHBOARD -->
     <section class="card" id="dashCard" style="order:5">
       <div class="card-head"><div class="step-no">&#128202;</div><div><h2>Synth&#232;se de l'investissement</h2><div class="sub">Lecture rapide &#8212; recalcul&#233;e en direct &#8212; verdict fond&#233; sur la VAN (voir aussi le Score d'acquisition en haut de page)</div></div></div>
-      <div class="seg" id="segView" style="margin-bottom:14px"><button data-v="full" class="on">Vue compl&#232;te</button><button data-v="lean">Synth&#232;se (masquer le d&#233;tail)</button></div>
+      <div class="seg" id="segView" role="group" aria-label="Vue du tableau de bord" style="margin-bottom:14px"><button data-v="full" class="on">Vue compl&#232;te</button><button data-v="lean">Synth&#232;se (masquer le d&#233;tail)</button></div>
       <div id="verdict" class="verdict neu">&#8212;</div>
       <div class="dash-grid">
         <div class="dtile"><div class="dt-l">Prix vs march&#233;</div><div class="dt-v" id="dPrix">&#8212;</div></div>
@@ -718,31 +754,31 @@
       <div class="hint" style="margin-top:8px">VAN, TRI et co&#251;t total repris ici pour la lecture rapide &#8212; d&#233;tail complet (Cap Rate, DSCR, LTV, sensibilit&#233;, explications) dans le Tableau de bord investisseur ci-dessous.</div>
       <div class="chart-wrap"><h4>D&#233;composition du gain (cumul&#233; sur la p&#233;riode)</h4><div class="csub">De l'apport au gain net &#8212; chaque brique ajoute (+) ou retranche (&#8722;)</div><div id="chartWf"></div><div class="cinterp" id="iWf"></div></div>
       <details class="acc"><summary><span>D&#233;composition actualis&#233;e &#8594; VAN (avanc&#233;)</span><span class="chev">&#9656;</span></summary><div class="acc-body"><div class="csub">M&#234;mes briques que le gain net, mais actualis&#233;es ; le solde final correspond &#224; la VAN.</div><div id="chartWfD"></div></div></details>
-      <div class="hint" style="display:flex;gap:6px;align-items:flex-start;margin-top:10px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#5B7186" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#5B7186" stroke-width="2" stroke-linecap="round"/></svg>Verdict bas&#233; sur la VAN (le projet bat-il votre taux d'actualisation ?), le cash-flow et la valorisation. Indicatif.</div>
+      <div class="hint" style="display:flex;gap:6px;align-items:flex-start;margin-top:10px"><svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#5B7186" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#5B7186" stroke-width="2" stroke-linecap="round"/></svg>Verdict bas&#233; sur la VAN (le projet bat-il votre taux d'actualisation ?), le cash-flow et la valorisation. Indicatif.</div>
     </section>
 
     <!-- INSEE -->
-    <section class="card secondary expert-only" style="order:9">
+    <section class="card secondary expert-only" id="inseeCard" style="order:9">
       <div class="card-head"><div class="step-no">2</div><div><h2>Contexte du quartier<span class="demo-tag" id="inseeBadge">Pop. r&#233;elle &#183; reste estim&#233;</span></h2><div class="sub">Donn&#233;es socio-d&#233;mographiques de la commune</div></div></div>
       <div id="inseeStats"></div>
     </section>
 
     <!-- MARCH&#201; -->
-    <section class="card secondary expert-only" style="order:8">
+    <section class="card secondary expert-only" id="marketCard" style="order:8">
       <div class="card-head"><div class="step-no">3</div><div><h2>Tendances du march&#233;<span class="demo-tag" id="dynTag">observatoire &#183; estimation</span></h2><div class="sub">Dynamique des prix et tension locale</div></div></div>
       <div id="marketStats"></div>
     </section>
 
-    <section class="card secondary" style="order:7">
+    <section class="card secondary" id="compCard" style="order:7">
       <div class="card-head"><div class="step-no">4</div><div><h2>Biens comparables<span class="demo-tag" id="compTag">DVF</span></h2><div class="sub">Ventes similaires r&#233;centes</div></div></div>
       <div id="dvfStats" style="display:none;margin-bottom:6px"></div>
       <div id="compList"></div>
       <button id="btnExportComps" style="margin-top:12px;width:100%;padding:11px;border:1.5px solid var(--line);background:#fff;color:var(--brand-dark);border-radius:var(--r-sm);font-weight:600;font-family:var(--body);font-size:13px;cursor:pointer">Exporter les comparables (CSV)</button>
     </section>
 
-    <section class="card secondary" style="order:10">
+    <section class="card secondary" id="locCard" style="order:10">
       <div class="card-head"><div class="step-no">&#128205;</div><div><h2>Localisation, environnement &amp; proximit&#233;<span class="demo-tag">Air, &#233;coles, transports &amp; commerces r&#233;els</span></h2></div></div>
-      <div class="loc"><div class="loc-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z" stroke="#fff" stroke-width="2"/><circle cx="12" cy="10" r="2.5" stroke="#fff" stroke-width="2"/></svg></div><div><b id="locAddr">&#8212;</b><div class="coord num" id="locCoord">&#8212;</div></div></div>
+      <div class="loc"><div class="loc-ic"><svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z" stroke="#fff" stroke-width="2"/><circle cx="12" cy="10" r="2.5" stroke="#fff" stroke-width="2"/></svg></div><div><b id="locAddr">&#8212;</b><div class="coord num" id="locCoord">&#8212;</div></div></div>
       <div id="locStats" style="margin-top:12px"></div>
       <div id="enrichPanel" style="margin-top:14px"></div>
       <div id="mapBox" style="margin-top:14px"></div>
@@ -783,10 +819,10 @@
 
       <div class="subhead">Fiscalit&#233;</div>
       <div class="field"><label class="lbl">Type de location</label>
-        <div class="seg" id="segLoc"><button data-v="nue" class="on">Nue</button><button data-v="meuble">Meubl&#233;e</button></div>
+        <div class="seg" id="segLoc" role="group" aria-label="Type de location"><button data-v="nue" class="on">Nue</button><button data-v="meuble">Meubl&#233;e</button></div>
       </div>
       <div class="field"><label class="lbl">Statut fiscal</label>
-        <div class="seg" id="segStatut"><button data-v="resident" class="on">R&#233;sident fiscal</button><button data-v="nonresident">Non-r&#233;sident</button></div>
+        <div class="seg" id="segStatut" role="group" aria-label="Statut fiscal"><button data-v="resident" class="on">R&#233;sident fiscal</button><button data-v="nonresident">Non-r&#233;sident</button></div>
         <label class="chk" id="chkEEE" style="margin-top:8px;display:none"><input type="checkbox" id="eee" checked />Affili&#233; s&#233;cu EEE/Suisse (pr&#233;l&#232;vements sociaux &#224; 7,5 %)</label>
       </div>
       <div class="field"><div class="row">
@@ -827,7 +863,7 @@
         </div>
       </div>
 
-      <div class="line-item" id="notaireLine" style="cursor:pointer" title="Cliquez pour voir le d&#233;tail"><span class="li-l">Frais de notaire <span id="notaireRate" style="font-weight:500;color:var(--ink-soft)">(&#8212;)</span> <span style="font-size:10px;color:var(--brand-dark);font-weight:700">&#9662; d&#233;tail</span></span><span class="num" id="notaireV">&#8212;</span></div>
+      <div class="line-item" id="notaireLine" style="cursor:pointer" title="Cliquez pour voir le d&#233;tail"><span class="li-l">Frais de notaire <span id="notaireRateLbl" style="font-weight:500;color:var(--ink-soft)">(&#8212;)</span> <span style="font-size:10px;color:var(--brand-dark);font-weight:700">&#9662; d&#233;tail</span></span><span class="num" id="notaireV">&#8212;</span></div>
       <div id="notaireDetail" style="display:none;margin:-2px 0 10px;padding:11px 12px;background:var(--bg);border-radius:10px;border-left:3px solid var(--brand-dark)"></div>
       <div class="line-item"><span class="li-l">Co&#251;t total de l'op&#233;ration</span><span class="num" id="coutTotalV">&#8212;</span></div>
       <div class="line-item"><span class="li-l">Montant emprunt&#233;</span><span class="num" id="empruntV">&#8212;</span></div>
@@ -838,7 +874,7 @@
         <div class="metric"><div class="ml">Mensualit&#233; (cr&#233;dit + assurance)</div><div class="mv" id="mMensu" style="font-size:21px">&#8212;</div></div>
         <div class="metric"><div class="ml">Cash-flow mensuel (apr&#232;s imp&#244;t)</div><div class="mv" id="mCash" style="font-size:21px">&#8212;</div></div>
       </div>
-      <div class="hint" style="display:flex;gap:6px;align-items:flex-start;margin-top:14px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#5B7186" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#5B7186" stroke-width="2" stroke-linecap="round"/></svg>Calculs fiscaux simplifi&#233;s et indicatifs (LMNP r&#233;el : amortissement estim&#233;). Tout est recalcul&#233; en direct quand vous modifiez un champ.</div>
+      <div class="hint" style="display:flex;gap:6px;align-items:flex-start;margin-top:14px"><svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#5B7186" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#5B7186" stroke-width="2" stroke-linecap="round"/></svg>Calculs fiscaux simplifi&#233;s et indicatifs (LMNP r&#233;el : amortissement estim&#233;). Tout est recalcul&#233; en direct quand vous modifiez un champ.</div>
     </section>
 
     <!-- REVENTE -->
@@ -876,7 +912,7 @@
       <div class="line-item total"><span>Net de revente (apr&#232;s cr&#233;dit &amp; imp&#244;t)</span><span class="num" id="rvNet">&#8212;</span></div>
       <div class="metric" style="margin-top:14px"><div class="ml">Rendement global annualis&#233; de l'op&#233;ration</div><div class="mv" id="rvRend" style="font-size:22px">&#8212;</div><div class="mh">cash-flows nets + plus-value, rapport&#233;s &#224; l'apport</div></div>
       <div class="banner" id="rvLmnp" style="display:none;margin-top:12px"></div>
-      <div class="hint" style="display:flex;gap:6px;align-items:flex-start;margin-top:12px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#5B7186" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#5B7186" stroke-width="2" stroke-linecap="round"/></svg>Plus-value des r&#233;sidences secondaires/locatives. Bar&#232;mes indicatifs (exon&#233;ration IR &#224; 22 ans, pr&#233;l&#232;vements sociaux &#224; 30 ans ; surtaxe au-del&#224; de 50 000 &#8364; de plus-value imposable). &#192; confirmer.</div>
+      <div class="hint" style="display:flex;gap:6px;align-items:flex-start;margin-top:12px"><svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#5B7186" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#5B7186" stroke-width="2" stroke-linecap="round"/></svg>Plus-value des r&#233;sidences secondaires/locatives. Bar&#232;mes indicatifs (exon&#233;ration IR &#224; 22 ans, pr&#233;l&#232;vements sociaux &#224; 30 ans ; surtaxe au-del&#224; de 50 000 &#8364; de plus-value imposable). &#192; confirmer.</div>
     </section>
 
     <!-- OP&#201;RATION ACHAT-REVENTE -->
@@ -904,7 +940,7 @@
     </section>
     <section class="card" style="order:97" id="opCard">
       <div class="card-head"><div class="step-no">8</div><div><h2>Op&#233;ration achat-revente</h2><div class="sub">Prix de revient, marge nette &#8212; calcul&#233; sur la dur&#233;e r&#233;elle du flip (champ « Dur&#233;e »)</div></div></div>
-      <div class="seg" id="segProfil" style="margin-bottom:8px"><button data-v="particulier" class="on">Particulier</button><button data-v="mdb">Marchand de biens</button></div>
+      <div class="seg" id="segProfil" role="group" aria-label="Profil de l'opération" style="margin-bottom:8px"><button data-v="particulier" class="on">Particulier</button><button data-v="mdb">Marchand de biens</button></div>
       <div class="hint" id="opProfilNote" style="margin-bottom:12px"></div>
       <div class="field" style="margin-bottom:14px"><label class="lbl" for="opSellTarget">Prix de revente vis&#233; (post-travaux) &#8212; optionnel</label><input class="input num" id="opSellTarget" type="number" min="0" placeholder="vide = projection par l'appr&#233;ciation du march&#233;" /></div>
       <div class="field" id="opDureeRow" style="margin-bottom:14px"><label class="lbl" for="opDureeMois">Dur&#233;e de l'op&#233;ration (revente)</label><div class="with-unit"><input class="input num" id="opDureeMois" type="number" min="1" value="12" /><span class="unit">mois</span></div></div>
@@ -936,7 +972,7 @@
     </section>
 
     <!-- DPE -->
-    <section class="card secondary" style="order:11">
+    <section class="card secondary" id="dpeCard" style="order:11">
       <div class="card-head"><div class="step-no">7</div><div><h2>DPE & travaux conseill&#233;s</h2><div class="sub">Performance &#233;nerg&#233;tique et obligations</div></div></div>
       <div class="dpe-badge"><div class="dpe-letter" id="dpeLetter">D</div><div class="dpe-status"><div class="st" id="dpeTitle">&#8212;</div><div class="sd" id="dpeDesc">&#8212;</div></div></div>
       <div class="line-item"><span class="li-l">Consommation estim&#233;e</span><span class="num" id="dpeConso">&#8212;</span></div>
@@ -944,11 +980,11 @@
       <div class="subhead">Travaux conseill&#233;s</div>
       <div id="dpeWorks"></div>
       <div class="line-item total" style="margin-top:10px"><span>Co&#251;t indicatif des travaux</span><span class="num" id="dpeCost">&#8212;</span></div>
-      <div class="hint" style="display:flex;gap:6px;align-items:flex-start;margin-top:14px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#5B7186" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#5B7186" stroke-width="2" stroke-linecap="round"/></svg>Aides possibles (MaPrimeR&#233;nov', &#233;co-PTZ). &#192; confirmer par un audit &#233;nerg&#233;tique.</div>
+      <div class="hint" style="display:flex;gap:6px;align-items:flex-start;margin-top:14px"><svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#5B7186" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#5B7186" stroke-width="2" stroke-linecap="round"/></svg>Aides possibles (MaPrimeR&#233;nov', &#233;co-PTZ). &#192; confirmer par un audit &#233;nerg&#233;tique.</div>
     </section>
 
     <!-- PROJECTION -->
-    <section class="card" style="order:7">
+    <section class="card" id="projCard" style="order:7">
       <div class="card-head"><div class="step-no">8</div><div><h2>Projection & graphiques</h2><div class="sub">Cash-flows, actualisation, VAN et TRI jusqu'&#224; la revente</div></div></div>
       <div class="field" style="margin-bottom:12px"><label class="lbl" for="discRate">Taux d'actualisation <span style="font-weight:500;color:var(--ink-soft)">(rendement attendu sur vos fonds propres &#8212; vide = auto)</span></label><div class="with-unit" style="max-width:160px"><input class="input num" id="discRate" type="number" step="0.1" placeholder="auto" /><span class="unit">%</span></div></div>
       <div class="kpis">
@@ -961,7 +997,7 @@
       <div class="chart-wrap"><h4>Cash-flow d'exploitation</h4><div class="csub">Par an (barres) et cumul&#233; (ligne), hors revente</div><div id="chartCF"></div><div class="chart-legend"><span><i style="background:#0FB39E"></i>CF annuel</span><span><i style="background:#0F2A43"></i>CF cumul&#233;</span></div><div class="cinterp" id="iCF"></div></div>
       <details class="acc"><summary><span>Cash-flow actualis&#233; (avanc&#233;)</span><span class="chev">&#9656;</span></summary><div class="acc-body"><div class="csub">M&#234;mes flux que ci-dessus mais actualis&#233;s (ramen&#233;s &#224; aujourd'hui) ; la ligne cumule la VAN. Apport en ann&#233;e 0, revente en derni&#232;re ann&#233;e.</div><div id="chartDCF"></div><div class="chart-legend"><span><i style="background:#7FB0E0"></i>Flux actualis&#233;</span><span><i style="background:#0F2A43"></i>VAN cumul&#233;e</span></div></div></details>
       <div class="chart-wrap"><h4>VAN selon l'ann&#233;e de revente</h4><div class="csub">Revendre cette ann&#233;e-l&#224; &#8658; quelle VAN ? <b style="color:#0a7a5c">Barre verte</b> = ann&#233;e o&#249; la VAN devient positive (seuil de rentabilit&#233;) ; sommet = dur&#233;e optimale</div><div id="chartVanYear"></div><div class="chart-legend"><span><i style="background:#7A5AF8"></i>VAN si revente l'ann&#233;e N</span><span><i style="background:#0a7a5c"></i>Seuil VAN positive</span></div><div class="cinterp" id="iVan"></div></div><div class="csub">Valeur du bien vs capital restant d&#251;</div><div id="chartEq"></div><div class="chart-legend"><span><i style="background:#0FB39E"></i>Valeur du bien</span><span><i style="background:#E0402E"></i>Capital restant d&#251;</span></div><div class="cinterp" id="iEq"></div></div>
-      <div class="hint" style="display:flex;gap:6px;align-items:flex-start;margin-top:10px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#5B7186" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#5B7186" stroke-width="2" stroke-linecap="round"/></svg>Hypoth&#232;ses : cash-flow d'exploitation suppos&#233; stable, revalorisation annuelle constante, fiscalit&#233; de l'ann&#233;e 1 reconduite. La VAN > 0 signifie que le projet bat votre co&#251;t du capital. Mod&#232;le indicatif.</div>
+      <div class="hint" style="display:flex;gap:6px;align-items:flex-start;margin-top:10px"><svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#5B7186" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#5B7186" stroke-width="2" stroke-linecap="round"/></svg>Hypoth&#232;ses : cash-flow d'exploitation suppos&#233; stable, revalorisation annuelle constante, fiscalit&#233; de l'ann&#233;e 1 reconduite. La VAN > 0 signifie que le projet bat votre co&#251;t du capital. Mod&#232;le indicatif.</div>
     </section>
 
     <section class="card expert-only" id="scnCard" style="order:7">
@@ -999,6 +1035,46 @@ const FURNISHED_PREMIUM=0.12;
 function marketRentSqm(r){const bare=getRentSqm(r);return state.loc==="meuble"?+(bare*(1+FURNISHED_PREMIUM)).toFixed(1):bare;}
 const CITY_RENT={"paris":31,"lyon":14.5,"marseille":14,"nice":18,"bordeaux":15,"toulouse":13,"nantes":13.5,"rennes":13,"montpellier":15,"strasbourg":13.5,"lille":15,"grenoble":13,"annecy":16,"cannes":18,"aix-en-provence":17,"versailles":21,"la rochelle":15,"biarritz":18};
 const NAT_RENT_FACTOR=0.0046;
+/* ===== Hypothèses financières centralisées =====
+ * Modifier ici pour que toutes les fonctions soient cohérentes.
+ * Sources et références indiquées pour chaque valeur.
+ */
+const HYP = {
+  /** Taux d'actualisation (NPV usufruit démembrement).
+   *  Taux OAT 10 ans France long terme conventionnel. Source : Banque de France. */
+  tauxActu:        0.035,
+  /** Rendement NET du capital placé par le locataire (après PFU 30 %).
+   *  Fonds euros assurance-vie (Banque de France / FFA 2023-2024 : ~3 % brut → ~2,1 % net).
+   *  Paramétrable par l'utilisateur via #ovrPlacement. */
+  tauxPlacement:   0.02,
+  /** Revalorisation annuelle du bien par défaut (valeur IPC long terme INSEE).
+   *  Paramétrable via #reval. */
+  revalDefaut:     0.02,
+  /** Indexation loyers/charges par défaut si IRL non chargé (approx. IPC INSEE).
+   *  Remplacé automatiquement dès que l'IRL réel est disponible. */
+  irlDefaut:       0.025,
+  /** Indexation charges de copropriété / taxe foncière par défaut.
+   *  IPEA INSEE (charges d'habitation) : ~2,5 %/an long terme. */
+  gChargesDefaut:  0.025,
+  /** Frais d'agence à la vente par défaut (barème médian constaté). Paramétrable. */
+  fraisVenteDefaut:0.04,
+  /** Provision entretien/gros œuvre par défaut (0,6 % du prix).
+   *  Fourchette courante : 0,5–1 %. Paramétrable via #ovrEntretien. */
+  entretienPct:    0.006,
+  /** Assurance habitation locataire (prime annuelle estimée, France INSEE 2023). */
+  assurLoc:        120,
+  /** Quote-part charges de copropriété récupérables sur le locataire.
+   *  Art. 23 loi 89-462 + décret du 26 août 1987 : ~75 % des charges courantes. */
+  quotePartCopro:  0.75,
+  /** Taux horaire moyen artisan (France, Capeb 2024, hors fournitures). */
+  tauxHoraireArtisan: 45,
+  /** Coefficient de lenteur travaux (aléas, dépassements, TVA 10 %). */
+  coefLenteur:     2.2,
+  /** Forfait travaux marchand de biens si détention > 5 ans (15 % du prix).
+   *  Usage professionnel : provision pour remise en état avant revente. */
+  forfaitTravauxMdB: 0.15,
+};
+
 const ENCADREMENT=["paris","lille","hellemmes","lomme","lyon","villeurbanne","montpellier","bordeaux","montreuil","bagnolet","pantin","est ensemble","plaine commune","grenoble"];
 
 const $=id=>document.getElementById(id);
@@ -1333,6 +1409,13 @@ function enrichScoreDetail(e){
     rows.push(["Commerces & services",Math.round(vC)+"/100",0.20,vC*0.20,comm+" commerce(s) : "+e.osm.shops+" boutiques, "+e.osm.food+" restaurants, "+e.osm.health+" sant\u00e9 (5 pts/commerce)"]);
   }
   if(e.iso&&e.iso.carArea10>0){const v=cl(e.iso.carArea10/1.5,0,100);s+=v*0.12;w+=0.12;rows.push(["Accessibilit\u00e9 voiture",Math.round(v)+"/100",0.12,v*0.12,Math.round(e.iso.carArea10)+" km\u00b2 accessibles en 10 min (isochrone IGN)"]);}
+  // IPS : qualité scolaire (poids 0.08, si disponible)
+  const _ipsEnrich=(state.ctx2||{}).ips;
+  if(_ipsEnrich&&_ipsEnrich.ips>0){
+    const vIPS=cl((_ipsEnrich.ips-75)/50*100,0,100);s+=vIPS*0.08;w+=0.08;
+    rows.push(["Qualit\u00e9 scolaire (IPS)",Math.round(vIPS)+"/100",0.08,vIPS*0.08,
+      "IPS "+_ipsEnrich.ips.toFixed(1)+" (m\u00e9diane "+_ipsEnrich.n+" \u00e9tablissement(s), DEPP/MEN) \u00b7 [75\u2013125] renormalis\u00e9 sur 100"]);
+  }
   const t=(state.live&&state.live.risqueLbl)||"";const m=t.match(/^(\d+)/);const nb=m?+m[1]:0;
   const vR=cl(100-nb*12,30,100);s+=vR*0.10;w+=0.10;
   rows.push(["Absence de risques",Math.round(vR)+"/100",0.10,vR*0.10,nb+" risque(s) naturel(s) recens\u00e9(s) par G\u00e9orisques (\u221212 pts/risque, plancher 30)"]);
@@ -1719,17 +1802,6 @@ function backtestLocal(pts,subjSurf){
   const q=f=>errs[Math.min(errs.length-1,Math.floor(f*errs.length))];
   return{mdape:+(q(0.5)*100).toFixed(1),p80:+(q(0.8)*100).toFixed(1),n:errs.length};
 }
-function similBase(pts,subjSurf,ymax){
-  if(!pts||!pts.length||!(subjSurf>0))return{base:0,nEff:0};
-  let sw=0,sww=0,swp=0;
-  pts.forEach(p=>{
-    const ds=(p.surf-subjSurf)/(0.5*subjSurf),surfW=Math.exp(-ds*ds);
-    const yr=p.date?+String(p.date).slice(0,4):ymax,recW=Math.pow(0.82,Math.max(0,ymax-yr));
-    const w=surfW*recW;sw+=w;sww+=w*w;swp+=w*p.ppm;
-  });
-  if(sw<=0)return{base:0,nEff:0};
-  return{base:swp/sw,nEff:(sw*sw)/sww};
-}
 function estimationConfidence(stats,ctx){
   const cl=(v,a,b)=>Math.max(a,Math.min(b,v)),yr=new Date().getFullYear();
   const bc=ctx.baseConf,bcN=bc==="\u00e9lev\u00e9e"?46:bc==="moyenne"?26:10,bcD=bc==="\u00e9lev\u00e9e"?55:bc==="moyenne"?36:16;
@@ -2060,6 +2132,16 @@ function renderInsee(r){const d=r.dyn;const sign=x=>(x>=0?"+":"")+x;
     ["Nombre de logements",popReal?eur0(d.logements)+eb:na],
     ["Logement social (RPLS)",(function(){const rp=(state.ctx2||{}).rpls;if(!rp||!rp.social)return na;const tx=popReal&&d.logements>0?Math.round(rp.social/d.logements*100):null;return eur0(rp.social)+" logts"+(tx!=null?" \u00b7 "+tx+" %":"")+rb;})()],
 
+    ["IPS scolaire",(function(){
+        const ip=(state.ctx2||{}).ips;if(!ip||ip.ips==null)return na;
+        const col=ip.ips>=110?"var(--good)":ip.ips>=90?"var(--ink)":"var(--bad)";
+        const lbl=ip.ips>=110?"scolaire favoris\u00e9":ip.ips>=90?"dans la moyenne":"contexte scolaire difficile";
+        return '<span style="color:'+col+'">'+ip.ips.toFixed(1)+'</span> /100 national ('+lbl+')'+rb;
+      })(),"IPS = Indice de Position Sociale m\u00e9diane communale (primaires + coll\u00e8ges, DEPP/MEN). Nationale \u2248 100 ; favoris\u00e9 \u2265 110, difficile \u2264 85."],
+    ["Logements autoris\u00e9s (Sitadel)",(function(){
+        const sit=(state.ctx2||{}).sitadel;if(!sit||sit.logAut==null)return na;
+        return sit.logAut+" logts/an ("+sit.annee+")"+rb;
+      })(),"Logements autoris\u00e9s en construction sur la commune (Sitadel2/SDES, ann\u00e9e N-1). Fort volume = offre future \u2192 tension baiss\u00e8re \u00e0 18-24 mois."],
     ["Couverture fibre (FTTH)",(function(){const fb=(state.ctx2||{}).fibre;if(!fb||fb.ftth==null)return na;return fb.ftth+" % des locaux"+rb;})()],
     ["D\u00e9linquance (SSMSI)",(function(){const cr=(state.ctx2||{}).crime;if(!cr||cr.tx==null)return na;
       let cmp="";if(cr.depTx>0){const rel=Math.round((cr.tx/cr.depTx-1)*100);const col=rel<=-15?"var(--good)":rel>=15?"var(--bad)":"var(--ink-soft)";cmp=' <span style="font-size:10px;color:'+col+'">('+(rel>=0?"+":"")+rel+" % vs d\u00e9p. "+cr.dep+")</span>";}
@@ -2219,7 +2301,7 @@ function renderPriceHistory(r){
   const dataJson=JSON.stringify(pts).replace(/"/g,"&quot;");
   d.innerHTML='<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">'+
     '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:5px"><span style="font-size:12px;font-weight:800;color:var(--ink)">\u00c9volution du prix m\u00e9dian /m\u00b2 <span class="real-tag" style="font-size:9px;padding:1px 5px">DVF r\u00e9el</span></span><span class="num" style="font-size:12px;font-weight:800;color:'+(evo>=0?"var(--good)":"var(--bad)")+'">\u00c9volution '+(evo>=0?"+":"")+evo+' % \u00b7 CAGR '+(cagr>=0?"+":"")+cagr.toFixed(1)+' %/an</span></div>'+
-    '<div style="position:relative"><svg id="phSvg" viewBox="0 0 100 68" style="width:100%;height:150px;margin-top:6px;overflow:visible;touch-action:none" preserveAspectRatio="none" data-pts="'+dataJson+'">'+
+    '<div style="position:relative"><svg role="img" aria-label="Graphique : évolution du prix médian DVF par année" id="phSvg" viewBox="0 0 100 68" style="width:100%;height:150px;margin-top:6px;overflow:visible;touch-action:none" preserveAspectRatio="none" data-pts="'+dataJson+'">'+
       grid+bars+
       '<path d="'+iqrPath+'" fill="var(--brand)" opacity="0.20" stroke="var(--brand)" stroke-width="0.25" stroke-opacity="0.4"/>'+
       '<path d="'+area+'" fill="var(--brand)" opacity="0.07"/>'+
@@ -2389,7 +2471,7 @@ function renderScatter(r){
   const regLine=`<line x1="${mx(xmin).toFixed(1)}" y1="${my(regSlope*xmin+regInt).toFixed(1)}" x2="${mx(xmax).toFixed(1)}" y2="${my(regSlope*xmax+regInt).toFixed(1)}" stroke="#E8742A" stroke-width="2" clip-path="url(#scClip)"/>`;
   const k=v=>v>=1e6?(v/1e6).toFixed(1).replace('.',',')+"M":Math.round(v/1000)+"k";
   const qlab=(x,y,anc,t)=>`<text x="${x}" y="${y}" font-size="8.5" text-anchor="${anc}" fill="var(--ink-soft)">${t}</text>`;
-  box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block">`+
+  box.innerHTML=`<svg role="img" aria-label="Nuage de points : prix en fonction de la surface" viewBox="0 0 ${W} ${H}" width="100%" style="display:block">`+
     `<defs><clipPath id="scClip"><rect x="${L}" y="${T}" width="${Rr-L}" height="${B-T}"/></clipPath></defs>`+
     `<rect x="${L}" y="${T}" width="${Rr-L}" height="${B-T}" fill="var(--bg)" stroke="var(--line)"/>`+
     dots+vefaDots+regLine+
@@ -2619,12 +2701,12 @@ function renderDispositif(){
     const rentY=numv("iRent")*12;
     const charges=numv("iTaxe")+numv("iCopro")+numv("iPno")+numv("iDivers");
     const loyerNet=rentY-charges;
-    const tauxActu=0.035; // taux d'actualisation standard
+    const tauxActu=HYP.tauxActu; // taux d'actualisation — voir HYP.tauxActu
     const usufEco=loyerNet>0?loyerNet*(1-Math.pow(1+tauxActu,-nuDuree))/tauxActu:0;
     const nuPrixEco=Math.round(nuPrixPP-usufEco);
     const decoteEcoPct=usufEco>0?Math.round(usufEco/nuPrixPP*100):0;
     // Rendement du NP à l'échéance
-    const reval=numv("reval")/100||0.02;
+    const reval=numv("reval")/100||HYP.revalDefaut;
     const valeurFin=Math.round(nuPrixPP*Math.pow(1+reval,nuDuree));
     const triNP=nuPrixNP>0?((Math.pow(valeurFin/nuPrixNP,1/nuDuree)-1)*100):0;
     const pvNette=valeurFin-nuPrixNP;
@@ -2770,7 +2852,7 @@ function sciIsSimulation(rentY,charges,interets,assurAn,amort,bp,reval,duree){
   let totalIS=0,totalDiv=0,totalFlatTax=0,reserve=0;
   for(let t=1;t<=years;t++){
     // Croissance loyers et charges = valeurs saisies par l'utilisateur (coherence avec la projection principale)
-    const _gR=(numv("gRent")/100)||0.02,_gC=(numv("gCharges")/100)||0.025;
+    const _gR=(numv("gRent")/100)||HYP.irlDefaut,_gC=(numv("gCharges")/100)||HYP.gChargesDefaut;
     const rY=rentY*Math.pow(1+_gR,t-1);
     const chY=charges*Math.pow(1+_gC,t-1);
     const intY=t<=20?interets*(1-t/(20*2)):0; // interets degressifs approx
@@ -2785,7 +2867,7 @@ function sciIsSimulation(rentY,charges,interets,assurAn,amort,bp,reval,duree){
     reserve+=benefNet-benefNet; // tout distribue
   }
   // Plus-value a la revente : IS sur PV (prix revente - valeur nette comptable)
-  const valeurRevente=bp*Math.pow(1+(reval||0.02),years);
+  const valeurRevente=bp*Math.pow(1+(reval||HYP.revalDefaut),years);
   const vnc=Math.max(0,bp-amort*years); // valeur nette comptable
   const pvBrute=Math.max(0,valeurRevente-vnc);
   const isPV=_isCalc(pvBrute);
@@ -2814,7 +2896,7 @@ function compareRegimes(R,C,I,ins,amort){
   ];
 }
 function _renderSciIsDetail(R,C,I,ins,amort,bp){
-  const reval=numv("reval")/100||0.02;
+  const reval=numv("reval")/100||HYP.revalDefaut;
   const duree=Number($("holdYears").value)||20;
   const sim=sciIsSimulation(R,C,I,ins,amort,bp,reval,duree);
   return '<div style="margin-top:14px;padding:13px;background:var(--bg);border-radius:11px;border-left:4px solid #7A5AF8">'+
@@ -3179,12 +3261,63 @@ async function provVacance(insee){
   }catch(_){}
   return null;
 }
+/* ===== R4 : IPS (Indice de Position Sociale) — data.education.gouv.fr =====
+ * IPS national moyen ≈ 100 ; quartier favorisé ≈ 120+ ; défavorisé ≈ 75-.
+ * On interroge les deux datasets (primaire + collège) et on prend la médiane.
+ * Source : DEPP/MEN — licence ouverte. */
+async function provIPS(insee){
+  if(!insee)return null;
+  const dept=insee.slice(0,2);
+  const fmtUrl=dataset=>`https://data.education.gouv.fr/api/explore/v2.1/catalog/datasets/${dataset}/records?where=code_commune_insee%3D%22${insee}%22&limit=100&select=indice_de_position_sociale,effectifs_ecole`;
+  const fmtUrlColl=dataset=>`https://data.education.gouv.fr/api/explore/v2.1/catalog/datasets/${dataset}/records?where=code_commune_insee%3D%22${insee}%22&limit=100&select=ips,nombre_d_eleves`;
+  try{
+    const [rEcole,rColl]=await Promise.allSettled([
+      dvfFetch(fmtUrl("fr-en-ips-ecoles-cp-ce1-ce2-cm1-cm2")),
+      dvfFetch(fmtUrlColl("fr-en-ips-colleges"))
+    ]);
+    const vals=[];
+    if(rEcole.status==="fulfilled"&&rEcole.value){
+      (rEcole.value.json&&rEcole.value.json.results||[]).forEach(o=>{
+        const v=parseFloat(o.indice_de_position_sociale);if(v>0)vals.push(v);
+      });
+    }
+    if(rColl.status==="fulfilled"&&rColl.value){
+      (rColl.value.json&&rColl.value.json.results||[]).forEach(o=>{
+        const v=parseFloat(o.ips);if(v>0)vals.push(v);
+      });
+    }
+    if(!vals.length)return null;
+    vals.sort((a,b)=>a-b);
+    const med=vals[Math.floor(vals.length/2)];
+    return{ips:Math.round(med*10)/10,n:vals.length,source:"DEPP/MEN"};
+  }catch(_){return null;}
+}
+/* ===== R4 : Sitadel — logements autorisés (signal offre future) =====
+ * Sitadel2 (Ministère de la Transition Écologique) via data.statistiques.
+ * On somme les autorisations sur les 12 derniers mois : si fort → offre future
+ * → tension baisse dans 18-24 mois. Signal intégré dans subTension.
+ * Source : SDES/MTE — licence ouverte. Granularité : commune, mois. */
+async function provSitadel(insee){
+  if(!insee)return null;
+  try{
+    // Annee glissante N-1 : on filtre sur code_geo (INSEE 5 chiffres)
+    const annee=new Date().getFullYear()-1;
+    const u=`https://data.statistiques.developpement-durable.gouv.fr/api/explore/v2.1/catalog/datasets/sit-sitadel-construction-logements-communale/records?where=code_geo%3D%22${insee}%22%20AND%20annee%3D${annee}&limit=100&select=nb_log_aut,nb_log_com,annee_mois`;
+    const d=await dvfFetch(u);const rows=(d&&d.json&&d.json.results)||[];
+    if(!rows.length)return null;
+    const tot=rows.reduce((s,r)=>s+(+r.nb_log_aut||0),0);
+    const com=rows.reduce((s,r)=>s+(+r.nb_log_com||0),0);
+    if(tot<=0)return null;
+    return{logAut:tot,logCom:com,annee,source:"Sitadel2/SDES"};
+  }catch(_){return null;}
+}
+
 async function fetchContextProviders(coord){
   if(!coord)return{};
-  const res=await Promise.allSettled([provDemo(coord.insee),provEntreprises(coord.insee),provPlu(coord),provFilosofi(coord.insee),provLoyers(coord.insee,state.type),provRPLS(coord.insee),provFibre(coord.insee),provCrime(coord.insee),provVacance(coord.insee)]);
+  const res=await Promise.allSettled([provDemo(coord.insee),provEntreprises(coord.insee),provPlu(coord),provFilosofi(coord.insee),provLoyers(coord.insee,state.type),provRPLS(coord.insee),provFibre(coord.insee),provCrime(coord.insee),provVacance(coord.insee),provIPS(coord.insee),provSitadel(coord.insee)]);
   const v=i=>res[i]&&res[i].status==="fulfilled"?res[i].value:null;
-  const ctx={},iris=v(0),ent=v(1),plu=v(2),filo=v(3),loy=v(4),rpls=v(5),fib=v(6),crime=v(7),vac=v(8);
-  if(iris)ctx.iris=iris;if(ent)ctx.sirene=ent;if(plu)ctx.plu=plu;if(filo)ctx.filosofi=filo;if(loy)ctx.loyers=loy;if(rpls)ctx.rpls=rpls;if(fib)ctx.fibre=fib;if(crime)ctx.crime=crime;if(vac)ctx.vacance=vac;
+  const ctx={},iris=v(0),ent=v(1),plu=v(2),filo=v(3),loy=v(4),rpls=v(5),fib=v(6),crime=v(7),vac=v(8),ips=v(9),sitadel=v(10);
+  if(iris)ctx.iris=iris;if(ent)ctx.sirene=ent;if(plu)ctx.plu=plu;if(filo)ctx.filosofi=filo;if(loy)ctx.loyers=loy;if(rpls)ctx.rpls=rpls;if(fib)ctx.fibre=fib;if(crime)ctx.crime=crime;if(vac)ctx.vacance=vac;if(ips)ctx.ips=ips;if(sitadel)ctx.sitadel=sitadel;
   return ctx;
 }
 // ===== Reconciliation ChatGPT x Grok \u2014 W1 : socle contextuel (additif, ZERO impact prix) =====
@@ -3643,10 +3776,10 @@ function computeAll(r){
   const ntxR=_fa?_fa.taux:notaireRate();
   const notaire=_fa?_fa.total:bp*ntxR;
   $("notaireV").textContent=eur(notaire);
-  const _nrEl=$("notaireRate");
+  const _nrEl=$("notaireRateLbl");
   if(_nrEl)_nrEl.textContent="("+(ntxR*100).toFixed(2).replace(".",",")+" %)";
   renderNotaireDetail(_fa);
-  $("notaireRate").innerHTML=`(${(ntxR*100).toFixed(1).replace('.',',')} % \u00b7 ${state.type==="terrain"?"terrain":state.neuf==="neuf"?"neuf":"ancien"}${state.type!=="terrain"&&state.neuf!=="neuf"?" d\u00e9pt "+depFromCP():""})`+dmtoAuditWarning();
+  $("notaireRateLbl").innerHTML=`(${(ntxR*100).toFixed(1).replace('.',',')} % \u00b7 ${state.type==="terrain"?"terrain":state.neuf==="neuf"?"neuf":"ancien"}${state.type!=="terrain"&&state.neuf!=="neuf"?" d\u00e9pt "+depFromCP():""})`+dmtoAuditWarning();
   const travaux=numv("iTravaux");
   const coutTotal=bp+notaire+travaux+numv("iDossier")+numv("iGarantie");$("coutTotalV").textContent=eur(coutTotal);
 
@@ -3734,6 +3867,7 @@ function computeAll(r){
   renderFiscalCompare(r);
   renderDispositif();
   renderNego(r);renderVendor(r);
+  if(typeof renderSynth60==="function"){renderSynth60(r);updateCardSummaries(r);}
 }
 function setMetric(el,txt,val,isCash){el.textContent=txt;el.classList.remove("good","warn","bad");if(isCash){el.classList.add(val>=0?"good":"bad");return;}el.classList.add(val>=5.5?"good":val>=3.5?"warn":"bad");}
 
@@ -3787,6 +3921,28 @@ function patchDynReal(r){
     const _n=(x,a,b)=>Math.max(0,Math.min(1,(x-a)/(b-a)));
     d.subDemande=Math.round(100*(0.30*_n(d.menagesVar5||0,-2,8)+0.24*_n(d.revenu,18000,45000)+0.20*(1-_n(d.chomage||7,5,14))+0.14*_n(d.soldeMig||0,-6,10)+0.12*_n(d.salVar5||0,0,12)));
     d.subDemandeReal=true;
+    d.score=Math.round(0.34*d.subDemande+0.34*d.subTension+0.16*d.subMacro+0.16*d.subCadre);
+  }
+  // IPS : intègre la qualité scolaire dans subCadre (+/- 8 points max)
+  // IPS national moyen ≈ 100 ; on normalise sur [75,125]
+  const _ipsData=(state.ctx2||{}).ips;
+  if(_ipsData&&_ipsData.ips>0&&r.dyn){
+    const _n=(x,a,b)=>Math.max(0,Math.min(1,(x-a)/(b-a)));
+    const _ipsScore=_n(_ipsData.ips,75,125); // 0=défav, 1=favorisé
+    const _ipsAdj=Math.round((_ipsScore-0.5)*16); // -8..+8 pts sur subCadre
+    d.subCadre=Math.max(0,Math.min(100,d.subCadre+_ipsAdj));
+    d.ipsReal=true;d.ipsVal=_ipsData.ips;d.ipsN=_ipsData.n;
+    d.score=Math.round(0.34*d.subDemande+0.34*d.subTension+0.16*d.subMacro+0.16*d.subCadre);
+  }
+  // Sitadel : signal offre future → allège légèrement la tension si construction forte
+  // Rapport logements autorisés / logements existants : >2 % du parc = offre future notable
+  const _sitData=(state.ctx2||{}).sitadel;
+  if(_sitData&&_sitData.logAut>0&&r.dyn&&d.logements>0){
+    const _buildRate=_sitData.logAut/d.logements; // part du parc autorisée
+    // Signal faible (max -5 pts tension) : la construction met 18-24 mois à livrer
+    const _sitAdj=Math.round(Math.min(0.05,_buildRate)*100); // 0..5 pts de pression baissière
+    d.subTension=Math.max(0,d.subTension-_sitAdj);
+    d.sitadelReal=true;d.sitadelLogAut=_sitData.logAut;d.sitadelAnnee=_sitData.annee;
     d.score=Math.round(0.34*d.subDemande+0.34*d.subTension+0.16*d.subMacro+0.16*d.subCadre);
   }
 }
@@ -4208,6 +4364,7 @@ async function showResults(){
     renderAllPanels(r,_conf,realBase,diag);
     setupAsyncCallbacks(r,data.enrichPromise,data.ctxProm);
     $("results").style.display="";$("results").classList.add("show");
+    if(typeof buildToc==="function"){buildToc();applyDefaultCollapse();}
     try{
       $("results").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth",block:"start"});
     }catch(_){}
@@ -4683,7 +4840,7 @@ function computeResale(r){
   const years=Number($("holdYears").value);const reval=numv("reval")/100;const fv=numv("fraisVente")/100;
   const sell=bp*Math.pow(1+reval,years);$("rvPrice").textContent=eur(sell);
   const fraisVente=sell*fv;
-  const notaire=bp*notaireRate();const forfaitTravaux=years>5?bp*0.15:0;
+  const notaire=bp*notaireRate();const forfaitTravaux=years>5?bp*HYP.forfaitTravauxMdB:0;
   let acqCorr=bp+notaire+forfaitTravaux;
   const reg=$("regime").value;let amortReint=0;
   if(reg==="meuble_reel"){amortReint=Math.min(bp*0.85,((state._amortTotal||(bp*0.85/30)))*years);acqCorr-=amortReint;}
@@ -4713,7 +4870,7 @@ function chartSVG(opts){const W=340,H=190,pl=46,pr=10,pt=12,pb=24,iw=W-pl-pr,ih=
   const all=[];(opts.bars||[]).forEach(s=>all.push(...s.values));(opts.lines||[]).forEach(s=>all.push(...s.values));
   let mn=Math.min(0,...all),mx=Math.max(0,...all);if(mn===mx)mx=mn+1;const pad=(mx-mn)*0.08;mx+=pad;mn-=pad;
   const n=opts.labels.length;const x=i=>pl+(n<=1?iw/2:iw*i/(n-1));const y=v=>pt+ih*(mx-v)/(mx-mn);const fmt=opts.fmt||(v=>Math.round(v));const y0=y(0);
-  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block">`;
+  let s=`<svg role="img" aria-label="${opts.ariaLabel||opts.title||'Graphique'}" viewBox="0 0 ${W} ${H}" width="100%" style="display:block">`;
   s+=`<line x1="${pl}" y1="${pt}" x2="${pl}" y2="${pt+ih}" stroke="var(--line)"/>`;
   s+=`<line x1="${pl}" y1="${y0}" x2="${W-pr}" y2="${y0}" stroke="#cfd8e0" stroke-dasharray="3 3"/>`;
   s+=`<text x="${pl-6}" y="${pt+4}" text-anchor="end" font-size="9" fill="#8a99a8">${fmt(mx)}</text>`;
@@ -4812,7 +4969,7 @@ function opCalc(r,sellPrice,works){
     isMdb=resAvIS<=0?0:(resAvIS<=42500?resAvIS*0.15:42500*0.15+(resAvIS-42500)*0.25); // IS 15%/25%
     fisc=tva+isMdb;fiscLabel="TVA sur marge + IS";
   }else{
-    const notaireP=bp*notaireRate(),forfait=opYears>5?bp*0.15:0;
+    const notaireP=bp*notaireRate(),forfait=opYears>5?bp*HYP.forfaitTravauxMdB:0;
     let acqCorr=bp+notaireP+forfait;
     const reg=$("regime").value;
     if(reg==="meuble_reel")acqCorr-=Math.min(bp*0.85,((state._amortTotal||(bp*0.85/30)))*opYears);
@@ -5061,6 +5218,7 @@ function renderProjection(r){
   renderDecision(r,{van:van,cf1m:cf1/12,gp:gp,bp:bp,apport:apport});
   renderScenarios(r);
   renderReport(r);
+  if(typeof renderSynth60==="function"){renderSynth60(r);updateCardSummaries(r);}
 }
 /* ===== Coeur de calcul pur reutilisable (memes formules que renderProjection) ===== */
 function projParams(r){
@@ -5256,8 +5414,163 @@ document.querySelectorAll(".card-head").forEach(h=>{
   h.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();_toggle();}});
 });
 
-[...document.querySelectorAll('#results .card')].forEach(c=>{if(c.id!=='decisionCard'&&!c.classList.contains('price-card'))c.classList.add('expert-only');});
+[...document.querySelectorAll('#results .card')].forEach(c=>{if(c.id!=='decisionCard'&&c.id!=='synthCard'&&!c.classList.contains('price-card'))c.classList.add('expert-only');});
 const segM=$("segMode");if(segM)segM.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{segM.querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on");$("results").classList.toggle("simple",b.dataset.m==="simple");}));
+/* ===== R2 : digestibilite — synthese 60 s, sommaire sticky, chiffres-cles, repli =====
+ * Trois couches, aucune donnee retiree :
+ *  1. renderSynth60(r)      : carte de synthese en tete, valeurs DEJA calculees, lignes cliquables
+ *  2. buildToc()            : barre de chips sticky (ancres vers chaque carte visible)
+ *  3. updateCardSummaries() : chiffre-cle injecte dans le card-head (lisible carte repliee)
+ * Le repli par defaut ne s'applique qu'en Mode Expert (le Mode Simple n'affiche que
+ * l'essentiel) et uniquement aux cartes secondaires ; "Tout deplier" retablit tout. */
+const TOC_LABELS={decisionCard:"Score",synthCard:"Synth\u00e8se",priceCard:"Estimation",buyCard:"Prix d'achat",
+  dashCard:"Investissement",rentalCard:"Locatif",benchCard:"vs France",ownVsRentCard:"Acheter/louer",
+  resaleCard:"Revente",projCard:"Projection",dpeCard:"DPE",compCard:"Comparables",locCard:"Quartier",
+  inseeCard:"Contexte",marketCard:"March\u00e9",opCard:"Achat-revente",negoCard:"N\u00e9go",
+  fiscalCard:"Fiscal",dispositifCard:"D\u00e9fisc.",proKpiCard:"Ratios",formationCard:"Fiabilit\u00e9",
+  enginesCard:"Moteurs",bienIndicesCard:"Indices",globalCard:"Note globale",contextCard:"Signaux",
+  vendorCard:"Vendeur",worksCard:"Travaux",scnCard:"Sc\u00e9narios",reportCard:"Rapport",
+  reportPdfCard:"PDF/Excel",compareCard:"Comparaison",savedCard:"Mes biens"};
+/* Cartes laissees OUVERTES par defaut en Mode Expert */
+const CORE_OPEN=["decisionCard","synthCard","priceCard","buyCard","dashCard","rentalCard"];
+function _cardVisible(c){
+  if(!c||c.style.display==="none")return false;
+  if(c.classList.contains("expert-only")&&$("results").classList.contains("simple"))return false;
+  return true;
+}
+function _resultCards(){
+  return [...document.querySelectorAll("#results section.card")]
+    .sort((a,b)=>(parseFloat(a.style.order)||0)-(parseFloat(b.style.order)||0));
+}
+function gotoCard(id){
+  const c=$(id);if(!c)return;
+  /* Cible masquee en Mode Simple -> bascule en Mode Expert (le detail y vit) */
+  if(c.classList.contains("expert-only")&&$("results").classList.contains("simple")){
+    const bx=document.querySelector('#segMode button[data-m="expert"]');if(bx)bx.click();
+  }
+  c.classList.remove("is-collapsed");
+  const hd=c.querySelector(".card-head");if(hd)hd.setAttribute("aria-expanded","true");
+  try{c.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth",block:"start"});}catch(_){try{c.scrollIntoView();}catch(__){}}
+  c.classList.remove("card-flash");void c.offsetWidth;c.classList.add("card-flash");
+}
+function renderSynth60(r){
+  const el=$("synth60Panel");if(!el||!r)return;
+  const rows=[];
+  const row=(ic,lbl,val,cls,target)=>rows.push({ic,lbl,val,cls,target});
+  /* 1. Verdict (VAN) — deja calcule par computeAll */
+  const vEl=$("verdict");
+  if(vEl&&vEl.textContent.trim()&&vEl.textContent!=="\u2014"){
+    const vTxt=vEl.childNodes[0]?String(vEl.childNodes[0].textContent||"").trim():"";
+    const vCls=vEl.classList.contains("good")?"pos":vEl.classList.contains("bad")?"neg":"warn";
+    const van=($("dVan")&&$("dVan").textContent!=="\u2014")?$("dVan").textContent:"";
+    row("\u2696\ufe0f","Verdict (VAN \u00e0 la revente)",vTxt+(van?' <small>\u00b7 VAN '+van+'</small>':''),vCls,"dashCard");
+  }
+  /* 2. Prix estime + fourchette */
+  row("\ud83c\udff7\ufe0f","Prix estim\u00e9",eur(r.price)+' <small>('+eur0(r.low)+'\u2013'+eur0(r.high)+' \u20ac \u00b7 '+eur0(r.sqm)+' \u20ac/m\u00b2)</small>',"","priceCard");
+  /* 3. Confiance */
+  if(r.confScore!=null)row("\ud83c\udfaf","Confiance de l'estimation",r.confScore+"/100 <small>\u00b7 "+r.confLabel+"</small>",r.confScore>=70?"pos":r.confScore>=45?"warn":"neg","priceCard");
+  /* 4. Negociation */
+  try{const n=negotiation(r);
+    if(n&&n.offre>0)row("\ud83e\udd1d","N\u00e9gociation",'Offre '+eur(n.offre)+' <small>\u2192 cible '+eur0(n.cible)+' \u20ac \u00b7 marge '+(n.marge*100).toFixed(0)+' %</small>',"","negoCard");
+  }catch(_){}
+  /* 5. Rentabilite + cash-flow */
+  const mB=$("mBrute"),mC=$("mCash");
+  if(mB&&mB.textContent!=="\u2014"){
+    const cf=(mC&&mC.textContent!=="\u2014")?mC.textContent:"";
+    const cfNeg=cf.indexOf("\u2212")===0||cf.indexOf("-")===0;
+    row("\ud83d\udcb6","Rendement brut / cash-flow",mB.textContent+(cf?' <small>\u00b7 CF '+cf+'/mois</small>':''),cf?(cfNeg?"neg":"pos"):"","rentalCard");
+  }
+  /* 6. Acheter ou louer */
+  try{const o=(r.type!=="terrain")?ownVsRent(r):null;
+    if(o)row("\ud83c\udfe0","Acheter ou louer ?",o.bascule?("Achat gagnant d\u00e8s <b>"+o.bascule+" ans</b>"):"Location plus avantageuse sur 30 ans","","ownVsRentCard");
+  }catch(_){}
+  /* 7. Risques */
+  const rl=(state.live&&state.live.risqueLbl)||"";const m=rl.match(/^(\d+)/);const nbR=m?+m[1]:0;
+  const passoire=(state.dpe==="F"||state.dpe==="G");
+  const rTxt=(nbR>0?nbR+" risque(s) G\u00e9orisques":"Aucun risque majeur recens\u00e9")+(passoire?' <small>\u00b7 passoire \u00e9nerg\u00e9tique DPE '+state.dpe+'</small>':'');
+  row("\u26a0\ufe0f","Risques \u00e0 v\u00e9rifier",rTxt,(nbR>2||passoire)?"warn":(nbR>0?"":"pos"),"locCard");
+  el.innerHTML=rows.map(x=>'<div class="synth-row" data-goto="'+x.target+'" role="button" tabindex="0">'+
+    '<div class="synth-ic">'+x.ic+'</div><div class="synth-main"><div class="synth-lbl">'+x.lbl+'</div>'+
+    '<div class="synth-val '+(x.cls||"")+'">'+x.val+'</div></div><div class="synth-go">d\u00e9tail \u203a</div></div>').join("");
+  el.querySelectorAll(".synth-row").forEach(rw=>{
+    const go=e=>{e.stopPropagation();gotoCard(rw.dataset.goto);};
+    rw.addEventListener("click",go);
+    rw.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go(e);}});
+  });
+}
+function updateCardSummaries(r){
+  const put=(cardId,txt)=>{
+    const c=$(cardId);if(!c)return;const hd=c.querySelector(".card-head");if(!hd)return;
+    let kv=hd.querySelector(".card-kv");
+    if(!txt){if(kv)kv.remove();return;}
+    if(!kv){kv=document.createElement("span");kv.className="card-kv";hd.appendChild(kv);}
+    kv.textContent=txt;
+  };
+  const t=id=>{const e=$(id);return(e&&e.textContent!=="\u2014")?e.textContent.trim():"";};
+  put("dashCard",t("dVan")?("VAN "+t("dVan")):"");
+  put("rentalCard",t("mCash")?("CF "+t("mCash")+"/mois"):"");
+  put("resaleCard",t("rvRend")?(t("rvRend")+"/an"):"");
+  put("projCard",t("pjTri")?("TRI "+t("pjTri")):"");
+  put("opCard",t("opTaux")?("marge "+t("opTaux")):"");
+  put("fiscalCard",t("dReg"));
+  put("dpeCard","DPE "+(state.dpe||"\u2014"));
+  put("compCard",(r&&r.realCount)?(r.realCount+" ventes"):"");
+  try{const o=(r&&r.type!=="terrain")?ownVsRent(r):null;
+    put("ownVsRentCard",o?(o.bascule?("bascule "+o.bascule+" ans"):"location gagnante"):"");
+  }catch(_){put("ownVsRentCard","");}
+  try{const n=r?negotiation(r):null;put("negoCard",(n&&n.offre>0)?("offre "+eur0(n.offre)+" \u20ac"):"");}catch(_){}
+}
+let _tocObs=null;
+function buildToc(){
+  const bar=$("tocBar");if(!bar)return;
+  const appbar=document.querySelector(".appbar");
+  if(appbar)bar.style.top=appbar.offsetHeight+"px";
+  const cards=_resultCards().filter(_cardVisible).filter(c=>c.id&&TOC_LABELS[c.id]&&c.id!=="synthCard");
+  if(!cards.length){bar.classList.remove("show");return;}
+  bar.innerHTML="";
+  const mk=(txt,cls,fn)=>{const b=document.createElement("button");b.type="button";b.className="toc-chip"+(cls?" "+cls:"");b.textContent=txt;b.addEventListener("click",fn);bar.appendChild(b);return b;};
+  cards.forEach(c=>{const chip=mk(TOC_LABELS[c.id],"",()=>gotoCard(c.id));chip.dataset.target=c.id;});
+  /* Outils repli/depli global (Mode Expert) */
+  if(!$("results").classList.contains("simple")){
+    mk("Tout d\u00e9plier","toc-tool",()=>setAllCollapsed(false));
+    mk("Tout replier","toc-tool",()=>setAllCollapsed(true));
+  }
+  bar.classList.add("show");
+  /* Surlignage de la section visible */
+  if(_tocObs)_tocObs.disconnect();
+  if("IntersectionObserver" in window){
+    _tocObs=new IntersectionObserver(entries=>{
+      entries.forEach(en=>{
+        if(!en.isIntersecting)return;
+        bar.querySelectorAll(".toc-chip.on").forEach(x=>x.classList.remove("on"));
+        const chip=bar.querySelector('.toc-chip[data-target="'+en.target.id+'"]');
+        if(chip){chip.classList.add("on");
+          try{chip.scrollIntoView({behavior:"auto",block:"nearest",inline:"nearest"});}catch(_){}}
+      });
+    },{rootMargin:"-35% 0px -55% 0px",threshold:0});
+    cards.forEach(c=>_tocObs.observe(c));
+  }
+}
+function setAllCollapsed(collapsed){
+  _resultCards().forEach(c=>{
+    if(!c.id||c.id==="synthCard"||c.id==="decisionCard"||c.classList.contains("price-card"))return;
+    c.classList.toggle("is-collapsed",collapsed);
+    const hd=c.querySelector(".card-head");if(hd)hd.setAttribute("aria-expanded",collapsed?"false":"true");
+  });
+}
+function applyDefaultCollapse(){
+  /* Mode Expert uniquement : les cartes secondaires demarrent repliees, chiffre-cle visible.
+   * Le Mode Simple n'affiche deja que l'essentiel — aucun repli force. */
+  if($("results").classList.contains("simple"))return;
+  _resultCards().forEach(c=>{
+    if(!c.id||CORE_OPEN.indexOf(c.id)>=0||c.classList.contains("price-card"))return;
+    c.classList.add("is-collapsed");
+    const hd=c.querySelector(".card-head");if(hd)hd.setAttribute("aria-expanded","false");
+  });
+}
+/* Reconstruire le sommaire quand on change de mode (les cartes visibles changent) */
+if(segM)segM.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{buildToc();}));
+
 
 fillRegimes();updateTypeUI();
 // Initialisations differees en fin de script (voir bloc BOOT) — les modules DIAGS/WX
@@ -5404,8 +5717,6 @@ function deleteBienById(id){
   if(state.activeSnapId===id)state.activeSnapId=null;
   persistSavedBiens(list);refreshSavedSelect();showSavedHint("Bien supprimé.");
 }
-function openBien(){if(state.activeSnapId)openBienById(state.activeSnapId);}
-function deleteBien(){if(state.activeSnapId)deleteBienById(state.activeSnapId);}
 
 /* ============================================================================
  * MODULE DIAGNOSTICS TECHNIQUES (autonome — ne pas fusionner avec le reste)
@@ -5739,17 +6050,27 @@ function refreshAfterDiagChange(){
 }
 
 /* ===== POINT8 : Acheter vs Louer — point de bascule =====
- * Compare le cout patrimonial cumule des deux options sur 30 ans.
+ * Methode : comparaison a DEPLOIEMENT IDENTIQUE (meme apport initial, meme budget annuel).
  *
- * PROPRIETAIRE (cout net a l'annee N) :
- *   = apport + frais + travaux + (mensualites x 12N) + charges cumulees
- *     - valeur nette de revente a N (bien revalorise - frais de vente - CRD - impot PV)
+ * Chaque annee k, le proprietaire decaisse outP(k) = mensualites tant que le credit court
+ * (+ remboursement du capital in fine l'annee "duree" le cas echeant) + charges
+ * (taxe fonciere, copro, PNO, provision d'entretien). Le locataire dispose du MEME
+ * budget : il paie loyer indexe + charges locatives (outL(k)) et PLACE l'ecart
+ * outP(k) - outL(k) au taux tauxPlacement ; si l'ecart est negatif (loyer > budget du
+ * proprietaire, typiquement apres la fin du credit), il PUISE dans son capital.
+ * La symetrie est stricte : aucune epargne ad hoc n'est ajoutee d'un cote.
  *
- * LOCATAIRE (cout net a l'annee N) :
- *   = loyers cumules (indexes IRL) + assurance habitation
- *     - capital place (apport + economie mensuelle) capitalise au taux sans risque
+ * Richesse terminale a l'annee t :
+ *   W_P(t) = valeur nette de revente (bien revalorise - frais de vente - CRD - impot PV)
+ *            + surplus d'apport place (cas apport > cout total, achat sans emprunt)
+ *   W_L(t) = apport capitalise + somme des ecarts annuels capitalises
+ * Les frais d'acquisition (notaire, garantie, dossier) ne sont comptes qu'UNE fois :
+ * finances par l'emprunt (ou l'apport), ils pesent sur W_P via le CRD et les
+ * mensualites — que le locataire recoit symetriquement en capacite d'epargne.
  *
- * Le point de bascule = 1ere annee ou le cout proprietaire < cout locataire.
+ * Cout patrimonial affiche : cout(t) = D(t) - W(t), avec D(t) = apport + somme des
+ * outP(k) — identique pour les deux options, donc les deux courbes sont comparables.
+ * Point de bascule = 1ere annee ou W_P(t) > W_L(t)  (equivaut a coutProprio < coutLoc).
  */
 function ownVsRent(r){
   if(!r||!r.price)return null;
@@ -5779,24 +6100,24 @@ function ownVsRent(r){
   // Provision entretien/gros oeuvre. Defaut 0,6 %/an (fourchette courante 0,5-1 % ; 1 % concerne
   // surtout l'ancien a renover). Parametrable via #ovrEntretien.
   const entretienPct=(numv("ovrEntretien")/100);
-  const entretien=bp*(entretienPct>0?entretienPct:0.006);
+  const entretien=bp*(entretienPct>0?entretienPct:HYP.entretienPct);
   const chargesProprioAn=taxeF+copro+pno+entretien;
 
   // --- Parametres locataire ---
-  const gRent=numv("gRent")/100||0.025; // indexation IRL du loyer
-  const assurLoc=120; // assurance habitation locataire ~120 EUR/an
+  const gRent=numv("gRent")/100||HYP.irlDefaut; // indexation IRL du loyer
+  const assurLoc=HYP.assurLoc; // assurance habitation locataire — voir HYP.assurLoc
   // Charges locatives recuperables : le locataire paie une partie des charges de copro
-  const chargesLocAn=copro*0.75+assurLoc; // ~75 % de la copro est recuperable sur le locataire
+  const chargesLocAn=copro*HYP.quotePartCopro+assurLoc; // art. 23 loi 89-462 — voir HYP.quotePartCopro
 
   // --- Parametres communs ---
-  const reval=numv("reval")/100||0.02;   // revalorisation du bien
-  const fraisVente=numv("fraisVente")/100||0.04;
+  const reval=numv("reval")/100||HYP.revalDefaut;   // revalorisation du bien
+  const fraisVente=numv("fraisVente")/100||HYP.fraisVenteDefaut;
   // Rendement NET du capital place par le locataire (apres fiscalite : PFU 30 % sur un fonds euros ~3 % brut)
   // Parametrable par l'utilisateur via #ovrPlacement. Defaut 2 % net (prudent et realiste sur longue duree).
-  const tauxPlacement=(numv("ovrPlacement")/100)||0.02;
+  const tauxPlacement=(numv("ovrPlacement")/100)||HYP.tauxPlacement;
   const ps=psRate();
 
-  // Fonctions de cout cumule
+  // Capital restant du a l'annee t
   const crdAt=t=>{
     if(duree<=0||emprunt<=0)return 0;
     if(isIF)return t<duree?emprunt:0;
@@ -5804,69 +6125,50 @@ function ownVsRent(r){
     return Math.max(0,im>0?emprunt*Math.pow(1+im,k)-mensCredit*(Math.pow(1+im,k)-1)/im:emprunt-mensCredit*k);
   };
 
-  const gCharges=numv("gCharges")/100||0.025;
+  const gCharges=numv("gCharges")/100||HYP.gChargesDefaut;
+  // Surplus d'apport non consomme par l'operation (achat sans emprunt) : place cote proprietaire.
+  const surplusApport=Math.max(0,apport-coutTotal);
   const years=[];
   let bascule=null;
-  // Les deux options partent du MEME capital initial (l'apport) et du MEME budget mensuel.
-  // On compare le PATRIMOINE NET accumule dans chaque scenario.
+  // Comptabilite incrementale a deploiement identique (voir en-tete du module).
+  // Convention : les flux de l'annee k sont verses en fin d'annee (pas de capitalisation
+  // l'annee du versement), identique pour les deux options.
+  let capitalLoc=apport;      // richesse du locataire (apport place + ecarts capitalises)
+  let capSurplus=surplusApport; // richesse residuelle du proprietaire hors bien
+  let deploy=apport;          // D(t) : apport + sorties annuelles du proprietaire
+  let loyersCum=0,mensCum=0,chargesProprioCum=0;
   for(let t=1;t<=30;t++){
-    // ================= PROPRIETAIRE =================
-    // Ce qui sort de la poche, cumule
-    const mensCum=mensTot*12*Math.min(t,duree)+(isIF&&t>=duree?emprunt:0);
-    let chargesProprioCum=0;
-    for(let k=1;k<=t;k++)chargesProprioCum+=chargesProprioAn*Math.pow(1+gCharges,k-1);
-    const decaisseProprio=apport+notaire+travaux+dossier+garantie+mensCum+chargesProprioCum;
-    // Ce qu'il possede : la valeur nette du bien s'il revend
+    // Capitalisation du stock existant sur l'annee ecoulee
+    capitalLoc*=(1+tauxPlacement);
+    capSurplus*=(1+tauxPlacement);
+    // ---- Sorties annuelles du proprietaire (budget de reference commun) ----
+    const mensAnnee=(t<=duree?mensTot*12:0)+(isIF&&t===duree?emprunt:0);
+    const chargesPK=chargesProprioAn*Math.pow(1+gCharges,t-1);
+    const outP=mensAnnee+chargesPK;
+    // ---- Sorties annuelles du locataire ----
+    const loyerK=loyerMensuel*12*Math.pow(1+gRent,t-1);
+    const chLocK=chargesLocAn*Math.pow(1+gCharges,t-1);
+    const outL=loyerK+chLocK;
+    // Le locataire place l'ecart de budget (ou puise dedans s'il est negatif)
+    capitalLoc+=outP-outL;
+    deploy+=outP;
+    mensCum+=mensAnnee;loyersCum+=loyerK;chargesProprioCum+=chargesPK;
+    // ---- Richesse terminale du proprietaire ----
     const valeurBien=bp*Math.pow(1+reval,t);
     const fraisRevente=valeurBien*fraisVente;
     const crd=crdAt(t);
     const impotPV=0; // residence principale : exoneration (art. 150 U-II-1 CGI)
     const valeurNette=valeurBien-fraisRevente-crd-impotPV;
-    // Epargne post-credit : apres la fin du credit, le proprietaire place le
-    // budget mensuel libere (mensTot/mois) au meme taux que le locataire.
-    // Sans cela, le modele avantage artificiellement le locataire apres la duree du credit.
-    let epargneProprio=0;
-    if(t>duree&&duree>0){
-      for(let k=duree+1;k<=t;k++){
-        epargneProprio+=mensTot*12*Math.pow(1+tauxPlacement,t-k);
-      }
-    }
-    // PATRIMOINE NET du proprietaire = bien + epargne post-credit - decaissements
-    const patriProprio=valeurNette+epargneProprio-decaisseProprio;
-
-    // ================= LOCATAIRE =================
-    // Hypothese cle : MEME capital de depart (apport + frais que le proprio aurait payes)
-    // et MEME budget mensuel. Le locataire place la difference.
-    let loyersCum=0,chargesLocCum=0;
-    // Capital initial place par le locataire : son APPORT seul.
-    // Les frais d'acquisition (notaire, garantie, dossier) ne sont PAS un capital : ce sont
-    // des couts definitivement perdus pour le proprietaire. Les crediter au locataire
-    // creerait un biais artificiel en sa faveur.
-    let capitalLoc=apport*Math.pow(1+tauxPlacement,t);
-    for(let k=1;k<=t;k++){
-      const loyerK=loyerMensuel*12*Math.pow(1+gRent,k-1);
-      const chLocK=chargesLocAn*Math.pow(1+gCharges,k-1);
-      loyersCum+=loyerK;chargesLocCum+=chLocK;
-      // Budget annuel du proprietaire cette annee-la
-      const budgetProprioK=(k<=duree?mensTot*12:0)+chargesProprioAn*Math.pow(1+gCharges,k-1);
-      const budgetLocK=loyerK+chLocK;
-      // Ecart : ce que le locataire epargne (ou doit puiser si negatif)
-      const ecart=budgetProprioK-budgetLocK;
-      capitalLoc+=ecart*Math.pow(1+tauxPlacement,t-k);
-    }
-    // PATRIMOINE NET du locataire = capital accumule - son apport de depart
-    // (meme base de comparaison que le proprietaire, dont on a deja soustrait tous les decaissements)
-    const patriLoc=capitalLoc-apport;
-
-    // Couts nets (positif = ce que l'option a coute au total)
-    const coutProprio=-patriProprio;
-    const coutLoc=-patriLoc;
-
+    const richesseProprio=valeurNette+capSurplus;
+    const richesseLoc=capitalLoc;
+    // Cout patrimonial = deploiement commun - richesse terminale (symetrique)
+    const coutProprio=deploy-richesseProprio;
+    const coutLoc=deploy-richesseLoc;
     years.push({t,coutProprio:Math.round(coutProprio),coutLoc:Math.round(coutLoc),
-      patriProprio:Math.round(patriProprio),patriLoc:Math.round(patriLoc),
+      patriProprio:Math.round(richesseProprio-deploy),patriLoc:Math.round(richesseLoc-deploy),
       valeurBien:Math.round(valeurBien),crd:Math.round(crd),valeurNette:Math.round(valeurNette),
-      loyersCum:Math.round(loyersCum),mensCum:Math.round(mensCum),decaisseProprio:Math.round(decaisseProprio)});
-    if(bascule===null&&patriProprio>patriLoc)bascule=t;
+      loyersCum:Math.round(loyersCum),mensCum:Math.round(mensCum),decaisseProprio:Math.round(deploy)});
+    if(bascule===null&&richesseProprio>richesseLoc)bascule=t;
   }
   return{years,bascule,loyerMensuel,mensTot:Math.round(mensTot),apport,bp,
     chargesProprioAn:Math.round(chargesProprioAn),chargesLocAn:Math.round(chargesLocAn),
@@ -5971,9 +6273,10 @@ function renderOwnVsRent(r){
     '<div style="margin-top:14px;padding:12px;background:var(--bg);border-radius:11px;border-left:3px solid var(--brand-dark)">'+
       '<div style="font-weight:800;font-size:12px;color:var(--brand-dark);margin-bottom:6px">Comment ce calcul est fait</div>'+
       '<div style="font-size:11px;color:var(--ink);line-height:1.6">'+
-        '<b>C\u00f4t\u00e9 propri\u00e9taire</b>, on additionne tout ce qui sort de votre poche : apport ('+eur0(o.apport)+' \u20ac), frais de notaire, travaux, mensualit\u00e9s de cr\u00e9dit ('+eur0(o.mensTot)+' \u20ac/mois), taxe fonci\u00e8re, charges de copropri\u00e9t\u00e9, assurance et une provision d\u2019entretien de <b>'+eur0(o.entretien)+' \u20ac/an</b> (1 % du prix, usage courant pour le gros \u0153uvre). On <b>retranche</b> ensuite la valeur nette du bien si vous le revendiez cette ann\u00e9e-l\u00e0 : prix revaloris\u00e9 \u00e0 '+(o.reval*100).toFixed(1)+' %/an, moins les frais de vente, moins le capital restant d\u00fb. Apr\u00e8s la fin du cr\u00e9dit ('+o.duree+' ans), le budget mensuel lib\u00e9r\u00e9 est <b>plac\u00e9</b> au m\u00eame taux que le locataire ('+(o.tauxPlacement*100).toFixed(1)+' %/an), \u00e9vitant un biais en faveur de la location. La plus-value est suppos\u00e9e <b>exon\u00e9r\u00e9e</b> (r\u00e9sidence principale, art. 150 U-II-1 CGI).<br><br>'+
-        '<b>C\u00f4t\u00e9 locataire</b>, on additionne les loyers vers\u00e9s (index\u00e9s \u00e0 '+(o.gRent*100).toFixed(1)+' %/an, votre hypoth\u00e8se IRL), les charges r\u00e9cup\u00e9rables et l\u2019assurance habitation. On <b>retranche</b> la valeur du capital qu\u2019il n\u2019a pas immobilis\u00e9 : son apport ('+eur0(o.apport)+' \u20ac) plac\u00e9 \u00e0 '+(o.tauxPlacement*100).toFixed(1)+' %/an, plus l\u2019\u00e9pargne mensuelle qu\u2019il r\u00e9alise quand son loyer est inf\u00e9rieur au co\u00fbt total du propri\u00e9taire, elle aussi capitalis\u00e9e.<br><br>'+
-        '<b>Le point de bascule</b> est la premi\u00e8re ann\u00e9e o\u00f9 le co\u00fbt cumul\u00e9 du propri\u00e9taire passe sous celui du locataire. Avant ce seuil, les frais d\u2019acquisition (notaire ~'+(notaireRate()*100).toFixed(1)+' %, garantie, dossier) ne sont pas encore amortis par la revalorisation du bien et le remboursement du capital.'+
+        '<b>Principe</b> : les deux options partent du <b>m\u00eame apport</b> ('+eur0(o.apport)+' \u20ac) et disposent chaque ann\u00e9e du <b>m\u00eame budget</b> \u2014 celui du propri\u00e9taire. On compare alors le patrimoine accumul\u00e9 de chaque c\u00f4t\u00e9, \u00e0 effort d\u2019\u00e9pargne strictement identique.<br><br>'+
+        '<b>C\u00f4t\u00e9 propri\u00e9taire</b>, le budget annuel couvre les mensualit\u00e9s de cr\u00e9dit ('+eur0(o.mensTot)+' \u20ac/mois tant que le pr\u00eat court), la taxe fonci\u00e8re, les charges de copropri\u00e9t\u00e9, l\u2019assurance et une provision d\u2019entretien de <b>'+eur0(o.entretien)+' \u20ac/an</b> (0,6 % du prix par d\u00e9faut, ajustable). Les frais d\u2019acquisition (notaire, garantie, dossier) sont financ\u00e9s par l\u2019emprunt et ne sont donc compt\u00e9s qu\u2019une seule fois, \u00e0 travers les mensualit\u00e9s. Son patrimoine \u00e0 l\u2019ann\u00e9e N = la valeur nette du bien s\u2019il revendait : prix revaloris\u00e9 \u00e0 '+(o.reval*100).toFixed(1)+' %/an, moins les frais de vente, moins le capital restant d\u00fb. La plus-value est suppos\u00e9e <b>exon\u00e9r\u00e9e</b> (r\u00e9sidence principale, art. 150 U-II-1 CGI).<br><br>'+
+        '<b>C\u00f4t\u00e9 locataire</b>, le m\u00eame budget paie le loyer (index\u00e9 \u00e0 '+(o.gRent*100).toFixed(1)+' %/an, votre hypoth\u00e8se IRL), les charges r\u00e9cup\u00e9rables et l\u2019assurance habitation. <b>Tout l\u2019\u00e9cart est plac\u00e9</b> \u00e0 '+(o.tauxPlacement*100).toFixed(1)+' %/an net, en plus de son apport ('+eur0(o.apport)+' \u20ac) plac\u00e9 d\u00e8s le d\u00e9part. Apr\u00e8s la fin du cr\u00e9dit ('+o.duree+' ans), le budget de r\u00e9f\u00e9rence retombe aux seules charges du propri\u00e9taire : si le loyer les d\u00e9passe, le locataire <b>puise dans son capital</b> pour payer la diff\u00e9rence. Son patrimoine \u00e0 l\u2019ann\u00e9e N = ce capital accumul\u00e9.<br><br>'+
+        '<b>Le point de bascule</b> est la premi\u00e8re ann\u00e9e o\u00f9 le patrimoine du propri\u00e9taire d\u00e9passe celui du locataire \u2014 ce qui revient \u00e0 dire que son co\u00fbt cumul\u00e9 passe sous celui du locataire, les deux co\u00fbts \u00e9tant mesur\u00e9s sur le m\u00eame d\u00e9ploiement total. Avant ce seuil, les frais d\u2019acquisition (notaire ~'+(notaireRate()*100).toFixed(1)+' %, garantie, dossier) ne sont pas encore amortis par la revalorisation du bien et le remboursement du capital.'+
       '</div>'+
       '<div class="hint" style="margin-top:9px"><b>Ce qui d\u00e9place le seuil :</b> une revalorisation plus forte, un loyer de march\u00e9 \u00e9lev\u00e9 ou un taux de cr\u00e9dit bas <b>avancent</b> la bascule. Des frais d\u2019acquisition \u00e9lev\u00e9s, un march\u00e9 atone ou un rendement du capital plac\u00e9 attractif la <b>reculent</b>. Modifiez le prix, le taux, la revalorisation ou la croissance des loyers ci-dessus pour tester votre sc\u00e9nario.</div>'+
     '</div>';
@@ -6086,15 +6389,6 @@ function _syncLotsTotal(){
     '<div class="hint" style="margin-top:3px">Surface totale habitable des lots. Prix d\u2019achat / nb lots = \u2248 '+eur0(Math.round(bp/Math.max(1,state._lots.length)))+' \u20ac / lot en moyenne.</div>';
   }else if(kpiEl)kpiEl.style.display="none";
   if(lastResult){computeAll(lastResult);updRentVsMkt();computeResale(lastResult);renderFinPrice(lastResult);}
-}
-function _snapshotLots(){return state._lots.map(function(l){return{type:l.type,surface:l.surface,loyer:l.loyer,dpe:l.dpe};});}
-function _restoreLots(arr){
-  if(!arr||!arr.length)return;
-  state._lots=arr.map(function(l){return Object.assign({id:_newLotId()},l);});
-  var toggle=$("multiLotToggle");
-  if(toggle){toggle.checked=true;toggle.dispatchEvent(new Event("change"));}
-  renderLotsGrid();
-  _syncLotsTotal();
 }
 function _lotsTotalSurface(){return state._lots.reduce(function(s,l){return s+(+l.surface||0);},0);}
 
@@ -6474,8 +6768,8 @@ const WX=(function(){
       {id:"xCloture",lbl:"Cl\u00f4ture / portail",unit:"ml",pu:130,four:0.60,diy:true,help:"D\u00e9claration pr\u00e9alable de travaux souvent n\u00e9cessaire."}
     ]}
   };
-  const TAUX_HORAIRE=45;
-  const COEF_LENTEUR=2.2;
+  const TAUX_HORAIRE=HYP.tauxHoraireArtisan;
+  const COEF_LENTEUR=HYP.coefLenteur;
   function heuresPro(pu,four){return(pu*(1-four))/TAUX_HORAIRE;}
   const st={};
   let opened={};
