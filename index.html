@@ -30,7 +30,7 @@
   .logo-txt b{font-family:var(--display);font-weight:800;font-size:18px;letter-spacing:-.3px;display:block;line-height:1.1}
   .logo-txt span{font-size:11.5px;color:#9fb3c4}
 
-  .container{max-width:680px;margin:0 auto;padding:18px 16px 64px;overflow-x:hidden}
+  .container{max-width:680px;margin:0 auto;padding:18px 16px 64px;overflow-x:clip}
   .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:20px 18px;margin-bottom:16px;max-width:100%}
   .card-head{display:flex;align-items:center;gap:10px;margin-bottom:16px;cursor:pointer;user-select:none;position:relative;padding-right:26px}
   .step-no{width:26px;height:26px;border-radius:8px;background:var(--brand-tint);color:var(--brand-dark);font-family:var(--display);font-weight:800;font-size:14px;display:grid;place-items:center;flex:0 0 auto}
@@ -352,7 +352,7 @@
   [style*="font-size:10.5px"]{font-size:11.5px!important}
 }
 /* R2 : digestibilite — sommaire sticky, synthese 60 s, chiffre-cle de carte */
-#tocBar{display:none;gap:6px;overflow-x:auto;padding:8px 12px 9px;position:sticky;z-index:45;top:0;background:var(--bg);border-bottom:1px solid var(--line);-webkit-overflow-scrolling:touch;scrollbar-width:none}
+#tocBar{display:none;gap:6px;overflow-x:auto;padding:8px 12px 9px;position:sticky;z-index:45;top:0;background:var(--bg);border-bottom:1px solid var(--line);scrollbar-width:none}
 #tocBar.show{display:flex}
 #tocBar::-webkit-scrollbar{display:none}
 .toc-chip{flex:none;font:600 12.5px/1 var(--body);color:var(--ink-soft);background:#fff;border:1.5px solid var(--line);border-radius:18px;padding:9px 14px;cursor:pointer;white-space:nowrap;transition:.12s;min-height:36px;display:flex;align-items:center}
@@ -678,11 +678,11 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
     </div>
   </section>
 
+  <div id="tocBar"></div>
   <!-- R&#201;SULTATS -->
   <div id="results" class="simple">
 
     <div id="modeBar" style="order:-1"><div class="seg" id="segMode" role="group" aria-label="Mode d'affichage"><button data-m="simple" class="on">Mode Simple</button><button data-m="expert">Mode Expert</button></div><div class="hint" style="margin-top:6px">Mode Simple : l'essentiel pour d&#233;cider (verdict, prix conseille, negociation, risques). Mode Expert : tous les calculs detailles.</div></div>
-    <div id="tocBar" style="order:-1"></div>
     <section class="card" id="synthCard" style="order:0;border-left:4px solid var(--brand)"><div class="card-head"><div class="step-no">&#9889;</div><div><h2>Synth&#232;se en 60 secondes</h2><div class="sub">L'essentiel pour d&#233;cider &#8212; touchez une ligne pour ouvrir le d&#233;tail</div></div></div><div id="synth60Panel"></div></section>
     <section class="card" id="decisionCard" style="order:0"><div id="decisionPanel"></div><div class="hint" style="padding:0 2px">Score d'acquisition : synth&#232;se multicrit&#232;re (prix, rentabilit&#233;, march&#233;, DPE, cash-flow, risque). Distinct du verdict fond&#233; sur la seule VAN affich&#233; plus bas dans la Synth&#232;se de l'investissement.</div></section>
     <section class="card expert-only" id="reportCard" style="order:7"><div class="card-head"><div class="step-no">&#128221;</div><div><h2>Rapport d'analyse</h2><div class="sub">Synth&#232;se r&#233;dig&#233;e automatiquement &#224; partir de vos donn&#233;es</div></div></div><div id="reportPanel"></div></section>
@@ -2333,7 +2333,7 @@ function renderPriceHistory(r){
   const dataJson=JSON.stringify(pts).replace(/"/g,"&quot;");
   d.innerHTML='<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">'+
     '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:5px"><span style="font-size:12px;font-weight:800;color:var(--ink)">\u00c9volution du prix m\u00e9dian /m\u00b2 <span class="real-tag" style="font-size:9px;padding:1px 5px">DVF r\u00e9el</span></span><span class="num" style="font-size:12px;font-weight:800;color:'+(evo>=0?"var(--good)":"var(--bad)")+'">\u00c9volution '+(evo>=0?"+":"")+evo+' % \u00b7 CAGR '+(cagr>=0?"+":"")+cagr.toFixed(1)+' %/an</span></div>'+
-    '<div style="position:relative"><svg role="img" aria-label="Graphique : évolution du prix médian DVF par année" id="phSvg" viewBox="0 0 100 68" style="width:100%;height:150px;margin-top:6px;overflow:visible;touch-action:none" preserveAspectRatio="none" data-pts="'+dataJson+'">'+
+    '<div style="position:relative"><svg role="img" aria-label="Graphique : évolution du prix médian DVF par année" id="phSvg" viewBox="0 0 100 68" style="width:100%;height:150px;margin-top:6px;overflow:visible;touch-action:pan-y" preserveAspectRatio="none" data-pts="'+dataJson+'">'+
       grid+bars+
       '<path d="'+iqrPath+'" fill="var(--brand)" opacity="0.20" stroke="var(--brand)" stroke-width="0.25" stroke-opacity="0.4"/>'+
       '<path d="'+area+'" fill="var(--brand)" opacity="0.07"/>'+
