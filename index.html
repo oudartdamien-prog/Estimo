@@ -642,7 +642,7 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
         </div>
       </div>
       <div class="hint" style="margin-top:6px">Les deux &#233;tiquettes figurent sur tout DPE depuis 2021. A = tr&#232;s performant, G = passoire thermique (obligation de travaux).</div>
-      <div id="dpeReformeNote" class="banner warn" style="display:none;margin-top:8px"><svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 24 24" fill="none" style="flex:none"><circle cx="12" cy="12" r="9" stroke="#8a5e10" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#8a5e10" stroke-width="2" stroke-linecap="round"/></svg><span><b>R&#233;forme DPE du 01/01/2026 :</b> ce DPE date d'avant le changement du coefficient &#233;lectrique (2,3 &#8594; 1,9 kWhep/kWhef, arr&#234;t&#233; du 13&#8239;ao&#251;t 2025). Si le bien est chauffage &#233;lectrique, la classe r&#233;elle est probablement meilleure d'une lettre (parfois deux). Modifiez la lettre affich&#233;e ou commandez un nouveau DPE (mise &#224; jour gratuite sur l'Observatoire DPE-Audit ADEME).</span></div>
+      <div id="dpeReformeNote" class="banner warn" style="display:none;margin-top:8px"><svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 24 24" fill="none" style="flex:none"><circle cx="12" cy="12" r="9" stroke="#8a5e10" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#8a5e10" stroke-width="2" stroke-linecap="round"/></svg><span><b>R&#233;forme DPE du 01/01/2026 :</b> ce DPE date d'avant le changement du coefficient &#233;lectrique (2,58 &#8594; 1,79 kWhep/kWhef). Si le bien est chauffage &#233;lectrique, la classe r&#233;elle est probablement meilleure d'une &#224; deux lettres. Modifiez manuellement la lettre affich&#233;e ou commandez un nouveau DPE.</span></div>
     </div>
 
     <div class="field" id="wrapDiags">
@@ -707,7 +707,7 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
         </div>
         <div class="hint" style="margin-bottom:2px">Mère-fille : si la SCI est d&#233;tenue &#224; &#8805;5 % par une holding IS, 95 % des dividendes remont&#233;s sont exon&#233;r&#233;s d'IS (quote-part de frais 5 %).</div>
       </div>
-      <div id="dispoNiveauRow" style="display:none;margin-top:10px"><label class="lbl" for="dispoNiveau">Niveau de convention Loc'Avantages</label><select class="input" id="dispoNiveau"><option value="loc1_direct">Loc&#8239;1 &#8212; Interm&#233;diaire, direct (r&#233;d. 15 %)</option><option value="loc1_interm">Loc&#8239;1 &#8212; Interm&#233;diaire + IML (r&#233;d. 20 %)</option><option value="loc2_direct">Loc&#8239;2 &#8212; Social, direct (r&#233;d. 35 %)</option><option value="loc2_interm">Loc&#8239;2 &#8212; Social + IML (r&#233;d. 40 %)</option><option value="loc3_interm">Loc&#8239;3 &#8212; Tr&#232;s social + IML (r&#233;d. 65 %)</option></select></div>
+      <div id="dispoNiveauRow" style="display:none;margin-top:10px"><label class="lbl" for="dispoNiveau">Niveau de convention Loc'Avantages</label><select class="input" id="dispoNiveau"><option value="interm_ab1">Interm&#233;diaire &#8212; zone A, Abis, B1 (d&#233;d. 20 %)</option><option value="interm_b2c">Interm&#233;diaire &#8212; zone B2/C (d&#233;d. 15 %)</option><option value="social_ab1">Social &#8212; zone A, Abis, B1 (d&#233;d. 50 %)</option><option value="social_b2c">Social &#8212; zone B2/C (d&#233;d. 35 %)</option><option value="tressocial">Tr&#232;s social &#8212; toutes zones (d&#233;d. 65 %)</option></select></div>
       <div id="dispoResult"></div>
     </section>
 
@@ -1661,6 +1661,7 @@ async function fetchCommuneMedian(insee,type){
 }
 async function fetchDvf(coord,type){
   if(!coord||!coord.insee)return {pts:null,status:"no-conn"};
+  state._bboxProbe=null; // sonde micro-localisation (reinitialisee a chaque estimation)
   if(coord.lat!=null&&coord.lon!=null){
     try{
       const dLat=0.0099,dLon=0.0099; // largeur/hauteur <= 0.0198 deg : limite in_bbox de l'API apidf (rayon ~0,8-1,1 km)
@@ -1680,6 +1681,13 @@ async function fetchDvf(coord,type){
         const _gres=type==="terrain"?{pts:parsePtsTerrain(garr),nNeuf:0,nTotal:0,natSeen:false}:parsePts(garr,type);
         if(DEBUG)dbg("DVF bbox ~1 km : "+(gcount||garr.length)+" mutations, "+_gres.pts.length+" anciennes exploitables"+(_gres.nNeuf>0?" ("+_gres.nNeuf+" VEFA exclus)":""));
         if(_gres.pts.length>=30)return{pts:_gres.pts,ptsNeuf:_gres.ptsNeuf||[],nNeuf:_gres.nNeuf,nTotal:_gres.nTotal,natSeen:_gres.natSeen,status:"ok",scope:"bbox"};
+        // Micro-localisation : 8-29 ventes anciennes < 1 km = trop peu pour le scope bbox,
+        // mais assez pour sonder le niveau de prix du quartier vs la commune (communes heterogenes).
+        if(type!=="terrain"&&_gres.pts.length>=8){
+          const _pp=_gres.pts.map(p=>p.ppm).filter(v=>v>0);
+          if(_pp.length>=8){state._bboxProbe={med:Math.round(median(_pp)),n:_pp.length};
+            if(DEBUG)dbg("Sonde quartier ~1 km : mediane "+state._bboxProbe.med+" \u20ac/m\u00b2 sur "+state._bboxProbe.n+" ventes");}
+        }
       }
     }catch(_){/* repli commune */}
   }
@@ -2101,26 +2109,43 @@ function estimate(realBase,realStats){
       }
     }
   }
+  // Amél.6 — Micro-localisation : quand le scope DVF est communal mais qu'une sonde
+  // géolocalisée (8-29 ventes anciennes < 1 km) existe, recale la base sur le quartier.
+  // Corrige le biais des communes hétérogènes (ex. quartiers sud vs nord d'une même ville)
+  // où la médiane communale surestime les secteurs modestes. Clamp asymétrique acquéreur :
+  // décote jusqu'à -20 %, prime plafonnée à +10 % (prudence anti-surestimation).
+  let quartierAdj=0;
+  if(realBase&&state.dvfScope!=="bbox"&&state._bboxProbe&&state._bboxProbe.n>=8&&realStats&&realStats.west>0){
+    const qa=Math.max(-0.20,Math.min(0.10,state._bboxProbe.med/realStats.west-1));
+    if(Math.abs(qa)>=0.02){quartierAdj=qa;
+      rows.unshift(["Micro-localisation ("+state._bboxProbe.n+" ventes < 1 km : "+eur0(state._bboxProbe.med)+" \u20ac/m\u00b2 vs commune "+eur0(realStats.west)+" \u20ac/m\u00b2)",qa]);}
+  }
   if(realBase){
     const riq=(realStats&&realStats.med>0)?(realStats.q3-realStats.q1)/realStats.med:0.30;
     const capUp=Math.max(0.10,Math.min(0.20,riq*0.65)),capDn=Math.max(0.20,Math.min(0.35,riq*1.10));
     // Fix5 : réduire l'asymétrie du borning (65%→75% côté positif, 85% conservé côté négatif)
     // La réduction à 65% était trop agressive et créait une sous-estimation systématique
     // des biens réellement supérieurs à la médiane locale.
-    const dev=effMult-1,d2=Math.max(-capDn,Math.min(capUp,dev>0?dev*0.75:dev*0.85));
+    // Amél.6b — Prudence hétérogénéité : en scope communal SANS sonde quartier, une forte
+    // dispersion locale (IQR/méd > 30 %) traduit surtout de l'hétérogénéité spatiale
+    // (quartiers) et non un éventail de qualités : le cumul positif d'ajustements
+    // hédoniques est alors davantage amorti (0.62 vs 0.75) car la position du bien
+    // dans cet éventail est inconnue.
+    const posDamp=(state.dvfScope!=="bbox"&&!quartierAdj&&riq>0.30)?0.62:0.75;
+    const dev=effMult-1,d2=Math.max(-capDn,Math.min(capUp,dev>0?dev*posDamp:dev*0.85));
     if(Math.abs(1+d2-effMult)>0.004)rows.push(["Ajustement marginal (born\u00e9 +"+Math.round(capUp*100)+" %/\u2212"+Math.round(capDn*100)+" % par la dispersion locale)",1+d2-effMult]);
     effMult=1+d2;
   }
-  const sqmAdj=sqm*effMult;
+  const sqmAdj=sqm*(1+quartierAdj)*effMult;
   const od=outdoorValue(sqmAdj,ctx,!!realBase);
   const dyn=computeDynamics(city,cp);
   let price=sqmAdj*surface+od.val;
-  if(realBase){const _e=price/surface,_cap=Math.max(realBase*0.75,Math.min(realBase*1.25,_e));price=_cap*surface;}
+  if(realBase){const _refQ=realBase*(1+quartierAdj),_e=price/surface,_cap=Math.max(_refQ*0.75,Math.min(_refQ*1.25,_e));price=_cap*surface;}
   const effSqm=price/surface;
   let spread=realBase?0.05:conf==="\u00e9lev\u00e9e"?0.06:conf==="moyenne"?0.10:0.14;
   spread=Math.min(0.16,Math.max(0.05,spread-(detail||0)*0.004));
   const allRows=rows.concat(od.rows.map(([l,v])=>[l,null,v]));
-  return{price,sqm:effSqm,sqmBase:sqm,sqmAdj,low:price*(1-spread),high:price*(1+spread),spread,conf,rows:allRows,surface,type,city,cp,pieces:state.pieces,real:!!realBase,econSurface:surface+(sqmAdj>0?od.val/sqmAdj:0),ctx,dyn};
+  return{price,sqm:effSqm,sqmBase:sqm,sqmAdj,quartierAdj,low:price*(1-spread),high:price*(1+spread),spread,conf,rows:allRows,surface,type,city,cp,pieces:state.pieces,real:!!realBase,econSurface:surface+(sqmAdj>0?od.val/sqmAdj:0),ctx,dyn};
 }
 
 /* ===== Rendu ===== */
@@ -2687,33 +2712,24 @@ function renderDispositif(){
       ["Immeuble class\u00e9 ou inscrit aux Monuments Historiques","Travaux et int\u00e9r\u00eats d\u00e9ductibles \u00e0 100 % du revenu global, sans plafond","\u00c9conomie &#8776; travaux ("+eur0(trav)+") &#215; taux marginal ("+Math.round(tmi*100)+" %)","R\u00e9gime sp\u00e9cifique selon que le bien est lou\u00e9 ou non"],
       "Tr\u00e8s efficace \u00e0 TMI \u00e9lev\u00e9e : l'avantage est l'imp\u00f4t \u00e9vit\u00e9 sur le revenu global. Indicatif \u2014 \u00e0 valider avec un conseil sp\u00e9cialis\u00e9.");
   } else if(d==="locavantages"){
-    // Loc'Avantages — art. 199 tricies CGI (LF 2022, prolongé 31/12/2027)
-    // REDUCTION D'IMPOT DIRECTE sur loyers bruts (≠ anc. déduction x TMI régime Cosse)
-    // Taux : Loc1 15 % (20 % avec IML), Loc2 35 % (40 % avec IML), Loc3 65 % (IML obligatoire)
-    // Les zones géographiques jouent uniquement sur les plafonds de loyer, pas sur les taux.
-    const niv=($("dispoNiveau")&&$("dispoNiveau").value)||"loc1_direct";
-    const NIV_LA={
-      "loc1_direct":[0.15,false,"Loc 1 — intermédiaire, location directe"],
-      "loc1_interm":[0.20,true,"Loc 1 — intermédiaire, avec IML"],
-      "loc2_direct":[0.35,false,"Loc 2 — social, location directe"],
-      "loc2_interm":[0.40,true,"Loc 2 — social, avec IML"],
-      "loc3_interm":[0.65,true,"Loc 3 — très social, avec IML (obligatoire)"]
-    };
-    const cfg=NIV_LA[niv]||NIV_LA["loc1_direct"];
-    const taux_ri=cfg[0],withInterm=cfg[1],labelNiv=cfg[2];
+    // Loc'Avantages (ex-Cosse) — art. 31 CGI, dispositif ANAH actif depuis 2022
+    // Déduction sur revenus bruts fonciers selon niveau de convention et zone
+    const niv=($("dispoNiveau")&&$("dispoNiveau").value)||"interm_ab1";
+    const RATES={"interm_ab1":0.20,"interm_b2c":0.15,"social_ab1":0.50,"social_b2c":0.35,"tressocial":0.65};
+    const taux_ded=RATES[niv]||0.20;
     const rentY=numv("iRent")*12;
     if(rentY<=0){el.innerHTML='<div class="hint" style="margin-top:8px">Renseignez un loyer mensuel pour calculer l\'avantage Loc\'Avantages.</div>';return;}
-    const ri=Math.round(rentY*taux_ri);
-    const decotePct=niv.startsWith("loc3")?45:niv.startsWith("loc2")?30:15;
-    const plafLbl=niv.startsWith("loc3")?"Plafond ANAH très social (~6–12 €/m², toutes zones)":niv.startsWith("loc2")?"Plafond ANAH social (~7–15 €/m² selon zone)":"Plafond ANAH intermédiaire (~11–19 €/m² selon zone)";
-    const primeCond=withInterm&&!niv.startsWith("loc1")?"Prime IML ANAH : 1 000 € (mandat) ou 2 000 € (location/ss-loc.), +1 000 € si ≤40 m²":null;
-    el.innerHTML=box("Loc’Avantages — "+labelNiv+" — réd. d’impôt "+Math.round(taux_ri*100)+" %",ri,ri,1,
-      ["Réduction d’impôt directe sur l’IR dû : "+eur0(rentY)+" € loyers bruts × "+Math.round(taux_ri*100)+" % = "+eur0(ri)+" €/an",
-       "Loyer décoté ~"+decotePct+" % sous le marché. "+plafLbl,
-       "Ressources du locataire plafonnées (barème ANAH)",
-       "Convention ANAH 6 ans minimum — location résidence principale nue",
-       withInterm?"IML : agence immobilière sociale ou association agréée par l’État":"Location directe (sans intermédiaire)"].concat(primeCond?[primeCond]:[]),
-      "Art. 199 tricies CGI, prolongé au 31/12/2027. Cumulable avec déficit foncier au réel (NB : la réd. d’impôt ne se substitue pas au régime foncier, les deux coexistent). Plafonné à 10 000 €/an (niche fiscale globale). Éligible SCI IR (quote-part). Nécessite convention ANAH signée avant mise en location. Indicatif — à confirmer auprès de l’ANAH.");
+    const deduction=rentY*taux_ded,economie=deduction*tmi;
+    const isInterm=niv.startsWith("interm");
+    const zoneStr=niv.endsWith("b2c")?" zone B2/C":niv==="tressocial"?" toutes zones":" zone A/Abis/B1";
+    const plafLoyer=niv==="tressocial"?"Loyers plafonnés ANAH très social (~6–12 €/m²)":isInterm?"Loyers plafonnés ANAH intermédiaire (~10–18 €/m²)":"Loyers plafonnés ANAH social (~7–14 €/m²)";
+    el.innerHTML=box("Loc'Avantages — déduction "+Math.round(taux_ded*100)+" %"+zoneStr+" sur revenus fonciers",economie,economie,1,
+      [plafLoyer,
+       "Ressources des locataires plafonnées (barème ANAH)",
+       "Convention ANAH 6 ans minimum (reconductible)",
+       "Loyers bruts : "+eur0(rentY)+" €/an × déduction "+Math.round(taux_ded*100)+" % = "+eur0(deduction)+" € déduits",
+       "Économie d'impôt ≈ "+eur0(deduction)+" × TMI "+Math.round(tmi*100)+" % = "+eur0(economie)+" €/an"],
+      "Cumulable avec le déficit foncier au réel. Réservé aux propriétaires personnes physiques (pas en LMNP/société). Nécessite signature d'une convention ANAH. Indicatif — à confirmer auprès de l'ANAH.");
   } else if(d==="nupropriete"){
     // Nue-propriété / Démembrement temporaire (art. 669 CGI)
     // Acquisiçon de la nue-propriété : pas de revenus pendant la durée, pas de fiscalité locative
@@ -3625,7 +3641,9 @@ function applyFinalDvfCap(r){
   // Fix1 : appliquer le facteur VEFA au référentiel DVF du cap final
   // (quand natSeen=false, realStats.west reste contaminé par les VEFA non filtrées)
   const _vcFactor=r.vefaCorr?r.vefaCorr.factor:1;
-  const ref=(r.realStats.west||r.realStats.med)*(r.surface||1)*_vcFactor;if(!ref)return;
+  // Amél.6 — le garde-fou ±20 % est centré sur la référence micro-locale quand elle existe
+  const _qFactor=1+(r.quartierAdj||0);
+  const ref=(r.realStats.west||r.realStats.med)*(r.surface||1)*_vcFactor*_qFactor;if(!ref)return;
   const lo=Math.round(ref*0.80),hi=Math.round(ref*1.20),p0=r.price,p=Math.max(lo,Math.min(hi,p0));
   if(p!==p0){r.finalCap=p-p0;r.price=p;r.sqm=Math.round(p/(r.surface||1));r.low=p*(1-r.spread);r.high=p*(1+r.spread);}
 }
@@ -4067,11 +4085,10 @@ function computeVefaCorr(vefaInfo, tier, evo12){
   let r, mode, modeLabel;
 
   if(vefaInfo && vefaInfo.natSeen && vefaInfo.nTotal > 0){
-    // Mode A : filtrage direct — VEFA déjà exclues de pts → médiane propre → factor = 1
-    // (nTotal = nombre de ventes anciennes conservées ; nNeuf = VEFA retirées)
-    r = 0; // pas de correction nécessaire, le corpus est déjà épuré
+    // Mode A : filtrage direct — le champ natmut était présent dans l'API Cerema
+    r = vefaInfo.nNeuf / (vefaInfo.nTotal + vefaInfo.nNeuf); // taux réel
     mode = 'filtre';
-    modeLabel = 'Filtrage direct (champ libnatmut présent dans DVF Cerema) — corpus déjà épuré, aucune correction appliquée';
+    modeLabel = 'Filtrage direct (champ libnatmut présent dans DVF Cerema)';
   } else {
     // Mode B : estimation statistique par tier de marché + tendance
     // Taux de base par tier (estimés à partir des données SITADEL et DVF nationaux) :
@@ -4664,9 +4681,9 @@ const DEP_DMTO={
 const DMTO_AUDIT_DATE=new Date("2026-02-15T00:00:00");
 function dmtoAuditAgeMonths(){return(Date.now()-DMTO_AUDIT_DATE.getTime())/(1000*60*60*24*30.44);}
 function dmtoAuditWarning(){const m=dmtoAuditAgeMonths();return m>6?` <span style="color:var(--warn);font-weight:700" title="Liste des taux DMTO d\u00e9partementaux v\u00e9rifi\u00e9e il y a ${Math.round(m)} mois \u2014 les conseils d\u00e9partementaux peuvent avoir d\u00e9lib\u00e9r\u00e9 depuis. A revalider aupr\u00e8s de la DGFiP.">\u26a0 taux \u00e0 revalider (${Math.round(m)} mois)</span>`:"";}
-// DPE 2026 : coefficient electricite passe de 2.3 a 1.9 kWhep/kWhef au 01/01/2026.
-// Impacts : ~850 000 logements F/G chauffes a l'electricite peuvent gagner 1 classe (parfois 2).
-// Ref : arrete du 13 aout 2025, JO du 26 aout 2025 (art. 199 tricies CGI). Entree en vigueur 01/01/2026.
+// DPE 2026 : coefficient electricite passe de 2.58 a 1.79 kWhep/kWhef au 01/01/2026.
+// Impacts : ~850 000 logements F/G chauffes a l'electricite peuvent gagner 1-2 classes.
+// Ref : note DHUP du 18/12/2025, Arrete du 27/11/2025, entree en vigueur 01/01/2026.
 // IRL : Indice de Référence des Loyers (INSEE, publié trimestriellement)
 // Valeur de repli : IRL Q3-2025 = 142,89 (source : INSEE BDM, serie 001759959)
 // Variation annuelle T3-2025 : +2,47 % (12 mois) — base 2022=100
@@ -4807,7 +4824,7 @@ function renderNotaireDetail(fa){
     '</table></div>'+
     '<div class="hint" style="margin-top:8px;line-height:1.5">'+regimeNote+'<br><br>'+
       '<b>\u00c0 retenir</b> : les \u00ab frais de notaire \u00bb ne vont pas au notaire. Environ <b>'+Math.round(fa.postes[0].montant/fa.total*100)+' %</b> partent en imp\u00f4ts (Tr\u00e9sor public), et seulement <b>'+Math.round(fa.postes[1].montant/fa.total*100)+' %</b> r\u00e9mun\u00e8rent r\u00e9ellement le notaire (\u00e9moluments, dont 20 % de TVA revers\u00e9e \u00e0 l\u2019\u00c9tat).'+
-      (fa.prix>=150000?'<br><br><b>Remise possible</b> : au-del\u00e0 de 100 000 \u20ac, le notaire peut consentir une remise sur ses \u00e9moluments (jusqu\u2019\u00e0 20 % sur la tranche sup\u00e9rieure, art. A444-174 C. com.). Soit jusqu\u2019\u00e0 <b>'+eur0(Math.round((emolumentsHT(fa.prix)-emolumentsHT(100000))*0.20*1.20))+' \u20ac TTC</b> maximum (20\u00a0% des \u00e9mol. sur tranche\u00a0>100\u202f000\u00a0\u20ac, art.\u00a0A444-174 C.\u00a0com.) \u2014 \u00e0 n\u00e9gocier.':'')+
+      (fa.prix>=150000?'<br><br><b>Remise possible</b> : au-del\u00e0 de 100 000 \u20ac, le notaire peut consentir une remise sur ses \u00e9moluments (jusqu\u2019\u00e0 20 % sur la tranche sup\u00e9rieure, art. A444-174 C. com.). Soit jusqu\u2019\u00e0 <b>'+eur0(Math.round(fa.postes[1].montant*0.15))+' \u20ac</b> d\u2019\u00e9conomie potentielle \u2014 \u00e0 n\u00e9gocier.':'')+
     '</div>';
 }
 /* Taux global des frais d'acquisition. Conserve pour compatibilite avec le reste du code. */
