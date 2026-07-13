@@ -32,7 +32,7 @@
 
   .container{max-width:680px;margin:0 auto;padding:18px 16px 64px;overflow-x:hidden}
   .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:20px 18px;margin-bottom:16px;max-width:100%}
-  .card-head{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+  .card-head{display:flex;align-items:center;gap:10px;margin-bottom:16px;cursor:pointer;user-select:none;position:relative;padding-right:26px}
   .step-no{width:26px;height:26px;border-radius:8px;background:var(--brand-tint);color:var(--brand-dark);font-family:var(--display);font-weight:800;font-size:14px;display:grid;place-items:center;flex:0 0 auto}
   .card-head h2{font-family:var(--display);font-weight:700;font-size:17px;margin:0;letter-spacing:-.2px}
   .card-head .sub{font-size:12.5px;color:var(--ink-soft);margin-top:1px}
@@ -259,7 +259,7 @@
 .expo-checks{display:grid;grid-template-columns:1fr 1fr;gap:7px}
 .expo-checks .chk{margin:0}
 #results.lean .secondary{display:none}
-.card-head{cursor:pointer;user-select:none;position:relative;padding-right:26px}
+/* card-head collapse rules merged above */
 .card-head::after{content:"\0025be";position:absolute;right:4px;top:50%;transform:translateY(-50%);color:var(--ink-soft);font-size:13px;transition:transform .2s}
 .card.is-collapsed>.card-head::after{transform:translateY(-50%) rotate(-90deg)}
 .card.is-collapsed>:not(.card-head){display:none}
@@ -352,26 +352,26 @@
   [style*="font-size:10.5px"]{font-size:11.5px!important}
 }
 /* R2 : digestibilite — sommaire sticky, synthese 60 s, chiffre-cle de carte */
-#tocBar{display:none;gap:6px;overflow-x:auto;padding:8px 2px 9px;position:sticky;z-index:40;top:0;background:linear-gradient(var(--bg) 78%,rgba(246,248,250,0));-webkit-overflow-scrolling:touch;scrollbar-width:none}
+#tocBar{display:none;gap:6px;overflow-x:auto;padding:8px 12px 9px;position:sticky;z-index:45;top:0;background:var(--bg);border-bottom:1px solid var(--line);-webkit-overflow-scrolling:touch;scrollbar-width:none}
 #tocBar.show{display:flex}
 #tocBar::-webkit-scrollbar{display:none}
-.toc-chip{flex:none;font:700 12px/1 var(--body);color:var(--ink-soft);background:#fff;border:1.5px solid var(--line);border-radius:16px;padding:8px 12px;cursor:pointer;white-space:nowrap;transition:.12s}
+.toc-chip{flex:none;font:600 12.5px/1 var(--body);color:var(--ink-soft);background:#fff;border:1.5px solid var(--line);border-radius:18px;padding:9px 14px;cursor:pointer;white-space:nowrap;transition:.12s;min-height:36px;display:flex;align-items:center}
 .toc-chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
 .toc-chip.toc-tool{color:var(--brand-dark);border-color:var(--brand)}
-.card-kv{margin-left:auto;font:800 12px/1.2 var(--body);color:var(--brand-dark);white-space:nowrap;flex:none}
-.card.is-collapsed .card-kv{color:var(--ink)}
-.synth-row{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line);cursor:pointer}
+.card-kv{margin-left:auto;font:700 11.5px/1.3 var(--body);color:var(--brand-dark);white-space:nowrap;flex:none;background:var(--brand-tint);padding:3px 8px;border-radius:6px;max-width:140px;overflow:hidden;text-overflow:ellipsis}
+.card.is-collapsed .card-kv{color:var(--ink);background:var(--bg)}
+.synth-row{display:flex;align-items:center;gap:12px;padding:13px 6px;border-bottom:1px solid var(--line);cursor:pointer;border-radius:var(--r-sm);transition:background .1s}
 .synth-row:last-child{border-bottom:none}
-.synth-row:active{background:var(--brand-tint)}
+.synth-row:hover{background:var(--bg)}.synth-row:active{background:var(--brand-tint)}
 .synth-ic{width:30px;height:30px;border-radius:9px;background:var(--bg);display:grid;place-items:center;font-size:15px;flex:none}
 .synth-main{flex:1;min-width:0}
 .synth-lbl{font-size:11px;color:var(--ink-soft);font-weight:600}
-.synth-val{font:800 14.5px/1.25 var(--body);color:var(--ink);margin-top:1px}
+.synth-val{font:800 14px/1.3 var(--body);color:var(--ink);margin-top:1px;word-break:break-word}
 .synth-val small{font-weight:600;font-size:11px;color:var(--ink-soft)}
 .synth-val.pos{color:var(--good)}.synth-val.neg{color:var(--bad)}.synth-val.warn{color:#9a6a12}
 .synth-go{flex:none;font-size:11px;font-weight:700;color:var(--brand-dark);white-space:nowrap}
-@keyframes cardFlash{0%{box-shadow:0 0 0 3px rgba(15,179,158,.55)}100%{box-shadow:var(--shadow)}}
-.card-flash{animation:cardFlash 1.2s ease}
+@keyframes cardFlash{0%{box-shadow:0 0 0 4px rgba(15,179,158,.45)}50%{box-shadow:0 0 0 2px rgba(15,179,158,.25)}100%{box-shadow:var(--shadow)}}
+.card-flash{animation:cardFlash .8s ease}
 
 /* ===== R6 Accessibilite : focus-visible sur tous les controles =====
  * :focus-visible = focus clavier seulement (pas au clic souris). */
@@ -385,6 +385,30 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
   padding:10px 16px;border-radius:var(--r-sm);font-weight:700;font-size:14px;
   text-decoration:none;transition:top .15s}
 .skip-link:focus{top:8px}
+
+/* Glossaire R7 */
+.gl-item{border-bottom:1px solid var(--line);padding:0}
+.gl-item:last-child{border-bottom:none}
+.gl-q{width:100%;text-align:left;background:none;border:none;padding:11px 0;cursor:pointer;display:flex;align-items:center;gap:8px;font-family:var(--body)}
+.gl-q-lbl{font-size:13.5px;font-weight:600;color:var(--ink);flex:1}
+.gl-q-dot{width:7px;height:7px;border-radius:50%;flex:none}
+.gl-q-dot.calc{background:var(--brand-dark)}.gl-q-dot.info{background:var(--line)}
+.gl-chev{font-size:11px;color:var(--ink-soft);transition:transform .15s;flex:none}
+.gl-item.open .gl-chev{transform:rotate(90deg)}
+.gl-a{display:none;padding:0 0 12px 15px;font-size:12.5px;color:var(--ink-soft);line-height:1.6}
+.gl-item.open .gl-a{display:block}
+.gl-cat{font-size:10px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.4px;padding:12px 0 5px;display:block}
+.gl-search{width:100%;font-family:var(--body);font-size:14px;color:var(--ink);background:#fff;border:1.5px solid var(--line);border-radius:var(--r-sm);padding:11px 13px;margin-bottom:12px;box-sizing:border-box}
+.gl-search:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-tint)}
+.gl-none{font-size:13px;color:var(--ink-soft);padding:8px 0;display:none}
+
+@media(max-width:380px){
+  .synth-ic{width:26px;height:26px;font-size:13px;border-radius:7px}
+  .synth-val{font-size:13px}
+  .synth-go{font-size:10px}
+  .toc-chip{padding:7px 10px;font-size:11.5px}
+  .card-kv{font-size:10.5px;max-width:110px;padding:2px 6px}
+}
 </style>
 </head>
 <body>
@@ -659,7 +683,7 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
 
     <div id="modeBar" style="order:-1"><div class="seg" id="segMode" role="group" aria-label="Mode d'affichage"><button data-m="simple" class="on">Mode Simple</button><button data-m="expert">Mode Expert</button></div><div class="hint" style="margin-top:6px">Mode Simple : l'essentiel pour d&#233;cider (verdict, prix conseille, negociation, risques). Mode Expert : tous les calculs detailles.</div></div>
     <div id="tocBar" style="order:-1"></div>
-    <section class="card" id="synthCard" style="order:0"><div class="card-head"><div class="step-no">&#9889;</div><div><h2>Synth&#232;se en 60 secondes</h2><div class="sub">L'essentiel pour d&#233;cider &#8212; touchez une ligne pour ouvrir le d&#233;tail</div></div></div><div id="synth60Panel"></div></section>
+    <section class="card" id="synthCard" style="order:0;border-left:4px solid var(--brand)"><div class="card-head"><div class="step-no">&#9889;</div><div><h2>Synth&#232;se en 60 secondes</h2><div class="sub">L'essentiel pour d&#233;cider &#8212; touchez une ligne pour ouvrir le d&#233;tail</div></div></div><div id="synth60Panel"></div></section>
     <section class="card" id="decisionCard" style="order:0"><div id="decisionPanel"></div><div class="hint" style="padding:0 2px">Score d'acquisition : synth&#232;se multicrit&#232;re (prix, rentabilit&#233;, march&#233;, DPE, cash-flow, risque). Distinct du verdict fond&#233; sur la seule VAN affich&#233; plus bas dans la Synth&#232;se de l'investissement.</div></section>
     <section class="card expert-only" id="reportCard" style="order:7"><div class="card-head"><div class="step-no">&#128221;</div><div><h2>Rapport d'analyse</h2><div class="sub">Synth&#232;se r&#233;dig&#233;e automatiquement &#224; partir de vos donn&#233;es</div></div></div><div id="reportPanel"></div></section>
     <section class="card expert-only" id="formationCard" style="order:4"><div class="card-head"><div class="step-no">&#128269;</div><div><h2>Fiabilit&#233; &amp; formation du prix</h2><div class="sub">Fourchettes probabilistes, fiabilit&#233; des donn&#233;es et explication d&#233;taill&#233;e</div></div></div><div id="formationPanel"></div></section>
@@ -5428,7 +5452,12 @@ document.querySelectorAll(".card-head").forEach(h=>{
   h.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();_toggle();}});
 });
 
-[...document.querySelectorAll('#results .card')].forEach(c=>{if(c.id!=='decisionCard'&&c.id!=='synthCard'&&!c.classList.contains('price-card'))c.classList.add('expert-only');});
+[...document.querySelectorAll('#results .card')].forEach(c=>{
+  const keep=['decisionCard','synthCard','priceCard','buyCard','dashCard','compCard',
+    'locCard','rentalCard','benchCard','ownVsRentCard','resaleCard','reportPdfCard',
+    'dpeCard','projCard','glossaireCard'];
+  if(!c.classList.contains('price-card')&&keep.indexOf(c.id)<0)c.classList.add('expert-only');
+});
 const segM=$("segMode");if(segM)segM.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{segM.querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on");$("results").classList.toggle("simple",b.dataset.m==="simple");}));
 /* ===== R2 : digestibilite — synthese 60 s, sommaire sticky, chiffres-cles, repli =====
  * Trois couches, aucune donnee retiree :
