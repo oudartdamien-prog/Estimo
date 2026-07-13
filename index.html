@@ -1523,7 +1523,7 @@ function recVal(o,keys){for(const k of keys){if(o[k]!=null&&o[k]!=="")return o[k
 function median(a){const s=[...a].sort((x,y)=>x-y);const m=Math.floor(s.length/2);return s.length%2?s[m]:(s[m-1]+s[m])/2;}
 function quantile(s,q){if(!s.length)return 0;const pos=(s.length-1)*q,b=Math.floor(pos),rest=pos-b;return s[b+1]!=null?s[b]+rest*(s[b+1]-s[b]):s[b];}
 function weightedMedian(items){const s=[...items].sort((a,b)=>a.ppm-b.ppm);const tot=s.reduce((t,x)=>t+x.w,0)||1;let acc=0;for(const x of s){acc+=x.w;if(acc>=tot/2)return x.ppm;}return s.length?s[s.length-1].ppm:0;}
-function dvfStats(pts,subjSurf){
+function dvfStats(pts,subjSurf,subjRooms){
   // Fix8 : IQR calculé en log-espace (prix immobiliers right-skewed → log plus symétrique)
   // Évite de retirer trop de biens "cheap" (queue gauche courte) et trop peu de premium (queue droite)
   const allLog=pts.map(p=>Math.log(p.ppm)).sort((a,b)=>a-b);
@@ -1547,13 +1547,30 @@ function dvfStats(pts,subjSurf){
     const wGsum=clean.reduce((s,p)=>s+wG(p),0);
     westG=wGsum>0?weightedMedian(clean.map(p=>({ppm:p.ppm,w:wG(p)}))):west;
   }
+  // Fix13 — westGRooms : médiane pondérée (récence + surface) restreinte à la même
+  // typologie que le bien. Corrige le biais de mix : T4 se vend ~15% moins cher/m²
+  // que T2/T3 ; sans segmentation la base est systématiquement trop haute pour les grands biens.
+  // Seuil 15 ventes typées = équilibre robustesse/précision.
+  // Si insuffisant → null → fallback westG (comportement v97).
+  let westGRooms=null;
+  if(subjRooms&&subjRooms>0&&clean.length>=10){
+    const roomMatch=clean.filter(p=>p.rooms&&Math.abs(p.rooms-subjRooms)<=0.5);
+    if(roomMatch.length>=15){
+      const wGR=p=>{
+        const ds=(p.surf||subjSurf||50)-subjSurf,gs=subjSurf>0?Math.exp(-(ds*ds)/(2*(0.25*subjSurf)*(0.25*subjSurf))):1;
+        return gs*wRec(p);
+      };
+      const wGRsum=roomMatch.reduce((s,p)=>s+wGR(p),0);
+      if(wGRsum>0)westGRooms=Math.round(weightedMedian(roomMatch.map(p=>({ppm:p.ppm,w:wGR(p)}))));
+    }
+  }
   let spreadHQ=null;
   if(subjSurf>0&&clean.length>=15){
     const year=new Date().getFullYear(),scored=clean.map(p=>{const sr=Math.log((p.surf||subjSurf)/subjSurf),ss=Math.exp(-(sr*sr)/(2*0.20*0.20));const rs=Math.exp(-Math.max(0,year-(p.date?+String(p.date).slice(0,4):year))/4.5);return{ppm:p.ppm,s:0.55*ss+0.35*rs+0.10};});
     const hq=scored.filter(x=>x.s>=0.70).map(x=>x.ppm).sort((a,b)=>a-b);
     if(hq.length>=10){const hq1=quantile(hq,0.25),hq3=quantile(hq,0.75);const hqMed=quantile(hq,0.5);spreadHQ=hqMed>0?+((hq3-hq1)/2/hqMed).toFixed(3):null;}
   }
-  return{n:clean.length,removed:pts.length-clean.length,clean,mean,med:quantile(cp,0.5),west:Math.round(westG),westRec:Math.round(west),q1:quantile(cp,0.25),q3:quantile(cp,0.75),p10:quantile(cp,0.10),p90:quantile(cp,0.90),sd,min:cp[0]||0,max:cp[cp.length-1]||0,yMin:yr.length?Math.min.apply(null,yr):null,yMax:ymax||null,spreadHQ};
+  return{n:clean.length,removed:pts.length-clean.length,clean,mean,med:quantile(cp,0.5),west:Math.round(westG),westRec:Math.round(west),westGRooms,q1:quantile(cp,0.25),q3:quantile(cp,0.75),p10:quantile(cp,0.10),p90:quantile(cp,0.90),sd,min:cp[0]||0,max:cp[cp.length-1]||0,yMin:yr.length?Math.min.apply(null,yr):null,yMax:ymax||null,spreadHQ};
 }
 async function enrichDvfDpe(pts){
   if(!pts||!pts.length)return;
@@ -1661,7 +1678,6 @@ async function fetchCommuneMedian(insee,type){
 }
 async function fetchDvf(coord,type){
   if(!coord||!coord.insee)return {pts:null,status:"no-conn"};
-  state._bboxProbe=null; // sonde micro-localisation (reinitialisee a chaque estimation)
   if(coord.lat!=null&&coord.lon!=null){
     try{
       const dLat=0.0099,dLon=0.0099; // largeur/hauteur <= 0.0198 deg : limite in_bbox de l'API apidf (rayon ~0,8-1,1 km)
@@ -1681,13 +1697,6 @@ async function fetchDvf(coord,type){
         const _gres=type==="terrain"?{pts:parsePtsTerrain(garr),nNeuf:0,nTotal:0,natSeen:false}:parsePts(garr,type);
         if(DEBUG)dbg("DVF bbox ~1 km : "+(gcount||garr.length)+" mutations, "+_gres.pts.length+" anciennes exploitables"+(_gres.nNeuf>0?" ("+_gres.nNeuf+" VEFA exclus)":""));
         if(_gres.pts.length>=30)return{pts:_gres.pts,ptsNeuf:_gres.ptsNeuf||[],nNeuf:_gres.nNeuf,nTotal:_gres.nTotal,natSeen:_gres.natSeen,status:"ok",scope:"bbox"};
-        // Micro-localisation : 8-29 ventes anciennes < 1 km = trop peu pour le scope bbox,
-        // mais assez pour sonder le niveau de prix du quartier vs la commune (communes heterogenes).
-        if(type!=="terrain"&&_gres.pts.length>=8){
-          const _pp=_gres.pts.map(p=>p.ppm).filter(v=>v>0);
-          if(_pp.length>=8){state._bboxProbe={med:Math.round(median(_pp)),n:_pp.length};
-            if(DEBUG)dbg("Sonde quartier ~1 km : mediane "+state._bboxProbe.med+" \u20ac/m\u00b2 sur "+state._bboxProbe.n+" ventes");}
-        }
       }
     }catch(_){/* repli commune */}
   }
@@ -2066,13 +2075,24 @@ function estimate(realBase,realStats){
   const city=$("ville").value,cp=$("cp").value,type=state.type;
   const surface=type==="terrain"?numv("terrain"):numv("surface");
   if(type==="terrain")return estimateTerrain(realBase,surface,city,cp);
-  const {sqm,conf}=realBase?{sqm:realBase,conf:"\u00e9lev\u00e9e"}:baseSqm(city,cp,type);
-  const ctx=marketCtx(realBase);
+  // Fix13 — base segmentée par typologie : on substitue westGRooms à westG quand disponible.
+  // Évite d’appliquer des hédoniques sur une base qui mélange T1→T5 (+10–18 % de biais).
+  // La correction rooms (±5 %) via effMult reste comme garde-fou si westGRooms indisponible.
+  const _wgR=(realBase&&realStats&&realStats.westGRooms)||null;
+  const _roomsBaseUsed=!!_wgR;
+  const _effectiveBase=_wgR||realBase;
+  const {sqm,conf}=_effectiveBase?{sqm:_effectiveBase,conf:"\u00e9lev\u00e9e"}:baseSqm(city,cp,type);
+  const ctx=marketCtx(_effectiveBase||realBase);
   const {mult,rows,detail}=coefficients(ctx,realBase,realStats);
   let effMult=mult;
+  if(_roomsBaseUsed&&realBase&&realStats.westGRooms){
+    const _gap=Math.round((_effectiveBase/realBase-1)*100);
+    rows.push(["Base segment\u00e9e "+state.pieces+" pi\u00e8ces : "+eur0(_effectiveBase)+" \u20ac/m\u00b2 (vs commune "+eur0(realBase)+" \u20ac/m\u00b2"+(_gap?", "+(_gap>0?"+":"")+_gap+" %":"")+", "+realStats.clean.filter(p=>p.rooms&&Math.abs(p.rooms-(+state.pieces||0))<=0.5).length+" ventes typ\u00e9es)",_effectiveBase/realBase-1]);
+  }
   if(realBase&&realStats&&realStats.clean&&type!=="terrain"){
     const pcs=+state.pieces||0;
-    if(pcs>0){
+    if(pcs>0&&!_roomsBaseUsed){
+      // Correction rooms via effMult uniquement si westGRooms absent (⋪ 15 ventes typées)
       const wr=realStats.clean.filter(p=>p.rooms>0),same=wr.filter(p=>p.rooms===pcs);
       if(wr.length>=24&&same.length>=12){
         const medp=a=>{const s=a.map(p=>p.ppm).sort((x,y)=>x-y);return s[s.length>>1];};
@@ -2109,43 +2129,26 @@ function estimate(realBase,realStats){
       }
     }
   }
-  // Amél.6 — Micro-localisation : quand le scope DVF est communal mais qu'une sonde
-  // géolocalisée (8-29 ventes anciennes < 1 km) existe, recale la base sur le quartier.
-  // Corrige le biais des communes hétérogènes (ex. quartiers sud vs nord d'une même ville)
-  // où la médiane communale surestime les secteurs modestes. Clamp asymétrique acquéreur :
-  // décote jusqu'à -20 %, prime plafonnée à +10 % (prudence anti-surestimation).
-  let quartierAdj=0;
-  if(realBase&&state.dvfScope!=="bbox"&&state._bboxProbe&&state._bboxProbe.n>=8&&realStats&&realStats.west>0){
-    const qa=Math.max(-0.20,Math.min(0.10,state._bboxProbe.med/realStats.west-1));
-    if(Math.abs(qa)>=0.02){quartierAdj=qa;
-      rows.unshift(["Micro-localisation ("+state._bboxProbe.n+" ventes < 1 km : "+eur0(state._bboxProbe.med)+" \u20ac/m\u00b2 vs commune "+eur0(realStats.west)+" \u20ac/m\u00b2)",qa]);}
-  }
   if(realBase){
     const riq=(realStats&&realStats.med>0)?(realStats.q3-realStats.q1)/realStats.med:0.30;
     const capUp=Math.max(0.10,Math.min(0.20,riq*0.65)),capDn=Math.max(0.20,Math.min(0.35,riq*1.10));
     // Fix5 : réduire l'asymétrie du borning (65%→75% côté positif, 85% conservé côté négatif)
     // La réduction à 65% était trop agressive et créait une sous-estimation systématique
     // des biens réellement supérieurs à la médiane locale.
-    // Amél.6b — Prudence hétérogénéité : en scope communal SANS sonde quartier, une forte
-    // dispersion locale (IQR/méd > 30 %) traduit surtout de l'hétérogénéité spatiale
-    // (quartiers) et non un éventail de qualités : le cumul positif d'ajustements
-    // hédoniques est alors davantage amorti (0.62 vs 0.75) car la position du bien
-    // dans cet éventail est inconnue.
-    const posDamp=(state.dvfScope!=="bbox"&&!quartierAdj&&riq>0.30)?0.62:0.75;
-    const dev=effMult-1,d2=Math.max(-capDn,Math.min(capUp,dev>0?dev*posDamp:dev*0.85));
+    const dev=effMult-1,d2=Math.max(-capDn,Math.min(capUp,dev>0?dev*0.75:dev*0.85));
     if(Math.abs(1+d2-effMult)>0.004)rows.push(["Ajustement marginal (born\u00e9 +"+Math.round(capUp*100)+" %/\u2212"+Math.round(capDn*100)+" % par la dispersion locale)",1+d2-effMult]);
     effMult=1+d2;
   }
-  const sqmAdj=sqm*(1+quartierAdj)*effMult;
+  const sqmAdj=sqm*effMult;
   const od=outdoorValue(sqmAdj,ctx,!!realBase);
   const dyn=computeDynamics(city,cp);
   let price=sqmAdj*surface+od.val;
-  if(realBase){const _refQ=realBase*(1+quartierAdj),_e=price/surface,_cap=Math.max(_refQ*0.75,Math.min(_refQ*1.25,_e));price=_cap*surface;}
+  if(realBase){const _e=price/surface,_cap=Math.max(realBase*0.75,Math.min(realBase*1.25,_e));price=_cap*surface;}
   const effSqm=price/surface;
   let spread=realBase?0.05:conf==="\u00e9lev\u00e9e"?0.06:conf==="moyenne"?0.10:0.14;
   spread=Math.min(0.16,Math.max(0.05,spread-(detail||0)*0.004));
   const allRows=rows.concat(od.rows.map(([l,v])=>[l,null,v]));
-  return{price,sqm:effSqm,sqmBase:sqm,sqmAdj,quartierAdj,low:price*(1-spread),high:price*(1+spread),spread,conf,rows:allRows,surface,type,city,cp,pieces:state.pieces,real:!!realBase,econSurface:surface+(sqmAdj>0?od.val/sqmAdj:0),ctx,dyn};
+  return{price,sqm:effSqm,sqmBase:sqm,sqmAdj,low:price*(1-spread),high:price*(1+spread),spread,conf,rows:allRows,surface,type,city,cp,pieces:state.pieces,real:!!realBase,econSurface:surface+(sqmAdj>0?od.val/sqmAdj:0),ctx,dyn};
 }
 
 /* ===== Rendu ===== */
@@ -3641,9 +3644,9 @@ function applyFinalDvfCap(r){
   // Fix1 : appliquer le facteur VEFA au référentiel DVF du cap final
   // (quand natSeen=false, realStats.west reste contaminé par les VEFA non filtrées)
   const _vcFactor=r.vefaCorr?r.vefaCorr.factor:1;
-  // Amél.6 — le garde-fou ±20 % est centré sur la référence micro-locale quand elle existe
-  const _qFactor=1+(r.quartierAdj||0);
-  const ref=(r.realStats.west||r.realStats.med)*(r.surface||1)*_vcFactor*_qFactor;if(!ref)return;
+  // Fix13 : garde-fou centré sur la base typologique (westGRooms) quand disponible
+  const _westRef=r.realStats.westGRooms||r.realStats.west||r.realStats.med;
+  const ref=_westRef*(r.surface||1)*_vcFactor;if(!ref)return;
   const lo=Math.round(ref*0.80),hi=Math.round(ref*1.20),p0=r.price,p=Math.max(lo,Math.min(hi,p0));
   if(p!==p0){r.finalCap=p-p0;r.price=p;r.sqm=Math.round(p/(r.surface||1));r.low=p*(1-r.spread);r.high=p*(1+r.spread);}
 }
@@ -4043,7 +4046,7 @@ async function fetchAllData(coord){
       }
       out.vefaInfo={nNeuf:res.nNeuf||0,nTotal:res.nTotal||0,natSeen:!!res.natSeen};
       out.ptsVefa=res.ptsNeuf||[];
-      out.realStats=dvfStats(band,surf>0?surf:null);
+      out.realStats=dvfStats(band,surf>0?surf:null,+state.pieces||0);
       out.engineData=estimationEngines(out.realStats.clean,surf,out.realStats);
       out.realBase=out.engineData.base||out.realStats.west||Math.round(out.realStats.med);
       if(state.dvfScope==="bbox")try{await _withTimeout(enrichDvfDpe(out.realPts),4000,null);}catch(_){}
