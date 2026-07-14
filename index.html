@@ -1300,17 +1300,17 @@ async function dvfFetch(url){
   });
   let out=null;
   // Etape 1 : appel direct (timeout court : si le CORS bloque, on le sait vite)
-  try{ out=await one(url,7000); }catch(_){}
+  try{ out=await one(url,9000); }catch(_){}
   // Etape 2 : proxies en parallele (une seule salve), en commencant par ceux qui marchent
   if(!out&&CORS_PROXIES.length){
     const ordered=CORS_PROXIES.slice().sort((a,b)=>(_proxyOK.has(b)?1:0)-(_proxyOK.has(a)?1:0));
-    const tries=ordered.map(px=>one(px+encodeURIComponent(url),9000).then(r=>{_proxyOK.add(px);return r;}));
+    const tries=ordered.map(px=>one(px+encodeURIComponent(url),12000).then(r=>{_proxyOK.add(px);return r;}));
     try{ out=await Promise.any(tries); }catch(_){}
   }
   // Etape 3 : une unique nouvelle tentative directe (reseau instable)
   if(!out){
     await new Promise(r=>setTimeout(r,400));
-    try{ out=await one(url,7000); }catch(_){}
+    try{ out=await one(url,9000); }catch(_){}
   }
   if(out)_netCache.set(url,out); // Fix14 : null non mis en cache
   return out;
@@ -1695,22 +1695,29 @@ async function fetchDvf(coord,type){
   }
   const _storeAndReturn=r=>{_dvfResultCache.set(_cacheKey,r);return r;};
   if(coord.lat!=null&&coord.lon!=null){
-    // Fix14 — retry bbox : jusqu'a 3 tentatives avant repli commune.
-    // Corrige le cas ou un echec reseau transitoire fait definitivement basculer
-    // en scope communal (donnees moins precises, biais de mix typologique plus fort).
+    // Fix15 — bbox strict : plus JAMAIS de repli communal sur echec reseau.
+    // Le scope commune melange des quartiers heterogenes et surestime les biens
+    // des secteurs modestes (cas demontre a Saint-Martin-d'Heres). Sur echec
+    // reseau -> statut "bbox-fail" (volontairement NON mis en cache) : l'utilisateur
+    // est invite a relancer, le prochain clic retente l'appel geolocalise.
+    // Le repli commune ne subsiste que si l'API a REPONDU mais que la zone est
+    // reellement peu dense (<12 ventes exploitables : rural profond).
     const dLat=0.0099,dLon=0.0099;
     const bbox=[(coord.lon-dLon).toFixed(5),(coord.lat-dLat).toFixed(5),(coord.lon+dLon).toFixed(5),(coord.lat+dLat).toFixed(5)].join(",");
     const gBase=DVF_BASE.replace("/mutations/","/geomutations/")+`?in_bbox=${bbox}&page_size=500`;
-    for(let attempt=0;attempt<3;attempt++){
+    let bboxAnswered=false;
+    for(let attempt=0;attempt<4;attempt++){
       try{
         if(attempt>0){
           // Purge l'eventuelle entree null du cache URL avant de retenter
           _netCache.delete(gBase);
-          await new Promise(r=>setTimeout(r,600*attempt));
-          if(DEBUG)dbg(`DVF bbox retry ${attempt}/2`);
+          await new Promise(r=>setTimeout(r,800*attempt));
+          if(DEBUG)dbg(`DVF bbox retry ${attempt}/3`);
         }else if(DEBUG)dbg("DVF bbox URL: "+gBase);
         const g1=await dvfFetch(gBase);
         if(!g1){if(DEBUG)dbg(`DVF bbox tentative ${attempt+1}: echec reseau`);continue;}
+        // Reponse API valide : on tranche immediatement (retenter ne changerait pas les donnees)
+        bboxAnswered=true;
         const gcount=g1.json.count||0;let garr;
         if(gcount>500){
           const last=Math.ceil(gcount/500),pages=[last,last-1,last-2].filter(p=>p>=1);
@@ -1720,10 +1727,15 @@ async function fetchDvf(coord,type){
         }else garr=extractArr(g1.json);
         const _gres=type==="terrain"?{pts:parsePtsTerrain(garr),nNeuf:0,nTotal:0,natSeen:false}:parsePts(garr,type);
         if(DEBUG)dbg(`DVF bbox ~1 km (tentative ${attempt+1}) : `+(gcount||garr.length)+" mutations, "+_gres.pts.length+" anciennes exploitables"+(_gres.nNeuf>0?" ("+_gres.nNeuf+" VEFA exclus)":""));
-        if(_gres.pts.length>=30)return _storeAndReturn({pts:_gres.pts,ptsNeuf:_gres.ptsNeuf||[],nNeuf:_gres.nNeuf,nTotal:_gres.nTotal,natSeen:_gres.natSeen,status:"ok",scope:"bbox"});
-      }catch(_){if(DEBUG)dbg(`DVF bbox tentative ${attempt+1}: exception -> `+_);}
+        if(_gres.pts.length>=12)return _storeAndReturn({pts:_gres.pts,ptsNeuf:_gres.ptsNeuf||[],nNeuf:_gres.nNeuf,nTotal:_gres.nTotal,natSeen:_gres.natSeen,status:"ok",scope:"bbox"});
+        if(DEBUG)dbg("DVF bbox: <12 ventes exploitables malgre reponse valide -> repli commune (zone reellement peu dense)");
+        break;
+      }catch(_){if(DEBUG)dbg(`DVF bbox tentative ${attempt+1}: exception -> `+_);bboxAnswered=false;}
     }
-    if(DEBUG)dbg("DVF bbox: 3 tentatives epuisees -> repli commune");
+    if(!bboxAnswered){
+      if(DEBUG)dbg("DVF bbox: echec reseau apres 4 tentatives -> AUCUN repli commune (Fix15), l'utilisateur doit relancer");
+      return {pts:null,status:"bbox-fail"};
+    }
   }
   const _btnP=$("btnEstim"),_setP=t=>{if(_btnP&&_btnP.disabled)_btnP.textContent=t;};
   const base=`${DVF_BASE}?code_insee=${coord.insee}&page_size=500`;
@@ -4056,7 +4068,7 @@ async function fetchAllData(coord){
   else if(state.type==="terrain"){out.diag="terrain : pas de comparable b\u00e2ti DVF";}
   else{
     // Chaque etape est bornee dans le temps : une API muette ne doit jamais figer l'estimation.
-    const res=(await _withTimeout(fetchDvf(coord,state.type),15000,null))||{status:"no-conn",pts:null};
+    const res=(await _withTimeout(fetchDvf(coord,state.type),28000,null))||{status:"bbox-fail",pts:null};
     // G: Calcul du prix médian communal DVF — graine dynamique pour baseSqm()
     _withTimeout(fetchCommuneMedian(coord.insee,state.type),10000,null).then(med=>{
       if(med&&med.med>0){state._localApt={med:med.med,n:med.n,source:med.source,annee:med.annee};}
@@ -4077,7 +4089,11 @@ async function fetchAllData(coord){
       out.realBase=out.engineData.base||out.realStats.west||Math.round(out.realStats.med);
       if(state.dvfScope==="bbox")try{await _withTimeout(enrichDvfDpe(out.realPts),4000,null);}catch(_){}
     }
-    else if(res.status==="no-conn")out.diag="sources DVF injoignables \u2014 r\u00e9essayez dans un instant";
+    else if(res.status==="bbox-fail"||res.status==="no-conn"){
+      // Fix15 : echec d'appel des donnees = pas d'estimation degradee. On previent et on invite a relancer.
+      out.netFail=true;
+      out.diag="l'appel des donn\u00e9es de ventes (DVF) n'a pas fonctionn\u00e9 \u2014 r\u00e9essayez";
+    }
     else out.diag="aucune vente DVF comparable dans le secteur";
   }
   state.live=(await _withTimeout(livePromise,5000,null))||{};
@@ -4398,7 +4414,7 @@ function setupAsyncCallbacks(r,enrichPromise,ctxProm){
 /* Garde-fou : empeche une estimation de rester bloquee si une API publique ne repond pas.
  * Le bouton est TOUJOURS restaure (try/finally), et un timeout global borne l'attente. */
 let _estimRunning=false;
-const ESTIM_TIMEOUT_MS=30000; // filet de securite ultime : chaque etape a deja son propre timeout
+const ESTIM_TIMEOUT_MS=45000; // filet de securite ultime : chaque etape a deja son propre timeout (Fix15 : releve pour laisser plus de temps aux serveurs DVF)
 
 function _withTimeout(promise,ms,fallback){
   return Promise.race([
@@ -4452,14 +4468,18 @@ async function showResults(){
 
     // Timeout global : si les APIs traînent, on estime avec ce qui est disponible
     let data=await _withTimeout(fetchAllData(coord),ESTIM_TIMEOUT_MS,null);
+    // Fix15 : jamais d'estimation sur donnees moins precises quand l'appel a echoue.
+    // On informe clairement l'utilisateur et on l'invite a relancer (le cache d'echec
+    // n'est pas conserve : le prochain clic retente reellement l'appel geolocalise).
     if(!data){
-      // Les APIs n'ont pas repondu a temps : on estime quand meme, a partir des tables
-      // de prix de reference. L'estimation est moins precise, on le dit clairement.
-      data={realBase:null,realPts:null,realStats:null,engineData:null,bandWidened:false,
-            diag:"donn\u00e9es DVF indisponibles (serveurs lents) \u2014 estimation fond\u00e9e sur les prix de r\u00e9f\u00e9rence de la commune",
-            enrichPromise:Promise.resolve(null),ctxProm:Promise.resolve({})};
-      err.textContent="Les serveurs DVF n\u2019ont pas r\u00e9pondu \u00e0 temps. Estimation fond\u00e9e sur les prix de r\u00e9f\u00e9rence \u2014 relancez pour une analyse compl\u00e8te.";
+      err.textContent="Les serveurs de donn\u00e9es n\u2019ont pas r\u00e9pondu \u00e0 temps. L\u2019appel n\u2019a pas fonctionn\u00e9 \u2014 cliquez \u00e0 nouveau sur \u00ab\u00a0Estimer le bien\u00a0\u00bb dans quelques secondes.";
       err.classList.add("show");
+      return;
+    }
+    if(data.netFail){
+      err.textContent="L\u2019appel des donn\u00e9es de ventes (DVF) n\u2019a pas fonctionn\u00e9. Aucune estimation approximative n\u2019est affich\u00e9e \u2014 cliquez \u00e0 nouveau sur \u00ab\u00a0Estimer le bien\u00a0\u00bb dans quelques secondes.";
+      err.classList.add("show");
+      return;
     }
 
     const {r,_conf,realBase,diag}=buildEstimation(data);
