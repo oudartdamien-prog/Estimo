@@ -1558,10 +1558,17 @@ function dvfStats(pts,subjSurf,subjRooms){
   // que T2/T3 ; sans segmentation la base est systématiquement trop haute pour les grands biens.
   // Seuil 15 ventes typées = équilibre robustesse/précision.
   // Si insuffisant → null → fallback westG (comportement v97).
-  let westGRooms=null;
+  let westGRooms=null,roomsLoose=false,typedCount=0;
   if(subjRooms&&subjRooms>0&&clean.length>=10){
-    const roomMatch=clean.filter(p=>p.rooms&&Math.abs(p.rooms-subjRooms)<=0.5);
-    if(roomMatch.length>=15){
+    let roomMatch=clean.filter(p=>p.rooms&&Math.abs(p.rooms-subjRooms)<=0.5);
+    // Fix16 — repli : si <15 ventes strictement typees, elargir a ±1 piece (min 10 ventes).
+    // Plus prudent que d'abandonner la segmentation (retour au mix T1→T5 surestimant).
+    if(roomMatch.length<15){
+      const loose=clean.filter(p=>p.rooms&&Math.abs(p.rooms-subjRooms)<=1.0);
+      if(loose.length>=10){roomMatch=loose;roomsLoose=true;}
+    }
+    if(roomMatch.length>=(roomsLoose?10:15)){
+      typedCount=roomMatch.length;
       const wGR=p=>{
         const ds=(p.surf||subjSurf||50)-subjSurf,gs=subjSurf>0?Math.exp(-(ds*ds)/(2*(0.25*subjSurf)*(0.25*subjSurf))):1;
         return gs*wRec(p);
@@ -1576,7 +1583,7 @@ function dvfStats(pts,subjSurf,subjRooms){
     const hq=scored.filter(x=>x.s>=0.70).map(x=>x.ppm).sort((a,b)=>a-b);
     if(hq.length>=10){const hq1=quantile(hq,0.25),hq3=quantile(hq,0.75);const hqMed=quantile(hq,0.5);spreadHQ=hqMed>0?+((hq3-hq1)/2/hqMed).toFixed(3):null;}
   }
-  return{n:clean.length,removed:pts.length-clean.length,clean,mean,med:quantile(cp,0.5),west:Math.round(westG),westRec:Math.round(west),westGRooms,q1:quantile(cp,0.25),q3:quantile(cp,0.75),p10:quantile(cp,0.10),p90:quantile(cp,0.90),sd,min:cp[0]||0,max:cp[cp.length-1]||0,yMin:yr.length?Math.min.apply(null,yr):null,yMax:ymax||null,spreadHQ};
+  return{n:clean.length,removed:pts.length-clean.length,clean,mean,med:quantile(cp,0.5),west:Math.round(westG),westRec:Math.round(west),westGRooms,roomsLoose,typedCount,q1:quantile(cp,0.25),q3:quantile(cp,0.75),p10:quantile(cp,0.10),p90:quantile(cp,0.90),sd,min:cp[0]||0,max:cp[cp.length-1]||0,yMin:yr.length?Math.min.apply(null,yr):null,yMax:ymax||null,spreadHQ};
 }
 async function enrichDvfDpe(pts){
   if(!pts||!pts.length)return;
@@ -1602,6 +1609,22 @@ async function enrichDvfDpe(pts){
   if(DEBUG){const n=pts.filter(p=>p.dpe).length;dbg("DPE ADEME apparies: "+n+"/"+recent.length+" ventes ("+geo.length+" geolocalisees)");}
 }
 function extractArr(d){return d.features?d.features.map(f=>{const p=f.properties||f;if(f.geometry&&f.geometry.coordinates){const c=f.geometry.coordinates;p._lon=c[0];p._lat=c[1];}return p;}):(d.results||d.resultats||(Array.isArray(d)?d:[]));}
+function roomsFromRec(o,want){
+  // Fix16 — nb de pieces fiable depuis la table mutation DVF+ :
+  // 1) nbpprinc si reellement present (table local / autres sources)
+  const d=Number(recVal(o,["nbpprinc","nombre_pieces_principales"]));
+  if(d>0&&d<20)return d;
+  // 2) decompte typologique nbapt1pp..nbapt5pp / nbmai1pp..nbmai5pp (doc Cerema)
+  const pref=want==="maison"?"nbmai":"nbapt";
+  let tot=0,wsum=0;
+  for(let k=1;k<=5;k++){const n=Number(o[pref+k+"pp"])||0;if(n>0){tot+=n;wsum+=n*k;}}
+  if(tot===1)return wsum;      // vente mono-logement : typologie exacte (T5 = "T5 ou +")
+  if(tot>1)return null;        // multi-lots : pas de typologie unique attribuable
+  // 3) dernier recours : suffixe T1..T5 dans libtypbien ("UN APPARTEMENT T4"...)
+  const m=/\bT(\d)\b/.exec(String(recVal(o,["libtypbien","libtyploc"])||""));
+  if(m&&+m[1]>=1&&+m[1]<=5)return +m[1];
+  return null;                 // JAMAIS nblocapt : c'est un nb de locaux, pas de pieces
+}
 function parsePts(arr,type){
   const want=type==="maison"?"maison":"appartement",pts=[],ptsNeuf=[];
   let natSeen=false; // true si le champ libnatmut/natmut est présent dans la réponse API
@@ -1622,7 +1645,7 @@ function parsePts(arr,type){
     if(_isVefa){
       const _lat8v=(o._lat!=null?o._lat:null)||(recVal(o,['lat','latitude','lat_centparce','y_centroid'])||null);
       const _lon8v=(o._lon!=null?o._lon:null)||(recVal(o,['lon','longitude','lng','lon_centparce','x_centroid'])||null);
-      ptsNeuf.push({ppm,surf:s,price:v,rooms:Number(recVal(o,['nbpprinc','nblocapt']))||null,date:recVal(o,['datemut','date_mutation']),lat:_lat8v!=null?parseFloat(_lat8v):null,lon:_lon8v!=null?parseFloat(_lon8v):null,vefa:true});
+      ptsNeuf.push({ppm,surf:s,price:v,rooms:roomsFromRec(o,want),date:recVal(o,['datemut','date_mutation']),lat:_lat8v!=null?parseFloat(_lat8v):null,lon:_lon8v!=null?parseFloat(_lon8v):null,vefa:true});
       return; // VEFA : compté mais exclu du corpus de calcul
     }
     // Fix8 : extraction adresse élargie + lat/lon multi-champs
@@ -1634,7 +1657,7 @@ function parsePts(arr,type){
     // Si _com est purement numerique (code INSEE mal mappe), l'ignorer
     if(_com&&/^\d+$/.test(String(_com).trim()))_com='';
     const _addr8=_addrBase?(_com&&_addrBase.indexOf(_com)<0?_addrBase+', '+_com:_addrBase):(_com||null);
-    pts.push({ppm,surf:s,price:v,rooms:Number(recVal(o,['nbpprinc','nblocapt']))||null,date:recVal(o,['datemut','date_mutation']),lat:_lat8!=null?parseFloat(_lat8):null,lon:_lon8!=null?parseFloat(_lon8):null,addr:_addr8});
+    pts.push({ppm,surf:s,price:v,rooms:roomsFromRec(o,want),date:recVal(o,['datemut','date_mutation']),lat:_lat8!=null?parseFloat(_lat8):null,lon:_lon8!=null?parseFloat(_lon8):null,addr:_addr8});
   });
   return {pts, ptsNeuf, nNeuf:ptsNeuf.length, nTotal:pts.length+ptsNeuf.length, natSeen};
 }
@@ -2125,7 +2148,7 @@ function estimate(realBase,realStats){
   let effMult=mult;
   if(_roomsBaseUsed&&realBase&&realStats.westGRooms){
     const _gap=Math.round((_effectiveBase/realBase-1)*100);
-    rows.push(["Base segment\u00e9e "+state.pieces+" pi\u00e8ces : "+eur0(_effectiveBase)+" \u20ac/m\u00b2 (vs commune "+eur0(realBase)+" \u20ac/m\u00b2"+(_gap?", "+(_gap>0?"+":"")+_gap+" %":"")+", "+realStats.clean.filter(p=>p.rooms&&Math.abs(p.rooms-(+state.pieces||0))<=0.5).length+" ventes typ\u00e9es)",_effectiveBase/realBase-1]);
+    rows.push(["Base segment\u00e9e "+state.pieces+" pi\u00e8ces"+(realStats.roomsLoose?" (\u00b11 pi\u00e8ce)":"")+" : "+eur0(_effectiveBase)+" \u20ac/m\u00b2 (vs mix toutes typologies "+eur0(realBase)+" \u20ac/m\u00b2"+(_gap?", "+(_gap>0?"+":"")+_gap+" %":"")+", "+(realStats.typedCount||0)+" ventes typ\u00e9es)",_effectiveBase/realBase-1]);
   }
   if(realBase&&realStats&&realStats.clean&&type!=="terrain"){
     const pcs=+state.pieces||0;
@@ -2173,8 +2196,17 @@ function estimate(realBase,realStats){
     // Fix5 : réduire l'asymétrie du borning (65%→75% côté positif, 85% conservé côté négatif)
     // La réduction à 65% était trop agressive et créait une sous-estimation systématique
     // des biens réellement supérieurs à la médiane locale.
-    const dev=effMult-1,d2=Math.max(-capDn,Math.min(capUp,dev>0?dev*0.75:dev*0.85));
-    if(Math.abs(1+d2-effMult)>0.004)rows.push(["Ajustement marginal (born\u00e9 +"+Math.round(capUp*100)+" %/\u2212"+Math.round(capDn*100)+" % par la dispersion locale)",1+d2-effMult]);
+    // Fix16 — mode prudent : pour un grand logement (\u22653 pi\u00e8ces) sans segmentation
+    // typologique possible, la base m\u00e9lange T1\u2192T5 et surestime structurellement les
+    // grandes surfaces (les petites se vendent plus cher au m\u00b2). On borne alors les
+    // ajustements positifs \u00e0 +8 % et on le dit \u00e0 l'utilisateur (biais acqu\u00e9reur assum\u00e9).
+    let _capUpEff=capUp;
+    if(type==="appartement"&&(+state.pieces||0)>=3&&!_roomsBaseUsed){
+      _capUpEff=Math.min(capUp,0.08);
+      rows.push(["Mode prudent : segmentation par typologie impossible (ventes "+state.pieces+" pi\u00e8ces insuffisantes) \u2014 hausses born\u00e9es \u00e0 +8 %",0]);
+    }
+    const dev=effMult-1,d2=Math.max(-capDn,Math.min(_capUpEff,dev>0?dev*0.75:dev*0.85));
+    if(Math.abs(1+d2-effMult)>0.004)rows.push(["Ajustement marginal (born\u00e9 +"+Math.round(_capUpEff*100)+" %/\u2212"+Math.round(capDn*100)+" % par la dispersion locale)",1+d2-effMult]);
     effMult=1+d2;
   }
   const sqmAdj=sqm*effMult;
@@ -3123,7 +3155,7 @@ function priceFormation(r){
   if(idxDelta){const sub=[];if(ix.qA)sub.push(["Qualit\u00e9",(ix.qA>0?"+":"")+(ix.qA*100).toFixed(1)+" %"]);if(ix.eA)sub.push(["Coup de c\u0153ur","+"+(ix.eA*100).toFixed(1)+" %"]);if(ix.rA)sub.push(["Raret\u00e9","+"+(ix.rA*100).toFixed(1)+" %"]);lines.push({k:"idx",label:"Indices qualit\u00e9 / raret\u00e9 / \u00e9motion",eur:idxDelta,pct:pct(idxDelta),note:"Primes non lin\u00e9aires (excellence, raret\u00e9, coup de c\u0153ur)",sub});}
   if(dynDelta)lines.push({k:"dyn",label:"Dynamique de march\u00e9",eur:dynDelta,pct:pct(dynDelta),note:(dyn.real?"Tendance r\u00e9elle DVF":"Tendance")+" \u2014 momentum prospectif"});
   if(geoDelta)lines.push({k:"geo",label:"Micro-localisation",eur:geoDelta,pct:pct(geoDelta),note:"Transports, \u00e9coles, commerces, air, risques (au sein de la commune)"});
-  if(r.finalCap)lines.push({k:"capfinal",label:"Garde-fou final (\u00b120 % m\u00e9diane DVF)",eur:r.finalCap,pct:pct(r.finalCap),note:"Bornage final autour de la m\u00e9diane pond\u00e9r\u00e9e des ventes r\u00e9elles"});
+  if(r.finalCap)lines.push({k:"capfinal",label:"Garde-fou final (+"+(r.finalCapHiPct||20)+" %/\u221220 % m\u00e9diane DVF)",eur:r.finalCap,pct:pct(r.finalCap),note:"Bornage final autour de la m\u00e9diane pond\u00e9r\u00e9e des ventes r\u00e9elles"});
   lines.push({k:"final",label:"Estimation finale",eur:r.price,pct:pct(r.price),final:true,note:eur0(r.sqm||0)+" \u20ac/m\u00b2"});
   return lines;
 }
@@ -3644,7 +3676,12 @@ function geoValue(r){
   const e=state.enrich;if(!e||!Object.keys(e).length)return{adj:0,score:null,rows:[]};
   const sc=enrichScore(e);const rows=[];let adj=0;
   // Fix6 : plafond geoAdj symétrique ±6% (was +7%/-6%)
-  if(sc!=null){adj=Math.max(-0.06,Math.min(0.06,(sc-60)/100*0.15));rows.push(["Micro-localisation",sc,adj]);}
+  if(sc!=null){adj=Math.max(-0.06,Math.min(0.06,(sc-60)/100*0.15));
+    // Fix16 — scope bbox : les ventes comparables (\u2264 1 km) refl\u00e8tent d\u00e9j\u00e0 la
+    // micro-localisation ; une prime positive suppl\u00e9mentaire = double comptage haussier.
+    // Seuls les malus sont conserv\u00e9s (prudence asym\u00e9trique c\u00f4t\u00e9 acqu\u00e9reur).
+    if(state.dvfScope==="bbox"&&adj>0){adj=0;rows.push(["Micro-localisation d\u00e9j\u00e0 int\u00e9gr\u00e9e aux ventes \u2264 1 km (pas de double comptage)",sc,0]);}
+    else rows.push(["Micro-localisation",sc,adj]);}
   const radon=(state.live&&state.live.radon)||0;
   if(radon>=3){adj-=0.015;rows.push(["Potentiel radon \u00e9lev\u00e9",null,-0.015]);}
   adj=Math.max(-0.08,Math.min(0.08,adj));
@@ -3685,7 +3722,11 @@ function applyFinalDvfCap(r){
   // Fix13 : garde-fou centré sur la base typologique (westGRooms) quand disponible
   const _westRef=r.realStats.westGRooms||r.realStats.west||r.realStats.med;
   const ref=_westRef*(r.surface||1)*_vcFactor;if(!ref)return;
-  const lo=Math.round(ref*0.80),hi=Math.round(ref*1.20),p0=r.price,p=Math.max(lo,Math.min(hi,p0));
+  // Fix16 — ancre geolocalisee fiable (scope bbox) : plafond haussier resserre a +15 %
+  // (biais acquereur assume), plancher inchange -20 %. Scope commune : \u00b120 % conserve.
+  const _hiF=state.dvfScope==="bbox"?1.15:1.20;
+  r.finalCapHiPct=Math.round((_hiF-1)*100);
+  const lo=Math.round(ref*0.80),hi=Math.round(ref*_hiF),p0=r.price,p=Math.max(lo,Math.min(hi,p0));
   if(p!==p0){r.finalCap=p-p0;r.price=p;r.sqm=Math.round(p/(r.surface||1));r.low=p*(1-r.spread);r.high=p*(1+r.spread);}
 }
 function applyGeoDyn(r){
