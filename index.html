@@ -1271,8 +1271,14 @@ const USER_PROXY="";
 const CORS_PROXIES=(USER_PROXY?[USER_PROXY]:[]).concat(["https://corsproxy.io/?url=","https://api.allorigins.win/raw?url=","https://api.codetabs.com/v1/proxy/?quest=","https://thingproxy.freeboard.io/fetch/"]);
 function fetchT(url,ms){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);return fetch(url,{signal:c.signal}).finally(()=>clearTimeout(t));}
 /* Cache des reponses reseau : evite de refaire une requete identique dans la meme session.
- * Cle = URL. Duree de vie = la session (les donnees publiques changent peu en cours d'usage). */
+ * Cle = URL. Duree de vie = la session (les donnees publiques changent peu en cours d'usage).
+ * Fix14 : les echecs reseau (null) ne sont PAS mis en cache → un echec transitoire
+ * ne bloque pas les tentatives suivantes (scope bbox pouvait echouer definitiv.). */
 const _netCache=new Map();
+/* Cache des resultats DVF interpretes, au-dessus du cache URL.
+ * Garantit la consistance entre consultations successives de biens sauvegardes.
+ * Cle = "bbox_lat_lon_type" ou "comm_insee_type". */
+const _dvfResultCache=new Map();
 /* Proxies dont on sait qu'ils repondent : on les privilegie aux suivants. */
 const _proxyOK=new Set();
 
@@ -1306,7 +1312,7 @@ async function dvfFetch(url){
     await new Promise(r=>setTimeout(r,400));
     try{ out=await one(url,7000); }catch(_){}
   }
-  _netCache.set(url,out);
+  if(out)_netCache.set(url,out); // Fix14 : null non mis en cache
   return out;
 }
 async function fetchLive(coord){
@@ -1678,15 +1684,33 @@ async function fetchCommuneMedian(insee,type){
 }
 async function fetchDvf(coord,type){
   if(!coord||!coord.insee)return {pts:null,status:"no-conn"};
+  // Fix14 — cache resultat DVF : garantit la coherence entre consultations successives
+  // d'un meme bien sauvegarde quelle que soit l'ordre de navigation.
+  const _cacheKey=(coord.lat!=null&&coord.lon!=null)
+    ?`bbox_${Math.round(coord.lat*500)}_${Math.round(coord.lon*500)}_${type}`
+    :`comm_${coord.insee}_${type}`;
+  if(_dvfResultCache.has(_cacheKey)){
+    if(DEBUG)dbg("DVF cache hit : "+_cacheKey);
+    return _dvfResultCache.get(_cacheKey);
+  }
+  const _storeAndReturn=r=>{_dvfResultCache.set(_cacheKey,r);return r;};
   if(coord.lat!=null&&coord.lon!=null){
-    try{
-      const dLat=0.0099,dLon=0.0099; // largeur/hauteur <= 0.0198 deg : limite in_bbox de l'API apidf (rayon ~0,8-1,1 km)
-      const bbox=[(coord.lon-dLon).toFixed(5),(coord.lat-dLat).toFixed(5),(coord.lon+dLon).toFixed(5),(coord.lat+dLat).toFixed(5)].join(",");
-      const gBase=DVF_BASE.replace("/mutations/","/geomutations/")+`?in_bbox=${bbox}&page_size=500`;
-      if(DEBUG)dbg("DVF bbox URL: "+gBase);
-      const g1=await dvfFetch(gBase);
-      if(!g1&&DEBUG)dbg("DVF bbox: relais KO -> repli commune");
-      if(g1&&g1.json){
+    // Fix14 — retry bbox : jusqu'a 3 tentatives avant repli commune.
+    // Corrige le cas ou un echec reseau transitoire fait definitivement basculer
+    // en scope communal (donnees moins precises, biais de mix typologique plus fort).
+    const dLat=0.0099,dLon=0.0099;
+    const bbox=[(coord.lon-dLon).toFixed(5),(coord.lat-dLat).toFixed(5),(coord.lon+dLon).toFixed(5),(coord.lat+dLat).toFixed(5)].join(",");
+    const gBase=DVF_BASE.replace("/mutations/","/geomutations/")+`?in_bbox=${bbox}&page_size=500`;
+    for(let attempt=0;attempt<3;attempt++){
+      try{
+        if(attempt>0){
+          // Purge l'eventuelle entree null du cache URL avant de retenter
+          _netCache.delete(gBase);
+          await new Promise(r=>setTimeout(r,600*attempt));
+          if(DEBUG)dbg(`DVF bbox retry ${attempt}/2`);
+        }else if(DEBUG)dbg("DVF bbox URL: "+gBase);
+        const g1=await dvfFetch(gBase);
+        if(!g1){if(DEBUG)dbg(`DVF bbox tentative ${attempt+1}: echec reseau`);continue;}
         const gcount=g1.json.count||0;let garr;
         if(gcount>500){
           const last=Math.ceil(gcount/500),pages=[last,last-1,last-2].filter(p=>p>=1);
@@ -1695,10 +1719,11 @@ async function fetchDvf(coord,type){
           if(!garr.length)garr=extractArr(g1.json);
         }else garr=extractArr(g1.json);
         const _gres=type==="terrain"?{pts:parsePtsTerrain(garr),nNeuf:0,nTotal:0,natSeen:false}:parsePts(garr,type);
-        if(DEBUG)dbg("DVF bbox ~1 km : "+(gcount||garr.length)+" mutations, "+_gres.pts.length+" anciennes exploitables"+(_gres.nNeuf>0?" ("+_gres.nNeuf+" VEFA exclus)":""));
-        if(_gres.pts.length>=30)return{pts:_gres.pts,ptsNeuf:_gres.ptsNeuf||[],nNeuf:_gres.nNeuf,nTotal:_gres.nTotal,natSeen:_gres.natSeen,status:"ok",scope:"bbox"};
-      }
-    }catch(_){/* repli commune */}
+        if(DEBUG)dbg(`DVF bbox ~1 km (tentative ${attempt+1}) : `+(gcount||garr.length)+" mutations, "+_gres.pts.length+" anciennes exploitables"+(_gres.nNeuf>0?" ("+_gres.nNeuf+" VEFA exclus)":""));
+        if(_gres.pts.length>=30)return _storeAndReturn({pts:_gres.pts,ptsNeuf:_gres.ptsNeuf||[],nNeuf:_gres.nNeuf,nTotal:_gres.nTotal,natSeen:_gres.natSeen,status:"ok",scope:"bbox"});
+      }catch(_){if(DEBUG)dbg(`DVF bbox tentative ${attempt+1}: exception -> `+_);}
+    }
+    if(DEBUG)dbg("DVF bbox: 3 tentatives epuisees -> repli commune");
   }
   const _btnP=$("btnEstim"),_setP=t=>{if(_btnP&&_btnP.disabled)_btnP.textContent=t;};
   const base=`${DVF_BASE}?code_insee=${coord.insee}&page_size=500`;
@@ -1724,7 +1749,8 @@ async function fetchDvf(coord,type){
   }else arr=extractArr(r1.json);
   const _res=type==="terrain"?{pts:parsePtsTerrain(arr),nNeuf:0,nTotal:0,natSeen:false}:parsePts(arr,type);
   if(DEBUG)dbg("Ventes "+type+" anciennes exploitables: "+_res.pts.length+(_res.nNeuf>0?" ("+_res.nNeuf+" VEFA exclus)":""));
-  return _res.pts.length>0?{pts:_res.pts,ptsNeuf:_res.ptsNeuf||[],nNeuf:_res.nNeuf,nTotal:_res.nTotal,natSeen:_res.natSeen,status:"ok",scope:"commune"}:{pts:null,status:"no-data"};
+  const _commRes=_res.pts.length>0?{pts:_res.pts,ptsNeuf:_res.ptsNeuf||[],nNeuf:_res.nNeuf,nTotal:_res.nTotal,natSeen:_res.natSeen,status:"ok",scope:"commune"}:{pts:null,status:"no-data"};
+  return _storeAndReturn(_commRes);
 }
 
 /* ===== Estimation ===== */
@@ -4386,6 +4412,16 @@ async function showResults(){
   const surface=state.type==="terrain"?numv("terrain"):numv("surface");
   if(!($("adresse").value||"").trim()){err.textContent="Saisissez l'adresse du bien, puis choisissez une suggestion.";err.classList.add("show");$("adresse").focus();return;}
   if(!surface||surface<=0){err.textContent="Renseignez une surface valide.";err.classList.add("show");return;}
+  // Fix14 : clic explicite = donnees DVF fraiches pour ce bien.
+  // Le cache DVF est invalide uniquement pour le bien courant (pas pour les autres biens
+  // sauvegardes qui conservent leur coherence dans la session).
+  if(state.coord){
+    const _ft=state.type||"appt";
+    const _ck=state.coord.lat!=null
+      ?`bbox_${Math.round(state.coord.lat*500)}_${Math.round(state.coord.lon*500)}_${_ft}`
+      :`comm_${state.coord.insee}_${_ft}`;
+    _dvfResultCache.delete(_ck);
+  }
   // Empecher les double-clics : une seule estimation a la fois
   if(_estimRunning)return;
   _estimRunning=true;
