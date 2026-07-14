@@ -1558,6 +1558,18 @@ function dvfStats(pts,subjSurf,subjRooms){
   // que T2/T3 ; sans segmentation la base est systématiquement trop haute pour les grands biens.
   // Seuil 15 ventes typées = équilibre robustesse/précision.
   // Si insuffisant → null → fallback westG (comportement v97).
+  // Fix17 — westSurfStrict : m\u00e9diane pond\u00e9r\u00e9e (r\u00e9cence) des seules ventes de surface
+  // PROCHE (\u00b125 % : [0.78 ; 1.28]\u00d7surface). Proxy typologique par la surface, robuste
+  // m\u00eame quand l'API n'expose aucun champ de pi\u00e8ces. Un T4 de 68 m\u00b2 est ainsi compar\u00e9
+  // aux 54\u201387 m\u00b2 (T3/T4) et plus jamais aux studios \u00e9tudiants \u00e0 fort prix/m\u00b2.
+  let westSurfStrict=null,strictCount=0;
+  if(subjSurf>0){
+    const strict=clean.filter(p=>p.surf>=subjSurf*0.78&&p.surf<=subjSurf*1.28);
+    if(strict.length>=12){
+      strictCount=strict.length;
+      westSurfStrict=Math.round(weightedMedian(strict.map(p=>({ppm:p.ppm,w:wRec(p)}))));
+    }
+  }
   let westGRooms=null,roomsLoose=false,typedCount=0;
   if(subjRooms&&subjRooms>0&&clean.length>=10){
     let roomMatch=clean.filter(p=>p.rooms&&Math.abs(p.rooms-subjRooms)<=0.5);
@@ -1583,7 +1595,7 @@ function dvfStats(pts,subjSurf,subjRooms){
     const hq=scored.filter(x=>x.s>=0.70).map(x=>x.ppm).sort((a,b)=>a-b);
     if(hq.length>=10){const hq1=quantile(hq,0.25),hq3=quantile(hq,0.75);const hqMed=quantile(hq,0.5);spreadHQ=hqMed>0?+((hq3-hq1)/2/hqMed).toFixed(3):null;}
   }
-  return{n:clean.length,removed:pts.length-clean.length,clean,mean,med:quantile(cp,0.5),west:Math.round(westG),westRec:Math.round(west),westGRooms,roomsLoose,typedCount,q1:quantile(cp,0.25),q3:quantile(cp,0.75),p10:quantile(cp,0.10),p90:quantile(cp,0.90),sd,min:cp[0]||0,max:cp[cp.length-1]||0,yMin:yr.length?Math.min.apply(null,yr):null,yMax:ymax||null,spreadHQ};
+  return{n:clean.length,removed:pts.length-clean.length,clean,mean,med:quantile(cp,0.5),west:Math.round(westG),westRec:Math.round(west),westGRooms,roomsLoose,typedCount,westSurfStrict,strictCount,q1:quantile(cp,0.25),q3:quantile(cp,0.75),p10:quantile(cp,0.10),p90:quantile(cp,0.90),sd,min:cp[0]||0,max:cp[cp.length-1]||0,yMin:yr.length?Math.min.apply(null,yr):null,yMax:ymax||null,spreadHQ};
 }
 async function enrichDvfDpe(pts){
   if(!pts||!pts.length)return;
@@ -1749,6 +1761,8 @@ async function fetchDvf(coord,type){
           if(!garr.length)garr=extractArr(g1.json);
         }else garr=extractArr(g1.json);
         const _gres=type==="terrain"?{pts:parsePtsTerrain(garr),nNeuf:0,nTotal:0,natSeen:false}:parsePts(garr,type);
+        if(DEBUG&&garr[0])dbg("Champs mutation API: "+Object.keys(garr[0]).join(", "));
+        if(DEBUG&&_gres.pts){const _nr=_gres.pts.filter(p=>p.rooms>0).length;dbg("Pi\u00e8ces renseign\u00e9es: "+_nr+"/"+_gres.pts.length+" ventes");}
         if(DEBUG)dbg(`DVF bbox ~1 km (tentative ${attempt+1}) : `+(gcount||garr.length)+" mutations, "+_gres.pts.length+" anciennes exploitables"+(_gres.nNeuf>0?" ("+_gres.nNeuf+" VEFA exclus)":""));
         if(_gres.pts.length>=12)return _storeAndReturn({pts:_gres.pts,ptsNeuf:_gres.ptsNeuf||[],nNeuf:_gres.nNeuf,nTotal:_gres.nTotal,natSeen:_gres.natSeen,status:"ok",scope:"bbox"});
         if(DEBUG)dbg("DVF bbox: <12 ventes exploitables malgre reponse valide -> repli commune (zone reellement peu dense)");
@@ -2141,11 +2155,19 @@ function estimate(realBase,realStats){
   // La correction rooms (±5 %) via effMult reste comme garde-fou si westGRooms indisponible.
   const _wgR=(realBase&&realStats&&realStats.westGRooms)||null;
   const _roomsBaseUsed=!!_wgR;
-  const _effectiveBase=_wgR||realBase;
+  // Fix17 — sans segmentation pi\u00e8ces : ancre = min(base, m\u00e9diane surface \u00b125 %).
+  // Le min() est volontairement conservateur (mission acqu\u00e9reur : jamais sur\u00e9valuer).
+  const _wss=(!_wgR&&realBase&&realStats&&realStats.westSurfStrict)?realStats.westSurfStrict:null;
+  const _surfBaseUsed=!!(_wss&&_wss<realBase);
+  const _effectiveBase=_wgR||(_surfBaseUsed?_wss:realBase);
   const {sqm,conf}=_effectiveBase?{sqm:_effectiveBase,conf:"\u00e9lev\u00e9e"}:baseSqm(city,cp,type);
   const ctx=marketCtx(_effectiveBase||realBase);
   const {mult,rows,detail}=coefficients(ctx,realBase,realStats);
   let effMult=mult;
+  if(_surfBaseUsed){
+    const _g2=Math.round((_effectiveBase/realBase-1)*100);
+    rows.push(["Base recentr\u00e9e sur les surfaces proches (\u00b125 %) : "+eur0(_effectiveBase)+" \u20ac/m\u00b2 (vs mix toutes surfaces "+eur0(realBase)+" \u20ac/m\u00b2"+(_g2?", "+_g2+" %":"")+", "+(realStats.strictCount||0)+" ventes)",_effectiveBase/realBase-1]);
+  }
   if(_roomsBaseUsed&&realBase&&realStats.westGRooms){
     const _gap=Math.round((_effectiveBase/realBase-1)*100);
     rows.push(["Base segment\u00e9e "+state.pieces+" pi\u00e8ces"+(realStats.roomsLoose?" (\u00b11 pi\u00e8ce)":"")+" : "+eur0(_effectiveBase)+" \u20ac/m\u00b2 (vs mix toutes typologies "+eur0(realBase)+" \u20ac/m\u00b2"+(_gap?", "+(_gap>0?"+":"")+_gap+" %":"")+", "+(realStats.typedCount||0)+" ventes typ\u00e9es)",_effectiveBase/realBase-1]);
@@ -2201,7 +2223,7 @@ function estimate(realBase,realStats){
     // grandes surfaces (les petites se vendent plus cher au m\u00b2). On borne alors les
     // ajustements positifs \u00e0 +8 % et on le dit \u00e0 l'utilisateur (biais acqu\u00e9reur assum\u00e9).
     let _capUpEff=capUp;
-    if(type==="appartement"&&(+state.pieces||0)>=3&&!_roomsBaseUsed){
+    if(type==="appartement"&&(+state.pieces||0)>=3&&!_roomsBaseUsed&&!_surfBaseUsed){
       _capUpEff=Math.min(capUp,0.08);
       rows.push(["Mode prudent : segmentation par typologie impossible (ventes "+state.pieces+" pi\u00e8ces insuffisantes) \u2014 hausses born\u00e9es \u00e0 +8 %",0]);
     }
@@ -2213,7 +2235,7 @@ function estimate(realBase,realStats){
   const od=outdoorValue(sqmAdj,ctx,!!realBase);
   const dyn=computeDynamics(city,cp);
   let price=sqmAdj*surface+od.val;
-  if(realBase){const _e=price/surface,_cap=Math.max(realBase*0.75,Math.min(realBase*1.25,_e));price=_cap*surface;}
+  if(realBase){const _ref25=_effectiveBase||realBase;const _e=price/surface,_cap=Math.max(_ref25*0.75,Math.min(_ref25*1.25,_e));price=_cap*surface;}
   const effSqm=price/surface;
   let spread=realBase?0.05:conf==="\u00e9lev\u00e9e"?0.06:conf==="moyenne"?0.10:0.14;
   spread=Math.min(0.16,Math.max(0.05,spread-(detail||0)*0.004));
@@ -3719,8 +3741,11 @@ function applyFinalDvfCap(r){
   // Fix1 : appliquer le facteur VEFA au référentiel DVF du cap final
   // (quand natSeen=false, realStats.west reste contaminé par les VEFA non filtrées)
   const _vcFactor=r.vefaCorr?r.vefaCorr.factor:1;
-  // Fix13 : garde-fou centré sur la base typologique (westGRooms) quand disponible
-  const _westRef=r.realStats.westGRooms||r.realStats.west||r.realStats.med;
+  // Fix13/17 : garde-fou centr\u00e9 sur la base typologique (pi\u00e8ces) sinon sur
+  // min(m\u00e9diane pond\u00e9r\u00e9e, m\u00e9diane surface \u00b125 %) \u2014 ancre conservatrice acqu\u00e9reur.
+  const _w0=r.realStats.west||r.realStats.med;
+  const _wss2=r.realStats.westSurfStrict;
+  const _westRef=r.realStats.westGRooms||((_wss2&&_wss2<_w0)?_wss2:_w0);
   const ref=_westRef*(r.surface||1)*_vcFactor;if(!ref)return;
   // Fix16 — ancre geolocalisee fiable (scope bbox) : plafond haussier resserre a +15 %
   // (biais acquereur assume), plancher inchange -20 %. Scope commune : \u00b120 % conserve.
@@ -4126,6 +4151,7 @@ async function fetchAllData(coord){
       out.vefaInfo={nNeuf:res.nNeuf||0,nTotal:res.nTotal||0,natSeen:!!res.natSeen};
       out.ptsVefa=res.ptsNeuf||[];
       out.realStats=dvfStats(band,surf>0?surf:null,+state.pieces||0);
+      if(DEBUG&&out.realStats)dbg("Stats: west="+out.realStats.west+" | westSurfStrict="+(out.realStats.westSurfStrict||"n/a")+" ("+(out.realStats.strictCount||0)+" ventes \u00b125%) | westGRooms="+(out.realStats.westGRooms||"n/a")+" ("+(out.realStats.typedCount||0)+" typ\u00e9es"+(out.realStats.roomsLoose?", \u00b11p":"")+")");
       out.engineData=estimationEngines(out.realStats.clean,surf,out.realStats);
       out.realBase=out.engineData.base||out.realStats.west||Math.round(out.realStats.med);
       if(state.dvfScope==="bbox")try{await _withTimeout(enrichDvfDpe(out.realPts),4000,null);}catch(_){}
