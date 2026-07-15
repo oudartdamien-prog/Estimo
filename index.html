@@ -1646,14 +1646,31 @@ function parsePts(arr,type){
     let s=Number(recVal(o,[want==="maison"?"sbatmai":"sbatapt"]))||Number(recVal(o,["sbati","surface_reelle_bati","surface_bati"]));
     if(!v||!s||s<9)return;
     if(typ&&typ.indexOf(want)<0)return;
+    // Fix18 — typologie fine DVF+ (codtypbien, doc Cerema) quand disponible :
+    //   121xx = UN appartement · 111x = UNE maison (ventes mono-logement, ppm fiable)
+    //   1214 / 1114 = usage exclusivement professionnel -> exclu du corpus habitation
+    const _ctb=String(recVal(o,["codtypbien"])||"");
+    if(_ctb){
+      if(want==="appartement"&&_ctb.slice(0,3)!=="121")return;   // exclut lots multiples (122x)
+      if(want==="maison"&&_ctb.slice(0,3)!=="111")return;        // exclut maisons multiples (112)
+      if(_ctb.slice(0,4)==="1214"||_ctb.slice(0,4)==="1114")return;
+    }
     const ppm=v/s;if(ppm<300||ppm>40000)return;
     // ─── Détection VEFA (Vente en l'État Futur d'Achèvement = neuf) ───────────
     // Le champ libnatmut / natmut contient la nature de la mutation (DVF Cerema DV3F).
     // Si présent et indique "futur" ou "vefa" → vente en VEFA → EXCLURE du corpus ancien.
     // Les VEFA sont 20-40 % plus chers que l'ancien et contaminent sinon la médiane de référence.
     const _nat=String(recVal(o,["libnatmut","nature_mutation","natmut","codnature"])||"").toLowerCase();
-    if(_nat.length>0)natSeen=true;
-    const _isVefa=_nat.length>0&&(_nat.indexOf("futur")>=0||_nat.indexOf("vefa")>=0||_nat.indexOf("\u00e9tat futur")>=0);
+    // Fix18 — trois d\u00e9tecteurs compl\u00e9mentaires du neuf, tous issus de champs API r\u00e9els :
+    //   1) libnatmut contient "futur"/"vefa" (acte VEFA classique)
+    //   2) champ bool\u00e9en vefa = true (expos\u00e9 par geomutations/mutations)
+    //   3) codtypbien 1211x (UN APPARTEMENT VEFA OU NEUF) / 1111 (MAISON VEFA OU NEUF)
+    //      -> capte le neuf vendu juste apr\u00e8s ach\u00e8vement par acte ordinaire (doc Cerema)
+    const _vefaField=String(o.vefa!=null?o.vefa:"").toLowerCase();
+    const _vefaBool=_vefaField==="true"||_vefaField==="t"||_vefaField==="1"||o.vefa===true;
+    const _ctbNeuf=_ctb.slice(0,4)==="1211"||_ctb.slice(0,4)==="1111";
+    if(_nat.length>0||o.vefa!=null||_ctb)natSeen=true;
+    const _isVefa=(_nat.length>0&&(_nat.indexOf("futur")>=0||_nat.indexOf("vefa")>=0||_nat.indexOf("\u00e9tat futur")>=0))||_vefaBool||_ctbNeuf;
     if(_isVefa){
       const _lat8v=(o._lat!=null?o._lat:null)||(recVal(o,['lat','latitude','lat_centparce','y_centroid'])||null);
       const _lon8v=(o._lon!=null?o._lon:null)||(recVal(o,['lon','longitude','lng','lon_centparce','x_centroid'])||null);
@@ -1763,6 +1780,7 @@ async function fetchDvf(coord,type){
         const _gres=type==="terrain"?{pts:parsePtsTerrain(garr),nNeuf:0,nTotal:0,natSeen:false}:parsePts(garr,type);
         if(DEBUG&&garr[0])dbg("Champs mutation API: "+Object.keys(garr[0]).join(", "));
         if(DEBUG&&_gres.pts){const _nr=_gres.pts.filter(p=>p.rooms>0).length;dbg("Pi\u00e8ces renseign\u00e9es: "+_nr+"/"+_gres.pts.length+" ventes");}
+        if(DEBUG)dbg("Neuf exclu (libnatmut+vefa+codtypbien): "+_gres.nNeuf+"/"+_gres.nTotal+" ventes");
         if(DEBUG)dbg(`DVF bbox ~1 km (tentative ${attempt+1}) : `+(gcount||garr.length)+" mutations, "+_gres.pts.length+" anciennes exploitables"+(_gres.nNeuf>0?" ("+_gres.nNeuf+" VEFA exclus)":""));
         if(_gres.pts.length>=12)return _storeAndReturn({pts:_gres.pts,ptsNeuf:_gres.ptsNeuf||[],nNeuf:_gres.nNeuf,nTotal:_gres.nTotal,natSeen:_gres.natSeen,status:"ok",scope:"bbox"});
         if(DEBUG)dbg("DVF bbox: <12 ventes exploitables malgre reponse valide -> repli commune (zone reellement peu dense)");
@@ -2514,7 +2532,7 @@ function renderDvfStats(r){
      cell("Fourchette 50 % (Q1\u2013Q3)",f(s.q1)+"\u2013"+f(s.q3),"\u20ac/m\u00b2")+
    `</div>`+
    // Stats surfaces sur tous les pts (pas seulement comparable)
-   +(()=>{
+   (()=>{
      const sPts=(r.realPts||[]).filter(p=>p.surf>0);if(!sPts.length)return'';
      const surfs=sPts.map(p=>p.surf).sort((a,b)=>a-b);
      const avgSurf=Math.round(surfs.reduce((s,v)=>s+v,0)/surfs.length);
