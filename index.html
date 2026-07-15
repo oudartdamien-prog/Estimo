@@ -4553,7 +4553,7 @@ function setupAsyncCallbacks(r,enrichPromise,ctxProm){
 /* Garde-fou : empeche une estimation de rester bloquee si une API publique ne repond pas.
  * Le bouton est TOUJOURS restaure (try/finally), et un timeout global borne l'attente. */
 let _estimRunning=false;
-const ESTIM_TIMEOUT_MS=45000; // filet de securite ultime : chaque etape a deja son propre timeout (Fix15 : releve pour laisser plus de temps aux serveurs DVF)
+const ESTIM_TIMEOUT_MS=30000; // filet de securite ultime (ref v100) : au-dela, relance manuelle. Chaque etape a deja son propre timeout.
 
 function _withTimeout(promise,ms,fallback){
   return Promise.race([
