@@ -1566,7 +1566,7 @@ function dvfStats(pts,subjSurf,subjRooms){
   //     → la médiane pondérée est tirée vers le haut par la contamination récente
   //  c) solution : médiane NON pondérée + IQR local 1.0× (plus strict que le global 1.5×)
   //     pour éliminer les outliers haute-gamme concentrés dans la fenêtre de surface
-  let westSurfStrict=null,strictCount=0,westSurfW=null;
+  let westSurfStrict=null,westSurfP40=null,westSurfPct=0.40,strictCount=0,westSurfW=null;
   if(subjSurf>0){
     const strict=clean.filter(p=>p.surf>=subjSurf*0.78&&p.surf<=subjSurf*1.28);
     if(strict.length>=12){
@@ -1576,9 +1576,22 @@ function dvfStats(pts,subjSurf,subjRooms){
       const strictC=siqr>0?strict.filter(p=>p.ppm>=sq1-siqr&&p.ppm<=sq3+siqr):strict;
       if(strictC.length>=10){
         strictCount=strictC.length;
-        // Médiane non pondérée (toutes années poids identique → résistante au neuf récent)
-        westSurfStrict=Math.round(median(strictC.map(p=>p.ppm)));
-        // Médiane pondérée conservée pour debug uniquement (ne sert plus de base)
+        const _ppmsC=strictC.map(p=>p.ppm).sort((a,b)=>a-b);
+        // P50 (médiane non pondérée) — résistante au neuf récent
+        westSurfStrict=Math.round(median(_ppmsC));
+        // Fix21 — percentile ADAPTATIF (biais acquéreur, outil ACHETEUR) :
+        // plus le corpus de surface est dispersé (Q3-Q1)/médiane élevé = plus il mêle
+        // de l'ancien et du neuf non détectable = plus on descend le percentile.
+        //   dispersion <0.25 (homogène)   → P45
+        //   0.25-0.35                      → P42
+        //   0.35-0.45 (SMH : 0.39)         → P38
+        //   >0.45 (très hétérogène)        → P34
+        // Général et auto-calibré : aucune constante propre à une commune.
+        const _sq1w=quantile(_ppmsC,0.25),_sMedw=median(_ppmsC),_sDisp=_sMedw>0?(quantile(_ppmsC,0.75)-_sq1w)/_sMedw:0.30;
+        const _pctAdapt=_sDisp<0.25?0.45:_sDisp<0.35?0.42:_sDisp<0.45?0.38:0.34;
+        westSurfP40=Math.round(quantile(_ppmsC,_pctAdapt));
+        westSurfPct=_pctAdapt;
+        // P50 pondéré récence — conservé pour diagnostic uniquement
         westSurfW=Math.round(weightedMedian(strictC.map(p=>({ppm:p.ppm,w:wRec(p)}))));
       }
     }
@@ -1608,7 +1621,7 @@ function dvfStats(pts,subjSurf,subjRooms){
     const hq=scored.filter(x=>x.s>=0.70).map(x=>x.ppm).sort((a,b)=>a-b);
     if(hq.length>=10){const hq1=quantile(hq,0.25),hq3=quantile(hq,0.75);const hqMed=quantile(hq,0.5);spreadHQ=hqMed>0?+((hq3-hq1)/2/hqMed).toFixed(3):null;}
   }
-  return{n:clean.length,removed:pts.length-clean.length,clean,mean,med:quantile(cp,0.5),west:Math.round(westG),westRec:Math.round(west),westGRooms,roomsLoose,typedCount,westSurfStrict,strictCount,westSurfW,q1:quantile(cp,0.25),q3:quantile(cp,0.75),p10:quantile(cp,0.10),p90:quantile(cp,0.90),sd,min:cp[0]||0,max:cp[cp.length-1]||0,yMin:yr.length?Math.min.apply(null,yr):null,yMax:ymax||null,spreadHQ};
+  return{n:clean.length,removed:pts.length-clean.length,clean,mean,med:quantile(cp,0.5),west:Math.round(westG),westRec:Math.round(west),westGRooms,roomsLoose,typedCount,westSurfStrict,westSurfP40,westSurfPct,strictCount,westSurfW,q1:quantile(cp,0.25),q3:quantile(cp,0.75),p10:quantile(cp,0.10),p90:quantile(cp,0.90),sd,min:cp[0]||0,max:cp[cp.length-1]||0,yMin:yr.length?Math.min.apply(null,yr):null,yMax:ymax||null,spreadHQ};
 }
 async function enrichDvfDpe(pts){
   if(!pts||!pts.length)return;
@@ -2186,18 +2199,26 @@ function estimate(realBase,realStats){
   // La correction rooms (±5 %) via effMult reste comme garde-fou si westGRooms indisponible.
   const _wgR=(realBase&&realStats&&realStats.westGRooms)||null;
   const _roomsBaseUsed=!!_wgR;
-  // Fix17 — sans segmentation pi\u00e8ces : ancre = min(base, m\u00e9diane surface \u00b125 %).
-  // Le min() est volontairement conservateur (mission acqu\u00e9reur : jamais sur\u00e9valuer).
+  // Fix20-C — ancre surface : P40 en mode prudent (T≥3 sans données typologiques),
+  // P50 sinon (T1/T2 ou segmentation disponible). Justification P40 :
+  //  a) corpus ±25% mêle T2 (plus chers/m²) et T3/T4 sans pouvoir les séparer
+  //  b) contamination neuf non détectable par les 3 filtres (vefa/codtypbien/libnatmut)
+  //  c) 60 % des ventes restent plus chères → valeur conservative acquéreur T4
   const _wss=(!_wgR&&realBase&&realStats&&realStats.westSurfStrict)?realStats.westSurfStrict:null;
-  const _surfBaseUsed=!!(_wss&&_wss<realBase);
-  const _effectiveBase=_wgR||(_surfBaseUsed?_wss:realBase);
+  const _wssP40=(!_wgR&&type==="appartement"&&(+state.pieces||0)>=3&&realStats&&realStats.westSurfP40)?realStats.westSurfP40:null;
+  // P40 < P50 par construction → conservateur ; P40 disponible ssi >10 ventes dans la fenêtre
+  const _activeWss=(_wssP40&&_wssP40<(_wss||Infinity))?_wssP40:_wss;
+  const _surfBaseUsed=!!(_activeWss&&_activeWss<realBase);
+  const _effectiveBase=_wgR||(_surfBaseUsed?_activeWss:realBase);
   const {sqm,conf}=_effectiveBase?{sqm:_effectiveBase,conf:"\u00e9lev\u00e9e"}:baseSqm(city,cp,type);
   const ctx=marketCtx(_effectiveBase||realBase);
   const {mult,rows,detail}=coefficients(ctx,realBase,realStats);
   let effMult=mult;
   if(_surfBaseUsed){
     const _g2=Math.round((_effectiveBase/realBase-1)*100);
-    rows.push(["Base recentr\u00e9e sur les surfaces proches (\u00b125 %) : "+eur0(_effectiveBase)+" \u20ac/m\u00b2 (vs mix toutes surfaces "+eur0(realBase)+" \u20ac/m\u00b2"+(_g2?", "+_g2+" %":"")+", "+(realStats.strictCount||0)+" ventes)",_effectiveBase/realBase-1]);
+    const _pctShown=realStats.westSurfPct?Math.round(realStats.westSurfPct*100):40;
+    const _pLbl=_activeWss===_wssP40?"P"+_pctShown+" adaptatif (biais acqu\u00e9reur \u2014 "+(100-_pctShown)+" % des ventes comparables sont plus ch\u00e8res)":"P50 (m\u00e9diane)";
+    rows.push(["Base surface \u00b125 % – "+_pLbl+" : "+eur0(_effectiveBase)+" \u20ac/m\u00b2 (vs mix "+eur0(realBase)+" \u20ac/m\u00b2"+(_g2?", "+_g2+" %":"")+", "+(realStats.strictCount||0)+" ventes)",_effectiveBase/realBase-1]);
   }
   if(_roomsBaseUsed&&realBase&&realStats.westGRooms){
     const _gap=Math.round((_effectiveBase/realBase-1)*100);
@@ -2254,13 +2275,15 @@ function estimate(realBase,realStats){
     // grandes surfaces (les petites se vendent plus cher au m\u00b2). On borne alors les
     // ajustements positifs \u00e0 +8 % et on le dit \u00e0 l'utilisateur (biais acqu\u00e9reur assum\u00e9).
     let _capUpEff=capUp;
-    // Fix19-B — mode prudent : s'applique dès qu'il n'y a pas de segmentation typologique,
-    // que la base soit surfacique ou globale. Cap +6 % (scope bbox) ou +8 % (scope commune).
-    // Raison acheteur : sans comparables homogènes, toute hausse hédonique est incertaine.
-    if(type==="appartement"&&(+state.pieces||0)>=3&&!_roomsBaseUsed){
-      const _pruCap=state.dvfScope==="bbox"?0.06:0.08;
-      _capUpEff=Math.min(capUp,_pruCap);
-      rows.push(["Mode prudent (aucune donn\u00e9e typologique disponible) \u2014 hausses born\u00e9es \u00e0 +"+Math.round(_pruCap*100)+" %",0]);
+    // Fix21-B — OUTIL ACHETEUR : en mode prudent (≥3 pièces, aucune donnée typologique),
+    // la hausse hédonique est plafonnée à 0 %. La base percentile-adaptatif EST déjà la
+    // valeur de marché prudente ; toute prime positive par-dessus reviendrait à surévaluer.
+    // Les MALUS (DPE médiocre, risques, altitude…) restent pleinement actifs → asymétrie
+    // conservatrice assumée. C'est la posture d'un évaluateur mandaté par l'acquéreur.
+    const _prudent=type==="appartement"&&(+state.pieces||0)>=3&&!_roomsBaseUsed;
+    if(_prudent){
+      _capUpEff=0;
+      rows.push(["Mode acheteur prudent : aucune donn\u00e9e typologique \u2014 hausses h\u00e9doniques neutralis\u00e9es (malus seuls actifs)",0]);
     }
     const dev=effMult-1,d2=Math.max(-capDn,Math.min(_capUpEff,dev>0?dev*0.75:dev*0.85));
     if(Math.abs(1+d2-effMult)>0.004)rows.push(["Ajustement marginal (born\u00e9 +"+Math.round(_capUpEff*100)+" %/\u2212"+Math.round(capDn*100)+" % par la dispersion locale)",1+d2-effMult]);
@@ -2271,6 +2294,13 @@ function estimate(realBase,realStats){
   const dyn=computeDynamics(city,cp);
   let price=sqmAdj*surface+od.val;
   if(realBase){const _ref25=_effectiveBase||realBase;const _e=price/surface,_cap=Math.max(_ref25*0.75,Math.min(_ref25*1.25,_e));price=_cap*surface;}
+  // Fix21-C — outil ACHETEUR : en mode prudent, plafond dur du prix total.
+  // Outdoor limité à 2 % du prix surface, prix total écrêté à base × surface × 1.03.
+  // Empêche toute dérive haussière résiduelle (cumul outdoor + arrondis + micro-ajustements).
+  if(realBase&&_prudent&&_effectiveBase){
+    const _hardCap=_effectiveBase*surface*1.03;
+    if(price>_hardCap){price=_hardCap;rows.push(["Plafond acheteur : prix total born\u00e9 \u00e0 base\u00d7surface\u00d71,03 (anti-sur\u00e9valuation)",0]);}
+  }
   const effSqm=price/surface;
   let spread=realBase?0.05:conf==="\u00e9lev\u00e9e"?0.06:conf==="moyenne"?0.10:0.14;
   spread=Math.min(0.16,Math.max(0.05,spread-(detail||0)*0.004));
@@ -4186,7 +4216,7 @@ async function fetchAllData(coord){
       out.vefaInfo={nNeuf:res.nNeuf||0,nTotal:res.nTotal||0,natSeen:!!res.natSeen};
       out.ptsVefa=res.ptsNeuf||[];
       out.realStats=dvfStats(band,surf>0?surf:null,+state.pieces||0);
-      if(DEBUG&&out.realStats)dbg("Stats: west="+out.realStats.west+" | westSurfStrict="+(out.realStats.westSurfStrict||"n/a")+"(non pond.) / "+(out.realStats.westSurfW||"n/a")+"(pond.) | "+(out.realStats.strictCount||0)+" ventes \u00b125% apr\u00e8s IQR-local-1x | westGRooms="+(out.realStats.westGRooms||"n/a")+" ("+(out.realStats.typedCount||0)+" typ\u00e9es"+(out.realStats.roomsLoose?", \u00b11p":"")+")");
+      if(DEBUG&&out.realStats)dbg("Stats: west="+out.realStats.west+" | P50="+(out.realStats.westSurfStrict||"n/a")+" Padapt(P"+Math.round((out.realStats.westSurfPct||0.4)*100)+")="+(out.realStats.westSurfP40||"n/a")+" | disp="+(out.realStats.med>0?((out.realStats.q3-out.realStats.q1)/out.realStats.med).toFixed(2):"?")+" | "+(out.realStats.strictCount||0)+" ventes \u00b125% IQR-1x | westGRooms="+(out.realStats.westGRooms||"n/a")+")");
       out.engineData=estimationEngines(out.realStats.clean,surf,out.realStats);
       out.realBase=out.engineData.base||out.realStats.west||Math.round(out.realStats.med);
       if(state.dvfScope==="bbox")try{await _withTimeout(enrichDvfDpe(out.realPts),4000,null);}catch(_){}
@@ -4278,6 +4308,13 @@ function buildEstimation(data){
   const _evo12=(realPts&&realPts.length>0&&realStats)?((()=>{const _t=dvfTrend(realPts);return _t?_t.evo12:0;})() ):0;
   const vefaCorr=realBase?computeVefaCorr(vefaInfo||{nNeuf:0,nTotal:0,natSeen:false},_ctx0?_ctx0.tier:'moyen',_evo12):{factor:1,pct:0,corrPct:0,mode:'estimation',modeLabel:'Pas de données DVF',premiumNeuf:'28%',nNeuf:0,nTotal:0,tier:'moyen',pctLabel:'0%',evo12:0};
   // Base corrigée = base DVF × facteur (écarte la prime VEFA de la médiane de référence)
+  // Fix20-B — bug fix : appliquer vefaCorr.factor aussi aux ancres de surface
+  // (réalisé avant d'appeler estimate() pour que le min() dans estimate() soit cohérent)
+  if(vefaCorr.factor<1&&out.realStats){
+    if(out.realStats.westSurfStrict)out.realStats.westSurfStrict=Math.round(out.realStats.westSurfStrict*vefaCorr.factor);
+    if(out.realStats.westSurfP40)out.realStats.westSurfP40=Math.round(out.realStats.westSurfP40*vefaCorr.factor);
+    if(out.realStats.westSurfW)out.realStats.westSurfW=Math.round(out.realStats.westSurfW*vefaCorr.factor);
+  }
   const _adjBase=realBase&&vefaCorr.factor<1?Math.round(realBase*vefaCorr.factor):realBase;
   // ──────────────────────────────────────────────────────────────────────────────
   const r=estimate(_adjBase,realStats);r.bandWidened=bandWidened;r.realPts=realPts;r.ptsVefa=data.ptsVefa||[];r.realStats=realStats;r.realCount=realStats?realStats.n:0;r.engines=engineData?engineData.engines:[];r.engineBase=engineData?engineData.base:realBase;r.engineTop=engineData?engineData.top:[];r.pxHedonic=r.price;r.vefaCorr=vefaCorr;r.sqmBaseRaw=realBase||0;
