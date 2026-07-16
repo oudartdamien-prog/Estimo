@@ -1290,8 +1290,17 @@ const _proxyOK=new Set();
  *   2. si echec, on essaie les proxies EN PARALLELE, une seule fois ;
  *   3. les proxies qui ont deja repondu sont memorises et essayes en premier.
  * Gain mesure : ~300 requetes -> ~25 sur une estimation complete. */
+/* Requetes en cours : un retry (ou un nouveau clic) se greffe sur l'appel deja parti
+ * au lieu de relancer une salve complete (evite le rate-limit des proxys CORS). */
+const _netPending=new Map();
 async function dvfFetch(url){
   if(_netCache.has(url))return _netCache.get(url);
+  if(_netPending.has(url))return _netPending.get(url);
+  const _p=_dvfFetchRaw(url);
+  _netPending.set(url,_p);
+  try{return await _p;}finally{_netPending.delete(url);}
+}
+async function _dvfFetchRaw(url){
   const one=(u,ms)=>fetchT(u,ms).then(async r=>{
     if(!r.ok)throw 0;
     const t=await r.text();const s=t.trim();
@@ -1524,7 +1533,7 @@ function renderEnrich(r){
   }
   el.innerHTML=html;
 }
-async function geocode(){if(state.coord)return state.coord;const q=($("adresse").value||"").trim();try{const r=await fetchT("https://api-adresse.data.gouv.fr/search/?limit=1&q="+encodeURIComponent(q),6000);const d=await r.json();const f=(d.features||[])[0];if(f){const pr=f.properties;state.coord={lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0],label:pr.label,insee:pr.citycode};if(pr.postcode&&!$("cp").value)$("cp").value=pr.postcode;if(pr.city&&!$("ville").value)$("ville").value=pr.city;return state.coord;}}catch(_){}return null;}
+async function geocode(){if(state.coord)return state.coord;const q=($("adresse").value||"").trim();for(let _a=0;_a<2;_a++){try{const r=await fetchT("https://api-adresse.data.gouv.fr/search/?limit=1&q="+encodeURIComponent(q),_a?9000:6000);const d=await r.json();const f=(d.features||[])[0];if(f){const pr=f.properties;state.coord={lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0],label:pr.label,insee:pr.citycode};if(pr.postcode&&!$("cp").value)$("cp").value=pr.postcode;if(pr.city&&!$("ville").value)$("ville").value=pr.city;return state.coord;}return null;}catch(_){}}return null;}
 function recVal(o,keys){for(const k of keys){if(o[k]!=null&&o[k]!=="")return o[k];}return null;}
 function median(a){const s=[...a].sort((x,y)=>x-y);const m=Math.floor(s.length/2);return s.length%2?s[m]:(s[m-1]+s[m])/2;}
 function quantile(s,q){if(!s.length)return 0;const pos=(s.length-1)*q,b=Math.floor(pos),rest=pos-b;return s[b+1]!=null?s[b]+rest*(s[b+1]-s[b]):s[b];}
@@ -2264,6 +2273,7 @@ function estimate(realBase,realStats){
       }
     }
   }
+  let _prudent=false; // Fix22 : hoiste hors du bloc (ReferenceError au cap Fix21-C sinon)
   if(realBase){
     const riq=(realStats&&realStats.med>0)?(realStats.q3-realStats.q1)/realStats.med:0.30;
     const capUp=Math.max(0.10,Math.min(0.20,riq*0.65)),capDn=Math.max(0.20,Math.min(0.35,riq*1.10));
@@ -2280,7 +2290,7 @@ function estimate(realBase,realStats){
     // valeur de marché prudente ; toute prime positive par-dessus reviendrait à surévaluer.
     // Les MALUS (DPE médiocre, risques, altitude…) restent pleinement actifs → asymétrie
     // conservatrice assumée. C'est la posture d'un évaluateur mandaté par l'acquéreur.
-    const _prudent=type==="appartement"&&(+state.pieces||0)>=3&&!_roomsBaseUsed;
+    _prudent=type==="appartement"&&(+state.pieces||0)>=3&&!_roomsBaseUsed;
     if(_prudent){
       _capUpEff=0;
       rows.push(["Mode acheteur prudent : aucune donn\u00e9e typologique \u2014 hausses h\u00e9doniques neutralis\u00e9es (malus seuls actifs)",0]);
@@ -3243,6 +3253,7 @@ function priceFormation(r){
   if(dynDelta)lines.push({k:"dyn",label:"Dynamique de march\u00e9",eur:dynDelta,pct:pct(dynDelta),note:(dyn.real?"Tendance r\u00e9elle DVF":"Tendance")+" \u2014 momentum prospectif"});
   if(geoDelta)lines.push({k:"geo",label:"Micro-localisation",eur:geoDelta,pct:pct(geoDelta),note:"Transports, \u00e9coles, commerces, air, risques (au sein de la commune)"});
   if(r.finalCap)lines.push({k:"capfinal",label:"Garde-fou final (+"+(r.finalCapHiPct||20)+" %/\u221220 % m\u00e9diane DVF)",eur:r.finalCap,pct:pct(r.finalCap),note:"Bornage final autour de la m\u00e9diane pond\u00e9r\u00e9e des ventes r\u00e9elles"});
+  if(r.prudenceAdj&&r.priceBeforePrud){const _pE=r.price-r.priceBeforePrud;lines.push({k:"prud",label:"Principe de pr\u00e9caution (incertitude)",eur:_pE,pct:pct(_pE),note:"Confiance "+(r.confScore!=null?r.confScore:"?")+"/100 \u00b7 l'incertitude oriente l'estimation vers le bas (posture acqu\u00e9reur, d\u00e9cote "+(Math.abs(r.prudenceAdj)*100).toFixed(1).replace(".",",")+" %)"});}
   lines.push({k:"final",label:"Estimation finale",eur:r.price,pct:pct(r.price),final:true,note:eur0(r.sqm||0)+" \u20ac/m\u00b2"});
   return lines;
 }
@@ -3800,6 +3811,23 @@ function marketDynamicsAdjust(r){
   adj=Math.max(-0.010,Math.min(upCap,adj));
   return{adj,trend,real:!!dyn.trendReal};
 }
+/* Principe de precaution acquereur : le point median d'un intervalle incertain
+ * expose l'acheteur a la moitie haute de la fourchette. On recentre donc le prix
+ * vers le quantile bas proportionnellement au deficit de confiance MESURE
+ * (score multi-facteurs estimationConfidence) et a la dispersion locale (spread) :
+ *   decote = 1/2 x spread x (1 - confiance/100), bornee a 5 %.
+ * Ex : confiance 60/100, spread 15 % -> -3 %. Confiance 90/100 -> quasi nulle.
+ * Idempotent : toujours applique sur un prix reconstruit depuis basePrice/cap. */
+function _applyPrudence(r){
+  if(!r||!r.real)return;
+  const _cs=(r.confScore!=null?r.confScore:70)/100;
+  const _prud=Math.min(0.05,Math.max(0,(r.spread||0.10)*(1-_cs)*0.5));
+  if(_prud<0.003){r.prudenceAdj=0;return;}
+  r.prudenceAdj=-_prud;r.priceBeforePrud=r.price;
+  r.price=Math.round(r.price*(1-_prud));
+  r.sqm=Math.round(r.price/(r.surface||1));
+  r.low=r.price*(1-r.spread);r.high=r.price*(1+r.spread);
+}
 function applyFinalDvfCap(r){
   r.priceBeforeCap=r.price;r.finalCap=0;
   if(!r.real||!r.realStats||r.type==="terrain")return;
@@ -3833,6 +3861,7 @@ function applyGeoDyn(r){
   r.price=Math.round(r.basePrice*(1+r.dynAdj.adj)*(1+r.geoAdj.adj));
   r.sqm=Math.round(r.price/(r.surface||1));r.low=r.price*(1-r.spread);r.high=r.price*(1+r.spread);
   applyFinalDvfCap(r);
+  _applyPrudence(r);
   if($("pcPrice"))countUp($("pcPrice"),r.price," \u20ac");
   if($("pcSqm"))$("pcSqm").textContent=eur0(r.sqm)+" \u20ac";
   if($("gLow"))$("gLow").textContent=eur(r.low);if($("gMid"))$("gMid").textContent=eur(r.price);if($("gHigh"))$("gHigh").textContent=eur(r.high);
@@ -4183,7 +4212,7 @@ function updateBadges(r){
 function renderExplain(r){
   const el=$("pcExplain");if(!el||!r)return;
   if(!r.real){el.style.display="none";return;}
-  const map={carac:"caract\u00e9ristiques du bien",ext:"ext\u00e9rieurs",cap:"recentrage sur le march\u00e9",idx:"qualit\u00e9/raret\u00e9",dyn:"tendance du march\u00e9",geo:"micro-localisation",capfinal:"garde-fou march\u00e9"};
+  const map={carac:"caract\u00e9ristiques du bien",ext:"ext\u00e9rieurs",cap:"recentrage sur le march\u00e9",idx:"qualit\u00e9/raret\u00e9",dyn:"tendance du march\u00e9",geo:"micro-localisation",capfinal:"garde-fou march\u00e9",prud:"principe de pr\u00e9caution"};
   const seuil=Math.max(500,(r.price||0)*0.002);
   const parts=priceFormation(r).filter(l=>map[l.k]&&Math.abs(l.eur)>=seuil).map(l=>map[l.k]+" "+(l.eur>0?"+":"\u2212")+eur0(Math.abs(l.eur))+" \u20ac");
   el.innerHTML="<b>En clair :</b> march\u00e9 local \u00e0 "+eur0(r.sqmBase)+" \u20ac/m\u00b2 ("+(r.realCount||0)+" ventes r\u00e9elles)"+(parts.length?" \u00b7 "+parts.join(" \u00b7 "):"")+". <span style=\"color:var(--ink-soft);font-size:10px\">D\u00e9tail complet en Mode Expert \u2192 Fiabilit\u00e9 &amp; formation du prix.</span>";
@@ -4310,10 +4339,12 @@ function buildEstimation(data){
   // Base corrigée = base DVF × facteur (écarte la prime VEFA de la médiane de référence)
   // Fix20-B — bug fix : appliquer vefaCorr.factor aussi aux ancres de surface
   // (réalisé avant d'appeler estimate() pour que le min() dans estimate() soit cohérent)
-  if(vefaCorr.factor<1&&out.realStats){
-    if(out.realStats.westSurfStrict)out.realStats.westSurfStrict=Math.round(out.realStats.westSurfStrict*vefaCorr.factor);
-    if(out.realStats.westSurfP40)out.realStats.westSurfP40=Math.round(out.realStats.westSurfP40*vefaCorr.factor);
-    if(out.realStats.westSurfW)out.realStats.westSurfW=Math.round(out.realStats.westSurfW*vefaCorr.factor);
+  // Fix22 : bug critique corrige — `out` n'existe pas dans ce scope (ReferenceError
+  // des que factor<1 -> l'estimation plantait apres le chargement complet des donnees).
+  if(vefaCorr.factor<1&&realStats){
+    if(realStats.westSurfStrict)realStats.westSurfStrict=Math.round(realStats.westSurfStrict*vefaCorr.factor);
+    if(realStats.westSurfP40)realStats.westSurfP40=Math.round(realStats.westSurfP40*vefaCorr.factor);
+    if(realStats.westSurfW)realStats.westSurfW=Math.round(realStats.westSurfW*vefaCorr.factor);
   }
   const _adjBase=realBase&&vefaCorr.factor<1?Math.round(realBase*vefaCorr.factor):realBase;
   // ──────────────────────────────────────────────────────────────────────────────
@@ -4353,6 +4384,7 @@ function buildEstimation(data){
   r.basePrice=r.price;r.dynAdj=marketDynamicsAdjust(r);r.geoAdj={adj:0,score:null};
   if(r.dynAdj.adj){r.price=Math.round(r.basePrice*(1+r.dynAdj.adj));r.sqm=Math.round(r.price/(r.surface||1));r.low=r.price*(1-r.spread);r.high=r.price*(1+r.spread);}
   applyFinalDvfCap(r);
+  _applyPrudence(r);
   r.financialPrice=computeFinancialPrice(r);
   return{r,_conf,realBase,diag:data.diag};
 }
@@ -4553,7 +4585,8 @@ function setupAsyncCallbacks(r,enrichPromise,ctxProm){
 /* Garde-fou : empeche une estimation de rester bloquee si une API publique ne repond pas.
  * Le bouton est TOUJOURS restaure (try/finally), et un timeout global borne l'attente. */
 let _estimRunning=false;
-const ESTIM_TIMEOUT_MS=30000; // filet de securite ultime (ref v100) : au-dela, relance manuelle. Chaque etape a deja son propre timeout.
+const ESTIM_TIMEOUT_MS=30000; // timeout d'une tentative individuelle (chaque etape a deja son propre timeout)
+const ESTIM_DEADLINE_MS=45000; // budget total d'un clic : retries automatiques jusqu'a cette limite
 
 function _withTimeout(promise,ms,fallback){
   return Promise.race([
@@ -4594,29 +4627,41 @@ async function showResults(){
   const ticker=setInterval(function(){
     if(!btn.disabled){clearInterval(ticker);return;}
     const s=Math.round((Date.now()-t0)/1000);
-    if(s>=15){btn.textContent="\u23f3 Chargement plus long que pr\u00e9vu ("+s+" s) \u2014 patience\u2026";}
+    if(s>=30){btn.textContent="\u23f3 Finalisation ("+s+" s) \u2014 tentative en cours, merci de patienter\u2026";}
+    else if(s>=15){btn.textContent="\u23f3 Serveurs publics lents ("+s+" s) \u2014 l'estimation continue automatiquement\u2026";}
     else if(s>=8){btn.textContent=STEPS[3]+" ("+s+" s)";}
     else if(s>=5){btn.textContent=STEPS[2]+" ("+s+" s)";}
     else if(s>=2){btn.textContent=STEPS[1];}
   },1000);
 
   try{
-    const coord=await _withTimeout(geocode(),12000,null);
+    const coord=await _withTimeout(geocode(),16000,null);
     dbg("Coordonnees BAN: "+JSON.stringify(coord));
     btn.textContent="Recherche des ventes r\u00e9elles\u2026";
 
-    // Timeout global : si les APIs traînent, on estime avec ce qui est disponible
-    let data=await _withTimeout(fetchAllData(coord),ESTIM_TIMEOUT_MS,null);
+    // Fix22 — retries automatiques : un seul clic suffit. Jusqu'a 3 tentatives dans un
+    // budget global de 45 s ; grace au dedup des requetes en vol (_netPending), une
+    // nouvelle tentative se greffe sur les appels reseau encore en cours au lieu de
+    // relancer une salve complete.
+    let data=null;
+    for(let _try=1;_try<=3&&!data;_try++){
+      const _left=ESTIM_DEADLINE_MS-(Date.now()-t0);
+      if(_left<6000)break;
+      if(_try>1)btn.textContent="\u23f3 Nouvelle tentative automatique ("+_try+"/3)\u2026";
+      const _budget=_try<3?Math.min(ESTIM_TIMEOUT_MS,_left):_left;
+      data=await _withTimeout(fetchAllData(coord),_budget,null);
+      if(data&&data.netFail&&_try<3)data=null; // echec DVF -> retry silencieux
+    }
     // Fix15 : jamais d'estimation sur donnees moins precises quand l'appel a echoue.
     // On informe clairement l'utilisateur et on l'invite a relancer (le cache d'echec
     // n'est pas conserve : le prochain clic retente reellement l'appel geolocalise).
     if(!data){
-      err.textContent="Les serveurs de donn\u00e9es n\u2019ont pas r\u00e9pondu \u00e0 temps. L\u2019appel n\u2019a pas fonctionn\u00e9 \u2014 cliquez \u00e0 nouveau sur \u00ab\u00a0Estimer le bien\u00a0\u00bb dans quelques secondes.";
+      err.textContent="Les serveurs publics n\u2019ont pas r\u00e9pondu malgr\u00e9 plusieurs tentatives automatiques (45 s). V\u00e9rifiez votre connexion puis cliquez \u00e0 nouveau sur \u00ab\u00a0Estimer le bien\u00a0\u00bb.";
       err.classList.add("show");
       return;
     }
     if(data.netFail){
-      err.textContent="L\u2019appel des donn\u00e9es de ventes (DVF) n\u2019a pas fonctionn\u00e9. Aucune estimation approximative n\u2019est affich\u00e9e \u2014 cliquez \u00e0 nouveau sur \u00ab\u00a0Estimer le bien\u00a0\u00bb dans quelques secondes.";
+      err.textContent="Les donn\u00e9es de ventes (DVF) restent inaccessibles malgr\u00e9 plusieurs tentatives automatiques. Aucune estimation approximative n\u2019est affich\u00e9e \u2014 r\u00e9essayez dans quelques instants.";
       err.classList.add("show");
       return;
     }
