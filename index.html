@@ -724,6 +724,7 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
         <div class="gauge-labels"><div>Basse<b class="num" id="gLow">&#8212;</b></div><div class="mid">Estim&#233;e<b class="num" id="gMid">&#8212;</b></div><div class="hi">Haute<b class="num" id="gHigh">&#8212;</b></div></div>
         <div id="pcExplain" style="display:none;margin-top:10px;font-size:12px;line-height:1.55;color:#cfe0e9;text-align:left"></div>
       </div>
+      <div id="dualPrice" style="display:none;margin-top:12px"></div>
       <div class="conf"><span class="dot" id="confDot"></span><span id="confTxt">&#8212;</span></div>
       <div id="confBreak" class="expert-only" style="margin-top:12px"></div>
       <div class="hint" id="bdNote" style="margin-top:8px"></div>
@@ -845,6 +846,7 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
 
       <div class="subhead">Charges annuelles</div>
       <div class="line-item"><span class="li-l">Taxe fonci&#232;re</span><span class="li-input"><input class="num" id="iTaxe" type="number" min="0" /></span></div>
+      <div id="taxeReiNote" class="hint" style="display:none;margin-top:-6px;margin-bottom:4px"></div>
       <div class="line-item"><span class="li-l">Charges de copro (non r&#233;cup.)</span><span class="li-input"><input class="num" id="iCopro" type="number" min="0" /></span></div>
       <div class="line-item"><span class="li-l">Assurance PNO</span><span class="li-input"><input class="num" id="iPno" type="number" min="0" /></span></div>
       <div class="line-item"><span class="li-l">Gestion + vacance + entretien</span><span class="li-input"><input class="num" id="iDivers" type="number" min="0" /></span></div>
@@ -1279,8 +1281,43 @@ const _netCache=new Map();
  * Garantit la consistance entre consultations successives de biens sauvegardes.
  * Cle = "bbox_lat_lon_type" ou "comm_insee_type". */
 const _dvfResultCache=new Map();
-/* Proxies dont on sait qu'ils repondent : on les privilegie aux suivants. */
+/* Proxies performants : memorises en session ET en localStorage (persistence cross-reload).
+ * Cle LS : "estimo_proxy_ok" = JSON array des URLs qui ont repondu la derniere fois. */
 const _proxyOK=new Set();
+(function _restoreProxy(){
+  try{const s=localStorage.getItem("estimo_proxy_ok");
+    if(s)JSON.parse(s).forEach(px=>{if(CORS_PROXIES.includes(px))_proxyOK.add(px);});
+  }catch(_){}
+})();
+function _persistProxy(){try{localStorage.setItem("estimo_proxy_ok",JSON.stringify([..._proxyOK]));}catch(_){}}
+
+/* Cache localStorage avec TTL (en ms) pour les données stables (INSEE, ARCEP, SSMSI…).
+ * Évite de re-fetcher des données annuelles à chaque rechargement de page.
+ * Ne stocke QUE les résultats JSON valides ; les clés expirent selon le TTL. */
+const _LS_PREFIX="estimo_nc_";
+function _lsGet(url){
+  try{
+    const raw=localStorage.getItem(_LS_PREFIX+url);
+    if(!raw)return null;
+    const {v,ex}=JSON.parse(raw);
+    if(Date.now()>ex){localStorage.removeItem(_LS_PREFIX+url);return null;}
+    return v;
+  }catch(_){return null;}
+}
+function _lsSet(url,val,ttlMs){
+  try{localStorage.setItem(_LS_PREFIX+url,JSON.stringify({v:val,ex:Date.now()+ttlMs}));}catch(_){}
+}
+/* TTL en ms selon le domaine de l'URL (données stables = longue durée).
+ * DVF, geo.api, overpass, open-meteo → 0 (pas de cache LS = session uniquement).
+ * INSEE/Filosofi, ARCEP, SSMSI, RPLS, BPE, REI, IPS → 7 jours.
+ * Zonage ABC, BPE, DPE → 30 jours. */
+function _urlTTL(url){
+  if(/filosofi|ssmsi|arcep|rpls-20|vacance|rpls\/|logements-locatifs|comparateur-de-territoires|population-francaise|tabular-api/i.test(url))return 7*86400*1000;
+  if(/bpe-all|fiscalite-locale|zonage-abc|catalogues\/dpe|sitadel/i.test(url))return 30*86400*1000;
+  if(/data\.education\.gouv.*ips|ips.*education|ips_ecoles/i.test(url))return 7*86400*1000;
+  if(/georisques.*catnat|catnat.*georisques|georisques.*rga|rga.*georisques/i.test(url))return 7*86400*1000;
+  return 0; // pas de cache LS
+}
 
 /* Recuperation reseau optimisee.
  * STRATEGIE (v85) : au lieu de tirer simultanement sur l'URL directe ET les 4 proxies
@@ -1294,13 +1331,18 @@ const _proxyOK=new Set();
  * au lieu de relancer une salve complete (evite le rate-limit des proxys CORS). */
 const _netPending=new Map();
 async function dvfFetch(url){
+  // 1. Cache session (le plus rapide)
   if(_netCache.has(url))return _netCache.get(url);
+  // 2. Cache localStorage TTL (données stables, cross-reload)
+  const _ttl=_urlTTL(url);
+  if(_ttl>0){const _ls=_lsGet(url);if(_ls){_netCache.set(url,_ls);return _ls;}}
+  // 3. Déduplication des requêtes en vol
   if(_netPending.has(url))return _netPending.get(url);
-  const _p=_dvfFetchRaw(url);
+  const _p=_dvfFetchRaw(url,_ttl);
   _netPending.set(url,_p);
   try{return await _p;}finally{_netPending.delete(url);}
 }
-async function _dvfFetchRaw(url){
+async function _dvfFetchRaw(url,ttlMs=0){
   const one=(u,ms)=>fetchT(u,ms).then(async r=>{
     if(!r.ok)throw 0;
     const t=await r.text();const s=t.trim();
@@ -1308,20 +1350,23 @@ async function _dvfFetchRaw(url){
     return{json:JSON.parse(s),raw:t};
   });
   let out=null;
-  // Etape 1 : appel direct (timeout court : si le CORS bloque, on le sait vite)
+  // Etape 1 : appel direct
   try{ out=await one(url,9000); }catch(_){}
-  // Etape 2 : proxies en parallele (une seule salve), en commencant par ceux qui marchent
+  // Etape 2 : proxies en parallele, priorises par _proxyOK (persistant cross-reload)
   if(!out&&CORS_PROXIES.length){
     const ordered=CORS_PROXIES.slice().sort((a,b)=>(_proxyOK.has(b)?1:0)-(_proxyOK.has(a)?1:0));
-    const tries=ordered.map(px=>one(px+encodeURIComponent(url),12000).then(r=>{_proxyOK.add(px);return r;}));
+    const tries=ordered.map(px=>one(px+encodeURIComponent(url),12000).then(r=>{_proxyOK.add(px);_persistProxy();return r;}));
     try{ out=await Promise.any(tries); }catch(_){}
   }
-  // Etape 3 : une unique nouvelle tentative directe (reseau instable)
+  // Etape 3 : retry direct unique (reseau instable)
   if(!out){
     await new Promise(r=>setTimeout(r,400));
     try{ out=await one(url,9000); }catch(_){}
   }
-  if(out)_netCache.set(url,out); // Fix14 : null non mis en cache
+  if(out){
+    _netCache.set(url,out);
+    if(ttlMs>0)_lsSet(url,out,ttlMs); // cache LS pour les données stables
+  }
   return out;
 }
 async function fetchLive(coord){
@@ -1335,6 +1380,49 @@ async function fetchLive(coord){
       else if(arr.length)out.risqueLbl="Aucun risque majeur";
     }
   }catch(_){}
+  // R10 : GASPAR arrêtés CatNat — historique des catastrophes naturelles reconnues par l'État
+  // API : /gaspar/catnat?code_insee={insee} — champs attendus : dat_deb_evt, libelle_risque_jo
+  try{
+    const cn=await dvfFetch("https://georisques.gouv.fr/api/v1/gaspar/catnat?code_insee="+coord.insee+"&page=1&page_size=500");
+    if(cn&&cn.json){
+      const arr=(cn.json.data||[]);
+      const now=Date.now(),y10=now-10*365.25*86400*1000,y5=now-5*365.25*86400*1000;
+      const types={},last10y=[],last5y=[];
+      let dernier=null;
+      arr.forEach(a=>{
+        // Type de risque : plusieurs noms de champ possibles selon le millésime GASPAR
+        const lib=a.libelle_risque_jo||a.libelle_risque||a.libelle||"";
+        const k=lib.slice(0,30)||"Autre";
+        types[k]=(types[k]||0)+1;
+        // Date de début d'événement
+        const raw=a.dat_deb_evt||a.date_debut_evt||a.date_debut||null;
+        if(raw){const d=new Date(raw).getTime();
+          if(!isNaN(d)){
+            if(!dernier||d>new Date(dernier).getTime())dernier=raw;
+            if(d>=y10)last10y.push(raw);
+            if(d>=y5)last5y.push(raw);
+          }}
+      });
+      if(arr.length>0||cn.json.total_results>=0){
+        out.catnat={nb:cn.json.total_results!=null?cn.json.total_results:arr.length,
+          last10y:last10y.length,last5y:last5y.length,dernier,types,source:"GASPAR/Géorisques"};
+      }
+      if(DEBUG)dbg("CatNat: "+JSON.stringify(out.catnat));
+    }
+  }catch(_){}
+  // R10 : RGA — retrait-gonflement des argiles (par coordonnées)
+  if(coord.lat!=null&&coord.lon!=null){
+    try{
+      const rga=await dvfFetch("https://georisques.gouv.fr/api/v1/rga?latlon="+coord.lat.toFixed(6)+","+coord.lon.toFixed(6));
+      if(rga&&rga.json){
+        const d=rga.json.data?rga.json.data[0]:rga.json;
+        const code=d&&(d.code_alea||d.alea||null);
+        const lib=d&&(d.libelle_alea||d.libelle||null);
+        // code_alea : "Nul ou très faible"/"Faible"/"Moyen"/"Fort" selon Géorisques
+        if(code||lib)out.rga={code,lib,fort:/fort|\u00e9lev/i.test(lib||code||""),moyen:/moyen|modér/i.test(lib||code||"")};
+      }
+    }catch(_){}
+  }
   try{const rd=await dvfFetch("https://georisques.gouv.fr/api/v1/radon?code_insee="+coord.insee);
     if(rd&&rd.json){const arr=rd.json.data||[];const o=arr[0]||{};const cls=(o.classe_potentiel!=null)?+o.classe_potentiel:null;
       if(cls)out.radon={classe:cls,label:cls>=3?"\u00e9lev\u00e9":cls===2?"moyen":"faible"};
@@ -3326,7 +3414,37 @@ function renderPriceFormation(r){
   el.innerHTML=vefaPanel+A+B+C;
 }
 // ===== Reconciliation ChatGPT x Grok \u2014 W2 : fournisseurs open-data (defensifs, ZERO impact prix) =====
-async function provDemo(insee){try{if(!insee)return null;const d=await dvfFetch("https://geo.api.gouv.fr/communes/"+insee+"?fields=population,surface");const j=d.json;if(!j||j.population==null)return null;const km2=j.surface?j.surface/100:null;return{population:j.population,densite:km2?Math.round(j.population/km2):null};}catch(_){return null;}}
+async function provDemo(insee){
+  try{
+    if(!insee)return null;
+    const d=await dvfFetch("https://geo.api.gouv.fr/communes/"+insee+"?fields=population,surface");
+    const j=d.json;
+    if(!j||j.population==null)return null;
+    const km2=j.surface?j.surface/100:null;
+    const out={population:j.population,densite:km2?Math.round(j.population/km2):null};
+    // Croissance pop : série millésimée INSEE depuis 2006 (public.opendatasoft)
+    // Champs attendus : annee, population_municipale, code_commune_insee
+    try{
+      const u="https://public.opendatasoft.com/api/explore/v2.1/catalog/datasets/population-francaise-communes/records"
+        +"?where=code_commune_insee%3D%22"+insee+"%22&limit=20&order_by=annee+asc&select=annee%2Cpopulation_municipale";
+      const ph=await dvfFetch(u);
+      const rows=(ph&&ph.json&&ph.json.results)||[];
+      const pts=rows.filter(r=>r.annee&&Number(r.population_municipale)>0)
+                    .sort((a,b)=>Number(a.annee)-Number(b.annee));
+      if(pts.length>=2){
+        const first=pts[0],last=pts[pts.length-1];
+        const p0=Number(first.population_municipale),p1=Number(last.population_municipale);
+        const ny=Number(last.annee)-Number(first.annee);
+        if(ny>0&&p0>0){
+          out.popCagr=+((Math.pow(p1/p0,1/ny)-1)*100).toFixed(2); // %/an
+          out.popStart=p0;out.popEnd=p1;
+          out.yearStart=Number(first.annee);out.yearEnd=Number(last.annee);
+        }
+      }
+    }catch(_){}
+    return out;
+  }catch(_){return null;}
+}
 async function provEntreprises(insee){try{if(!insee)return null;const d=await dvfFetch("https://recherche-entreprises.api.gouv.fr/search?code_commune="+insee+"&per_page=1");const j=d.json;if(!j||j.total_results==null)return null;return{total:j.total_results};}catch(_){return null;}}
 async function provCadastre(coord){
   if(!coord)return null;
@@ -3410,13 +3528,21 @@ async function provFilosofi(insee){
   if(!insee)return null;
   try{
     const base="https://public.opendatasoft.com/api/explore/v2.1/catalog/datasets/filosofi-evolution-et-structure-des-revenus-de-2012-a-2020-commune/records?where=codgeo%3D%22"+insee+"%22&limit=1&select=";
-    let d=await dvfFetch(base+"med20%2Ctp6020%2Ccadres15p20%2Ctcho1564t20%2Cmed12%2Ctcho1564t12");
+    // men20/men12 = nombre de ménages 2020/2012 (si présents dans le dataset)
+    let d=await dvfFetch(base+"med20%2Ctp6020%2Ccadres15p20%2Ctcho1564t20%2Cmed12%2Ctcho1564t12%2Cmen20%2Cmen12");
     let r=(d&&d.json&&d.json.results&&d.json.results[0])||null;
     if(!r){d=await dvfFetch(base+"med20%2Ctp6020%2Ccadres15p20%2Ctcho1564t20");r=(d&&d.json&&d.json.results&&d.json.results[0])||null;}
     if(!r||r.med20==null)return null;
     const out={revenu:Math.round(r.med20),pauvrete:r.tp6020!=null?+r.tp6020.toFixed(1):null,cadres:r.cadres15p20!=null?+r.cadres15p20.toFixed(0):null,chomage:r.tcho1564t20!=null?+r.tcho1564t20.toFixed(1):null};
     if(r.med12>0)out.revVar8=+((r.med20/r.med12-1)*100).toFixed(1);
     if(r.tcho1564t12!=null&&r.tcho1564t20!=null)out.choVar8=+(r.tcho1564t20-r.tcho1564t12).toFixed(1);
+    // Croissance ménages (foyers) sur 8 ans — champs optionnels
+    const m0=Number(r.men12||0),m1=Number(r.men20||0);
+    if(m0>0&&m1>0){
+      out.menVar8=+((m1/m0-1)*100).toFixed(1);  // % total sur 8 ans
+      out.menCagr8=+((Math.pow(m1/m0,1/8)-1)*100).toFixed(2); // %/an
+      out.men=m1;
+    }
     return out;
   }catch(_){return null;}
 }
@@ -3526,12 +3652,244 @@ async function provSitadel(insee){
   }catch(_){return null;}
 }
 
+/** Taux TFPB global communal depuis le fichier REI (DGFiP) via data.economie.gouv.fr.
+ *  Champs REI tentés : taux_tfpb_global, taux_global_tfpb, taux_tfpb, taux_foncier_bati (variants API).
+ *  TEOM (taxe ordures ménagères) récupérée séparément pour info.
+ *  Résultat en % (ex: 34.2 = 34,2%). */
+/** Fetch HTTP texte brut (CSV, TSV…) avec fallback proxies en parallèle.
+ *  Contrairement à dvfFetch, n'exige pas de réponse JSON.
+ *  Utilisé uniquement pour des fichiers statiques open data (pas mis en cache _netCache). */
+async function textFetch(url,ms=14000){
+  const tryUrl=u=>fetchT(u,ms).then(r=>{if(!r.ok)throw 0;return r.text();}).then(t=>{if(!t||t.length<10)throw 0;return t;});
+  // Même stratégie que dvfFetch : direct d'abord, puis proxies ordonnés par _proxyOK
+  try{const t=await tryUrl(url);if(t)return t;}catch(_){}
+  const ordered=CORS_PROXIES.slice().sort((a,b)=>(_proxyOK.has(b)?1:0)-(_proxyOK.has(a)?1:0));
+  const tasks=ordered.map(px=>tryUrl(px+encodeURIComponent(url)).then(t=>{_proxyOK.add(px);_persistProxy();return t;}));
+  try{return await Promise.any(tasks);}catch(_){return null;}
+}
+
+async function provTaxeFonciere(insee){
+  if(!insee)return null;
+  try{
+    const base="https://data.economie.gouv.fr/api/explore/v2.1/catalog/datasets/fiscalite-locale-des-particuliers-geo/records";
+    const u=base+"?where=code_insee%3D%22"+insee+"%22&limit=1&select=taux_tfpb_global,taux_global_tfpb,taux_tfpb,taux_foncier_bati,taux_teom,annee";
+    const d=await dvfFetch(u);
+    const rec=(d&&d.json&&d.json.results&&d.json.results[0])||null;
+    if(!rec)return null;
+    // Essayer plusieurs noms de champ (variants entre millésimes REI)
+    const raw=rec.taux_tfpb_global!=null?rec.taux_tfpb_global
+      :rec.taux_global_tfpb!=null?rec.taux_global_tfpb
+      :rec.taux_tfpb!=null?rec.taux_tfpb
+      :rec.taux_foncier_bati!=null?rec.taux_foncier_bati:null;
+    if(raw==null)return null;
+    const taux=parseFloat(raw);
+    if(!isFinite(taux)||taux<=0)return null;
+    const teomRaw=rec.taux_teom!=null?parseFloat(rec.taux_teom):null;
+    const teom=(teomRaw!=null&&isFinite(teomRaw)&&teomRaw>0)?teomRaw:null;
+    const annee=rec.annee||null;
+    return{taux,teom,annee,source:"DGFiP REI"};
+  }catch(_){return null;}
+}
+
+/** Met à jour la note informative sous le champ iTaxe avec le taux TFPB réel de la commune. */
+function updateTaxeNote(){
+  const el=$("taxeReiNote");if(!el)return;
+  const tf=(state.ctx2||{}).taxeFonciere;
+  if(!tf||!tf.taux){el.style.display="none";return;}
+  const teomTxt=tf.teom!=null?" + TEOM "+tf.teom.toFixed(1)+"% ":"";
+  const anneeTxt=tf.annee?" ("+tf.annee+")":"";
+  el.textContent="\u2139\ufe0f Taux TFPB commune\u00a0: "+tf.taux.toFixed(1)+"% (global\u00a0: commune + interco + TSE/GEMAPI)"+teomTxt+anneeTxt+" — source DGFiP REI. La taxe r\u00e9elle d\u00e9pend de votre valeur locative cadastrale.";
+  el.style.display="";
+}
+
+/** Détecte le zonage ABC (Abis/A/B1/B2/C) d'une commune via le dataset DHUP sur data.gouv.fr.
+ *  Étape 1 : API JSON data.gouv.fr pour obtenir l'URL du fichier CSV (nom de champs inconnus → multi-variantes).
+ *  Étape 2 : textFetch du CSV + parse ligne par commune.
+ *  Cache localStorage 30 jours (zonage change ~1x/an via arrêté ministériel).
+ *  La zone C (marché détendu) est le cas général : si la commune n'est pas trouvée, on retourne "C".
+ *  Retourne null en cas d'échec total (dvfFetch ou textFetch indisponibles). */
+async function provZoneABC(insee){
+  if(!insee)return null;
+  try{
+    const LS_MAP='estimo_zabc_map_v1',LS_TS='estimo_zabc_ts_v1';
+    let zoneMap=null;
+    // Lecture cache localStorage (30 jours)
+    try{
+      const ts=parseInt(localStorage.getItem(LS_TS)||'0',10);
+      if(Date.now()-ts<30*86400*1000){
+        const raw=localStorage.getItem(LS_MAP);
+        if(raw)zoneMap=JSON.parse(raw);
+      }
+    }catch(_){}
+
+    if(!zoneMap){
+      // Étape 1 : métadonnées dataset data.gouv.fr (retourne JSON → dvfFetch OK)
+      const meta=await dvfFetch('https://www.data.gouv.fr/api/1/datasets/liste-des-communes-selon-le-zonage-abc/');
+      const resources=(meta&&meta.json&&meta.json.resources)||[];
+      // Chercher la ressource CSV (format ou extension)
+      const csvRes=resources.find(r=>{
+        const fmt=(r.format||'').toLowerCase();
+        const url=(r.url||'').toLowerCase();
+        return fmt==='csv'||url.endsWith('.csv');
+      });
+      if(!csvRes||!csvRes.url)return null;
+
+      // Étape 2 : téléchargement CSV (textFetch, pas dvfFetch)
+      const csv=await textFetch(csvRes.url,20000);
+      if(!csv)return null;
+
+      // Étape 3 : parsing défensif (séparateur, noms de colonnes inconnus)
+      const lines=csv.split(/\r?\n/).filter(l=>l.trim());
+      if(lines.length<2)return null;
+      const sep=lines[0].includes(';')?';':',';
+      const clean=s=>s.trim().replace(/^["']|["']$/g,'').toLowerCase().replace(/[\s\-]/g,'_');
+      const header=lines[0].split(sep).map(clean);
+
+      // Noms de colonnes INSEE tentés par ordre de priorité (DHUP + standards nationaux)
+      const codeKeys=['code_commune','code_insee','codgeo','com','codecommune','code'];
+      const zoneKeys=['zone_abc','zone','zonage','zonage_abc','zone_abis'];
+      const ci=codeKeys.reduce((a,k)=>a>=0?a:header.indexOf(k),-1);
+      const zi=zoneKeys.reduce((a,k)=>a>=0?a:header.indexOf(k),-1);
+      if(ci<0||zi<0)return null; // colonnes non reconnues → retourne null (pas "C" par défaut)
+
+      zoneMap={};
+      for(let i=1;i<lines.length;i++){
+        const cols=lines[i].split(sep);
+        const code=(cols[ci]||'').trim().replace(/^["']|["']$/g,'');
+        const zone=(cols[zi]||'').trim().replace(/^["']|["']$/g,'');
+        if(code&&zone)zoneMap[code]=zone;
+      }
+
+      // Mise en cache (peut lever si quota localStorage plein → silencieux)
+      try{localStorage.setItem(LS_MAP,JSON.stringify(zoneMap));localStorage.setItem(LS_TS,String(Date.now()));}catch(_){}
+    }
+
+    // Zone de la commune (si absente du fichier : commune en zone C par convention DHUP)
+    const zone=zoneMap[insee]||(Object.keys(zoneMap).length>0?'C':null);
+    if(!zone)return null;
+    return{zone,source:'DHUP/data.gouv.fr'};
+  }catch(_){return null;}
+}
+
+/** Base Permanente des Équipements (BPE) — INSEE, via public.opendatasoft.com.
+ *  Retourne les comptages d'équipements par domaine (A-G) pour la commune.
+ *  Stratégie : agrégation group_by sdom (1 requête) ; fallback fetch plat (500 rec.) si l'agrégation échoue.
+ *  Champ commune attendu : depcom (INSEE 5 chiffres, standard BPE).
+ *  Champ domaine attendu : sdom (code 4 chars ex. "D201") → 1ère lettre = domaine A-G. */
+async function provBPE(insee){
+  if(!insee)return null;
+  try{
+    const BASE="https://public.opendatasoft.com/api/explore/v2.1/catalog/datasets/buildingref-france-bpe-all/records";
+    const counts={};let total=0;let ok=false;
+    // Tentative 1 : agrégation group_by sdom
+    try{
+      const uAgg=BASE+"?where=depcom%3D%22"+insee+"%22&group_by=sdom&select=sdom%2Ccount(*)%20as%20nb&limit=20&timezone=UTC";
+      const dAgg=await dvfFetch(uAgg);
+      const rows=(dAgg&&dAgg.json&&dAgg.json.results)||[];
+      if(rows.length>0&&rows[0].nb!=null){
+        rows.forEach(row=>{
+          const k=(String(row.sdom||"")).trim().toUpperCase().charAt(0);
+          const n=Number(row.nb)||0;
+          if(k&&BPE_DOM[k]){counts[k]=(counts[k]||0)+n;total+=n;}
+        });
+        ok=total>0;
+      }
+    }catch(_){}
+    // Fallback : fetch plat (communes petites, agrégation indisponible)
+    if(!ok){
+      const uFlat=BASE+"?where=depcom%3D%22"+insee+"%22&select=sdom&limit=500";
+      const dFlat=await dvfFetch(uFlat);
+      const rows=(dFlat&&dFlat.json&&dFlat.json.results)||[];
+      if(!rows.length)return null;
+      rows.forEach(row=>{
+        const k=(String(row.sdom||"")).trim().toUpperCase().charAt(0);
+        if(k&&BPE_DOM[k]){counts[k]=(counts[k]||0)+1;total++;}
+      });
+      ok=total>0;
+    }
+    if(!ok)return null;
+    return{total,counts,source:"INSEE BPE"};
+  }catch(_){return null;}
+}
+
+/** ===== R6 : Registre National d'Immatriculation des Coproprietes (RNIC, ANAH) =====
+ *  Acces via l'API tabulaire de data.gouv.fr (tabular-api.data.gouv.fr), qui expose les CSV
+ *  analyses en API filtrable. Les identifiants de ressource et noms de colonnes ne sont PAS
+ *  codes en dur (ils changent au fil des millesimes) : decouverte a l'execution en 3 etapes :
+ *   1. Recherche du dataset RNIC via l'API data.gouv (q=registre coproprietes, orga ANAH).
+ *   2. Lecture du profil de la ressource CSV principale -> detection des colonnes par regex
+ *      (code commune, nb lots habitation, type de syndic, procedure).
+ *   3. Requete filtree {colCommune}__exact={insee} ; meta.total = nb de coproprietes.
+ *  Le detail (lots, syndic, procedures) est agrege sur un ECHANTILLON (50 premieres lignes),
+ *  clairement etiquete comme tel. Cache localStorage 30 j pour l'etape de decouverte.
+ *  Echec silencieux (null) a chaque etape : aucune donnee inventee. */
+async function provCopro(insee){
+  if(!insee||state.type==="terrain")return null;
+  try{
+    const LS='estimo_rnic_disc_v1',LSTS='estimo_rnic_ts_v1';
+    let disc=null;
+    try{const ts=parseInt(localStorage.getItem(LSTS)||'0',10);
+      if(Date.now()-ts<30*86400*1000){const raw=localStorage.getItem(LS);if(raw)disc=JSON.parse(raw);}
+    }catch(_){}
+    if(!disc){
+      // Etape 1 : trouver le dataset RNIC
+      const ds=await dvfFetch('https://www.data.gouv.fr/api/1/datasets/?q=registre%20national%20immatriculation%20coproprietes&page_size=5');
+      const list=(ds&&ds.json&&ds.json.data)||[];
+      const hit=list.find(d=>/copropri/i.test(d.title||''))||null;
+      if(!hit)return null;
+      const csvs=(hit.resources||[]).filter(r=>/csv/i.test(r.format||'')&&r.id);
+      if(!csvs.length)return null;
+      // Ressource principale = la plus volumineuse
+      csvs.sort((a,b)=>(b.filesize||0)-(a.filesize||0));
+      // Etape 2 : profil des colonnes via l'API tabulaire (essaie les 3 premieres ressources)
+      for(const res of csvs.slice(0,3)){
+        try{
+          const pr=await dvfFetch('https://tabular-api.data.gouv.fr/api/resources/'+res.id+'/profile/');
+          const prof=(pr&&pr.json&&(pr.json.profile||pr.json))||null;
+          const colsObj=prof&&(prof.columns||prof.header||null);
+          const cols=Array.isArray(colsObj)?colsObj:(colsObj?Object.keys(colsObj):[]);
+          if(!cols.length)continue;
+          const find=re=>cols.find(c=>re.test(String(c)))||null;
+          const cCom=find(/commune.*(insee|code)|code.*commune|insee/i);
+          if(!cCom)continue;
+          disc={rid:res.id,cCom,
+            cLots:find(/nb.*lots?.*(habitation|total)|lots?.*habitation/i),
+            cSyndic:find(/type.*syndic|syndic.*type/i),
+            cProc:find(/proc[e\u00e9]dure|mandat.*ad.*hoc|p[e\u00e9]ril|insalubr/i),
+            cPer:find(/p[e\u00e9]riode.*construction|construction.*p[e\u00e9]riode/i)};
+          break;
+        }catch(_){}
+      }
+      if(!disc)return null;
+      try{localStorage.setItem(LS,JSON.stringify(disc));localStorage.setItem(LSTS,String(Date.now()));}catch(_){}
+    }
+    // Etape 3 : requete filtree sur la commune
+    const cols=[disc.cLots,disc.cSyndic,disc.cProc,disc.cPer].filter(Boolean);
+    const u='https://tabular-api.data.gouv.fr/api/resources/'+disc.rid+'/data/?'+encodeURIComponent(disc.cCom)+'__exact='+insee+'&page_size=50'+(cols.length?'&columns='+encodeURIComponent(cols.join(',')):'');
+    const d=await dvfFetch(u);
+    const j=d&&d.json;if(!j)return null;
+    const rows=j.data||[];
+    const total=(j.meta&&j.meta.total!=null)?j.meta.total:rows.length;
+    if(!(total>0))return null;
+    const out={total,sample:rows.length,source:'RNIC/ANAH via data.gouv'};
+    if(rows.length){
+      if(disc.cLots){const ls=rows.map(r=>Number(r[disc.cLots])).filter(v=>v>0);
+        if(ls.length)out.lotsMed=Math.round(median(ls));} // reutilise median() du projet
+      if(disc.cSyndic){const pro=rows.filter(r=>/professionnel/i.test(String(r[disc.cSyndic]||''))).length;
+        out.syndicProPct=Math.round(pro/rows.length*100);}
+      if(disc.cProc){out.nbProc=rows.filter(r=>{const v=String(r[disc.cProc]||'').trim().toLowerCase();
+        return v&&v!=='non'&&v!=='false'&&v!=='0'&&v!=='aucune'&&v!=='nan';}).length;}
+    }
+    return out;
+  }catch(_){return null;}
+}
+
 async function fetchContextProviders(coord){
   if(!coord)return{};
-  const res=await Promise.allSettled([provDemo(coord.insee),provEntreprises(coord.insee),provPlu(coord),provFilosofi(coord.insee),provLoyers(coord.insee,state.type),provRPLS(coord.insee),provFibre(coord.insee),provCrime(coord.insee),provVacance(coord.insee),provIPS(coord.insee),provSitadel(coord.insee)]);
+  const res=await Promise.allSettled([provDemo(coord.insee),provEntreprises(coord.insee),provPlu(coord),provFilosofi(coord.insee),provLoyers(coord.insee,state.type),provRPLS(coord.insee),provFibre(coord.insee),provCrime(coord.insee),provVacance(coord.insee),provIPS(coord.insee),provSitadel(coord.insee),provTaxeFonciere(coord.insee),provZoneABC(coord.insee),provBPE(coord.insee),provCopro(coord.insee)]);
   const v=i=>res[i]&&res[i].status==="fulfilled"?res[i].value:null;
-  const ctx={},iris=v(0),ent=v(1),plu=v(2),filo=v(3),loy=v(4),rpls=v(5),fib=v(6),crime=v(7),vac=v(8),ips=v(9),sitadel=v(10);
-  if(iris)ctx.iris=iris;if(ent)ctx.sirene=ent;if(plu)ctx.plu=plu;if(filo)ctx.filosofi=filo;if(loy)ctx.loyers=loy;if(rpls)ctx.rpls=rpls;if(fib)ctx.fibre=fib;if(crime)ctx.crime=crime;if(vac)ctx.vacance=vac;if(ips)ctx.ips=ips;if(sitadel)ctx.sitadel=sitadel;
+  const ctx={},iris=v(0),ent=v(1),plu=v(2),filo=v(3),loy=v(4),rpls=v(5),fib=v(6),crime=v(7),vac=v(8),ips=v(9),sitadel=v(10),tf=v(11),za=v(12),bpe=v(13),copro=v(14);
+  if(iris)ctx.iris=iris;if(ent)ctx.sirene=ent;if(plu)ctx.plu=plu;if(filo)ctx.filosofi=filo;if(loy)ctx.loyers=loy;if(rpls)ctx.rpls=rpls;if(fib)ctx.fibre=fib;if(crime)ctx.crime=crime;if(vac)ctx.vacance=vac;if(ips)ctx.ips=ips;if(sitadel)ctx.sitadel=sitadel;if(tf)ctx.taxeFonciere=tf;if(za)ctx.zoneABC=za;if(bpe)ctx.bpe=bpe;if(copro)ctx.copro=copro;
   return ctx;
 }
 // ===== Reconciliation ChatGPT x Grok \u2014 W1 : socle contextuel (additif, ZERO impact prix) =====
@@ -3563,6 +3921,17 @@ function contextAnomalies(r,pc){
   if(st&&st.med){const iq=(st.q3-st.q1)/st.med;if(iq>=0.5)A.push("Forte dispersion des prix DVF (ecart Q1-Q3 "+Math.round(iq*100)+" %) : comparables heterogenes, fiabilite reduite.");}
   if((r.realCount||0)>0&&(r.realCount||0)<8)A.push("Peu de ventes comparables ("+r.realCount+") : estimation moins robuste.");
   if(state.dpe==="F"||state.dpe==="G")A.push("Passoire energetique (DPE "+state.dpe+") : decote et contraintes de location a anticiper.");
+  const _lv=state.live||{};
+  if(_lv.catnat&&_lv.catnat.last10y>=3)
+    A.push("CatNat : "+_lv.catnat.last10y+" arr\u00eat\u00e9(s) de catastrophe naturelle ces 10 derni\u00e8res ann\u00e9es"+(_lv.catnat.dernier?" (dernier : "+_lv.catnat.dernier.slice(0,7)+")":" \u2014 commune fr\u00e9quemment sinistr\u00e9e : assurabilit\u00e9 \u00e0 v\u00e9rifier, surco\u00fbt de prime possible.")+". Total historique : "+_lv.catnat.nb+" arr\u00eat\u00e9(s) (source\u00a0: GASPAR/G\u00e9orisques).");
+  else if(_lv.catnat&&_lv.catnat.last5y>=1)
+    A.push("CatNat : "+_lv.catnat.last5y+" arr\u00eat\u00e9(s) ces 5 derni\u00e8res ann\u00e9es. V\u00e9rifier l\u2019historique sinistre avec l\u2019assureur.");
+  if(_lv.rga&&_lv.rga.fort)
+    A.push("RGA \u2014 retrait-gonflement des argiles\u00a0: exposition <b>forte</b> à l'adè du bien. Risque structurel de mouvements différentiels (fondations, façades). Diagnostic de sol recommandé avant offre.");
+  else if(_lv.rga&&_lv.rga.moyen)
+    A.push("RGA\u00a0: exposition <b>moyenne</b> aux argiles. V\u00e9rifier \u00e9tat des fondations et historique sinistre.");
+  const _cop=(state.ctx2||{}).copro;
+  if(_cop&&_cop.nbProc>0&&state.type==="appartement")A.push("RNIC : "+_cop.nbProc+" copropri\u00e9t\u00e9(s) de la commune sous proc\u00e9dure (p\u00e9ril, insalubrit\u00e9, mandataire\u2026) sur un \u00e9chantillon de "+_cop.sample+". V\u00e9rifiez l\u2019immatriculation et les PV d\u2019AG de la copropri\u00e9t\u00e9 vis\u00e9e avant toute offre.");
   const rel=(function(){try{return reliabilityIndex(r).score;}catch(e){return null;}})();
   if(rel!=null&&rel<45)A.push("Indice de fiabilite faible ("+rel+"/100) : recouper avec des sources locales.");
   return A;
@@ -3593,6 +3962,51 @@ function renderContext(r){
   if(x2.iris)extra.push("Population commune : "+eur0(x2.iris.population)+(x2.iris.densite?" ("+eur0(x2.iris.densite)+" hab/km\u00b2)":""));
   if(x2.sirene)extra.push("Entreprises actives : "+eur0(x2.sirene.total));
   if(x2.plu&&(x2.plu.libelle||x2.plu.zone))extra.push("Zonage PLU : "+esc(x2.plu.libelle||x2.plu.zone));
+  const _lvCtx=state.live||{};
+  if(_lvCtx.catnat&&_lvCtx.catnat.nb>0){
+    const cn=_lvCtx.catnat;
+    const topTypes=Object.entries(cn.types||{}).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k,v])=>k+(v>1?" ×"+v:"")).join(", ");
+    let t="CatNat (GASPAR)\u00a0: <b>"+cn.nb+"</b> arr\u00eat\u00e9(s)";
+    if(cn.last10y>0)t+=" dont <b>"+cn.last10y+"</b> ces 10\u00a0ans";
+    if(cn.dernier)t+=" (dernier\u00a0: "+cn.dernier.slice(0,7)+")";
+    if(topTypes)t+=" \u2014 "+topTypes;
+    t+=" (source\u00a0: G\u00e9orisques)";
+    extra.push(t);
+  } else if(_lvCtx.catnat&&_lvCtx.catnat.nb===0){
+    extra.push("CatNat (GASPAR)\u00a0: <b>aucun arr\u00eat\u00e9</b> de catastrophe naturelle historique \u2014 signal favorable pour l\u2019assurabilit\u00e9 (source\u00a0: G\u00e9orisques)");
+  }
+  if(_lvCtx.rga&&(_lvCtx.rga.code||_lvCtx.rga.lib)){
+    const cl=_lvCtx.rga.fort?"var(--bad)":_lvCtx.rga.moyen?"var(--warn)":"var(--good)";
+    extra.push("RGA (argiles)\u00a0: <b style=\"color:"+cl+"\">"+(_lvCtx.rga.lib||_lvCtx.rga.code)+"</b> (G\u00e9orisques \u2014 retrait-gonflement des argiles, risque structurel fondations)");
+  }
+  if(x2.bpe&&x2.bpe.total>0&&x2.iris&&x2.iris.population>0){
+    const _bp10k=Math.round(x2.bpe.total/x2.iris.population*10000);
+    const _bpDoms=Object.keys(x2.bpe.counts||{}).sort().map(k=>BPE_DOM[k]?BPE_DOM[k]+"\u00a0"+x2.bpe.counts[k]:"").filter(Boolean).join(", ");
+    extra.push("\u00c9quipements BPE\u00a0: "+x2.bpe.total+" ( "+_bp10k+"/10\u00a0k\u00a0hab) — "+(_bpDoms||"d\u00e9tail indisponible")+" (source\u00a0: INSEE BPE)");
+  }
+  if(x2.copro&&x2.copro.total>0&&state.type==="appartement"){
+    const c=x2.copro;
+    let t="Copropri\u00e9t\u00e9s immatricul\u00e9es (RNIC)\u00a0: <b>"+eur0(c.total)+"</b> dans la commune";
+    const det=[];
+    if(c.lotsMed!=null)det.push(c.lotsMed+" lots m\u00e9dian");
+    if(c.syndicProPct!=null)det.push(c.syndicProPct+"\u00a0% syndic professionnel");
+    if(c.nbProc!=null)det.push(c.nbProc>0?"<b style=\"color:var(--bad)\">"+c.nbProc+" proc\u00e9dure(s) en cours</b>":"aucune proc\u00e9dure");
+    if(det.length)t+=" \u2014 "+det.join(", ")+(c.sample<c.total?" (\u00e9chantillon de "+c.sample+")":"");
+    t+=" (source\u00a0: ANAH)";
+    extra.push(t);
+  }
+  if(x2.zoneABC&&x2.zoneABC.zone){
+    const z=x2.zoneABC.zone;
+    const desc=z==="Abis"?"Zone A bis \u2014 march\u00e9 tr\u00e8s tendu (Paris + petite couronne)"
+      :z==="A"?"Zone A \u2014 march\u00e9 tr\u00e8s tendu (\u00cele-de-France, C\u00f4te d'Azur, Gen\u00e8ve)"
+      :z==="B1"?"Zone B1 \u2014 march\u00e9 tendu (agglom\u00e9rations &gt;250\u00a0000 hab., grande couronne)"
+      :z==="B2"?"Zone B2 \u2014 march\u00e9 mod\u00e9r\u00e9ment tendu (villes &gt;50\u00a0000 hab.)"
+      :"Zone C \u2014 march\u00e9 d\u00e9tendu (reste du territoire)";
+    const dispositifs=z==="Abis"||z==="A"||z==="B1"?"PTZ neuf, Denormandie, Loc\u2019Avantages \u00e9ligibles"
+      :z==="B2"?"Loc\u2019Avantages \u00e9ligible, PTZ sous conditions"
+      :"Dispositifs nationaux limit\u00e9s (PTZ ancien uniquement)";
+    extra.push("Zonage ABC : <b>"+z+"</b> \u2014 "+desc+" \u00b7 "+dispositifs+" (source\u00a0: DHUP/data.gouv.fr)");
+  }
   const extraHtml=extra.length?`<div style="margin-top:10px;font-size:11.5px;color:var(--ink);line-height:1.7">`+extra.map(e=>`<div>&#8226; ${e}</div>`).join("")+`</div>`:"";
   const idx=pc.indices,idxRow=[["Qualite de vie",idx.qualiteVie],["Liquidite",idx.liquidite],["Patrimonial",idx.patrimonial],["Faible risque",idx.risque]].filter(x=>x[1]!=null);
   const idxHtml=idxRow.length?`<div style="display:flex;gap:7px;margin-top:10px;flex-wrap:wrap">`+idxRow.map(x=>{const c=x[1]>=66?"var(--good)":x[1]>=45?"var(--brand-dark)":x[1]>=30?"var(--warn)":"var(--bad)";return `<div style="flex:1;min-width:68px;background:var(--bg);border-radius:9px;padding:7px 9px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.3px">${x[0]}</div><div class="num" style="font-size:15px;font-weight:800;color:${c}">${x[1]}<span style="font-size:9px;color:var(--ink-soft)">/100</span></div></div>`;}).join("")+`</div>`:"";
@@ -3611,6 +4025,48 @@ function renderContext(r){
     "Ces indices <b>n'influencent pas le prix estim\u00e9</b> (qui reste ancr\u00e9 au DVF r\u00e9el). Ils servent \u00e0 qualifier le contexte et \u00e0 alimenter la note globale du bien. Un indice \u00e0 \u00ab n.d. \u00bb signifie que la source n'a pas r\u00e9pondu ou ne couvre pas cette commune."
   ):"";
   el.innerHTML=`<div style="font-size:12px;color:var(--ink-soft);line-height:1.55;margin-bottom:8px">Contexte consolide a partir des sources publiques disponibles. Ces donnees enrichissent la confiance et les analyses, <b>sans modifier le prix</b>.</div><div>${chips||'<span style="font-size:11.5px;color:var(--ink-soft)">Sources en cours de chargement.</span>'}</div>${extraHtml}${idxHtml}${ctxExplain}${confHtml}${anHtml}<div class="hint" style="margin-top:10px">Richesse des donnees : ${pc.richness} %. Contexte construit a partir de 10+ sources publiques (DVF, Filosofi, RPLS, ARCEP, SSMSI, ADEME, IGN, Georisques, OSM, BAN). Tout impact sur le prix est ancre au DVF local.</div>`;
+}
+/** ===== R1 : double lecture du prix (juste valeur vendeur / prix cible acheteur) =====
+ *  La valeur estimee r.price EST la juste valeur de marche (biais deja prudent : cap anti-cumul,
+ *  correction VEFA, bornage mediane DVF). Le prix cible acheteur applique par-dessus une decote
+ *  de negociation CALIBREE, jamais arbitraire :
+ *   - base = 1/2 de l'erreur mediane mesuree par backtest local (mdape), a defaut le spread ;
+ *   - modulation par la tension du marche : tendu -> decote reduite (peu de marge reelle),
+ *     detendu -> decote elargie ;
+ *   - bornes 2 % / 10 % (pratique courante de negociation immobiliere).
+ *  ZERO impact sur l'estimation elle-meme : pur affichage derive. */
+function dualPricing(r){
+  if(!r||!(r.price>0))return null;
+  const fair=r.price;
+  // Incertitude calibree : mdape backtest (en %) sinon spread de la fourchette
+  const unc=(r.backtest&&r.backtest.mdape>0)?r.backtest.mdape/100:(r.spread||0.08);
+  const src=(r.backtest&&r.backtest.mdape>0)?"backtest local (\u00b1"+r.backtest.mdape+" % sur "+r.backtest.n+" ventes)":"dispersion de la fourchette";
+  const dyn=r.dyn||{};
+  const tens=dyn.subTension!=null?Math.max(0,Math.min(1,dyn.subTension/100)):0.5;
+  // Tendu (tens=1) -> x0.6 ; detendu (tens=0) -> x1.4
+  const mod=1.4-tens*0.8;
+  const discount=Math.max(0.02,Math.min(0.10,unc*0.5*mod));
+  const buyer=Math.round(fair*(1-discount));
+  return{fair:Math.round(fair),buyer,discount,tens,src};
+}
+function renderDualPrice(r){
+  const el=$("dualPrice");if(!el)return;
+  const dp=dualPricing(r);
+  if(!dp){el.style.display="none";return;}
+  const tensLbl=dp.tens>0.6?"march\u00e9 tendu":dp.tens<0.4?"march\u00e9 d\u00e9tendu":"march\u00e9 \u00e9quilibr\u00e9";
+  el.innerHTML='<div style="display:flex;gap:8px">'+
+    '<div style="flex:1;background:rgba(255,255,255,.08);border-radius:11px;padding:9px 11px;text-align:center">'+
+      '<div style="font-size:9.5px;color:rgba(207,224,233,.8);text-transform:uppercase;letter-spacing:.3px">Juste valeur (vendeur)</div>'+
+      '<div class="num" style="font-size:16px;font-weight:800;color:#fff">'+eur0(dp.fair)+' \u20ac</div>'+
+    '</div>'+
+    '<div style="flex:1;background:rgba(127,227,212,.14);border:1px solid rgba(127,227,212,.35);border-radius:11px;padding:9px 11px;text-align:center">'+
+      '<div style="font-size:9.5px;color:#7fe3d4;text-transform:uppercase;letter-spacing:.3px">Prix cible acheteur</div>'+
+      '<div class="num" style="font-size:16px;font-weight:800;color:#7fe3d4">'+eur0(dp.buyer)+' \u20ac</div>'+
+      '<div style="font-size:9.5px;color:rgba(207,224,233,.75)">\u2212'+(dp.discount*100).toFixed(1)+' % n\u00e9go ('+tensLbl+')</div>'+
+    '</div>'+
+  '</div>'+
+  '<div style="margin-top:6px;font-size:10px;color:rgba(207,224,233,.65);line-height:1.45;text-align:left">D\u00e9cote de n\u00e9gociation calibr\u00e9e sur '+dp.src+', modul\u00e9e par la tension locale, born\u00e9e 2\u201310 %. La juste valeur sert au vendeur (voir panneau Vendeur) ; le prix cible \u00e0 l\u2019acheteur (d\u00e9tail dans l\u2019aide \u00e0 la n\u00e9gociation).</div>';
+  el.style.display="";
 }
 // ===== Prompt 7 : moteur d'aide a la negociation =====
 function negotiation(r){
@@ -4217,7 +4673,15 @@ function renderExplain(r){
   const parts=priceFormation(r).filter(l=>map[l.k]&&Math.abs(l.eur)>=seuil).map(l=>map[l.k]+" "+(l.eur>0?"+":"\u2212")+eur0(Math.abs(l.eur))+" \u20ac");
   el.innerHTML="<b>En clair :</b> march\u00e9 local \u00e0 "+eur0(r.sqmBase)+" \u20ac/m\u00b2 ("+(r.realCount||0)+" ventes r\u00e9elles)"+(parts.length?" \u00b7 "+parts.join(" \u00b7 "):"")+". <span style=\"color:var(--ink-soft);font-size:10px\">D\u00e9tail complet en Mode Expert \u2192 Fiabilit\u00e9 &amp; formation du prix.</span>";
   el.style.display="";
-  const bdN=$("bdNote");if(bdN)bdN.innerHTML="D\u00e9composition d\u00e9taill\u00e9e disponible en <b>Mode Expert</b> \u2192 \u00ab\u00a0Fiabilit\u00e9 &amp; formation du prix\u00a0\u00bb.";
+  const bdN=$("bdNote");
+  if(bdN){
+    if(r.backtest){
+      const _sp=r.spread?Math.round(r.spread*100):null;
+      bdN.innerHTML="Erreur mesur\u00e9e sur ventes r\u00e9elles\u00a0: <b class=\"num\">\u00b1"+r.backtest.mdape+"\u00a0%</b> m\u00e9diane \u00b7 80\u00a0% des estimations \u00e0 <b class=\"num\">\u00b1"+r.backtest.p80+"\u00a0%</b> \u00b7 "+r.backtest.n+"\u00a0ventes test\u00e9es"+(_sp?" \u00b7 fourchette affich\u00e9e\u00a0\u00b1"+_sp+"\u00a0%":"")+". <span style=\"color:var(--ink-soft);font-size:10px\">D\u00e9tail en Mode Expert \u2192 Fiabilit\u00e9.</span>";
+    } else {
+      bdN.innerHTML="D\u00e9composition d\u00e9taill\u00e9e disponible en <b>Mode Expert</b> \u2192 \u00ab\u00a0Fiabilit\u00e9 &amp; formation du prix\u00a0\u00bb.";
+    }
+  }
 }
 async function fetchAllData(coord){
   const out={realBase:null,realPts:null,realStats:null,diag:"",engineData:null,bandWidened:false};
@@ -4559,9 +5023,12 @@ function renderAllPanels(r,_conf,realBase,diag){
   if(_ma&&r.marketAnchor&&r.surface){const _gap=Math.round((r.price-r.marketAnchor)/r.marketAnchor*100);_ma.innerHTML="<span style='color:rgba(207,224,233,.7);font-weight:600'>Marché DVF brut :</span> <b class='num' style='color:#fff'>"+eur0(r.marketAnchor)+" €</b> <span style='opacity:.75'>· Estimation avec caractéristiques : <b style='color:#fff'>"+((_gap>=0?"+":"")+_gap)+" %</b></span>";_ma.style.display="";}else if(_ma){_ma.style.display="none";}
   $("gLow").textContent=eur(r.low);$("gMid").textContent=eur(r.price);$("gHigh").textContent=eur(r.high);
   const w=Math.min(45,r.spread*100*1.6);$("gFill").style.left=(50-w)+"%";$("gFill").style.right=(50-w)+"%";$("gDot").style.left="50%";
+  renderDualPrice(r);
   const cd=$("confDot"),ct=$("confTxt");
   const _cc=r.confScore>=70?"#7fe3d4":r.confScore>=45?"#F2D31C":"#E8742A";
-  cd.style.background=_cc;ct.textContent="Indice de confiance "+r.confScore+"/100 \u00b7 "+r.confLabel;
+  cd.style.background=_cc;
+  const _btTxt=r.backtest?` \u00b7 \u00b1${r.backtest.mdape}\u00a0% mesur\u00e9 (${r.backtest.n}\u00a0ventes)`:"";
+  ct.textContent="Indice de confiance "+r.confScore+"/100 \u00b7 "+r.confLabel+_btTxt;
   renderConfBreak(_conf);
   renderExplain(r);
   const fpn=$("finPriceNote");if(fpn)fpn.style.display="none"; // recalcule apres renseignement du loyer (voir renderRentalDefaults)
@@ -4579,7 +5046,7 @@ function setupAsyncCallbacks(r,enrichPromise,ctxProm){
   enrichPromise.then(e=>{state.enrich=e;if(lastResult===r){applyGeoDyn(r);renderLocStats(r);renderEnrich(r);renderMap(r);}}).catch(()=>{state.enrich={};if(lastResult===r){renderEnrich(r);renderMap(r);}});
   ctxProm.then(c=>{state.ctx2=c||{};if(lastResult===r){patchDynReal(r);
     const _lr=getRentSqm(r);if(r.sqmBase&&_lr!==r.dyn.loyerM2){r.dyn.loyerM2=_lr;r.dyn.rendementMarche=+(_lr*12/r.sqmBase*100).toFixed(1);}
-    updateBadges(r);computeAll(r);renderInsee(r);renderMarket(r);renderContext(r);if(typeof renderBenchmark==="function")renderBenchmark(r);}}).catch(()=>{state.ctx2={};if(lastResult===r)renderContext(r);});
+    updateBadges(r);computeAll(r);renderInsee(r);renderMarket(r);renderContext(r);updateTaxeNote();if(typeof renderBenchmark==="function")renderBenchmark(r);}}).catch(()=>{state.ctx2={};if(lastResult===r)renderContext(r);});
   setShimmer("enrichPanel");setShimmer("contextPanel");
 }
 /* Garde-fou : empeche une estimation de rester bloquee si une API publique ne repond pas.
@@ -5343,52 +5810,98 @@ var repLogoData="";
 function buildReportHtml(r,name,color,logo){
   const $=id=>document.getElementById(id);
   const grab=id=>{const e=$(id);return e?e.innerHTML:"";};
+  const esc2=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
   const adresse=($("adresse")&&$("adresse").value)||r.city||"Bien immobilier";
   const today=new Date().toLocaleDateString("fr-FR",{day:"2-digit",month:"long",year:"numeric"});
   const P=projParams(r),b=projCore(P);let payback=null;for(let t=1;t<=P.H;t++){if(projCore(Object.assign({},P,{H:t})).van>=0){payback=t;break;}}
-  const metric=(l,v)=>`<div class="kpi"><div class="kl">${l}</div><div class="kv num">${v}</div></div>`;
-  const synthMetrics=metric("Estimation",eur(r.price))+metric("Fourchette",eur(r.low)+" \u2013 "+eur(r.high))+metric("Prix / m\u00b2",eur0(r.sqm))+metric("Confiance",(r.confScore||"\u2014")+"/100")+metric("VAN ("+P.H+" ans)",eur0(b.van))+metric("TRI",(b.tri*100).toFixed(1)+" %")+metric("Cash-flow / mois",eur0(b.cf1m))+metric("D\u00e9lai de r\u00e9cup.",payback?"An "+payback:"> "+P.H+" ans");
+  const metric=(l,v,sub)=>`<div class="kpi"><div class="kl">${l}</div><div class="kv num">${v}</div>${sub?`<div class="ksub">${sub}</div>`:""}</div>`;
+  // --- KPIs synth\u00e8se ---
+  const dp=dualPricing(r);
+  const kpiEstim=metric("Estimation (juste valeur)",eur(r.price),eur0(r.sqm)+" \u20ac/m\u00b2");
+  const kpiAch=dp?metric("Prix cible acheteur",eur(dp.buyer),"\u2212"+(dp.discount*100).toFixed(1)+" % n\u00e9go"):"";
+  const kpiConf=metric("Indice de confiance",(r.confScore||"\u2014")+"/100",r.backtest?"\u00b1"+r.backtest.mdape+" % (backtest "+r.backtest.n+" ventes)":"sans backtest local");
+  const kpiFourch=metric("Fourchette probabiliste",eur(r.low)+"\u2013"+eur(r.high),"80\u00a0% de probabilit\u00e9");
+  const kpiVan=metric("VAN ("+P.H+" ans)",eur0(b.van),b.tri!=null?(b.tri*100).toFixed(1)+" % TRI":"");
+  const kpiCF=metric("Cash-flow / mois",eur0(b.cf1m),payback?"Recup. an "+payback:"> "+P.H+" ans");
+  // Score territoire (R2)
+  const ts2=(state.ctx2)?territoryScore(state.ctx2):null;
+  const kpiTS=ts2?metric("Score territoire",ts2.score+"/100",ts2.nInd+" indicateurs vs France"):"";
+  const synthMetrics=kpiEstim+kpiAch+kpiConf+kpiFourch+kpiVan+kpiCF+kpiTS;
+  // --- Comparables ---
   let comps="";
   if(r.realPts&&r.realPts.length){const top=[...r.realPts].sort((a,c)=>Math.abs(a.surf-r.surface)-Math.abs(c.surf-r.surface)).slice(0,8);
     comps='<table class="t"><tr><th>Surface</th><th>Date</th><th>Prix</th><th>\u20ac/m\u00b2</th></tr>'+top.map(p=>`<tr><td>${Math.round(p.surf)} m\u00b2</td><td>${p.date?String(p.date).slice(0,10):""}</td><td>${eur(p.price)}</td><td>${eur0(p.ppm)}</td></tr>`).join("")+'</table>';}
   const st=r.realStats;
-  const dvfStat=st?`<p>${r.realCount} ventes analys\u00e9es \u00b7 m\u00e9diane ${eur0(st.west||st.med)}/m\u00b2 \u00b7 fourchette Q1\u2013Q3 ${eur0(st.q1)}\u2013${eur0(st.q3)}/m\u00b2.</p>`:"<p>Peu de donn\u00e9es DVF disponibles pour ce secteur.</p>";
+  const dvfStat=st?`<p>${r.realCount} ventes analys\u00e9es \u00b7 m\u00e9diane ${eur0(st.west||st.med)}/m\u00b2 \u00b7 Q1\u2013Q3 ${eur0(st.q1)}\u2013${eur0(st.q3)}/m\u00b2${r.backtest?" \u00b7 pr\u00e9cision mesur\u00e9e \u00b1"+r.backtest.mdape+" %":""}.</p>`:"<p>Peu de donn\u00e9es DVF disponibles pour ce secteur.</p>";
+  // --- Risques & environnement ---
   const live=state.live||{},e=state.enrich||{},attr=(e.air||e.osm||e.schools)?enrichScore(e):null;
   let risk="<ul>";
   if(live.risqueLbl)risk+="<li><b>Risques naturels :</b> "+live.risqueLbl.replace(/^\d+\s*:\s*/,"")+"</li>";
   if(live.radon)risk+="<li><b>Radon :</b> "+live.radon.label+" (classe "+live.radon.classe+"/3)</li>";
-  if(live&&(live.basias||live.basol))risk+="<li><b>Sols (500 m) :</b> "+(live.basias||0)+" ancien(s) site(s) industriel(s)"+(live.basol?" \u00b7 "+live.basol+" site(s)/sol(s) pollu\u00e9(s)":"")+"</li>";
+  if(live&&(live.basias||live.basol))risk+="<li><b>Sols (500\u00a0m) :</b> "+(live.basias||0)+" ancien(s) site(s) industriel(s)"+(live.basol?" \u00b7 "+live.basol+" site(s)/sol(s) pollu\u00e9(s)":"")+",</li>";
   if(attr!=null)risk+="<li><b>Attractivit\u00e9 locale :</b> "+attr+"/100</li>";
-  if(e.air&&e.air.aqi!=null)risk+="<li><b>Qualit\u00e9 de l'air :</b> AQI "+e.air.aqi+"</li>";
+  if(e.air&&e.air.aqi!=null)risk+="<li><b>Qualit\u00e9 de l\u2019air :</b> AQI "+e.air.aqi+"</li>";
+  // RNIC alerte (R6)
+  const copro=(state.ctx2||{}).copro;
+  if(copro&&copro.nbProc>0)risk+="<li><b style='color:#E0533D'>\u26a0\ufe0f Copropri\u00e9t\u00e9s \u2014 RNIC :</b> "+copro.nbProc+" proc\u00e9dure(s) en cours sur l\u2019\u00e9chantillon commune. V\u00e9rifier l\u2019immatriculation et les PV d\u2019AG avant toute offre.</li>";
   risk+="</ul>";
-  const ch=(title,id)=>{const s=grab(id);return s?`<div class="chart"><div class="ct">${title}</div>${s}</div>`:"";};
+  // --- Territoire (R2-R6) ---
+  const ctx2=state.ctx2||{},filo=ctx2.filosofi||{},iris=ctx2.iris||{},za=ctx2.zoneABC,tf=ctx2.taxeFonciere,bpe=ctx2.bpe;
+  let terr="<ul>";
+  if(za&&za.zone)terr+="<li><b>Zone ABC :</b> "+za.zone+"</li>";
+  if(ts2)terr+="<li><b>Score territoire :</b> "+ts2.score+"/100 ("+ts2.nInd+" indicateurs)\u00a0\u2014 "+ts2.parts.map(p=>p[0]+"\u00a0"+Math.round(p[2])).join(" \u00b7 ")+"</li>";
+  if(filo.revenu)terr+="<li><b>Revenu m\u00e9dian :</b> "+eur0(filo.revenu)+" \u20ac/an</li>";
+  if(filo.chomage)terr+="<li><b>Ch\u00f4mage :</b> "+filo.chomage.toFixed(1)+" %"+(filo.choVar8!=null?" ("+(filo.choVar8>=0?"+":"")+filo.choVar8.toFixed(1)+" pt sur 8 ans)":"")+"</li>";
+  if(iris.popCagr!=null)terr+="<li><b>Croissance population :</b> "+(iris.popCagr>=0?"+":"")+iris.popCagr.toFixed(2)+" %/an ("+iris.yearStart+"\u2013"+iris.yearEnd+")</li>";
+  if(filo.menCagr8!=null)terr+="<li><b>Croissance des m\u00e9nages :</b> "+(filo.menCagr8>=0?"+":"")+filo.menCagr8.toFixed(2)+" %/an</li>";
+  if(tf&&tf.taux)terr+="<li><b>Taux TFPB :</b> "+tf.taux.toFixed(1)+" % (global commune + interco)"+(tf.teom?" \u00b7 TEOM "+tf.teom.toFixed(1)+" %":"")+", source DGFiP REI"+(tf.annee?" "+tf.annee:"")+"</li>";
+  if(bpe&&bpe.total>0&&iris.population>0){const bpk=Math.round(bpe.total/iris.population*10000);terr+="<li><b>\u00c9quipements BPE :</b> "+bpe.total+" (\u00a0"+bpk+"/10\u00a0k hab)"+(bpe.counts?"\u00a0\u2014 "+Object.keys(bpe.counts).sort().map(k=>BPE_DOM[k]?BPE_DOM[k]+"\u00a0"+bpe.counts[k]:"").filter(Boolean).join(", "):"")+", source INSEE BPE</li>";}
+  if(copro&&copro.total>0)terr+="<li><b>Copropri\u00e9t\u00e9s (RNIC) :</b> "+copro.total+" immeubles immatricul\u00e9s"+(copro.lotsMed?" \u00b7 "+copro.lotsMed+" lots m\u00e9dian":"")+(copro.syndicProPct!=null?" \u00b7 "+copro.syndicProPct+" % syndic pro":"")+", source ANAH</li>";
+  terr+="</ul>";
+  // --- Charts ---
+  const ch=(title,id)=>{const s=grab(id);return s?`<div class="chart"><div class="ct">${title}</div>${s}</div>`:"";}
   const typeLbl={appartement:"Appartement",maison:"Maison",terrain:"Terrain"}[r.type]||"";
-  return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Rapport \u2014 ${adresse}</title><style>
-:root{--bg:#F6F8FA;--surface:#fff;--ink:#0F2A43;--ink-soft:#5B7186;--line:#E5EAF0;--brand:${color};--brand-dark:${color};--brand-tint:#E6F7F4;--good:#15A66A;--warn:#E8A33D;--bad:#E0533D;--bad-tint:#FBE9E5;--warn-tint:#FBF1DE;}
+  // --- Methodologie & sources ---
+  const btNote=r.backtest?`Backtest LOO sur ${r.backtest.n} ventes r\u00e9elles : erreur m\u00e9diane mesur\u00e9e \u00b1${r.backtest.mdape}\u00a0% (P80\u00a0: \u00b1${r.backtest.p80}\u00a0%). `:"";
+  const dpNote=dp?`Prix cible acheteur : juste valeur\u2013${(dp.discount*100).toFixed(1)}\u00a0% (d\u00e9cote calibr\u00e9e sur ${dp.src}, modul\u00e9e par tension du march\u00e9). `:"";
+  const tsNote=ts2?`Score territoire : ${ts2.score}/100 (${ts2.nInd} indicateurs pond\u00e9r\u00e9s, renormalis\u00e9s sur donn\u00e9es disponibles). `:"";
+  const sourcesHtml=`<p><b>Sources de donn\u00e9es :</b> DVF/Cerema (ventes r\u00e9elles), BAN/IGN (g\u00e9olocalisation), G\u00e9orisques (risques naturels, BASIAS/BASOL, radon), Open-Meteo (qualit\u00e9 de l\u2019air), DEPP/MEN (IPS \u00e9coles), OpenStreetMap/Overpass (proximit\u00e9s), INSEE Filosofi (revenus, ch\u00f4mage, m\u00e9nages), INSEE Populations l\u00e9gales (croissance d\u00e9mographique), RPLS (logement social), ARCEP (fibre), SSMSI/Minist\u00e8re de l\u2019Int\u00e9rieur (criminalit\u00e9), DGFiP REI (fiscalit\u00e9 TFPB), DHUP/data.gouv.fr (zonage ABC), INSEE BPE (base permanente des \u00e9quipements), ANAH/RNIC (copropri\u00e9t\u00e9s), Sitadel/SDES (permis de construire), ADEME (DPE), ARCEP (d\u00e9groupage).</p>`;
+  return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Rapport \u2014 ${esc2(adresse)}</title><style>
+:root{--bg:#F6F8FA;--surface:#fff;--ink:#0F2A43;--ink-soft:#5B7186;--line:#E5EAF0;--brand:${color};--good:#15A66A;--warn:#E8A33D;--bad:#E0533D;}
 *{box-sizing:border-box}body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);margin:0;line-height:1.5;font-size:13px}
-.page{padding:26px 30px;max-width:760px;margin:0 auto}
-.cover{min-height:92vh;display:flex;flex-direction:column;justify-content:center;text-align:center;page-break-after:always}
+.page{padding:26px 30px;max-width:780px;margin:0 auto}
+.cover{min-height:90vh;display:flex;flex-direction:column;justify-content:center;text-align:center;page-break-after:always}
 .cover img{max-height:64px;max-width:200px;object-fit:contain;margin:0 auto 22px}
 .cover h1{font-size:30px;color:${color};margin:0 0 8px}.cover .addr{font-size:18px;font-weight:600;margin:6px 0}.cover .meta{color:var(--ink-soft);margin-top:18px;font-size:13px}
-h2{font-size:16px;color:${color};border-bottom:2px solid ${color};padding-bottom:5px;margin:0 0 12px}
-section.sec{page-break-before:always;padding-top:6px}section.sec.first{page-break-before:avoid}
-.kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
-.kpi{border:1px solid var(--line);border-radius:9px;padding:9px 11px}.kl{font-size:10px;color:var(--ink-soft);text-transform:uppercase}.kv{font-size:17px;font-weight:800}
+h2{font-size:15px;color:${color};border-bottom:2px solid ${color};padding-bottom:4px;margin:0 0 11px}
+section.sec{page-break-before:always;padding-top:4px}section.sec.first{page-break-before:avoid}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:10px 0}
+.kpi{border:1px solid var(--line);border-radius:8px;padding:8px 10px}.kl{font-size:9.5px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.3px}.kv{font-size:16px;font-weight:800}.ksub{font-size:9.5px;color:var(--ink-soft);margin-top:1px}
 .t{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}.t th{text-align:left;color:var(--ink-soft);font-weight:600;border-bottom:1px solid var(--line);padding:4px 6px}.t td{padding:4px 6px;border-bottom:1px solid #f0f3f6}
-.chart{margin:14px 0}.ct{font-weight:700;font-size:12.5px;margin-bottom:4px;color:var(--ink)}
+.chart{margin:12px 0}.ct{font-weight:700;font-size:12px;margin-bottom:3px;color:var(--ink)}
 .num{font-variant-numeric:tabular-nums}.hint{font-size:10.5px;color:var(--ink-soft);line-height:1.45}
-ul{margin:6px 0;padding-left:18px}li{margin:3px 0}p{margin:6px 0}
-.foot{margin-top:18px;border-top:1px solid var(--line);padding-top:8px;font-size:9.5px;color:#99a4ae}
-@media print{section.sec{page-break-before:always}section.sec.first{page-break-before:avoid}.cover{page-break-after:always}}
+ul{margin:5px 0;padding-left:18px}li{margin:3px 0}p{margin:5px 0}
+.foot{margin-top:16px;border-top:1px solid var(--line);padding-top:7px;font-size:9px;color:#99a4ae;line-height:1.5}
+.no-print{position:fixed;top:12px;right:16px;z-index:999}
+.no-print button{background:${color};color:#fff;border:none;border-radius:8px;padding:10px 18px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.2)}
+@media print{.no-print{display:none}section.sec{page-break-before:always}section.sec.first{page-break-before:avoid}.cover{page-break-after:always}}
 </style></head><body>
-<div class="page cover">${logo?`<img src="${logo}" alt="">`:""}<h1>Rapport d'analyse immobili\u00e8re</h1><div class="addr">${adresse}</div><div>${typeLbl} \u00b7 ${r.surface} m\u00b2</div><div class="meta">${name}<br>${today}</div></div>
-<div class="page"><section class="sec first"><h2>Synth\u00e8se</h2><div class="kpis">${synthMetrics}</div></section>
-<section class="sec first" style="margin-top:18px"><h2>Analyse &amp; recommandations</h2>${grab("reportPanel")}</section></div>
-<div class="page"><section class="sec"><h2>Estimation &amp; comparables</h2>${dvfStat}${ch("Positionnement prix / surface","dvfScatter")}${comps}</section></div>
-<div class="page"><section class="sec"><h2>Analyse financi\u00e8re</h2>${grab("proKpiPanel")}${ch("Cash-flow d'exploitation","chartCF")}${ch("VAN selon l'ann\u00e9e de revente","chartVanYear")}${ch("Patrimoine net","chartEq")}</section></div>
+<div class="no-print"><button onclick="window.print()">\uD83D\uDDA8\uFE0F Imprimer / Enregistrer PDF</button></div>
+<div class="page cover">${logo?`<img src="${logo}" alt="">`:""}<h1>Rapport d\u2019analyse immobili\u00e8re</h1><div class="addr">${esc2(adresse)}</div><div>${typeLbl} \u00b7 ${r.surface}\u00a0m\u00b2</div><div class="meta">${esc2(name)}<br>${today}</div></div>
+<div class="page">
+<section class="sec first"><h2>Synth\u00e8se</h2><div class="kpis">${synthMetrics}</div></section>
+<section class="sec first" style="margin-top:18px"><h2>Analyse &amp; recommandations</h2>${grab("reportPanel")}</section>
+</div>
+<div class="page"><section class="sec"><h2>Estimation &amp; march\u00e9 local</h2>${dvfStat}${ch("Positionnement prix / surface","dvfScatter")}${comps}</section></div>
+<div class="page"><section class="sec"><h2>Territoire &amp; contexte</h2>${terr}${grab("benchmarkPanel")?'<div class="chart"><div class="ct">Benchmark France</div>'+grab("benchmarkPanel")+'</div>':""}</section></div>
+<div class="page"><section class="sec"><h2>Analyse financi\u00e8re</h2>${grab("proKpiPanel")}${ch("Cash-flow","chartCF")}${ch("VAN selon l\u2019ann\u00e9e de revente","chartVanYear")}${ch("Patrimoine net","chartEq")}</section></div>
 <div class="page"><section class="sec"><h2>Fiscalit\u00e9</h2>${grab("fiscalPanel")}</section></div>
 <div class="page"><section class="sec"><h2>Risques &amp; environnement</h2>${risk}</section>
-<section class="sec first" style="margin-top:18px"><h2>Annexes &amp; m\u00e9thodologie</h2><p>Estimation par comparaison de ventes r\u00e9elles (DVF/Cerema) pond\u00e9r\u00e9es par similarit\u00e9 de surface et de r\u00e9cence, ajust\u00e9es (DPE, \u00e9tat, \u00e9tage, exposition\u2026). Indice de confiance multicrit\u00e8re. Projection actualis\u00e9e (VAN/TRI) sur ${P.H} ans. Fiscalit\u00e9 et frais indicatifs.</p><p><b>Sources :</b> DVF/Cerema, BAN, G\u00e9orisques (risques, radon), Open-Meteo (air), Annuaire de l'\u00c9ducation nationale, OpenStreetMap.</p><div class="foot">Document g\u00e9n\u00e9r\u00e9 par Estimo le ${today}. Estimation statistique \u00e0 but informatif \u2014 ne constitue ni une expertise immobili\u00e8re, ni un conseil fiscal ou en investissement. Valeurs indicatives \u00e0 confirmer par des professionnels.</div></section></div>
+<section class="sec first" style="margin-top:18px"><h2>M\u00e9thodologie &amp; sources</h2>
+<p>Estimation par comparaison de ventes r\u00e9elles (DVF/Cerema) pond\u00e9r\u00e9es par similarit\u00e9 de surface (poids 3\u00d7) et de r\u00e9cence, corrig\u00e9es contamination VEFA, ajust\u00e9es (DPE, \u00e9tat, \u00e9tage, exposition\u2026). Fusion de 6 estimateurs ind\u00e9pendants (comparables, OLS, h\u00e9donique, financier, IRL, CAGR). ${btNote}${dpNote}${tsNote}Projection actualis\u00e9e (VAN/TRI) sur ${P.H}\u00a0ans. Fiscalit\u00e9 et frais indicatifs.</p>
+${sourcesHtml}
+<div class="foot">Document g\u00e9n\u00e9r\u00e9 par Estimo le ${today}. Estimation statistique \u00e0 but informatif \u2014 ne constitue ni une expertise immobili\u00e8re certifi\u00e9e (art. L271-6 CCH), ni un conseil fiscal ou en investissement. Valeurs indicatives \u00e0 confirmer par des professionnels agr\u00e9\u00e9s.</div>
+</section></div>
 </body></html>`;
 }
 function generateReport(){
@@ -6830,8 +7343,68 @@ const BENCH_FR={
   prixAppt:3320, prixMaison:2280, loyerM2:13.8,
   revenuMedian:23160, chomage:7.3, pauvrete:14.4,
   crime:32.4, fibre:89, social:17.3, vacance:8.2,
-  rendementBrut:5.0 // rendement locatif brut moyen France (loyer x 12 / prix)
+  rendementBrut:5.0,
+  tfpb:34.0,
+  popCagr:0.3,
+  menCagr:0.85,
+  chomageRP:12.8,
+  bpePer10k:420   // équipements BPE / 10 000 hab — estimatif post-nettoyage BPE 2022 (~2.8M éq./68M hab)
 };
+// Libellés des 7 domaines BPE (1ère lettre du champ sdom = clé)
+const BPE_DOM={A:"Services",B:"Commerces",C:"Enseignement",D:"Sant\u00e9",E:"Transports",F:"Sports/culture",G:"Tourisme"};
+
+/** ===== R2 : Score territoire Estimo /100 (style comparateur de territoires) =====
+ *  Score pondere multicritere de la commune vs France. PURE fonction de state.ctx2 : ZERO impact prix.
+ *  Chaque sous-score vaut 50 = moyenne France, borne [0,100].
+ *  Ponderations (total 100), justifiees cote acheteur/investisseur :
+ *   - vacance 15        : tension du marche la plus directe (demande reelle constatee)
+ *   - croissance pop 15 : moteur structurel de la demande future
+ *   - croissance menages 10 : demande de logements au sens strict (1 menage = 1 logement)
+ *   - chomage 10, revenu 10, criminalite 10 : solvabilite et attractivite residentielle
+ *   - zone ABC 10       : tension officielle DHUP (agrege offre/demande)
+ *   - pauvrete 5, fibre 5, TFPB 5, IPS 5 : facteurs secondaires de valorisation
+ *  Les poids des indicateurs indisponibles sont renormalises (le score reste comparable). */
+function territoryScore(ctx){
+  if(!ctx)return null;
+  const clamp=v=>Math.max(0,Math.min(100,v));
+  const parts=[]; // {lbl, poids, sous-score}
+  const filo=ctx.filosofi||{},iris=ctx.iris||{},vac=ctx.vacance,crime=ctx.crime,fib=ctx.fibre,tf=ctx.taxeFonciere,za=ctx.zoneABC,ips=ctx.ips;
+
+  // Vacance : 8,2% France ; chaque point d'ecart = ±8 pts de score
+  if(vac&&vac.taux!=null)parts.push(["Vacance",15,clamp(50-(vac.taux-BENCH_FR.vacance)*8)]);
+  // Croissance population : ±0,5 pt/an d'ecart = ±20 pts
+  if(iris.popCagr!=null)parts.push(["Croissance pop.",15,clamp(50+(iris.popCagr-BENCH_FR.popCagr)*40)]);
+  // Croissance menages : meme echelle
+  if(filo.menCagr8!=null)parts.push(["Croissance m\u00e9nages",10,clamp(50+(filo.menCagr8-BENCH_FR.menCagr)*40)]);
+  // Chomage RP : chaque point d'ecart = ±5 pts
+  if(filo.chomage!=null&&filo.chomage>0)parts.push(["Ch\u00f4mage",10,clamp(50-(filo.chomage-BENCH_FR.chomageRP)*5)]);
+  // Revenu median : ratio vs France, ±50% d'ecart = ±50 pts
+  const rev=filo.revenuMedian!=null?filo.revenuMedian:filo.revenu;
+  if(rev>0)parts.push(["Revenu",10,clamp(50+(rev/BENCH_FR.revenuMedian-1)*100)]);
+  // Criminalite : ratio inverse
+  const ctx_crime=crime?(crime.tauxBiens!=null?crime.tauxBiens:crime.tx):null;
+  if(ctx_crime!=null)parts.push(["S\u00e9curit\u00e9",10,clamp(50-(ctx_crime/BENCH_FR.crime-1)*60)]);
+  // Zone ABC : grille de tension officielle DHUP
+  if(za&&za.zone){const zs={Abis:90,A:85,B1:70,B2:50,C:35}[za.zone];if(zs!=null)parts.push(["Tension (zone "+za.zone+")",10,zs]);}
+  // Pauvrete : ratio inverse
+  if(filo.pauvrete>0)parts.push(["Pauvret\u00e9",5,clamp(50-(filo.pauvrete/BENCH_FR.pauvrete-1)*50)]);
+  // Fibre — BUG FIX : provFibre retourne ftth, pas pct
+  if(fib&&fib.ftth!=null)parts.push(["Fibre",5,clamp(50+(fib.ftth-BENCH_FR.fibre)*1.5)]);
+  // Équipements BPE — densité communale vs France (~420/10k, estimatif)
+  if(bpe&&bpe.total>0&&iris&&iris.population>0){
+    const _bpePer10k=bpe.total/iris.population*10000;
+    parts.push(["\u00c9quipements",5,clamp(50+(_bpePer10k/BENCH_FR.bpePer10k-1)*50)]);
+  }
+  // TFPB (fiscalite) : ratio inverse
+  if(tf&&tf.taux>0)parts.push(["Fiscalit\u00e9 TFPB",5,clamp(50-(tf.taux/BENCH_FR.tfpb-1)*50)]);
+  // IPS ecoles : 100 = moyenne nationale ; ±25 pts IPS = ±50 pts de score
+  if(ips&&ips.ips!=null)parts.push(["\u00c9coles (IPS)",5,clamp(50+(ips.ips-100)*2)]);
+
+  if(parts.length<3)return null; // trop peu d'indicateurs : score non significatif
+  const wSum=parts.reduce((s,p)=>s+p[1],0);
+  const score=Math.round(parts.reduce((s,p)=>s+p[1]*p[2],0)/wSum);
+  return{score,parts,wSum,nInd:parts.length};
+}
 
 function renderBenchmark(r){
   const el=$("benchPanel");if(!el)return;
@@ -6886,14 +7459,62 @@ function renderBenchmark(r){
 
   // --- 4. Revenu median (Filosofi) ---
   const filo=ctx.filosofi;
-  if(filo&&filo.revenuMedian>0){
+  const _rev=filo?(filo.revenuMedian!=null?filo.revenuMedian:filo.revenu):null;
+  if(_rev>0){
     rows.push({
       lbl:"Revenu m\u00e9dian par UC",
-      local:eur0(filo.revenuMedian)+" \u20ac",
+      local:eur0(_rev)+" \u20ac",
       france:eur0(BENCH_FR.revenuMedian)+" \u20ac",
-      ecart:(filo.revenuMedian/BENCH_FR.revenuMedian-1),
+      ecart:(_rev/BENCH_FR.revenuMedian-1),
       sens:"haut",
       note:"Source : INSEE Filosofi \u2014 d\u00e9terminant de la solvabilit\u00e9 des locataires et des acqu\u00e9reurs"
+    });
+  }
+
+  // --- 4b. Croissance de la population (INSEE populations millesimees) ---
+  const iris=ctx.iris;
+  if(iris&&iris.popCagr!=null){
+    rows.push({
+      lbl:"Croissance population /an",
+      local:(iris.popCagr>=0?"+":"")+iris.popCagr.toFixed(2).replace(".",",")+"\u00a0%",
+      france:"+"+BENCH_FR.popCagr.toFixed(2).replace(".",",")+"\u00a0%",
+      // Ecart en points (pas en ratio : les taux proches de zero rendent le ratio instable)
+      ecart:Math.max(-1,Math.min(1,(iris.popCagr-BENCH_FR.popCagr)/1.5)),
+      sens:"haut",
+      note:(iris.popCagr>=1?"Commune en forte croissance : demande de logements structurellement soutenue."
+        :iris.popCagr<0?"Population en baisse : vigilance sur la demande locative et la revente \u00e0 long terme."
+        :"Dynamique proche de la moyenne nationale.")+
+        (iris.yearStart?" P\u00e9riode "+iris.yearStart+"\u2013"+iris.yearEnd+" ("+eur0(iris.popStart)+" \u2192 "+eur0(iris.popEnd)+" hab.).":"")+
+        " Source : INSEE populations l\u00e9gales."
+    });
+  }
+
+  // --- 4c. Croissance des menages (Filosofi, si disponible) ---
+  if(filo&&filo.menCagr8!=null){
+    rows.push({
+      lbl:"Croissance m\u00e9nages /an",
+      local:(filo.menCagr8>=0?"+":"")+filo.menCagr8.toFixed(2).replace(".",",")+"\u00a0%",
+      france:"+"+BENCH_FR.menCagr.toFixed(2).replace(".",",")+"\u00a0%",
+      ecart:Math.max(-1,Math.min(1,(filo.menCagr8-BENCH_FR.menCagr)/1.5)),
+      sens:"haut",
+      note:"Nombre de foyers = demande directe de logements. "+
+        (filo.menCagr8>BENCH_FR.menCagr*1.5?"Croissance des m\u00e9nages nettement sup\u00e9rieure \u00e0 la moyenne : moteur de valorisation."
+        :filo.menCagr8<0?"Nombre de m\u00e9nages en baisse : signal d\u00e9favorable pour la demande."
+        :"\u00c9volution dans la norme nationale.")+
+        " Source : INSEE Filosofi 2012\u20132020."
+    });
+  }
+
+  // --- 4d. Chomage (recensement, Filosofi) ---
+  if(filo&&filo.chomage!=null&&filo.chomage>0){
+    rows.push({
+      lbl:"Ch\u00f4mage 15\u201364 ans (RP)",
+      local:filo.chomage.toFixed(1).replace(".",",")+"\u00a0%",
+      france:BENCH_FR.chomageRP.toFixed(1).replace(".",",")+"\u00a0%",
+      ecart:(filo.chomage/BENCH_FR.chomageRP-1),
+      sens:"bas",
+      note:(filo.choVar8!=null?"\u00c9volution sur 8 ans : "+(filo.choVar8>=0?"+":"")+filo.choVar8.toFixed(1).replace(".",",")+" pt. ":"")+
+        "D\u00e9finition recensement (\u2260 taux BIT national de 7,3\u00a0%). Source : INSEE Filosofi/RP."
     });
   }
 
@@ -6911,41 +7532,43 @@ function renderBenchmark(r){
 
   // --- 6. Criminalite (SSMSI) ---
   const crime=ctx.crime;
-  if(crime&&crime.tauxBiens!=null){
+  const _crimeTx=crime?(crime.tauxBiens!=null?crime.tauxBiens:crime.tx):null;
+  if(_crimeTx!=null){
     rows.push({
       lbl:"Atteintes aux biens",
-      local:crime.tauxBiens.toFixed(1).replace(".",",")+" \u2030",
+      local:_crimeTx.toFixed(1).replace(".",",")+" \u2030",
       france:BENCH_FR.crime.toFixed(1).replace(".",",")+" \u2030",
-      ecart:(crime.tauxBiens/BENCH_FR.crime-1),
+      ecart:(_crimeTx/BENCH_FR.crime-1),
       sens:"bas",
-      note:"Source : SSMSI (minist\u00e8re de l'Int\u00e9rieur) \u2014 cambriolages, vols, d\u00e9gradations pour 1 000 habitants"
+      note:"Source : SSMSI (minist\u00e8re de l'Int\u00e9rieur) \u2014 cambriolages, vols, d\u00e9gradations pour 1 000 habitants"+(crime&&crime.depTx!=null?". Moyenne d\u00e9partementale : "+crime.depTx.toFixed(1).replace(".",",")+" \u2030":"")
     });
   }
 
-  // --- 7. Couverture fibre (ARCEP) ---
+  // --- 7. Couverture fibre (ARCEP) --- BUG FIX : provFibre retourne ftth, pas pct
   const fibre=ctx.fibre;
-  if(fibre&&fibre.pct!=null){
+  if(fibre&&fibre.ftth!=null){
     rows.push({
       lbl:"Couverture fibre (FTTH)",
-      local:Math.round(fibre.pct)+" %",
+      local:Math.round(fibre.ftth)+" %",
       france:BENCH_FR.fibre+" %",
-      ecart:(fibre.pct/BENCH_FR.fibre-1),
+      ecart:(fibre.ftth/BENCH_FR.fibre-1),
       sens:"haut",
       note:"Source : ARCEP \u2014 crit\u00e8re devenu quasi \u00e9liminatoire pour les jeunes actifs et le t\u00e9l\u00e9travail"
     });
   }
 
-  // --- 8. Logement social (RPLS) ---
+  // --- 8. Logement social (RPLS) --- BUG FIX : rpls retourne {social:n}, pas {pct:x}
   const rpls=ctx.rpls;
-  if(rpls&&rpls.pct!=null){
+  const _rplsPct=(rpls&&rpls.social>0&&iris&&iris.population>0)?+(rpls.social/iris.population*100).toFixed(1):null;
+  if(_rplsPct!=null){
     rows.push({
       lbl:"Part de logement social",
-      local:rpls.pct.toFixed(1).replace(".",",")+" %",
-      france:BENCH_FR.social.toFixed(1).replace(".",",")+" %",
-      ecart:(rpls.pct/BENCH_FR.social-1),
+      local:_rplsPct.toFixed(1).replace(".",",")+" %",
+      france:BENCH_FR.social.toFixed(1).replace(".",",")+" %",
+      ecart:(_rplsPct/BENCH_FR.social-1),
       sens:"neutre",
-      note:rpls.pct>30?"Forte pr\u00e9sence de logement social \u2014 peut peser sur la valorisation, mais assure une demande locative stable"
-        :rpls.pct<8?"Peu de logement social \u2014 commune souvent r\u00e9sidentielle, sous quota SRU (p\u00e9nalit\u00e9s possibles)"
+      note:_rplsPct>30?"Forte pr\u00e9sence de logement social \u2014 peut peser sur la valorisation, mais assure une demande locative stable"
+        :_rplsPct<8?"Peu de logement social \u2014 commune souvent r\u00e9sidentielle, sous quota SRU (p\u00e9nalit\u00e9s possibles)"
         :"Mixit\u00e9 proche de la moyenne (source : RPLS)"
     });
   }
@@ -6961,6 +7584,42 @@ function renderBenchmark(r){
       sens:"bas",
       note:vac.taux>12?"Vacance \u00e9lev\u00e9e : signal d'alerte sur la demande locative et la liquidit\u00e9 \u00e0 la revente"
         :"Source : "+(vac.source||"INSEE")+" \u2014 mesure la tension du march\u00e9 local"
+    });
+  }
+
+  // --- 10. Taux TFPB (DGFiP REI) ---
+  const tfRei=ctx.taxeFonciere;
+  if(tfRei&&tfRei.taux>0){
+    const anneeSuffix=tfRei.annee?" "+tfRei.annee:"";
+    rows.push({
+      lbl:"Taux TFPB commune",
+      local:tfRei.taux.toFixed(1).replace(".",",")+" %",
+      france:BENCH_FR.tfpb.toFixed(1).replace(".",",")+" %",
+      ecart:(tfRei.taux/BENCH_FR.tfpb-1),
+      sens:"bas",
+      note:(tfRei.taux>BENCH_FR.tfpb*1.3?"Fiscalit\u00e9 locale \u00e9lev\u00e9e : surco\u00fbt TFPB visible sur la charge annuelle propri\u00e9taire."
+        :tfRei.taux<BENCH_FR.tfpb*0.75?"Fiscalit\u00e9 locale avantageuse : TFPB nettement inf\u00e9rieure \u00e0 la moyenne nationale."
+        :"Fiscalit\u00e9 dans la moyenne nationale.")+
+        (tfRei.teom?" TEOM\u00a0: "+tfRei.teom.toFixed(1)+" %.":"")+
+        " Source\u00a0: DGFiP REI"+anneeSuffix+" \u2014 taux global (commune + interco + TSE/GEMAPI). Appliqu\u00e9 sur la valeur locative cadastrale, non sur le prix de march\u00e9."
+    });
+  }
+
+
+  // --- 11. Équipements BPE (INSEE Base Permanente des Équipements) ---
+  const bpe=ctx.bpe;
+  if(bpe&&bpe.total>0&&iris&&iris.population>0){
+    const bpePer10k=Math.round(bpe.total/iris.population*10000);
+    const bpeDoms=Object.keys(bpe.counts||{}).sort().map(k=>BPE_DOM[k]?BPE_DOM[k]+" "+bpe.counts[k]:"").filter(Boolean).join(" · ");
+    rows.push({
+      lbl:"\u00c9quipements BPE",
+      local:bpePer10k+" / 10 k hab",
+      france:"~"+BENCH_FR.bpePer10k+" / 10 k hab",
+      ecart:Math.max(-1,Math.min(1,(bpePer10k/BENCH_FR.bpePer10k-1))),
+      sens:"haut",
+      note:"Densit\u00e9 d'\u00e9quipements de service \u00e0 la population vs France (~420/10 k hab, estimatif BPE 2022). "+
+        (bpeDoms?"D\u00e9tail : "+bpeDoms+". ":"")+
+        "Source : INSEE BPE. La r\u00e9f\u00e9rence nationale est approximative (agr\u00e9gation nationale BPE)."
     });
   }
 
@@ -7003,6 +7662,8 @@ function renderBenchmark(r){
   }).length;
   const total=scored.length;
   let verdict="";
+  // R2 : score territoire pondere /100
+  const ts=territoryScore(ctx);
   if(total>0){
     const pctFav=fav/total;
     const lbl=pctFav>=0.75?"Secteur nettement au-dessus de la moyenne nationale"
@@ -7010,9 +7671,16 @@ function renderBenchmark(r){
       :pctFav>=0.25?"Secteur en retrait sur plusieurs indicateurs"
       :"Secteur significativement en dessous de la moyenne nationale";
     const col=pctFav>=0.6?"var(--good)":pctFav>=0.35?"var(--warn)":"var(--bad)";
+    const tsCol=ts?(ts.score>=60?"var(--good)":ts.score>=45?"var(--warn)":"var(--bad)"):null;
+    const tsHtml=ts?'<div style="display:flex;align-items:center;gap:12px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line)">'+
+      '<div style="text-align:center"><div class="num" style="font-size:26px;font-weight:800;color:'+tsCol+'">'+ts.score+'<span style="font-size:12px;color:var(--ink-soft)">/100</span></div>'+
+      '<div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.3px">Score territoire</div></div>'+
+      '<div style="flex:1;font-size:10.5px;color:var(--ink-soft);line-height:1.5">Moyenne pond\u00e9r\u00e9e de <b>'+ts.nInd+' indicateurs</b> vs France (50 = moyenne nationale). Poids : tension du march\u00e9 (vacance, zone ABC) et dynamique d\u00e9mographique en t\u00eate, puis solvabilit\u00e9, s\u00e9curit\u00e9, \u00e9quipements. D\u00e9tail : '+
+      ts.parts.map(p=>p[0]+" "+Math.round(p[2])).join(" \u00b7 ")+'.</div></div>':"";
     verdict='<div style="padding:11px 13px;background:var(--bg);border-radius:11px;border-left:4px solid '+col+';margin-bottom:14px">'+
       '<div style="font-size:13px;font-weight:800;color:'+col+';margin-bottom:2px">'+lbl+'</div>'+
       '<div style="font-size:11.5px;color:var(--ink)"><b>'+fav+' indicateur'+(fav>1?"s":"")+' sur '+total+'</b> sont plus favorables que la moyenne fran\u00e7aise.</div>'+
+      tsHtml+
     '</div>';
   }
 
