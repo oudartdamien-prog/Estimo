@@ -1313,7 +1313,7 @@ function _lsSet(url,val,ttlMs){
  * Zonage ABC, BPE, DPE → 30 jours. */
 function _urlTTL(url){
   if(/filosofi|ssmsi|arcep|rpls-20|vacance|rpls\/|logements-locatifs|comparateur-de-territoires|population-francaise|tabular-api/i.test(url))return 7*86400*1000;
-  if(/bpe-all|fiscalite-locale|zonage-abc|catalogues\/dpe|sitadel/i.test(url))return 30*86400*1000;
+  if(/bpe-all|fiscalite-locale|zonage-abc|catalogues\/dpe|sitadel|georef-france-iris|filosofi.*iris/i.test(url))return 30*86400*1000;
   if(/data\.education\.gouv.*ips|ips.*education|ips_ecoles/i.test(url))return 7*86400*1000;
   if(/georisques.*catnat|catnat.*georisques|georisques.*rga|rga.*georisques/i.test(url))return 7*86400*1000;
   return 0; // pas de cache LS
@@ -3884,12 +3884,73 @@ async function provCopro(insee){
   }catch(_){return null;}
 }
 
+/** ===== R11 : maille IRIS (intra-communale) =====
+ *  Objectif : positionner le QUARTIER (IRIS) vs la commune sur le revenu median Filosofi.
+ *  Affichage/contexte uniquement : ZERO impact sur le prix estime (le micro-emplacement
+ *  est deja capture par geoAdj/OSM, ancre au DVF local).
+ *  Etape A - identification IRIS : dataset georef-france-iris (public.opendatasoft, portail
+ *    deja utilise), requete geographique intersects/within_distance. Noms de champs decouverts
+ *    par regex sur le premier enregistrement (aucun nom code en dur).
+ *  Etape B - Filosofi IRIS : le slug exact du dataset variant selon les millesimes, decouverte
+ *    a l'execution via la recherche catalogue opendatasoft (search=filosofi iris), puis
+ *    detection du champ revenu median (regex /med/, valeur plausible 5-80 k) et du champ IRIS.
+ *  Cache localStorage 30 j pour la decouverte. Echec silencieux : null, rien d'invente. */
+async function provQuartier(coord){
+  if(!coord||coord.lat==null||coord.lon==null)return null;
+  try{
+    const pt="geom'POINT("+coord.lon.toFixed(6)+" "+coord.lat.toFixed(6)+")'";
+    // --- Etape A : code IRIS du point ---
+    let rec=null;
+    const IRIS_DS="https://public.opendatasoft.com/api/explore/v2.1/catalog/datasets/georef-france-iris/records";
+    for(const w of ["intersects(geo_shape,"+pt+")","within_distance(geo_point_2d,"+pt+",200m)"]){
+      try{const d=await dvfFetch(IRIS_DS+"?where="+encodeURIComponent(w)+"&limit=1");
+        rec=(d&&d.json&&d.json.results&&d.json.results[0])||null;if(rec)break;}catch(_){}
+    }
+    if(!rec)return null;
+    const keys=Object.keys(rec);
+    const kCode=keys.find(k=>/^iris.*code$|^code.*iris$/i.test(k))||keys.find(k=>/iris/i.test(k)&&/code/i.test(k));
+    const kName=keys.find(k=>/^iris.*name$|^iris.*lib|lib.*iris/i.test(k));
+    const irisCode=kCode?String(Array.isArray(rec[kCode])?rec[kCode][0]:rec[kCode]):null;
+    const irisName=kName?String(Array.isArray(rec[kName])?rec[kName][0]:rec[kName]):null;
+    if(!irisCode)return null;
+    const out={iris:irisCode,nom:irisName};
+    // Commune mono-IRIS (code = insee+'0000') : le quartier = la commune, comparaison sans objet
+    if(/0000$/.test(irisCode)){out.monoIris=true;return out;}
+    // --- Etape B : Filosofi IRIS (decouverte du dataset) ---
+    const LS='estimo_firis_disc_v1',LSTS='estimo_firis_ts_v1';let disc=null;
+    try{const ts=parseInt(localStorage.getItem(LSTS)||'0',10);
+      if(Date.now()-ts<30*86400*1000){const raw=localStorage.getItem(LS);if(raw)disc=JSON.parse(raw);}
+    }catch(_){}
+    if(!disc){
+      const cat=await dvfFetch("https://public.opendatasoft.com/api/explore/v2.1/catalog/datasets?search="+encodeURIComponent("filosofi iris")+"&limit=10");
+      const dsets=(cat&&cat.json&&cat.json.results)||[];
+      const hit=dsets.find(d=>{const id=(d.dataset_id||d.dataset&&d.dataset.dataset_id||"");return /filosofi/i.test(id)&&/iris/i.test(id);});
+      if(!hit)return out; // IRIS identifie mais pas de revenus IRIS : on retourne quand meme le quartier
+      const dsId=hit.dataset_id||(hit.dataset&&hit.dataset.dataset_id);
+      const fields=(hit.fields||(hit.dataset&&hit.dataset.fields)||[]).map(f=>f.name||f);
+      const fIris=fields.find(f=>/^iris$|^codgeo$|iris.*code|code.*iris/i.test(f));
+      // Champ revenu median : privilegier le millesime le plus recent (suffixe annee max)
+      const medCands=fields.filter(f=>/med/i.test(f)&&!/menage|men_/i.test(f));
+      medCands.sort((a,b)=>{const ya=(a.match(/(\d{2,4})/)||[0,0])[1],yb=(b.match(/(\d{2,4})/)||[0,0])[1];return Number(yb)-Number(ya);});
+      const fMed=medCands[0]||null;
+      if(!dsId||!fIris||!fMed)return out;
+      disc={dsId,fIris,fMed};
+      try{localStorage.setItem(LS,JSON.stringify(disc));localStorage.setItem(LSTS,String(Date.now()));}catch(_){}
+    }
+    const q=await dvfFetch("https://public.opendatasoft.com/api/explore/v2.1/catalog/datasets/"+disc.dsId+"/records?where="+encodeURIComponent(disc.fIris+'="'+irisCode+'"')+"&limit=1&select="+encodeURIComponent(disc.fMed));
+    const r2=(q&&q.json&&q.json.results&&q.json.results[0])||null;
+    const med=r2?Number(r2[disc.fMed]):null;
+    if(med>=5000&&med<=80000)out.revenu=Math.round(med); // garde-fou plausibilite
+    return out;
+  }catch(_){return null;}
+}
+
 async function fetchContextProviders(coord){
   if(!coord)return{};
-  const res=await Promise.allSettled([provDemo(coord.insee),provEntreprises(coord.insee),provPlu(coord),provFilosofi(coord.insee),provLoyers(coord.insee,state.type),provRPLS(coord.insee),provFibre(coord.insee),provCrime(coord.insee),provVacance(coord.insee),provIPS(coord.insee),provSitadel(coord.insee),provTaxeFonciere(coord.insee),provZoneABC(coord.insee),provBPE(coord.insee),provCopro(coord.insee)]);
+  const res=await Promise.allSettled([provDemo(coord.insee),provEntreprises(coord.insee),provPlu(coord),provFilosofi(coord.insee),provLoyers(coord.insee,state.type),provRPLS(coord.insee),provFibre(coord.insee),provCrime(coord.insee),provVacance(coord.insee),provIPS(coord.insee),provSitadel(coord.insee),provTaxeFonciere(coord.insee),provZoneABC(coord.insee),provBPE(coord.insee),provCopro(coord.insee),provQuartier(coord)]);
   const v=i=>res[i]&&res[i].status==="fulfilled"?res[i].value:null;
-  const ctx={},iris=v(0),ent=v(1),plu=v(2),filo=v(3),loy=v(4),rpls=v(5),fib=v(6),crime=v(7),vac=v(8),ips=v(9),sitadel=v(10),tf=v(11),za=v(12),bpe=v(13),copro=v(14);
-  if(iris)ctx.iris=iris;if(ent)ctx.sirene=ent;if(plu)ctx.plu=plu;if(filo)ctx.filosofi=filo;if(loy)ctx.loyers=loy;if(rpls)ctx.rpls=rpls;if(fib)ctx.fibre=fib;if(crime)ctx.crime=crime;if(vac)ctx.vacance=vac;if(ips)ctx.ips=ips;if(sitadel)ctx.sitadel=sitadel;if(tf)ctx.taxeFonciere=tf;if(za)ctx.zoneABC=za;if(bpe)ctx.bpe=bpe;if(copro)ctx.copro=copro;
+  const ctx={},iris=v(0),ent=v(1),plu=v(2),filo=v(3),loy=v(4),rpls=v(5),fib=v(6),crime=v(7),vac=v(8),ips=v(9),sitadel=v(10),tf=v(11),za=v(12),bpe=v(13),copro=v(14),quart=v(15);
+  if(iris)ctx.iris=iris;if(ent)ctx.sirene=ent;if(plu)ctx.plu=plu;if(filo)ctx.filosofi=filo;if(loy)ctx.loyers=loy;if(rpls)ctx.rpls=rpls;if(fib)ctx.fibre=fib;if(crime)ctx.crime=crime;if(vac)ctx.vacance=vac;if(ips)ctx.ips=ips;if(sitadel)ctx.sitadel=sitadel;if(tf)ctx.taxeFonciere=tf;if(za)ctx.zoneABC=za;if(bpe)ctx.bpe=bpe;if(copro)ctx.copro=copro;if(quart)ctx.quartier=quart;
   return ctx;
 }
 // ===== Reconciliation ChatGPT x Grok \u2014 W1 : socle contextuel (additif, ZERO impact prix) =====
@@ -3962,6 +4023,29 @@ function renderContext(r){
   if(x2.iris)extra.push("Population commune : "+eur0(x2.iris.population)+(x2.iris.densite?" ("+eur0(x2.iris.densite)+" hab/km\u00b2)":""));
   if(x2.sirene)extra.push("Entreprises actives : "+eur0(x2.sirene.total));
   if(x2.plu&&(x2.plu.libelle||x2.plu.zone))extra.push("Zonage PLU : "+esc(x2.plu.libelle||x2.plu.zone));
+  if(x2.quartier&&x2.quartier.iris){
+    const qt=x2.quartier;
+    if(qt.monoIris){
+      extra.push("Quartier (IRIS)\u00a0: commune mono-IRIS \u2014 les indicateurs communaux d\u00e9crivent d\u00e9j\u00e0 le quartier (source\u00a0: INSEE)");
+    }else{
+      let t="Quartier (IRIS "+esc(qt.nom||qt.iris)+")";
+      const comRev=(x2.filosofi&&(x2.filosofi.revenuMedian!=null?x2.filosofi.revenuMedian:x2.filosofi.revenu))||null;
+      if(qt.revenu){
+        t+="\u00a0: revenu m\u00e9dian <b>"+eur0(qt.revenu)+"\u00a0\u20ac</b>";
+        if(comRev>0){
+          const gap=Math.round((qt.revenu/comRev-1)*100);
+          const cl=gap>=8?"var(--good)":gap<=-8?"var(--bad)":"var(--ink)";
+          t+=" \u2014 <b style=\"color:"+cl+"\">"+(gap>=0?"+":"")+gap+"\u00a0%</b> vs commune ("+eur0(comRev)+"\u00a0\u20ac)";
+          if(gap>=8)t+=" \u00b7 quartier plus ais\u00e9 que la moyenne communale";
+          else if(gap<=-8)t+=" \u00b7 quartier plus modeste que la moyenne communale";
+        }
+        t+=" (source\u00a0: INSEE Filosofi, maille IRIS)";
+      }else{
+        t+=" identifi\u00e9 \u2014 revenus IRIS non disponibles (secret statistique fr\u00e9quent sur les petits IRIS)";
+      }
+      extra.push(t);
+    }
+  }
   const _lvCtx=state.live||{};
   if(_lvCtx.catnat&&_lvCtx.catnat.nb>0){
     const cn=_lvCtx.catnat;
@@ -5851,6 +5935,8 @@ function buildReportHtml(r,name,color,logo){
   if(za&&za.zone)terr+="<li><b>Zone ABC :</b> "+za.zone+"</li>";
   if(ts2)terr+="<li><b>Score territoire :</b> "+ts2.score+"/100 ("+ts2.nInd+" indicateurs)\u00a0\u2014 "+ts2.parts.map(p=>p[0]+"\u00a0"+Math.round(p[2])).join(" \u00b7 ")+"</li>";
   if(filo.revenu)terr+="<li><b>Revenu m\u00e9dian :</b> "+eur0(filo.revenu)+" \u20ac/an</li>";
+  const _qt=ctx2.quartier;
+  if(_qt&&_qt.revenu&&filo.revenu>0&&!_qt.monoIris){const _g=Math.round((_qt.revenu/filo.revenu-1)*100);terr+="<li><b>Quartier (IRIS "+esc2(_qt.nom||_qt.iris)+") :</b> "+eur0(_qt.revenu)+" \u20ac/an ("+(_g>=0?"+":"")+_g+" % vs commune) \u2014 maille infra-communale INSEE</li>";}
   if(filo.chomage)terr+="<li><b>Ch\u00f4mage :</b> "+filo.chomage.toFixed(1)+" %"+(filo.choVar8!=null?" ("+(filo.choVar8>=0?"+":"")+filo.choVar8.toFixed(1)+" pt sur 8 ans)":"")+"</li>";
   if(iris.popCagr!=null)terr+="<li><b>Croissance population :</b> "+(iris.popCagr>=0?"+":"")+iris.popCagr.toFixed(2)+" %/an ("+iris.yearStart+"\u2013"+iris.yearEnd+")</li>";
   if(filo.menCagr8!=null)terr+="<li><b>Croissance des m\u00e9nages :</b> "+(filo.menCagr8>=0?"+":"")+filo.menCagr8.toFixed(2)+" %/an</li>";
@@ -7368,7 +7454,7 @@ function territoryScore(ctx){
   if(!ctx)return null;
   const clamp=v=>Math.max(0,Math.min(100,v));
   const parts=[]; // {lbl, poids, sous-score}
-  const filo=ctx.filosofi||{},iris=ctx.iris||{},vac=ctx.vacance,crime=ctx.crime,fib=ctx.fibre,tf=ctx.taxeFonciere,za=ctx.zoneABC,ips=ctx.ips;
+  const filo=ctx.filosofi||{},iris=ctx.iris||{},vac=ctx.vacance,crime=ctx.crime,fib=ctx.fibre,tf=ctx.taxeFonciere,za=ctx.zoneABC,ips=ctx.ips,bpe=ctx.bpe||null;
 
   // Vacance : 8,2% France ; chaque point d'ecart = ±8 pts de score
   if(vac&&vac.taux!=null)parts.push(["Vacance",15,clamp(50-(vac.taux-BENCH_FR.vacance)*8)]);
