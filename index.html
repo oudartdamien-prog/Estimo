@@ -6050,17 +6050,18 @@ function renderWorks(){
     energyPv=Math.min(energyPv,px*0.08); // plafond conservateur (~2 classes DPE, biais acquéreur)
     return{cost:cost,val:valNonE+eCost+energyPv,duree:cost>0?Math.round(1+dur*0.6):0};
   };
-  var sumHtml=function(){var t=tot(),pv=t.val-t.cost,roi=t.cost>0?pv/t.cost*100:0;
+  var sumHtml=function(){try{var t=tot(),pv=t.val-t.cost,roi=t.cost>0?pv/t.cost*100:0;
     if(t.cost<=0)return '<div class="hint" style="margin-top:12px">Cochez les postes pr\u00e9vus pour estimer budget, dur\u00e9e, plus-value et ROI. Chaque montant estim\u00e9 reste librement ajustable.</div>';
     var cells=[["Co\u00fbt total des travaux",eur0(t.cost),"var(--ink)"],["Dur\u00e9e estim\u00e9e",t.duree+" sem.","var(--ink)"],["Plus-value g\u00e9n\u00e9r\u00e9e",(pv>=0?"+":"")+eur0(pv),pv>=0?"var(--good)":"var(--bad)"],["ROI des travaux",(roi>=0?"+":"")+roi.toFixed(0)+" %",roi>=50?"var(--good)":roi>=0?"var(--warn)":"var(--bad)"]];
-    return '<div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:9px">'+cells.map(function(c){return '<div style="background:var(--bg);border-radius:10px;padding:9px 11px"><div style="font-size:10px;color:var(--ink-soft);text-transform:uppercase">'+c[0]+'</div><div class="num" style="font-size:17px;font-weight:800;color:'+c[2]+'">'+c[1]+'</div></div>';}).join("")+'</div><div style="margin-top:10px"><button id="worksApply" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--brand-dark);background:#fff;color:var(--brand-dark);font-weight:700;font-size:13px;cursor:pointer">Reporter '+eur0(t.cost)+' dans \u00ab Travaux \u00e0 financer \u00bb</button></div><div class="hint" style="margin-top:8px">Montants indexés ICC INSEE '+HYP.iccActuel+'/'+HYP.iccBase+' (co\u00fbt construction, +'+(((ICC_RATIO_G-1)*100).toFixed(1))+'\u00a0%), ajust\u00e9s \u00e0 la surface et librement modifiables. TVA\u00a0: 5,5\u00a0% (\u00e9nerg\u00e9tique) \u00b7 10\u00a0% (r\u00e9novation) \u00b7 20\u00a0% (neuf). \u00ab Plus-value g\u00e9n\u00e9r\u00e9e \u00bb\u00a0: pour les postes \u00e9nerg\u00e9tiques (isolation, menuiseries, chauffage) = <b>valeur verte</b> r\u00e9elle (prix \u00d7 gain de classe DPE) ; pour les autres = part du co\u00fbt r\u00e9cup\u00e9r\u00e9e \u00e0 la revente. Indicatif, selon march\u00e9 local et \u00e9tat initial.</div>';};
+    var iccNote=HYP&&HYP.iccActuel&&HYP.iccBase?"Montants index\u00e9s ICC INSEE "+HYP.iccActuel+"/"+HYP.iccBase+" (+"+((ICC_RATIO_G-1)*100).toFixed(1)+"\u00a0%)":"Montants estim\u00e9s (index\u00e9s construction)";
+    return '<div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:9px">'+cells.map(function(c){return '<div style="background:var(--bg);border-radius:10px;padding:9px 11px"><div style="font-size:10px;color:var(--ink-soft);text-transform:uppercase">'+c[0]+'</div><div class="num" style="font-size:17px;font-weight:800;color:'+c[2]+'">'+c[1]+'</div></div>';}).join("")+'</div><div style="margin-top:10px"><button id="worksApply" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--brand-dark);background:#fff;color:var(--brand-dark);font-weight:700;font-size:13px;cursor:pointer">Reporter '+eur0(t.cost)+' dans \u00ab Travaux \u00e0 financer \u00bb</button></div><div class="hint" style="margin-top:8px">'+iccNote+', ajust\u00e9s \u00e0 la surface et librement modifiables. TVA\u00a0: 5,5\u00a0% (\u00e9nerg\u00e9tique) \u00b7 10\u00a0% (r\u00e9novation) \u00b7 20\u00a0% (neuf). \u00ab Plus-value g\u00e9n\u00e9r\u00e9e \u00bb\u00a0: pour les postes \u00e9nerg\u00e9tiques = <b>valeur verte</b> r\u00e9elle (prix \u00d7 gain de classe DPE) ; pour les autres = part du co\u00fbt r\u00e9cup\u00e9r\u00e9e \u00e0 la revente. Indicatif, selon march\u00e9 local et \u00e9tat initial.</div>';}catch(_){return '';}};
   var bindApply=function(){var ap=$("worksApply");if(ap)ap.addEventListener("click",function(){$("iTravaux").value=tot().cost;if(lastResult){computeAll(lastResult);computeResale(lastResult);renderFinPrice(lastResult);}});};
   el.innerHTML='<div style="display:flex;flex-direction:column;gap:6px">'+list+'</div><div id="worksSum">'+sumHtml()+'</div><div id="mprBlock" style="margin-top:14px"></div>';
   bindApply();
-  renderMprBlock();
+  try{renderMprBlock();}catch(_){}
   el.querySelectorAll('.works-item').forEach(function(it){var id=it.dataset.id,cb=it.querySelector('.wchk'),ci=it.querySelector('.wcost');
     cb.addEventListener("change",function(){worksSel[id]=worksSel[id]||{};worksSel[id].on=cb.checked;renderWorks();});
-    ci.addEventListener("input",function(){worksSel[id]=worksSel[id]||{};worksSel[id].cost=(ci.value==="")?null:Math.max(0,Math.round(+ci.value));var sm=$("worksSum");if(sm){sm.innerHTML=sumHtml();bindApply();}renderMprBlock();});
+    ci.addEventListener("input",function(){worksSel[id]=worksSel[id]||{};worksSel[id].cost=(ci.value==="")?null:Math.max(0,Math.round(+ci.value));var sm=$("worksSum");if(sm){sm.innerHTML=sumHtml();bindApply();}try{renderMprBlock();}catch(_){}});
   });
 }
 // R14 — Estimation MaPrimeRénov' 2026 (par geste) sur les postes énergétiques sélectionnés.
@@ -6069,9 +6070,9 @@ function renderWorks(){
 // (aide la plus faible), aides plafonnées par l'écrêtement, jamais d'aide au-delà du coût.
 var mprState={cat:null,nbPers:2,idf:null};
 function renderMprBlock(){
+  try{
   var box=$("mprBlock");if(!box)return;
   var r=lastResult;if(!r){box.innerHTML="";return;}
-  var S=r.surface||50;
   var cp=(($("cp")&&$("cp").value)||"").trim(),dept=cp.slice(0,2);
   var idfAuto=MPR_DEPTS_IDF.indexOf(dept)>=0;
   var idf=(mprState.idf!=null)?mprState.idf:idfAuto;
@@ -6122,6 +6123,7 @@ function renderMprBlock(){
   var cs=$("mprCat");if(cs)cs.addEventListener("change",function(){mprState.cat=+cs.value;renderMprBlock();});
   var pr=$("mprPers");if(pr)pr.addEventListener("input",function(){var v=Math.max(1,Math.min(12,Math.round(+pr.value)||2));mprState.nbPers=v;mprState.cat=null;renderMprBlock();});
   var ix=$("mprIdf");if(ix)ix.addEventListener("change",function(){mprState.idf=ix.checked;mprState.cat=null;renderMprBlock();});
+  }catch(_){}
 }
 /* ===== Op\u00e9ration achat-revente (particulier OU marchand de biens) ===== */
 function notaireRateMdB(years){
