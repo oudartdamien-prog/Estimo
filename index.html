@@ -671,7 +671,7 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
   <!-- R&#201;SULTATS -->
   <div id="results" class="simple">
 
-    <div id="modeBar" style="order:-1"><div class="seg" id="segMode" role="group" aria-label="Mode d'affichage"><button data-m="simple" class="on">&#9889; Essentiel</button><button data-m="invest">&#128188; Investisseur</button><button data-m="expert">&#128300; Expert</button></div><div class="hint" style="margin-top:6px"><b>Essentiel</b> : verdict + prix + risques. <b>Investisseur</b> : + locatif, fiscal, n'essentiel pour d&#233;égo, benchmark, travaux. <b>Expert</b> : tous les calculs.</div></div>
+    <div id="modeBar" style="order:-1"><div class="seg" id="segMode" role="group" aria-label="Mode d'affichage"><button data-m="simple" class="on">&#9889; Essentiel</button><button data-m="invest">&#128188; Investisseur</button><button data-m="expert">&#128300; Expert</button></div><div class="hint" style="margin-top:6px"><b>Essentiel</b> : verdict + prix + risques. <b>Investisseur</b> : + locatif, fiscal, l'essentiel pour n&#233;go, benchmark, travaux. <b>Expert</b> : tous les calculs.</div></div>
     <section class="card" id="synthCard" style="order:0;border-left:4px solid var(--brand)"><div class="card-head"><div class="step-no">&#9889;</div><div><h2>Synth&#232;se en 60 secondes</h2><div class="sub">L'essentiel pour d&#233;cider &#8212; touchez une ligne pour ouvrir le d&#233;tail</div></div></div><div id="synth60Panel"></div></section>
     <section class="card" id="decisionCard" style="order:0"><div id="decisionPanel"></div><div class="hint" style="padding:0 2px">Score d'acquisition : synth&#232;se multicrit&#232;re (prix, rentabilit&#233;, march&#233;, DPE, cash-flow, risque). Distinct du verdict fond&#233; sur la seule VAN affich&#233; plus bas dans la Synth&#232;se de l'investissement.</div></section>
     <section class="card expert-only" id="reportCard" style="order:7"><div class="card-head"><div class="step-no">&#128221;</div><div><h2>Rapport d'analyse</h2><div class="sub">Synth&#232;se r&#233;dig&#233;e automatiquement &#224; partir de vos donn&#233;es</div></div></div><div id="reportPanel"></div></section>
@@ -1092,7 +1092,64 @@ const HYP = {
   forfaitTravauxMdB: 0.15,
 };
 
-const EPTB_DEP={"01":75,"02":30,"03":22,"04":55,"05":50,"06":280,"07":42,"08":25,"09":28,"10":35,"11":45,"12":25,"13":160,"14":72,"15":18,"16":30,"17":78,"18":25,"19":22,"2A":65,"2B":80,"21":55,"22":52,"23":12,"24":28,"25":58,"26":68,"27":62,"28":60,"29":58,"30":95,"31":120,"32":22,"33":130,"34":140,"35":95,"36":20,"37":70,"38":110,"39":32,"40":52,"41":42,"42":55,"43":30,"44":130,"45":55,"46":22,"47":35,"48":15,"49":65,"50":42,"51":45,"52":18,"53":38,"54":58,"55":18,"56":68,"57":52,"58":15,"59":95,"60":72,"61":28,"62":62,"63":48,"64":75,"65":35,"66":82,"67":105,"68":75,"69":145,"70":22,"71":30,"72":42,"73":120,"74":190,"75":null,"76":68,"77":105,"78":160,"79":28,"80":42,"81":38,"82":30,"83":145,"84":82,"85":65,"86":32,"87":25,"88":22,"89":32,"90":42,"91":135,"92":null,"93":null,"94":null,"95":110};
+// R13 — Index unique BT01/ICC partagé par TOUS les modules travaux (WORKS_POSTES, dpeWorks, WX).
+// Source : ICC INSEE série 001711020 (coût de la construction). Base/actuel définis dans HYP.
+// Une seule source d'indexation → cohérence garantie entre les 3 modules.
+const ICC_RATIO_G=(HYP.iccActuel&&HYP.iccBase)?(HYP.iccActuel/HYP.iccBase):1;
+// R13 — Taux de TVA applicables selon la nature des travaux (CGI art. 278-0 bis A, 279-0 bis, 278).
+const TVA_TRAVAUX={energetique:0.055,renovation:0.10,neuf:0.20};
+// R15 — Gradient « valeur verte » : surcote/décote de valeur par classe DPE (baseline D).
+// Valeurs alignées sur le dpeMap de l'estimation (calibré sur les écarts de prix DPE réels,
+// cohérent avec l'étude annuelle « Valeur verte des logements » des Notaires de France).
+// Remplace les coefficients de plus-value arbitraires des postes énergétiques (règle : éviter l'arbitraire).
+const VV_DPE={A:0.06,B:0.04,C:0.02,D:0,E:-0.03,F:-0.07,G:-0.12};
+const VV_ORDER=["G","F","E","D","C","B","A"];
+function vvStepGain(dpe){ // gain de valeur (fraction du prix) pour +1 classe DPE depuis `dpe`
+  const i=VV_ORDER.indexOf(dpe);if(i<0||i>=VV_ORDER.length-1)return 0;
+  return VV_DPE[VV_ORDER[i+1]]-VV_DPE[VV_ORDER[i]];
+}
+
+// R14 — MaPrimeRénov' 2026, Parcours par geste. Barèmes officiels Anah (janvier 2026).
+// Catégories : 0=Bleu (très modeste) · 1=Jaune (modeste) · 2=Violet (intermédiaire) · 3=Rose (supérieur : par-geste fermé).
+// Changements 2026 intégrés : ITE/ITI et chaudières biomasse NE SONT PLUS éligibles au par-geste.
+// Plafonds de revenu fiscal de référence (RFR) du foyer, par nombre de personnes (1→5, puis incrément).
+const MPR_PLAF={
+  prov:{tm:[17363,25393,30540,35676,40835],mo:[22259,32553,39148,45735,52348],in:[31185,45842,55196,64550,73907],inc:{tm:5151,mo:6598,in:9357}},
+  idf:{tm:[24031,35270,42357,49455,56580],mo:[29253,42933,51564,60208,68877],in:[40851,60051,71846,84562,96817],inc:{tm:7116,mo:8663,in:12257}}
+};
+// Forfaits 2026 [Bleu, Jaune, Violet] ; Rose = 0. Unités précisées par geste.
+const MPR_GESTE={
+  pac_ae:[5000,4000,3000],  // PAC air/eau — forfait fixe
+  comble:[25,20,15],        // isolation rampants/combles — €/m²
+  fenetre:[100,80,40],      // remplacement simple→double vitrage — €/équipement
+  vmc:[2500,2000,1500],     // VMC double flux (si isolation simultanée)
+  cet:[1200,800,400]        // chauffe-eau thermodynamique
+};
+const MPR_ECRET=[0.90,0.75,0.60]; // écrêtement par-geste (MPR+CEE), % du coût TTC
+const MPR_LABELS=["Bleu \u2014 tr\u00e8s modeste","Jaune \u2014 modeste","Violet \u2014 interm\u00e9diaire","Rose \u2014 sup\u00e9rieur (par-geste ferm\u00e9)"];
+const MPR_DEPTS_IDF=["75","77","78","91","92","93","94","95"];
+function mprPlafond(zone,catKey,nbPers){
+  const z=MPR_PLAF[zone]||MPR_PLAF.prov,base=z[catKey];
+  return nbPers<=5?base[nbPers-1]:base[4]+(nbPers-5)*z.inc[catKey];
+}
+function mprCategorie(rfr,nbPers,idf){ // → 0/1/2, ou 3 (Rose)
+  const zone=idf?"idf":"prov";
+  if(rfr<=mprPlafond(zone,"tm",nbPers))return 0;
+  if(rfr<=mprPlafond(zone,"mo",nbPers))return 1;
+  if(rfr<=mprPlafond(zone,"in",nbPers))return 2;
+  return 3;
+}
+
+// R19 — EPTB_DEP millésime 2024 (SDES EPTB 2024).
+// Valeurs 2023 × +1,7 % (hausse nationale du prix moyen/m² publiée par SDES, nov. 2025).
+// Unité : €/m² de terrain. null = zone dense, prix DVF direct utilisé à la place.
+// Source : SDES, Enquête sur le prix des terrains à bâtir (EPTB), publication 2024.
+const EPTB_MILLESIME=2024; // millésime embarqué — mis à jour au prochain arrêté SDES
+const EPTB_DEP={"01":76,"02":31,"03":22,"04":56,"05":51,"06":285,"07":43,"08":25,"09":28,"10":36,"11":46,"12":25,"13":163,"14":73,"15":18,"16":31,"17":79,"18":25,"19":22,"2A":66,"2B":81,"21":56,"22":53,"23":12,"24":28,"25":59,"26":69,"27":63,"28":61,"29":59,"30":97,"31":122,"32":22,"33":132,"34":142,"35":97,"36":20,"37":71,"38":112,"39":33,"40":53,"41":43,"42":56,"43":31,"44":132,"45":56,"46":22,"47":36,"48":15,"49":66,"50":43,"51":46,"52":18,"53":39,"54":59,"55":18,"56":69,"57":53,"58":15,"59":97,"60":73,"61":28,"62":63,"63":49,"64":76,"65":36,"66":83,"67":107,"68":76,"69":147,"70":22,"71":31,"72":43,"73":122,"74":193,"75":null,"76":69,"77":107,"78":163,"79":28,"80":43,"81":39,"82":31,"83":147,"84":83,"85":66,"86":33,"87":25,"88":22,"89":33,"90":43,"91":137,"92":null,"93":null,"94":null,"95":112};
+// R19 — Hook DiDo SDES pour enrichissement dynamique futur (données 2015-2021 disponibles).
+// Le schéma de réponse ne peut être vérifié hors production : fallback automatique sur EPTB_DEP.
+// URL connue : https://data.statistiques.developpement-durable.gouv.fr/dido/api/v1/datasets/63b8281ec113d45936722df2
+// À activer quand le domaine est accessible via proxy CORS (même logique que dvfFetch).
 const ENCADREMENT=["paris","lille","hellemmes","lomme","lyon","villeurbanne","montpellier","bordeaux","montreuil","bagnolet","pantin","est ensemble","plaine commune","grenoble"];
 
 const $=id=>document.getElementById(id);
@@ -1148,6 +1205,7 @@ function _clearIrrelevantFields(){
 }
 /* POINT1 : reinitialisation complete du formulaire */
 function resetForm(){
+  if(!_confirmDiscard())return;
   if(!confirm("Effacer tous les champs et repartir de z\u00e9ro ?\nLes biens sauvegard\u00e9s ne sont pas affect\u00e9s."))return;
   // Vider tous les champs texte/number
   SAVED_VALUE_IDS.forEach(function(id){
@@ -1276,7 +1334,9 @@ document.addEventListener("click",e=>{if(!e.target.closest(".ac-wrap"))closeAc()
 
 /* ===== DVF r\u00e9el (cquest, repli d\u00e9mo) ===== */
 const DVF_PROXY=""; // optionnel : URL d'un proxy perso (Cloudflare Worker) pour une fiabilit\u00e9 maximale
-const DVF_BASE=DVF_PROXY||"https://apidf-preprod.cerema.fr/dvf_opendata/mutations/"; // API officielle DVF+ open-data du Cerema (cquest est hors service)
+const DVF_BASE_PROD="https://apidf.cerema.fr/dvf_opendata/mutations/"; // Cerema prod (flux ouvert DVF+ open-data)
+const DVF_BASE_FALLBACK="https://apidf-preprod.cerema.fr/dvf_opendata/mutations/"; // Cerema preprod (secours si prod injoignable)
+const DVF_BASE=DVF_PROXY||DVF_BASE_PROD; // API officielle DVF+ open-data du Cerema
 const DEBUG=location.search.indexOf("debug")>=0;
 function dbg(m){if(!DEBUG)return;let b=document.getElementById("__dbg");if(!b){b=document.createElement("pre");b.id="__dbg";b.style.cssText="position:fixed;left:0;right:0;bottom:0;max-height:45vh;overflow:auto;margin:0;padding:10px;background:#0F2A43;color:#8fe;font:11px/1.45 monospace;white-space:pre-wrap;word-break:break-all;z-index:99999;border-top:3px solid #0FB39E";document.body.appendChild(b);}b.textContent+=m+"\n\n";}
 // (format : "https://ton-worker.workers.dev/?url=") -> il passe en priorite 1, fallback sur les relais publics.
@@ -1373,6 +1433,16 @@ async function _dvfFetchRaw(url,ttlMs=0){
   if(!out){
     await new Promise(r=>setTimeout(r,400));
     try{ out=await one(url,9000); }catch(_){}
+  }
+  // Etape 4 : fallback Cerema preprod si prod injoignable (sans proxy perso)
+  if(!out&&!DVF_PROXY&&url.includes(DVF_BASE_PROD)){
+    const fbUrl=url.replace(DVF_BASE_PROD,DVF_BASE_FALLBACK);
+    try{ out=await one(fbUrl,9000); }catch(_){}
+    if(!out&&CORS_PROXIES.length){
+      const ordered=CORS_PROXIES.slice().sort((a,b)=>(_proxyOK.has(b)?1:0)-(_proxyOK.has(a)?1:0));
+      const tries=ordered.map(px=>one(px+encodeURIComponent(fbUrl),12000).then(r=>{_proxyOK.add(px);_persistProxy();return r;}));
+      try{ out=await Promise.any(tries); }catch(_){}
+    }
   }
   if(out){
     _netCache.set(url,out);
@@ -2244,7 +2314,7 @@ function updateViabCost(){
   const loT=miss.reduce((s,[,r])=>s+r.lo,0),hiT=miss.reduce((s,[,r])=>s+r.hi,0);
   note.innerHTML="<b>R\u00e9seaux manquants :</b> "+miss.map(([k])=>({eau:"Eau",assain:"Assain.",elec:"\u00c9lec.",voirie:"Voirie",telecom:"Fibre"}[k]||k)).join(", ")+
     ". Co\u00fbt raccordement estim\u00e9 : <b>"+eur0(loT)+"\u2013"+eur0(hiT)+" \u20ac</b> (\u00e0 d\u00e9duire du prix).";}
-function estimateTerrain(realBase,parcelSurf,city,cp){
+function estimateTerrain(realBase,realStats,parcelSurf,city,cp){
   const dyn=computeDynamics(city,cp),ctx=marketCtx(realBase);parcelSurf=parcelSurf||0;
   let landSqm,conf,srcNote;
   if(realBase&&realBase>0){landSqm=realBase;conf="\u00e9lev\u00e9e";srcNote="ventes DVF terrains du secteur";}
@@ -2256,7 +2326,7 @@ function estimateTerrain(realBase,parcelSurf,city,cp){
     const _heuristM2=Math.max(15,Math.round(apt*(tr[marketCtx(apt).tier]||0.14)));
     if(_eptbM2>0){
       landSqm=Math.round(Math.max(_eptbM2, _heuristM2*0.70+_eptbM2*0.30));
-      conf="moyenne";srcNote="EPTB "+_eptbM2+" + march\u00e9 local "+_heuristM2+" \u2192 "+landSqm+" \u20ac/m\u00b2";
+      conf="moyenne";srcNote="EPTB "+EPTB_MILLESIME+" "+_eptbM2+" + march\u00e9 local "+_heuristM2+" \u2192 "+landSqm+" \u20ac/m\u00b2";
     }else{
       landSqm=_heuristM2;
       conf="indicative";srcNote="estimation indicative \u2014 ventes terrain locales indisponibles";
@@ -2325,7 +2395,7 @@ function terrainCompteARebours(r){
   const aptBase=(r.ctx&&r.ctx.tier)?({modeste:1600,moyen:2800,recherche:4200,premium:6500}[r.ctx.tier]||2800):2800;
   const prixNeufM2=Math.round(aptBase*1.28);
   // Coût construction RE2020 tout compris (VRD inclus)
-  // Barème EPTB/SDES national 2023 : 1 650 €/m² SHAB moyen France
+  // Barème EPTB/SDES national 2024 : 1 678 €/m² SHAB moyen France (1 650 × 1,017)
   // Ajusté par pente et sol
   let coutConst=1650;
   if(r.terrain.pente==="legere")coutConst*=1.08;
@@ -2348,7 +2418,7 @@ function terrainCompteARebours(r){
 function estimate(realBase,realStats){
   const city=$("ville").value,cp=$("cp").value,type=state.type;
   const surface=type==="terrain"?numv("terrain"):numv("surface");
-  if(type==="terrain")return estimateTerrain(realBase,surface,city,cp);
+  if(type==="terrain")return estimateTerrain(realBase,realStats,surface,city,cp);
   // Fix13 — base segmentée par typologie : on substitue westGRooms à westG quand disponible.
   // Évite d’appliquer des hédoniques sur une base qui mélange T1→T5 (+10–18 % de biais).
   // La correction rooms (±5 %) via effMult reste comme garde-fou si westGRooms indisponible.
@@ -2924,6 +2994,14 @@ function fillRegimes(){
 bindSeg("segLoc","loc",()=>{fillRegimes();if(lastResult){const rs=marketRentSqm(lastResult);state.mktRentSqm=rs;$("iRent").value=Math.round(rs*lastResult.surface/10)*10;computeAll(lastResult);updRentVsMkt();computeResale(lastResult);renderFinPrice(lastResult);}});
 
 function renderRentalDefaults(r){
+  // Terrain : pas de pré-remplissage locatif (location possible mais non standard)
+  if(r.type==="terrain"){
+    $("iRent").value=0;$("iTaxe").value=0;$("iCopro").value=0;$("iPno").value=0;$("iDivers").value=0;
+    $("prixAchat").value=Math.round(r.price);
+    $("iApport").value=Math.round((r.price+numv("iTravaux"))*0.10/1000)*1000;
+    state.mktRentSqm=0;
+    computeAll(r);renderFinPrice(r);renderWorks();return;
+  }
   const cn=norm(r.city);const rentSqm=marketRentSqm(r);
   state.mktRentSqm=rentSqm;
   // Si on restaure un bien sauvegarde, ne pas ecraser les valeurs financeres restaurees
@@ -4802,8 +4880,14 @@ function renderDpe(){const d=state.dpe;const colors={A:"#2E9C46",B:"#5BB848",C:"
   else{b.style.display="flex";b.className="banner good";b.innerHTML=okIcon()+`<span>Logement conforme aux obligations locatives actuelles.</span>`;}
   const works={A:[],B:[["Optimisation chauffage / programmation",0]],C:[["Isolation des combles",0],["R\u00e9glages chauffage",0]],D:[["Isolation des combles",[3000,7000]],["Remplacement menuiseries",[6000,12000]]],E:[["Isolation murs / combles",[8000,18000]],["Menuiseries double vitrage",[6000,12000]],["Ventilation VMC",[1500,4000]]],F:[["Isolation murs par l'ext\u00e9rieur",[15000,30000]],["Changement chauffage (PAC)",[8000,16000]],["Menuiseries + VMC",[8000,15000]]],G:[["Isolation globale (murs, combles, sol)",[20000,45000]],["Syst\u00e8me de chauffage performant (PAC)",[10000,18000]],["Menuiseries + ventilation double flux",[10000,20000]]]};
   const wl=$("dpeWorks");wl.innerHTML="";let lo=0,hi=0;const ws=works[d];
+  // R13 — coûts DPE proportionnels à la surface (référence 70 m²) et indexés ICC.
+  // Les fourchettes ci-dessus sont calées sur ~70 m² : on les met à l'échelle du bien réel,
+  // bornée [0,5×;2,2×] pour rester prudent, puis on applique l'index construction ICC.
+  const _Sdpe=(lastResult&&lastResult.surface)||numv("surface")||70;
+  const _scaleDpe=Math.max(0.5,Math.min(2.2,_Sdpe/70))*ICC_RATIO_G;
   if(ws.length===0){wl.innerHTML=`<div class="work"><span class="wc"></span><div>Aucun travaux n\u00e9cessaire \u2014 logement performant.</div></div>`;$("dpeCost").textContent="0 \u20ac";return hi;}
-  ws.forEach(w=>{const cost=w[1];let ctxt="\u00e0 chiffrer";if(Array.isArray(cost)&&cost[1]){lo+=cost[0];hi+=cost[1];ctxt=eur0(cost[0])+"\u2013"+eur0(cost[1])+" \u20ac";}const div=document.createElement("div");div.className="work";div.innerHTML=`<span class="wc"></span><div style="flex:1">${w[0]}</div><div style="font-weight:600;color:var(--ink-soft);white-space:nowrap">${ctxt}</div>`;wl.appendChild(div);});
+  ws.forEach(w=>{const cost=w[1];let ctxt="\u00e0 chiffrer";if(Array.isArray(cost)&&cost[1]){const _lo=Math.round(cost[0]*_scaleDpe),_hi=Math.round(cost[1]*_scaleDpe);lo+=_lo;hi+=_hi;ctxt=eur0(_lo)+"\u2013"+eur0(_hi)+" \u20ac";}const div=document.createElement("div");div.className="work";div.innerHTML=`<span class="wc"></span><div style="flex:1">${w[0]}</div><div style="font-weight:600;color:var(--ink-soft);white-space:nowrap">${ctxt}</div>`;wl.appendChild(div);});
+  if(hi>0){const _n=document.createElement("div");_n.className="hint";_n.style.marginTop="8px";_n.innerHTML="Fourchettes mises \u00e0 l'\u00e9chelle du bien ("+Math.round(_Sdpe)+"\u00a0m\u00b2) et index\u00e9es ICC "+HYP.iccActuel+"/"+HYP.iccBase+". TVA r\u00e9novation \u00e9nerg\u00e9tique \u00e0 5,5\u00a0% applicable (CGI art. 278-0 bis A). Indicatif.";wl.appendChild(_n);}
   $("dpeCost").textContent=hi>0?(eur0(lo)+" \u2013 "+eur0(hi)+" \u20ac"):"Variable";
   return hi;
 }
@@ -4882,7 +4966,9 @@ function renderExplain(r){
   const map={carac:"caract\u00e9ristiques du bien",ext:"ext\u00e9rieurs",cap:"recentrage sur le march\u00e9",idx:"qualit\u00e9/raret\u00e9",dyn:"tendance du march\u00e9",geo:"micro-localisation",capfinal:"garde-fou march\u00e9",prud:"principe de pr\u00e9caution"};
   const seuil=Math.max(500,(r.price||0)*0.002);
   const parts=priceFormation(r).filter(l=>map[l.k]&&Math.abs(l.eur)>=seuil).map(l=>map[l.k]+" "+(l.eur>0?"+":"\u2212")+eur0(Math.abs(l.eur))+" \u20ac");
-  el.innerHTML="<b>En clair :</b> march\u00e9 local \u00e0 "+eur0(r.sqmBase)+" \u20ac/m\u00b2 ("+(r.realCount||0)+" ventes r\u00e9elles)"+(parts.length?" \u00b7 "+parts.join(" \u00b7 "):"")+". <span style=\"color:var(--ink-soft);font-size:10px\">D\u00e9tail complet en Mode Expert \u2192 Fiabilit\u00e9 &amp; formation du prix.</span>";
+  const _ix=r.realStats&&r.realStats.idx16;
+  const _ixTxt=_ix?" \u00b7 <span title=\"Ventes DVF r\u00e9\u00e9valu\u00e9es \u00e0 "+_ix.evalY+" via la tendance locale ("+(_ix.g>0?"+":"")+_ix.g+" %/an, plafond +2 %/an), "+_ix.n+" ventes ajust\u00e9es\">prix actualis\u00e9s "+_ix.evalY+"</span>":"";
+  el.innerHTML="<b>En clair :</b> march\u00e9 local \u00e0 "+eur0(r.sqmBase)+" \u20ac/m\u00b2 ("+(r.realCount||0)+" ventes r\u00e9elles)"+_ixTxt+(parts.length?" \u00b7 "+parts.join(" \u00b7 "):"")+". <span style=\"color:var(--ink-soft);font-size:10px\">D\u00e9tail complet en Mode Expert \u2192 Fiabilit\u00e9 &amp; formation du prix.</span>";
   el.style.display="";
   const bdN=$("bdNote");
   if(bdN){
@@ -4919,7 +5005,32 @@ async function fetchAllData(coord){
       }
       out.vefaInfo={nNeuf:res.nNeuf||0,nTotal:res.nTotal||0,natSeen:!!res.natSeen};
       out.ptsVefa=res.ptsNeuf||[];
-      out.realStats=dvfStats(band,surf>0?surf:null,+state.pieces||0);
+      // R16 — actualisation temporelle des comparables à la date d'évaluation.
+      // DVF est publié avec 12-18 mois de retard (rythme annuel depuis 2026) : une vente
+      // de 2023 sous-évalue un marché en hausse. On indexe chaque ppm/price par la tendance
+      // locale lissée (dvfTrend), PLAFONNÉE à +2 %/an à la hausse et INTÉGRALE à la baisse
+      // (biais acquéreur : on ne surestime jamais, on corrige à plein les marchés qui baissent).
+      // realPts reste BRUT (scatter, export, calcul de tendance) ; seules les COPIES servant
+      // aux ancres de prix sont réévaluées → pas de circularité, affichage fidèle des ventes.
+      let _band16=band,_idx16=null;
+      const _tr16=dvfTrend(res.pts);
+      if(_tr16&&_tr16.evo12!=null){
+        const _g16=Math.min(_tr16.evo12,2)/100; // plafond hausse +2%/an, baisse illimitée
+        if(Math.abs(_g16)>0.0005){
+          const _evalY16=new Date().getFullYear();
+          let _nIdx=0;
+          _band16=band.map(p=>{
+            const _sy=p.date?+String(p.date).slice(0,4):0;
+            if(!_sy||_sy>=_evalY16)return p;
+            const _f=Math.pow(1+_g16,_evalY16-_sy);
+            _nIdx++;
+            return {...p,ppm:p.ppm*_f,price:(p.price||p.ppm*p.surf)*_f,_idx16:_f};
+          });
+          _idx16={g:+(_g16*100).toFixed(1),evalY:_evalY16,n:_nIdx};
+        }
+      }
+      out.realStats=dvfStats(_band16,surf>0?surf:null,+state.pieces||0);
+      if(out.realStats&&_idx16)out.realStats.idx16=_idx16;
       if(DEBUG&&out.realStats)dbg("Stats: west="+out.realStats.west+" | P50="+(out.realStats.westSurfStrict||"n/a")+" Padapt(P"+Math.round((out.realStats.westSurfPct||0.4)*100)+")="+(out.realStats.westSurfP40||"n/a")+" | disp="+(out.realStats.med>0?((out.realStats.q3-out.realStats.q1)/out.realStats.med).toFixed(2):"?")+" | "+(out.realStats.strictCount||0)+" ventes \u00b125% IQR-1x | westGRooms="+(out.realStats.westGRooms||"n/a")+")");
       out.engineData=estimationEngines(out.realStats.clean,surf,out.realStats);
       out.realBase=out.engineData.base||out.realStats.west||Math.round(out.realStats.med);
@@ -5388,7 +5499,7 @@ async function showResults(){
     _estimRunning=false;
   }
 }
-$("btnEstim").addEventListener("click",function(){const b=$("btnEstim");if(b&&b.dataset.origText){b.textContent=b.dataset.origText;b.style.background="";b.style.color="";delete b.dataset.origText;}showResults();});
+$("btnEstim").addEventListener("click",function(){state._lastSavedSnap=JSON.stringify(snapshotForm());const b=$("btnEstim");if(b&&b.dataset.origText){b.textContent=b.dataset.origText;b.style.background="";b.style.color="";delete b.dataset.origText;}showResults();});
 if($("btnNewBien"))$("btnNewBien").addEventListener("click",resetForm);
 ["ovrEntretien","ovrPlacement"].forEach(function(id){const e=$(id);if(!e)return;const h=function(){if(lastResult&&typeof renderOwnVsRent==="function")renderOwnVsRent(lastResult);};e.addEventListener("input",h);e.addEventListener("change",h);});
 if($("notaireLine"))$("notaireLine").addEventListener("click",function(){
@@ -5426,7 +5537,7 @@ if($("terrainVendeurPro"))$("terrainVendeurPro").addEventListener("change",funct
   }
   if(next)next.addEventListener('click',()=>{if(!valid())return;clr();cur++;show(true);});
   if(prev)prev.addEventListener('click',()=>{clr();cur=Math.max(0,cur-1);show(true);});
-  const segT=$("segType");if(segT)segT.addEventListener('click',()=>setTimeout(()=>show(false),0));
+  const segT=$("segType");if(segT)segT.addEventListener('click',()=>setTimeout(()=>{updateTypeUI();show(false);},0));
   window.__wizShow=function(scroll){
     // Permet de forcer l'etape depuis l'exterieur via window.__wizCur
     if(window.__wizCur!=null){cur=Math.min(window.__wizCur,last());window.__wizCur=null;}
@@ -5920,22 +6031,97 @@ var worksSel={};
 function renderWorks(){
   var r=lastResult,el=$("worksPanel");if(!r||!el)return;
   var S=r.surface||50;
-  var est=function(p){return Math.round(p.c(S)/100)*100;};
+  var est=function(p){return Math.round(p.c(S)*ICC_RATIO_G/100)*100;};
   var costOf=function(p){var w=worksSel[p.id];return (w&&w.cost!=null)?w.cost:est(p);};
   var list=WORKS_POSTES.map(function(p){var w=worksSel[p.id]||{},on=!!w.on,e=est(p),cv=costOf(p);
     return '<div class="works-item" data-id="'+p.id+'" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1.5px solid '+(on?'var(--brand-dark)':'var(--line)')+';border-radius:10px;background:'+(on?'#eef7f5':'var(--bg)')+'"><input type="checkbox" class="wchk" '+(on?'checked':'')+' style="accent-color:var(--brand-dark);width:17px;height:17px;flex:none;cursor:pointer"><span style="flex:1;font-size:12px;color:var(--ink);line-height:1.3">'+p.lbl+'<br><span style="font-size:9.5px;color:var(--ink-soft)">estim. '+eur0(e)+'</span></span><span style="display:flex;align-items:center;gap:3px"><input type="number" class="wcost" min="0" value="'+cv+'" style="width:78px;padding:5px 6px;border:1px solid var(--line);border-radius:7px;font-size:12px;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)"><span style="font-size:11px;color:var(--ink-soft)">\u20ac</span></span></div>';}).join("");
-  var tot=function(){var cost=0,val=0,dur=0;WORKS_POSTES.forEach(function(p){var w=worksSel[p.id];if(w&&w.on){var c=costOf(p);cost+=c;val+=c*p.rec;dur+=p.d;}});return{cost:cost,val:val,duree:cost>0?Math.round(1+dur*0.6):0};};
+  // R15 — Postes énergétiques : la plus-value n'est plus un coefficient arbitraire (rec) mais la
+  // VALEUR VERTE réelle = prix du bien × gain de classe DPE (gradient calibré, cohérent avec la
+  // décote DPE appliquée à l'estimation). Fraction de saut de classe attribuée à chaque poste.
+  var ENERGY_POSTS={isol:1.0,menui:0.5,chauff:1.0};
+  var tot=function(){
+    var cost=0,valNonE=0,eCost=0,energyPv=0,dur=0;
+    var px=(r&&r.price)||0,step=vvStepGain(state.dpe),useVV=(px>0&&step>0);
+    WORKS_POSTES.forEach(function(p){var w=worksSel[p.id];if(!(w&&w.on))return;
+      var c=costOf(p);cost+=c;dur+=p.d;
+      if(ENERGY_POSTS[p.id]!=null&&useVV){eCost+=c;energyPv+=px*Math.min(0.05,step*ENERGY_POSTS[p.id]);}
+      else{valNonE+=c*p.rec;} // postes non énergétiques (ou DPE/prix indispo) : coef de récupération
+    });
+    energyPv=Math.min(energyPv,px*0.08); // plafond conservateur (~2 classes DPE, biais acquéreur)
+    return{cost:cost,val:valNonE+eCost+energyPv,duree:cost>0?Math.round(1+dur*0.6):0};
+  };
   var sumHtml=function(){var t=tot(),pv=t.val-t.cost,roi=t.cost>0?pv/t.cost*100:0;
     if(t.cost<=0)return '<div class="hint" style="margin-top:12px">Cochez les postes pr\u00e9vus pour estimer budget, dur\u00e9e, plus-value et ROI. Chaque montant estim\u00e9 reste librement ajustable.</div>';
     var cells=[["Co\u00fbt total des travaux",eur0(t.cost),"var(--ink)"],["Dur\u00e9e estim\u00e9e",t.duree+" sem.","var(--ink)"],["Plus-value g\u00e9n\u00e9r\u00e9e",(pv>=0?"+":"")+eur0(pv),pv>=0?"var(--good)":"var(--bad)"],["ROI des travaux",(roi>=0?"+":"")+roi.toFixed(0)+" %",roi>=50?"var(--good)":roi>=0?"var(--warn)":"var(--bad)"]];
-    return '<div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:9px">'+cells.map(function(c){return '<div style="background:var(--bg);border-radius:10px;padding:9px 11px"><div style="font-size:10px;color:var(--ink-soft);text-transform:uppercase">'+c[0]+'</div><div class="num" style="font-size:17px;font-weight:800;color:'+c[2]+'">'+c[1]+'</div></div>';}).join("")+'</div><div style="margin-top:10px"><button id="worksApply" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--brand-dark);background:#fff;color:var(--brand-dark);font-weight:700;font-size:13px;cursor:pointer">Reporter '+eur0(t.cost)+' dans \u00ab Travaux \u00e0 financer \u00bb</button></div><div class="hint" style="margin-top:8px">Montants estim\u00e9s (prix de march\u00e9 2025 ajust\u00e9s \u00e0 la surface), librement modifiables. \u00ab Plus-value g\u00e9n\u00e9r\u00e9e \u00bb = part du co\u00fbt r\u00e9cup\u00e9r\u00e9e \u00e0 la revente (peinture/staging \u00e9lev\u00e9s ; \u00e9lectricit\u00e9/plomberie plus faibles). R\u00e9sultat r\u00e9el selon le march\u00e9 local et l\'\u00e9tat initial. Indicatif.</div>';};
+    return '<div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:9px">'+cells.map(function(c){return '<div style="background:var(--bg);border-radius:10px;padding:9px 11px"><div style="font-size:10px;color:var(--ink-soft);text-transform:uppercase">'+c[0]+'</div><div class="num" style="font-size:17px;font-weight:800;color:'+c[2]+'">'+c[1]+'</div></div>';}).join("")+'</div><div style="margin-top:10px"><button id="worksApply" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--brand-dark);background:#fff;color:var(--brand-dark);font-weight:700;font-size:13px;cursor:pointer">Reporter '+eur0(t.cost)+' dans \u00ab Travaux \u00e0 financer \u00bb</button></div><div class="hint" style="margin-top:8px">Montants indexés ICC INSEE '+HYP.iccActuel+'/'+HYP.iccBase+' (co\u00fbt construction, +'+(((ICC_RATIO_G-1)*100).toFixed(1))+'\u00a0%), ajust\u00e9s \u00e0 la surface et librement modifiables. TVA\u00a0: 5,5\u00a0% (\u00e9nerg\u00e9tique) \u00b7 10\u00a0% (r\u00e9novation) \u00b7 20\u00a0% (neuf). \u00ab Plus-value g\u00e9n\u00e9r\u00e9e \u00bb\u00a0: pour les postes \u00e9nerg\u00e9tiques (isolation, menuiseries, chauffage) = <b>valeur verte</b> r\u00e9elle (prix \u00d7 gain de classe DPE) ; pour les autres = part du co\u00fbt r\u00e9cup\u00e9r\u00e9e \u00e0 la revente. Indicatif, selon march\u00e9 local et \u00e9tat initial.</div>';};
   var bindApply=function(){var ap=$("worksApply");if(ap)ap.addEventListener("click",function(){$("iTravaux").value=tot().cost;if(lastResult){computeAll(lastResult);computeResale(lastResult);renderFinPrice(lastResult);}});};
-  el.innerHTML='<div style="display:flex;flex-direction:column;gap:6px">'+list+'</div><div id="worksSum">'+sumHtml()+'</div>';
+  el.innerHTML='<div style="display:flex;flex-direction:column;gap:6px">'+list+'</div><div id="worksSum">'+sumHtml()+'</div><div id="mprBlock" style="margin-top:14px"></div>';
   bindApply();
+  renderMprBlock();
   el.querySelectorAll('.works-item').forEach(function(it){var id=it.dataset.id,cb=it.querySelector('.wchk'),ci=it.querySelector('.wcost');
     cb.addEventListener("change",function(){worksSel[id]=worksSel[id]||{};worksSel[id].on=cb.checked;renderWorks();});
-    ci.addEventListener("input",function(){worksSel[id]=worksSel[id]||{};worksSel[id].cost=(ci.value==="")?null:Math.max(0,Math.round(+ci.value));var sm=$("worksSum");if(sm){sm.innerHTML=sumHtml();bindApply();}});
+    ci.addEventListener("input",function(){worksSel[id]=worksSel[id]||{};worksSel[id].cost=(ci.value==="")?null:Math.max(0,Math.round(+ci.value));var sm=$("worksSum");if(sm){sm.innerHTML=sumHtml();bindApply();}renderMprBlock();});
   });
+}
+// R14 — Estimation MaPrimeRénov' 2026 (par geste) sur les postes énergétiques sélectionnés.
+// Catégorie de revenus pré-suggérée depuis le revenu Filosofi (modifiable), zone IDF auto (CP),
+// taille du foyer ajustable. Conservateur : à défaut de données → catégorie « intermédiaire »
+// (aide la plus faible), aides plafonnées par l'écrêtement, jamais d'aide au-delà du coût.
+var mprState={cat:null,nbPers:2,idf:null};
+function renderMprBlock(){
+  var box=$("mprBlock");if(!box)return;
+  var r=lastResult;if(!r){box.innerHTML="";return;}
+  var S=r.surface||50;
+  var cp=(($("cp")&&$("cp").value)||"").trim(),dept=cp.slice(0,2);
+  var idfAuto=MPR_DEPTS_IDF.indexOf(dept)>=0;
+  var idf=(mprState.idf!=null)?mprState.idf:idfAuto;
+  var nbPers=mprState.nbPers||2;
+  // Pré-suggestion catégorie depuis Filosofi (niveau de vie médian/UC → proxy RFR foyer).
+  var rev=(r.dyn&&r.dyn.revenu)||0;
+  var autoIdx;
+  if(rev>0){var household=Math.round(rev*(1+0.5*(nbPers-1)));autoIdx=mprCategorie(household,nbPers,idf);}
+  else autoIdx=2; // défaut prudent : intermédiaire
+  var catIdx=(mprState.cat!=null)?mprState.cat:autoIdx;
+  // Éligibilité + montants pour les postes énergétiques cochés (mapping conservateur).
+  var nFen=Math.max(4,Math.round(S/18));
+  var lines=[],aidTotal=0,eligCost=0;
+  function on(id){var w=worksSel[id];return !!(w&&w.on);}
+  function costOf2(id){var w=worksSel[id];var p=WORKS_POSTES.find(function(x){return x.id===id;});if(!p)return 0;var e=Math.round(p.c(S)*ICC_RATIO_G/100)*100;return (w&&w.cost!=null)?w.cost:e;}
+  if(catIdx<=2){
+    if(on("isol")){var c=costOf2("isol"),a=Math.min(c,MPR_GESTE.comble[catIdx]*S);aidTotal+=a;eligCost+=c;lines.push(["Isolation (combles/rampants, "+MPR_GESTE.comble[catIdx]+"\u00a0\u20ac/m\u00b2 \u00d7 "+Math.round(S)+"\u00a0m\u00b2)",a]);}
+    if(on("chauff")){var c2=costOf2("chauff"),a2=Math.min(c2,MPR_GESTE.pac_ae[catIdx]);aidTotal+=a2;eligCost+=c2;lines.push(["Pompe \u00e0 chaleur air/eau (forfait)",a2]);}
+    if(on("menui")){var c3=costOf2("menui"),a3=Math.min(c3,MPR_GESTE.fenetre[catIdx]*nFen);aidTotal+=a3;eligCost+=c3;lines.push(["Menuiseries ("+MPR_GESTE.fenetre[catIdx]+"\u00a0\u20ac \u00d7 "+nFen+"\u00a0\u00e9quip. estim.)",a3]);}
+    // Écrêtement par geste (MPR+CEE) : aide plafonnée en % du coût TTC des postes éligibles.
+    var cap=Math.round(eligCost*MPR_ECRET[catIdx]);
+    if(aidTotal>cap){aidTotal=cap;}
+  }
+  // --- Rendu ---
+  var opts=MPR_LABELS.map(function(l,i){return '<option value="'+i+'"'+(i===catIdx?' selected':'')+'>'+l+'</option>';}).join("");
+  var head='<div style="font-size:11px;font-weight:800;color:var(--ink);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">\ud83c\udfe0 Aides MaPrimeR\u00e9nov\' 2026 <span style="font-weight:600;color:var(--ink-soft);text-transform:none">\u00b7 parcours par geste</span></div>';
+  var ctrls='<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-bottom:10px">'
+    +'<div style="flex:1;min-width:150px"><label style="font-size:10px;color:var(--ink-soft)">Cat\u00e9gorie de revenus'+(mprState.cat==null&&rev>0?' <span style="color:var(--brand-dark)">(estim\u00e9e)</span>':'')+'</label><select id="mprCat" style="width:100%;padding:6px;border:1px solid var(--line);border-radius:7px;font-size:12px;color:var(--ink);background:#fff">'+opts+'</select></div>'
+    +'<div style="width:78px"><label style="font-size:10px;color:var(--ink-soft)">Foyer (pers.)</label><input id="mprPers" type="number" min="1" max="12" value="'+nbPers+'" style="width:100%;padding:6px;border:1px solid var(--line);border-radius:7px;font-size:12px;text-align:center;color:var(--ink)"></div>'
+    +'<div style="display:flex;align-items:center;gap:5px;padding-bottom:6px"><input id="mprIdf" type="checkbox" '+(idf?'checked':'')+' style="accent-color:var(--brand-dark);width:15px;height:15px;cursor:pointer"><label for="mprIdf" style="font-size:11px;color:var(--ink)">\u00cele-de-France</label></div>'
+    +'</div>';
+  var body;
+  if(catIdx>2){
+    body='<div class="hint">Revenus <b>sup\u00e9rieurs</b> : le parcours <b>par geste</b> est ferm\u00e9 depuis 2026. Aides accessibles uniquement via le parcours <b>R\u00e9novation d\'ampleur</b> (10\u00a0% du HT, logement E/F/G, +2 classes DPE, accompagnateur obligatoire).</div>';
+  } else if(lines.length===0){
+    body='<div class="hint">Cochez un poste \u00e9nerg\u00e9tique \u00e9ligible (isolation, menuiseries, chauffage) ci-dessus pour estimer l\'aide.</div>';
+  } else {
+    var rows=lines.map(function(l){return '<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0"><span style="color:var(--ink);flex:1">'+l[0]+'</span><span class="num" style="font-weight:700;color:var(--good);white-space:nowrap">\u2212 '+eur0(l[1])+'\u00a0\u20ac</span></div>';}).join("");
+    var netCost=Math.max(0,eligCost-aidTotal);
+    body=rows
+      +'<div style="border-top:1px solid var(--line);margin-top:6px;padding-top:6px;display:grid;grid-template-columns:1fr 1fr;gap:9px">'
+      +'<div style="background:var(--bg);border-radius:10px;padding:9px 11px"><div style="font-size:10px;color:var(--ink-soft);text-transform:uppercase">Aide MaPrimeR\u00e9nov\'</div><div class="num" style="font-size:17px;font-weight:800;color:var(--good)">'+eur0(aidTotal)+'\u00a0\u20ac</div></div>'
+      +'<div style="background:var(--bg);border-radius:10px;padding:9px 11px"><div style="font-size:10px;color:var(--ink-soft);text-transform:uppercase">Reste \u00e0 charge \u00e9nerg.</div><div class="num" style="font-size:17px;font-weight:800;color:var(--ink)">'+eur0(netCost)+'\u00a0\u20ac</div></div>'
+      +'</div>'
+      +'<div class="hint" style="margin-top:8px">Conditions\u00a0: r\u00e9sidence principale, logement &gt;15\u00a0ans, demande <b>avant</b> devis sign\u00e9. Cumulable CEE (\u00e9cr\u00eatement '+Math.round(MPR_ECRET[catIdx]*100)+'\u00a0% TTC appliqu\u00e9). Menuiseries\u00a0: uniquement remplacement d\'un simple vitrage. Estimation \u00e0 confirmer sur France R\u00e9nov\'. Source\u00a0: bar\u00e8mes Anah, janvier 2026.</div>';
+  }
+  box.innerHTML='<div style="border:1.5px solid var(--line);border-radius:12px;padding:12px;background:#fbfdfc">'+head+ctrls+body+'</div>';
+  var cs=$("mprCat");if(cs)cs.addEventListener("change",function(){mprState.cat=+cs.value;renderMprBlock();});
+  var pr=$("mprPers");if(pr)pr.addEventListener("input",function(){var v=Math.max(1,Math.min(12,Math.round(+pr.value)||2));mprState.nbPers=v;mprState.cat=null;renderMprBlock();});
+  var ix=$("mprIdf");if(ix)ix.addEventListener("change",function(){mprState.idf=ix.checked;mprState.cat=null;renderMprBlock();});
 }
 /* ===== Op\u00e9ration achat-revente (particulier OU marchand de biens) ===== */
 function notaireRateMdB(years){
@@ -6779,7 +6965,7 @@ function saveBien(){
   const label=_getLabel(),list=loadSavedBiens();
   const entry={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),label:label.slice(0,60),savedAt:Date.now(),snap:snapshotForm()};
   list.unshift(entry);if(list.length>30)list.length=30;
-  if(persistSavedBiens(list)){state.activeSnapId=entry.id;if($("bienLabel"))$("bienLabel").value="";refreshSavedSelect();showSavedHint("&#10003; <b>"+esc(entry.label)+"</b> sauvegardé — financement &amp; prix inclus.");}
+  if(persistSavedBiens(list)){state.activeSnapId=entry.id;state._lastSavedSnap=JSON.stringify(snapshotForm());if($("bienLabel"))$("bienLabel").value="";refreshSavedSelect();showSavedHint("&#10003; <b>"+esc(entry.label)+"</b> sauvegardé — financement &amp; prix inclus.");}
   else showSavedHint("Sauvegarde impossible (stockage plein ou indisponible).",true);
 }
 function updateBien(){
@@ -6788,10 +6974,23 @@ function updateBien(){
   const idx=list.findIndex(b=>b.id===state.activeSnapId);
   if(idx<0){showSavedHint("Bien introuvable — utilisez + Sauvegarder pour créer.",true);return;}
   list[idx]={...list[idx],label:label.slice(0,60),savedAt:Date.now(),snap:snapshotForm()};
-  if(persistSavedBiens(list)){if($("bienLabel"))$("bienLabel").value="";refreshSavedSelect();showSavedHint("&#10003; <b>"+esc(label)+"</b> mis à jour.");}
+  if(persistSavedBiens(list)){state._lastSavedSnap=JSON.stringify(snapshotForm());if($("bienLabel"))$("bienLabel").value="";refreshSavedSelect();showSavedHint("&#10003; <b>"+esc(label)+"</b> mis à jour.");}
   else showSavedHint("Mise à jour impossible.",true);
 }
+function _hasUnsavedChanges(){
+  if(!lastResult)return false;
+  if(!state._lastSavedSnap)return true;
+  try{
+    const cur=JSON.stringify(snapshotForm());
+    return cur!==state._lastSavedSnap;
+  }catch(_){return true;}
+}
+function _confirmDiscard(action){
+  if(!_hasUnsavedChanges())return true;
+  return confirm("Vous avez des modifications non sauvegardées.\nVoulez-vous continuer sans sauvegarder ?");
+}
 function openBienById(id){
+  if(!_confirmDiscard())return;
   const entry=loadSavedBiens().find(b=>b.id===id);if(!entry)return;
   // Fix4 : reinitialiser l'etat interne AVANT de restaurer un nouveau bien
   state.coord=null;state.ctx2={};state.enrich={};state.live={};
@@ -7074,7 +7273,9 @@ function bindDiagEvents(){
       const id=el.dataset.diag,q=el.dataset.q;
       diagsState[id]=diagsState[id]||{};
       diagsState[id][q]=el.type==="checkbox"?el.checked:el.value;
-      renderDiags();
+      // Ne PAS re-render le DOM (renderDiags) sur input/change
+      // pour éviter de perdre le focus sur les champs numériques.
+      // Seul le badge du bouton est mis à jour.
       if(lastResult)refreshAfterDiagChange();
     });
   });
@@ -7562,6 +7763,7 @@ function renderCompare(){
 if($("btnSaveBien"))$("btnSaveBien").addEventListener("click",saveBien);
 // Comparer : initialiser la carte au chargement (cas d'un refresh avec biens déjà cochés)
 refreshSavedSelect();renderCompare();
+window.addEventListener("beforeunload",function(e){if(_hasUnsavedChanges()){e.preventDefault();e.returnValue="";}});
 if($("btnUpdateBien"))$("btnUpdateBien").addEventListener("click",updateBien);
 refreshSavedSelect();
 
