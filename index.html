@@ -454,10 +454,10 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
     <div class="field"><div class="row">
       <div id="wrapSurface"><label class="lbl" for="surface">Surface habitable</label><div class="with-unit"><input class="input num" id="surface" type="number" min="1" placeholder="65" /><span class="unit">m&#178;</span></div></div>
       <div id="wrapTerrain" style="display:none"><label class="lbl" for="terrain">Surface terrain</label><div class="with-unit"><input class="input num" id="terrain" type="number" min="0" placeholder="300" /><span class="unit">m&#178;</span></div></div>
-      <div id="wrapVendeurPro" style="display:none;margin-bottom:12px">
+    </div></div>
+    <div id="wrapVendeurPro" style="display:none;margin-bottom:12px">
         <label class="chk" style="gap:8px"><input type="checkbox" id="terrainVendeurPro" /><span style="font-weight:700;font-size:13px">Vendeur professionnel (assujetti TVA)</span></label>
         <div class="hint" style="margin-top:4px">Lotisseur, promoteur, marchand de biens &#8594; TVA 20 % incluse dans le prix et droits de mutation r&#233;duits &#224; 0,715 %. D&#233;coch&#233; = vendeur particulier (droits pleins ~5,8 %).</div>
-      </div>
       <div id="wrapViab" class="terrain-params" style="display:none">
         <!-- Type de terrain -->
         <div class="terrain-section">
@@ -2249,13 +2249,18 @@ function estimateTerrain(realBase,parcelSurf,city,cp){
   let landSqm,conf,srcNote;
   if(realBase&&realBase>0){landSqm=realBase;conf="\u00e9lev\u00e9e";srcNote="ventes DVF terrains du secteur";}
   else{
-    const _dep2=depFromCP(),_eptbM2=(_dep2&&EPTB_DEP[_dep2]!=null)?EPTB_DEP[_dep2]:null;
-    if(_eptbM2>0){landSqm=_eptbM2;conf="moyenne";srcNote="EPTB/SDES 2023 (d\u00e9p. "+_dep2+" : "+_eptbM2+" \u20ac/m\u00b2)";
-    }else{
+    const _dep2=depFromCP();
+    const _eptbM2=(_dep2&&EPTB_DEP[_dep2]!=null)?EPTB_DEP[_dep2]:null;
     const b=baseSqm(city,cp,"appartement"),apt=b.sqm||1800;
-    const tr={modeste:0.08,moyen:0.12,recherche:0.18,premium:0.25};
-    landSqm=Math.max(15,Math.round(apt*(tr[marketCtx(apt).tier]||0.12)));
-    conf="indicative";srcNote="estimation indicative \u2014 ventes terrain locales indisponibles";}}
+    const tr={modeste:0.10,moyen:0.14,recherche:0.20,premium:0.28};
+    const _heuristM2=Math.max(15,Math.round(apt*(tr[marketCtx(apt).tier]||0.14)));
+    if(_eptbM2>0){
+      landSqm=Math.round(Math.max(_eptbM2, _heuristM2*0.70+_eptbM2*0.30));
+      conf="moyenne";srcNote="EPTB "+_eptbM2+" + march\u00e9 local "+_heuristM2+" \u2192 "+landSqm+" \u20ac/m\u00b2";
+    }else{
+      landSqm=_heuristM2;
+      conf="indicative";srcNote="estimation indicative \u2014 ventes terrain locales indisponibles";
+    }}
   const plu=(state.ctx2&&state.ctx2.plu)||null;
   const zone=plu&&plu.zone?String(plu.zone):"",lib=plu&&plu.libelle?String(plu.libelle).trim():"";
   const zKey=lib||zone,z0=zKey?zKey.charAt(0).toUpperCase():"";
@@ -2268,11 +2273,13 @@ function estimateTerrain(realBase,parcelSurf,city,cp){
   if(prescrAdj&&prescrAdj.adj)add(prescrAdj.label,prescrAdj.adj);
   const ckV=id=>{const e=$(id);return e&&e.checked;};
   const vEau=ckV("viabEau"),vAss=ckV("viabAssain"),vElec=ckV("viabElec"),vVoi=ckV("viabVoirie"),vTel=ckV("viabTelecom");
-  if(!vEau) add("Eau potable absente (raccordement ~2\u20138 k\u20ac)",-0.04);
-  if(!vAss) add("Assainissement collectif absent \u2014 ANC ou raccordement ~5\u201315 k\u20ac",-0.08);
-  if(!vElec)add("\u00c9lectricit\u00e9 absente (~1\u20134 k\u20ac)",-0.02);
-  if(!vVoi) add("Voirie goudronn\u00e9e absente (~5\u201330 k\u20ac)",-0.10);
-  if(!vTel) add("Fibre / t\u00e9l\u00e9com absents",-0.01);
+  // Décotes viab bornées
+  const _vP=landSqm*parcelSurf;const _vc=function(v){return _vP>80000?v*0.4:_vP>40000?v*0.6:v;};
+  if(!vEau) add("Eau potable absente (raccordement ~2\u20138 k\u20ac)",-_vc(0.03));
+  if(!vAss) add("Assainissement collectif absent \u2014 ANC ou raccordement ~5\u201315 k\u20ac)",-_vc(0.06));
+  if(!vElec)add("\u00c9lectricit\u00e9 absente (~1\u20134 k\u20ac)",-_vc(0.015));
+  if(!vVoi) add("Voirie goudronn\u00e9e absente (~5\u201330 k\u20ac)",-_vc(0.06));
+  if(!vTel) add("Fibre / t\u00e9l\u00e9com absents",-0.005);
   if(vEau&&vAss&&vElec&&vVoi)add("Raccord\u00e9 \u00e0 tous les r\u00e9seaux essentiels",0.06);
   const ttype=$("terrainType")?$("terrainType").value:"batir";
   const ttM={batir:[0,""],lotissement:[0.02,"Lotissement r\u00e9glement\u00e9 (r\u00e9seaux garantis)"],division:[-0.03,"Division \u2014 g\u00e9om\u00e8tre + ADU"],agricole_pc:[0.15,"Agricole avec PC obtenu"],demolir:[-0.06,"Construction \u00e0 d\u00e9molir (~5\u201315 k\u20ac)"]};
@@ -5381,7 +5388,7 @@ async function showResults(){
     _estimRunning=false;
   }
 }
-$("btnEstim").addEventListener("click",showResults);
+$("btnEstim").addEventListener("click",function(){const b=$("btnEstim");if(b&&b.dataset.origText){b.textContent=b.dataset.origText;b.style.background="";b.style.color="";delete b.dataset.origText;}showResults();});
 if($("btnNewBien"))$("btnNewBien").addEventListener("click",resetForm);
 ["ovrEntretien","ovrPlacement"].forEach(function(id){const e=$(id);if(!e)return;const h=function(){if(lastResult&&typeof renderOwnVsRent==="function")renderOwnVsRent(lastResult);};e.addEventListener("input",h);e.addEventListener("change",h);});
 if($("notaireLine"))$("notaireLine").addEventListener("click",function(){
@@ -7136,8 +7143,13 @@ function renderDiagsImpact(){
 
 function refreshAfterDiagChange(){
   if(!lastResult)return;
-  // Relancer l'estimation complete pour appliquer la decote au prix
-  if($("btnEstim"))$("btnEstim").click();
+  renderDiagsImpact();
+  const btn=$("btnEstim");
+  if(btn){
+    if(!btn.dataset.origText)btn.dataset.origText=btn.textContent;
+    btn.textContent="\u21bb Recalculer (diags modifi\u00e9s)";
+    btn.style.background="var(--warn)";btn.style.color="#fff";
+  }
 }
 
 /* ===== POINT8 : Acheter vs Louer — point de bascule =====
