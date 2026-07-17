@@ -679,12 +679,12 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
     <section class="card expert-only" id="enginesCard" style="order:4"><div class="card-head"><div class="step-no">&#129518;</div><div><h2>Estimation multi-estimateurs</h2><div class="sub">6 estimateurs ind&#233;pendants fusionn&#233;s par leur confiance</div></div></div><div id="enginesPanel"></div></section>
     <section class="card expert-only" id="bienIndicesCard" style="order:4"><div class="card-head"><div class="step-no">&#10024;</div><div><h2>Profil &amp; indices du bien</h2><div class="sub">Qualit&#233;, raret&#233;, attractivit&#233; &#233;motionnelle et profil acheteur</div></div></div><div id="bienIndicesPanel"></div></section>
     <section class="card expert-only" id="globalCard" style="order:4"><div class="card-head"><div class="step-no">&#127941;</div><div><h2>Note globale du bien</h2><div class="sub">Indice /100 sur 7 dimensions ind&#233;pendantes</div></div></div><div id="globalPanel"></div></section>
-    <section class="card expert-only" id="proKpiCard" style="order:4"><div class="card-head"><div class="step-no">&#128202;</div><div><h2>Tableau de bord investisseur</h2><div class="sub">Ratios financiers professionnels &#8212; calcul&#233;s en direct</div></div></div><div id="proKpiPanel"></div></section>
+    <section class="card expert-only invest-only" id="proKpiCard" style="order:4"><div class="card-head"><div class="step-no">&#128202;</div><div><h2>Tableau de bord investisseur</h2><div class="sub">Ratios financiers professionnels &#8212; calcul&#233;s en direct</div></div></div><div id="proKpiPanel"></div></section>
     <section class="card expert-only invest-only" id="negoCard" style="order:6"><div class="card-head"><div class="step-no">&#129309;</div><div><h2>Aide &#224; la n&#233;gociation</h2><div class="sub">Prix cible, offre, marge et probabilit&#233; d'acceptation</div></div></div><div id="negoPanel"></div></section>
-    <section class="card expert-only" id="contextCard" style="order:7"><div class="card-head"><div class="step-no">&#129517;</div><div><h2>Contexte &amp; signaux</h2><div class="sub">Donn&#233;es publiques, indices compl&#233;mentaires et anomalies &#8212; sans impact sur le prix</div></div></div><div id="contextPanel"></div></section>
+    <section class="card expert-only invest-only" id="contextCard" style="order:7"><div class="card-head"><div class="step-no">&#129517;</div><div><h2>Contexte &amp; signaux</h2><div class="sub">Donn&#233;es publiques, indices compl&#233;mentaires et anomalies &#8212; sans impact sur le prix</div></div></div><div id="contextPanel"></div></section>
     <section class="card expert-only invest-only" id="vendorCard" style="order:95"><div class="card-head"><div class="step-no">&#127991;&#65039;</div><div><h2>C&#244;t&#233; vendeur</h2><div class="sub">Strat&#233;gie de prix de mise en march&#233;</div></div></div><div id="vendorPanel"></div></section>
-    <section class="card expert-only" id="fiscalCard" style="order:6"><div class="card-head"><div class="step-no">&#9878;&#65039;</div><div><h2>Comparateur fiscal</h2><div class="sub">Tous les r&#233;gimes compar&#233;s &#8212; recommandation automatique</div></div></div><div id="fiscalPanel"></div></section>
-    <section class="card expert-only" id="dispositifCard" style="order:6"><div class="card-head"><div class="step-no">&#127963;&#65039;</div><div><h2>Dispositifs de d&#233;fiscalisation</h2><div class="sub">SCI IS, Nue-propri\u00e9t\u00e9, Loc'Avantages, Pinel, Denormandie, Malraux, MH, holding</div></div></div>
+    <section class="card expert-only invest-only" id="fiscalCard" style="order:6"><div class="card-head"><div class="step-no">&#9878;&#65039;</div><div><h2>Comparateur fiscal</h2><div class="sub">Tous les r&#233;gimes compar&#233;s &#8212; recommandation automatique</div></div></div><div id="fiscalPanel"></div></section>
+    <section class="card expert-only invest-only" id="dispositifCard" style="order:6"><div class="card-head"><div class="step-no">&#127963;&#65039;</div><div><h2>Dispositifs de d&#233;fiscalisation</h2><div class="sub">SCI IS, Nue-propri\u00e9t\u00e9, Loc'Avantages, Pinel, Denormandie, Malraux, MH, holding</div></div></div>
       <div><label class="lbl" for="dispositif">Dispositif</label><select class="input" id="dispositif"><option value="none">Aucun (droit commun)</option><option value="pinel">Pinel (neuf, 2024)</option><option value="pinelplus">Pinel+ (neuf, qualit&#233;)</option><option value="denormandie">Denormandie (ancien + travaux)</option><option value="malraux">Malraux (restauration SPR)</option><option value="mh">Monuments Historiques</option><option value="locavantages">Loc'Avantages (ANAH)</option><option value="nupropriete">Nue-propri&#233;t&#233; (d&#233;membrement)</option><option value="sciis">SCI &#224; l'IS (analyse d&#233;taill&#233;e)</option><option value="holding">Holding (structuration)</option></select></div>
       <div id="dispoTravauxRow" style="display:none;margin-top:10px"><label class="lbl" for="dispoTravaux">Montant des travaux</label><div class="with-unit"><input class="input num" id="dispoTravaux" type="number" min="0" /><span class="unit">&#8364;</span></div></div>
       <div id="dispoDureeRow" style="display:none;margin-top:10px"><label class="lbl" for="dispoDuree">Engagement de location</label><select class="input" id="dispoDuree"><option value="6">6 ans</option><option value="9" selected>9 ans</option><option value="12">12 ans</option></select></div>
@@ -931,7 +931,7 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
     </section>
 
     <!-- OP&#201;RATION ACHAT-REVENTE -->
-    <section class="card expert-only" style="order:3" id="worksCard"><div class="card-head"><div class="step-no">&#128296;</div><div><h2>Valorisation des travaux</h2><div class="sub">Co&#251;t, dur&#233;e, plus-value et ROI par poste</div></div></div>
+    <section class="card expert-only invest-only" style="order:3" id="worksCard"><div class="card-head"><div class="step-no">&#128296;</div><div><h2>Valorisation des travaux</h2><div class="sub">Co&#251;t, dur&#233;e, plus-value et ROI par poste</div></div></div>
       <div style="display:flex;gap:6px;margin-bottom:12px;background:var(--bg);padding:4px;border-radius:10px">
         <button type="button" id="worksTabSimple" class="wtab wtab-on" style="flex:1;padding:8px;border:none;border-radius:8px;font-family:var(--body);font-weight:700;font-size:12.5px;cursor:pointer">Estimation rapide</button>
         <button type="button" id="worksTabExpert" class="wtab" style="flex:1;padding:8px;border:none;border-radius:8px;font-family:var(--body);font-weight:700;font-size:12.5px;cursor:pointer">Mode expert (m&#233;tr&#233;)</button>
@@ -2250,7 +2250,7 @@ function estimateTerrain(realBase,parcelSurf,city,cp){
   if(realBase&&realBase>0){landSqm=realBase;conf="\u00e9lev\u00e9e";srcNote="ventes DVF terrains du secteur";}
   else{
     const _dep2=depFromCP(),_eptbM2=(_dep2&&EPTB_DEP[_dep2]!=null)?EPTB_DEP[_dep2]:null;
-    if(_eptbM2>0){landSqm=_eptbM2;conf="moyenne";srcNote="EPTB/SDES 2023 (d\u00e9p. "+_dep2+" : "+_eptbM2+" \u20ac/m\u00b2)";rows.push(["Ancrage EPTB "+_dep2+" = "+_eptbM2+" \u20ac/m\u00b2",0]);
+    if(_eptbM2>0){landSqm=_eptbM2;conf="moyenne";srcNote="EPTB/SDES 2023 (d\u00e9p. "+_dep2+" : "+_eptbM2+" \u20ac/m\u00b2)";
     }else{
     const b=baseSqm(city,cp,"appartement"),apt=b.sqm||1800;
     const tr={modeste:0.08,moyen:0.12,recherche:0.18,premium:0.25};
@@ -5234,7 +5234,7 @@ function renderAllPanels(r,_conf,realBase,diag){
   else{sd.style.background="#E8742A";st.textContent="Bar\u00e8me r\u00e9gional \u00b7 sans DVF ("+diag+")";$("compTag").textContent="DVF indisponible";}
   countUp($("pcPrice"),r.price," \u20ac");
   $("pcMargin").textContent="\u00b1 "+(r.spread*100).toFixed(0)+" %";
-  $("pcSqm").textContent=eur0(r.sqm)+" \u20ac";
+  $("pcSqm").textContent=eur0(r.sqm)+(r.type==="terrain"?" \u20ac/m\u00b2 terrain":" \u20ac");
   $("pcType").textContent=({appartement:"appartement",maison:"maison",terrain:"terrain"})[r.type];
   // Fix5 : ancre DVF — médiane transactions réelles pour l'acquéreur
   const _anc=$("pcDvfAnchor");
@@ -5264,7 +5264,7 @@ function renderAllPanels(r,_conf,realBase,diag){
   if(r.type!=="terrain"){
     const dpeCostHi=renderDpe();
     $("iTravaux").value=dpeCostHi>0?Math.round(dpeCostHi*0.8/1000)*1000:0;
-  }
+  }else{$("iTravaux").value=0;}
   renderRentalDefaults(r);
   renderResaleDefaults(r);
   renderEnrich(r);
@@ -5274,7 +5274,7 @@ function setupAsyncCallbacks(r,enrichPromise,ctxProm){
   enrichPromise.then(e=>{state.enrich=e;if(lastResult===r){applyGeoDyn(r);renderLocStats(r);renderEnrich(r);renderMap(r);}}).catch(()=>{state.enrich={};if(lastResult===r){renderEnrich(r);renderMap(r);}});
   ctxProm.then(c=>{state.ctx2=c||{};if(lastResult===r){patchDynReal(r);
     const _lr=getRentSqm(r);if(r.sqmBase&&_lr!==r.dyn.loyerM2){r.dyn.loyerM2=_lr;r.dyn.rendementMarche=+(_lr*12/r.sqmBase*100).toFixed(1);}
-    updateBadges(r);computeAll(r);renderInsee(r);renderMarket(r);renderContext(r);updateTaxeNote();if(typeof renderBenchmark==="function")renderBenchmark(r);}}).catch(()=>{state.ctx2={};if(lastResult===r)renderContext(r);});
+    updateBadges(r);computeAll(r);renderInsee(r);renderMarket(r);renderContext(r);updateTaxeNote();if(typeof renderBenchmark==="function")renderBenchmark(r);if(r.type==="terrain"&&typeof renderCommuneScore==="function")renderCommuneScore(r);}}).catch(()=>{state.ctx2={};if(lastResult===r)renderContext(r);});
   setShimmer("enrichPanel");setShimmer("contextPanel");
 }
 /* Garde-fou : empeche une estimation de rester bloquee si une API publique ne repond pas.
@@ -6760,9 +6760,12 @@ function refreshSavedSelect(){
   const btnU=$("btnUpdateBien");if(btnU)btnU.style.display=state.activeSnapId?"":"none";
 }
 function showSavedHint(msg,isErr){
-  const el=$("savedHint");if(!el)return;
-  el.style.display="";el.style.color=isErr?"var(--bad)":"var(--brand-dark)";el.innerHTML=msg;
-  clearTimeout(showSavedHint._t);showSavedHint._t=setTimeout(()=>{el.style.display="none";},5000);
+  const el=$("savedHint");if(el){el.style.display="";el.style.color=isErr?"var(--bad)":"var(--brand-dark)";el.innerHTML=msg;
+  clearTimeout(showSavedHint._t);showSavedHint._t=setTimeout(()=>{el.style.display="none";},5000);}
+  let toast=$("saveToast");
+  if(!toast){toast=document.createElement("div");toast.id="saveToast";toast.style.cssText="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;padding:10px 20px;border-radius:12px;font-size:13px;font-weight:600;color:#fff;box-shadow:0 4px 20px rgba(0,0,0,.25);transition:opacity .4s;pointer-events:none";document.body.appendChild(toast);}
+  toast.style.background=isErr?"var(--bad)":"var(--brand-dark)";toast.innerHTML=msg;toast.style.opacity="1";
+  clearTimeout(showSavedHint._t2);showSavedHint._t2=setTimeout(()=>{toast.style.opacity="0";},3500);
 }
 function _getLabel(){return(($("bienLabel")&&$("bienLabel").value)||"").trim()||(($("adresse")&&$("adresse").value)||"").trim()||(($("ville")&&$("ville").value)||"").trim()||"Bien sans nom";}
 function saveBien(){
