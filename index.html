@@ -1334,9 +1334,9 @@ document.addEventListener("click",e=>{if(!e.target.closest(".ac-wrap"))closeAc()
 
 /* ===== DVF r\u00e9el (cquest, repli d\u00e9mo) ===== */
 const DVF_PROXY=""; // optionnel : URL d'un proxy perso (Cloudflare Worker) pour une fiabilit\u00e9 maximale
-const DVF_BASE_PROD="https://apidf.cerema.fr/dvf_opendata/mutations/"; // Cerema prod (flux ouvert DVF+ open-data)
-const DVF_BASE_FALLBACK="https://apidf-preprod.cerema.fr/dvf_opendata/mutations/"; // Cerema preprod (secours si prod injoignable)
-const DVF_BASE=DVF_PROXY||DVF_BASE_PROD; // API officielle DVF+ open-data du Cerema
+const DVF_BASE_PROD="https://apidf.cerema.fr/dvf_opendata/mutations/"; // Cerema prod — inaccessible navigateur (CORS), réservé à usage futur
+const DVF_BASE_FALLBACK="https://apidf-preprod.cerema.fr/dvf_opendata/mutations/"; // Cerema preprod — flux opérationnel
+const DVF_BASE=DVF_PROXY||DVF_BASE_FALLBACK; // Preprod utilisé : prod non accessible depuis navigateur (pas de header CORS)
 const DEBUG=location.search.indexOf("debug")>=0;
 function dbg(m){if(!DEBUG)return;let b=document.getElementById("__dbg");if(!b){b=document.createElement("pre");b.id="__dbg";b.style.cssText="position:fixed;left:0;right:0;bottom:0;max-height:45vh;overflow:auto;margin:0;padding:10px;background:#0F2A43;color:#8fe;font:11px/1.45 monospace;white-space:pre-wrap;word-break:break-all;z-index:99999;border-top:3px solid #0FB39E";document.body.appendChild(b);}b.textContent+=m+"\n\n";}
 // (format : "https://ton-worker.workers.dev/?url=") -> il passe en priorite 1, fallback sur les relais publics.
@@ -1433,16 +1433,6 @@ async function _dvfFetchRaw(url,ttlMs=0){
   if(!out){
     await new Promise(r=>setTimeout(r,400));
     try{ out=await one(url,9000); }catch(_){}
-  }
-  // Etape 4 : fallback Cerema preprod si prod injoignable (sans proxy perso)
-  if(!out&&!DVF_PROXY&&url.includes(DVF_BASE_PROD)){
-    const fbUrl=url.replace(DVF_BASE_PROD,DVF_BASE_FALLBACK);
-    try{ out=await one(fbUrl,9000); }catch(_){}
-    if(!out&&CORS_PROXIES.length){
-      const ordered=CORS_PROXIES.slice().sort((a,b)=>(_proxyOK.has(b)?1:0)-(_proxyOK.has(a)?1:0));
-      const tries=ordered.map(px=>one(px+encodeURIComponent(fbUrl),12000).then(r=>{_proxyOK.add(px);_persistProxy();return r;}));
-      try{ out=await Promise.any(tries); }catch(_){}
-    }
   }
   if(out){
     _netCache.set(url,out);
