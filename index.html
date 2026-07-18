@@ -1367,7 +1367,7 @@ function _lsSet(url,val,ttlMs){
  * Zonage ABC, BPE, DPE → 30 jours. */
 function _urlTTL(url){
   if(/filosofi|ssmsi|arcep|rpls-20|vacance|rpls\/|logements-locatifs|comparateur-de-territoires|population-francaise|tabular-api/i.test(url))return 7*86400*1000;
-  if(/bpe-all|fiscalite-locale|zonage-abc|catalogues\/dpe|sitadel|georef-france-iris|filosofi.*iris|rnb-api\.beta\.gouv\.fr|api\.bdnb\.io/i.test(url))return 30*86400*1000;
+  if(/bpe-all|fiscalite-locale|zonage-abc|catalogues\/dpe|sitadel|georef-france-iris|filosofi.*iris|rnb-api\.beta\.gouv\.fr|api\.bdnb\.io|apicarto\.ign\.fr\/api\/gpu\/info-/i.test(url))return 30*86400*1000;
   if(/data\.education\.gouv.*ips|ips.*education|ips_ecoles/i.test(url))return 7*86400*1000;
   if(/georisques.*catnat|catnat.*georisques|georisques.*rga|rga.*georisques/i.test(url))return 7*86400*1000;
   return 0; // pas de cache LS
@@ -3715,6 +3715,61 @@ async function provPlu(coord){
     }catch(_){}
     return(z||lib)?{zone:z,libelle:lib,prescr}:null;
   }catch(_){return null;}}
+/* ===== R17 / Vague 7 : nuisances sonores (champ "bruit") =====================
+ * Source : Geoportail de l'Urbanisme, via API Carto IGN (apicarto.ign.fr/api/gpu),
+ * couches "info-surf" / "info-lin" = annexes informatives des documents d'urbanisme.
+ * Nomenclature CNIG (standard PLU, champ TYPEINF) :
+ *   14 = voisinage d'infrastructure de transport terrestre
+ *        (classement sonore / secteurs affectes par le bruit, arrete prefectoral,
+ *         art. L571-10 code de l'environnement, arrete du 30 mai 1996)
+ *   27 = plan d'exposition au bruit des aerodromes (PEB)
+ * Couverture : dependante du depot des annexes du PLU sur le GPU -> NON exhaustive.
+ * Honnetete des donnees : on ne conclut "pas de bruit" que si la couche a
+ * effectivement renvoye des objets ; sinon on retourne null (indetermine).
+ * AUCUN impact sur le prix : information + argument de negociation uniquement
+ * (aucun coefficient de decote sourced n'existe -> aucun coefficient invente). */
+const BRUIT_TYPEINF={"14":"Secteur affect\u00e9 par le bruit d'une infrastructure de transport terrestre","27":"Plan d'exposition au bruit d'a\u00e9rodrome (PEB)"};
+/* Decouverte de schema a l'execution : le nom du champ CNIG peut varier selon les
+ * producteurs (typeinf / TYPEINF / type_inf). A defaut, repli sur les libelles. */
+function _bruitScan(features){
+  const out=[];
+  (features||[]).forEach(function(f){
+    const p=(f&&f.properties)||{};let code=null,lib="";
+    for(const k in p){
+      const kn=k.toLowerCase().replace(/[^a-z]/g,""),v=p[k];
+      if(kn==="typeinf"&&v!=null){const c=String(v).trim().replace(/^0+/,"");if(c==="14"||c==="27")code=c;}
+      if(!lib&&typeof v==="string"&&v&&/^(libelle|nom|nature|txt|libelong)/.test(kn))lib=v;
+    }
+    if(!code){
+      let blob="";for(const k2 in p){if(typeof p[k2]==="string")blob+=" "+p[k2];}
+      if(/classement\s+sonore|affect\w*\s+par\s+le\s+bruit|isolement\s+acoustique/i.test(blob))code="14";
+      else if(/exposition\s+au\s+bruit|\bP\.?E\.?B\.?\b/i.test(blob))code="27";
+    }
+    if(code)out.push({code:code,libelle:lib||BRUIT_TYPEINF[code]});
+  });
+  return out;
+}
+async function provBruit(coord){
+  try{
+    if(!coord||coord.lat==null||coord.lon==null)return null;
+    // Tampon carre ~180 m : un point seul n'intersecte quasiment jamais un objet lineaire.
+    const dLat=180/111320,cosL=Math.cos(coord.lat*Math.PI/180),dLon=180/(111320*(Math.abs(cosL)>0.05?cosL:0.05));
+    const box={type:"Polygon",coordinates:[[[coord.lon-dLon,coord.lat-dLat],[coord.lon+dLon,coord.lat-dLat],[coord.lon+dLon,coord.lat+dLat],[coord.lon-dLon,coord.lat+dLat],[coord.lon-dLon,coord.lat-dLat]]]};
+    const g=encodeURIComponent(JSON.stringify(box));
+    const r=await Promise.all([
+      dvfFetch("https://apicarto.ign.fr/api/gpu/info-surf?geom="+g).catch(function(){return null;}),
+      dvfFetch("https://apicarto.ign.fr/api/gpu/info-lin?geom="+g).catch(function(){return null;})]);
+    const ds=r[0],dl=r[1];
+    const fs=((ds&&ds.json&&ds.json.features)||[]),fl=((dl&&dl.json&&dl.json.features)||[]);
+    const scanned=fs.length+fl.length;
+    if(!scanned)return null; // aucune annexe informative publiee ici : indetermine
+    const hits=_bruitScan(fs).concat(_bruitScan(fl));
+    const terrestre=hits.some(function(h){return h.code==="14";}),peb=hits.some(function(h){return h.code==="27";});
+    const labels=[];if(terrestre)labels.push(BRUIT_TYPEINF["14"]);if(peb)labels.push(BRUIT_TYPEINF["27"]);
+    const uniq=[];hits.forEach(function(h){if(h.libelle&&uniq.indexOf(h.libelle)<0&&uniq.length<3)uniq.push(h.libelle);});
+    return{found:hits.length>0,terrestre:terrestre,peb:peb,count:hits.length,scanned:scanned,labels:labels,details:uniq};
+  }catch(_){return null;}
+}
 async function provLoyers(insee,type){
   if(!insee)return null;
   try{
@@ -4368,10 +4423,10 @@ async function provCoutRegion(insee){
 }
 async function fetchContextProviders(coord){
   if(!coord)return{};
-  const res=await Promise.allSettled([provDemo(coord.insee),provEntreprises(coord.insee),provPlu(coord),provFilosofi(coord.insee),provLoyers(coord.insee,state.type),provRPLS(coord.insee),provFibre(coord.insee),provCrime(coord.insee),provVacance(coord.insee),provIPS(coord.insee),provSitadel(coord.insee),provTaxeFonciere(coord.insee),provZoneABC(coord.insee),provBPE(coord.insee),provCopro(coord.insee),provQuartier(coord),provBDNB(coord)]);
+  const res=await Promise.allSettled([provDemo(coord.insee),provEntreprises(coord.insee),provPlu(coord),provFilosofi(coord.insee),provLoyers(coord.insee,state.type),provRPLS(coord.insee),provFibre(coord.insee),provCrime(coord.insee),provVacance(coord.insee),provIPS(coord.insee),provSitadel(coord.insee),provTaxeFonciere(coord.insee),provZoneABC(coord.insee),provBPE(coord.insee),provCopro(coord.insee),provQuartier(coord),provBDNB(coord),provBruit(coord),provDpeDistrib(coord.insee)]);
   const v=i=>res[i]&&res[i].status==="fulfilled"?res[i].value:null;
-  const ctx={},iris=v(0),ent=v(1),plu=v(2),filo=v(3),loy=v(4),rpls=v(5),fib=v(6),crime=v(7),vac=v(8),ips=v(9),sitadel=v(10),tf=v(11),za=v(12),bpe=v(13),copro=v(14),quart=v(15),bdnb=v(16);
-  if(iris)ctx.iris=iris;if(ent)ctx.sirene=ent;if(plu)ctx.plu=plu;if(filo)ctx.filosofi=filo;if(loy)ctx.loyers=loy;if(rpls)ctx.rpls=rpls;if(fib)ctx.fibre=fib;if(crime)ctx.crime=crime;if(vac)ctx.vacance=vac;if(ips)ctx.ips=ips;if(sitadel)ctx.sitadel=sitadel;if(tf)ctx.taxeFonciere=tf;if(za)ctx.zoneABC=za;if(bpe)ctx.bpe=bpe;if(copro)ctx.copro=copro;if(quart)ctx.quartier=quart;if(bdnb)ctx.bdnb=bdnb;
+  const ctx={},iris=v(0),ent=v(1),plu=v(2),filo=v(3),loy=v(4),rpls=v(5),fib=v(6),crime=v(7),vac=v(8),ips=v(9),sitadel=v(10),tf=v(11),za=v(12),bpe=v(13),copro=v(14),quart=v(15),bdnb=v(16),bruit=v(17),dpeDistrib=v(18);
+  if(iris)ctx.iris=iris;if(ent)ctx.sirene=ent;if(plu)ctx.plu=plu;if(filo)ctx.filosofi=filo;if(loy)ctx.loyers=loy;if(rpls)ctx.rpls=rpls;if(fib)ctx.fibre=fib;if(crime)ctx.crime=crime;if(vac)ctx.vacance=vac;if(ips)ctx.ips=ips;if(sitadel)ctx.sitadel=sitadel;if(tf)ctx.taxeFonciere=tf;if(za)ctx.zoneABC=za;if(bpe)ctx.bpe=bpe;if(copro)ctx.copro=copro;if(quart)ctx.quartier=quart;if(bdnb)ctx.bdnb=bdnb;if(bruit)ctx.bruit=bruit;if(dpeDistrib)ctx.dpeDistrib=dpeDistrib;
   return ctx;
 }
 // ===== Reconciliation ChatGPT x Grok \u2014 W1 : socle contextuel (additif, ZERO impact prix) =====
@@ -4388,12 +4443,12 @@ function propertyContext(r){
     risques:lv.risqueLbl||null,
     radon:lv.radon!=null?lv.radon:null,
     iris:x2.iris||null,sirene:x2.sirene||null,plu:x2.plu||null,permis:x2.permis||null,bruit:x2.bruit||null,cadastre:x2.cadastre||null,
-    bdnb:(x2.bdnb&&(x2.bdnb.anneeConstruction!=null||x2.bdnb.coverRatio!=null||x2.bdnb.matMur))?1:null
+    bdnb:(x2.bdnb&&(x2.bdnb.anneeConstruction!=null||x2.bdnb.coverRatio!=null||x2.bdnb.matMur))?1:null,dpeDistrib:(x2.dpeDistrib&&x2.dpeDistrib.real)?1:null
   };
   let gi=null;try{gi=globalIndex(r);}catch(e){}
   const pk=n=>gi?((gi.subs.find(s=>s[0].indexOf(n)===0)||[])[1]):null;
   const indices={qualiteVie:pk("Attractivit\u00e9"),liquidite:pk("Facilit\u00e9"),patrimonial:pk("Potentiel patrimonial"),risque:pk("Niveau de risque")};
-  const keys=["dvf","geoloc","air","ecoles","transports","commerces","risques","radon","iris","sirene","plu","permis","bruit","bdnb"];
+  const keys=["dvf","geoloc","air","ecoles","transports","commerces","risques","radon","iris","sirene","plu","permis","bruit","bdnb","dpeDistrib"];
   const present=keys.filter(k=>src[k]!=null&&src[k]!==0&&src[k]!=="").length;
   return{src,indices,present,richness:Math.round(present/keys.length*100)};
 }
@@ -4482,7 +4537,7 @@ function renderContext(r){
   const pc=propertyContext(r),bonus=contextConfidenceBonus(pc),an=contextAnomalies(r,pc);
   const baseConf=r.confScore||(function(){try{return reliabilityIndex(r).score;}catch(e){return null;}})();
   const enr=baseConf!=null?Math.min(100,baseConf+bonus):null;
-  const srcLabels=[["dvf","Ventes DVF"],["geoloc","Geolocalisation BAN"],["air","Qualite de l'air"],["ecoles","Ecoles"],["transports","Transports"],["commerces","Commerces"],["risques","Risques naturels"],["radon","Radon"],["iris","Demographie"],["sirene","Entreprises"],["plu","PLU"],["bruit","Bruit"],["permis","Permis"],["bdnb","B\u00e2timent (BDNB)"]];
+  const srcLabels=[["dvf","Ventes DVF"],["geoloc","Geolocalisation BAN"],["air","Qualite de l'air"],["ecoles","Ecoles"],["transports","Transports"],["commerces","Commerces"],["risques","Risques naturels"],["radon","Radon"],["iris","Demographie"],["sirene","Entreprises"],["plu","PLU"],["bruit","Bruit"],["permis","Permis"],["bdnb","B\u00e2timent (BDNB)"],["dpeDistrib","Distribution DPE"]];
   const chips=srcLabels.filter(s=>pc.src[s[0]]!=null&&pc.src[s[0]]!==0).map(s=>`<span style="display:inline-block;font-size:10.5px;background:var(--brand-tint);color:var(--brand-dark);border-radius:20px;padding:3px 9px;margin:0 4px 4px 0">${s[1]}</span>`).join("");
   const confHtml=enr!=null?`<div style="margin-top:10px;padding:9px 12px;background:var(--bg);border-radius:10px;font-size:12px;color:var(--ink)">Confiance de base <b class="num">${baseConf}/100</b>${bonus>0?' + <b class="num" style="color:var(--good)">'+bonus+'</b> pts contextuels ('+pc.present+' sources concordantes) = <b class="num">'+enr+'/100</b>':' (pas de bonus contextuel)'}</div>`:"";
   const anHtml=an.length?`<div style="margin-top:12px"><div style="font-size:12px;font-weight:800;color:var(--ink);margin-bottom:5px">Signaux &amp; anomalies</div>`+an.map(a=>`<div style="display:flex;gap:7px;font-size:11.5px;color:var(--ink);line-height:1.5;margin-top:4px"><span style="color:var(--warn)">&#9888;</span><span>${a}</span></div>`).join("")+`</div>`:`<div style="margin-top:12px;font-size:11.5px;color:var(--ink-soft)">Aucune anomalie majeure detectee.</div>`;
@@ -4491,6 +4546,17 @@ function renderContext(r){
   if(x2.iris)extra.push("Population commune : "+eur0(x2.iris.population)+(x2.iris.densite?" ("+eur0(x2.iris.densite)+" hab/km\u00b2)":""));
   if(x2.sirene)extra.push("Entreprises actives : "+eur0(x2.sirene.total));
   if(x2.plu&&(x2.plu.libelle||x2.plu.zone))extra.push("Zonage PLU : "+esc(x2.plu.libelle||x2.plu.zone));
+  /* R17 : nuisances sonores (GPU / CNIG TYPEINF 14 & 27) - informatif, zero impact prix */
+  if(x2.bruit){
+    if(x2.bruit.found){
+      let tb="Nuisances sonores\u00a0: <b style=\"color:var(--warn)\">"+esc(x2.bruit.labels.join(" + "))+"</b>";
+      if(x2.bruit.details&&x2.bruit.details.length)tb+=" \u2014 "+esc(x2.bruit.details.join("\u00a0; "));
+      tb+=" \u00b7 isolation acoustique renforc\u00e9e exigible \u00e0 la construction ; \u00e0 faire valoir en n\u00e9gociation (source\u00a0: G\u00e9oportail de l'Urbanisme, annexes informatives CNIG)";
+      extra.push(tb);
+    }else{
+      extra.push("Nuisances sonores\u00a0: aucun secteur affect\u00e9 par le bruit ni PEB recens\u00e9 dans un rayon d\u2019environ 180\u00a0m (source\u00a0: G\u00e9oportail de l'Urbanisme, annexes informatives \u2014 couverture d\u00e9pendante du d\u00e9p\u00f4t du document d\u2019urbanisme)");
+    }
+  }
   if(x2.quartier&&x2.quartier.iris){
     const qt=x2.quartier;
     if(qt.monoIris){
@@ -4573,6 +4639,20 @@ function renderContext(r){
     if(bd.coverRatio!=null)parts.push("Emprise au sol du b\u00e2ti sur la parcelle (RNB)\u00a0: <b>"+Math.round(bd.coverRatio*100)+"\u00a0%</b>"+(state.type!=="appartement"?" \u2014 indicatif pour appr\u00e9cier le potentiel d'extension":""));
     if(parts.length)extra.push(parts.join(" \u00b7 ")+" (source\u00a0: BDNB/CSTB, RNB)");
   }
+  if(x2.dpeDistrib&&x2.dpeDistrib.real){
+    const d=x2.dpeDistrib;
+    const label_fg=d.pct_fg!=null?"<b>"+Math.round(d.pct_fg*10)/10+"%</b> logements G-F (passoires)":null;
+    const label_efg=d.pct_efg!=null?"<b>"+Math.round(d.pct_efg*10)/10+"%</b> E-F-G (interdits location)":null;
+    const parts=[label_fg,label_efg].filter(Boolean);
+    if(parts.length){
+      let t="Distribution DPE du parc communal : "+parts.join(" + ");
+      const warns=[];if(d.nb_dpe&&d.nb_dpe<30)warns.push("effectif réduit ("+d.nb_dpe+")");
+      if(warns.length)t+=" (⚠ "+warns.join(", ")+")";
+      t+=" (source : ADEME/alerte-dpe.fr)";
+      extra.push(t);
+    }
+  }
+
   const extraHtml=extra.length?`<div style="margin-top:10px;font-size:11.5px;color:var(--ink);line-height:1.7">`+extra.map(e=>`<div>&#8226; ${e}</div>`).join("")+`</div>`:"";
   const idx=pc.indices,idxRow=[["Qualite de vie",idx.qualiteVie],["Liquidite",idx.liquidite],["Patrimonial",idx.patrimonial],["Faible risque",idx.risque]].filter(x=>x[1]!=null);
   const idxHtml=idxRow.length?`<div style="display:flex;gap:7px;margin-top:10px;flex-wrap:wrap">`+idxRow.map(x=>{const c=x[1]>=66?"var(--good)":x[1]>=45?"var(--brand-dark)":x[1]>=30?"var(--warn)":"var(--bad)";return `<div style="flex:1;min-width:68px;background:var(--bg);border-radius:9px;padding:7px 9px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.3px">${x[0]}</div><div class="num" style="font-size:15px;font-weight:800;color:${c}">${x[1]}<span style="font-size:9px;color:var(--ink-soft)">/100</span></div></div>`;}).join("")+`</div>`:"";
@@ -6466,7 +6546,7 @@ function buildReportHtml(r,name,color,logo){
   const btNote=r.backtest?`Backtest LOO sur ${r.backtest.n} ventes r\u00e9elles : erreur m\u00e9diane mesur\u00e9e \u00b1${r.backtest.mdape}\u00a0% (P80\u00a0: \u00b1${r.backtest.p80}\u00a0%). `:"";
   const dpNote=dp?`Prix cible acheteur : juste valeur\u2013${(dp.discount*100).toFixed(1)}\u00a0% (d\u00e9cote calibr\u00e9e sur ${dp.src}, modul\u00e9e par tension du march\u00e9). `:"";
   const tsNote=ts2?`Score territoire : ${ts2.score}/100 (${ts2.nInd} indicateurs pond\u00e9r\u00e9s, renormalis\u00e9s sur donn\u00e9es disponibles). `:"";
-  const sourcesHtml=`<p><b>Sources de donn\u00e9es :</b> DVF/Cerema (ventes r\u00e9elles), BAN/IGN (g\u00e9olocalisation), G\u00e9orisques (risques naturels, BASIAS/BASOL, radon), Open-Meteo (qualit\u00e9 de l\u2019air), DEPP/MEN (IPS \u00e9coles), OpenStreetMap/Overpass (proximit\u00e9s), INSEE Filosofi (revenus, ch\u00f4mage, m\u00e9nages), INSEE Populations l\u00e9gales (croissance d\u00e9mographique), RPLS (logement social), ARCEP (fibre), SSMSI/Minist\u00e8re de l\u2019Int\u00e9rieur (criminalit\u00e9), DGFiP REI (fiscalit\u00e9 TFPB), DHUP/data.gouv.fr (zonage ABC), INSEE BPE (base permanente des \u00e9quipements), ANAH/RNIC (copropri\u00e9t\u00e9s), Sitadel/SDES (permis de construire), ADEME (DPE), ARCEP (d\u00e9groupage), CSTB/BDNB \u0026 RNB (b\u00e2timent : ann\u00e9e de construction, emprise au sol).</p>`;
+  const sourcesHtml=`<p><b>Sources de donn\u00e9es :</b> DVF/Cerema (ventes r\u00e9elles), BAN/IGN (g\u00e9olocalisation), G\u00e9orisques (risques naturels, BASIAS/BASOL, radon), Open-Meteo (qualit\u00e9 de l\u2019air), DEPP/MEN (IPS \u00e9coles), OpenStreetMap/Overpass (proximit\u00e9s), INSEE Filosofi (revenus, ch\u00f4mage, m\u00e9nages), INSEE Populations l\u00e9gales (croissance d\u00e9mographique), RPLS (logement social), ARCEP (fibre), SSMSI/Minist\u00e8re de l\u2019Int\u00e9rieur (criminalit\u00e9), DGFiP REI (fiscalit\u00e9 TFPB), DHUP/data.gouv.fr (zonage ABC), INSEE BPE (base permanente des \u00e9quipements), ANAH/RNIC (copropri\u00e9t\u00e9s), Sitadel/SDES (permis de construire), ADEME (DPE), ARCEP (d\u00e9groupage), CSTB/BDNB \u0026 RNB (b\u00e2timent : ann\u00e9e de construction, emprise au sol), G\u00e9oportail de l\u2019Urbanisme/IGN API Carto (zonage PLU, secteurs affect\u00e9s par le bruit et PEB \u2014 standard CNIG).</p>`;
   return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Rapport \u2014 ${esc2(adresse)}</title><style>
 :root{--bg:#F6F8FA;--surface:#fff;--ink:#0F2A43;--ink-soft:#5B7186;--line:#E5EAF0;--brand:${color};--good:#15A66A;--warn:#E8A33D;--bad:#E0533D;}
 *{box-sizing:border-box}body{font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);margin:0;line-height:1.5;font-size:13px}
@@ -8563,7 +8643,7 @@ const WX=(function(){
   const st={};
   let opened={};
   // R5 : paramètres de métrés — surface projet (terrain) et nombre de niveaux
-  const wparams={proj:0,niv:1};
+  const wparams={proj:0,niv:1,ctype:"plainpied",fin:"standard",chantier:"urbain",mode:"moe"};
   function q(id){return(st[id]&&+st[id].qte)||0;}
   function isDiy(id){return!!(st[id]&&st[id].diy);}
   /* R14 : facteur d'actualisation des prix unitaires, PAR CATEGORIE.
@@ -8582,12 +8662,102 @@ const WX=(function(){
     // IPEA indisponible : on n'applique AUCUNE derive plutot qu'une derive fausse (ICC neuf).
     return 1;
   }
+  /* ===== R18 / Vague 9 : consolidation de la calculatrice "construction neuve" =====
+   * Trois leviers MULTIPLICATIFS appliques UNIQUEMENT a la categorie "construction" :
+   *   - type de construction (plain-pied / etage / ossature bois / beton)
+   *   - niveau de finition (economique -> tres haut de gamme)
+   *   - contexte de chantier (acces, logistique, eloignement des corps d'etat)
+   * Reference 1,00 = plain-pied + finition standard + contexte urbain : avec les
+   * valeurs par defaut le bareme actuel d'Estimo est STRICTEMENT inchange.
+   * ORIGINE DES RATIOS : calculatrice construction neuve du projet (ordres de
+   * grandeur professionnels). Ce ne sont PAS des donnees publiques officielles :
+   * aucun indice public gratuit de cout de construction par type et par niveau de
+   * finition n'existe en France (bareme FFB = payant). Rappele dans l'interface. */
+  const WX_TYPE={plainpied:{lbl:"Plain-pied / traditionnel",c:1.00},etage:{lbl:"\u00c0 \u00e9tage",c:0.97},bois:{lbl:"Ossature bois",c:1.13},beton:{lbl:"B\u00e9ton / parpaing \u00e9conomique",c:0.90}};
+  const WX_FINITION={eco:{lbl:"\u00c9conomique",c:0.81},standard:{lbl:"Standard",c:1.00},haut:{lbl:"Haut de gamme",c:1.29},tres:{lbl:"Tr\u00e8s haut de gamme",c:1.74}};
+  const WX_CHANTIER={urbain:{lbl:"Urbain",c:1.00},periurbain:{lbl:"P\u00e9riurbain",c:1.05},rural:{lbl:"Rural / acc\u00e8s difficile",c:1.12}};
+  /* Honoraires de maitrise d'oeuvre, en % du cout travaux (usage professionnel courant).
+   * Architecte obligatoire au-dela de 150 m2 SHAB (art. R431-2 code de l'urbanisme). */
+  const WX_MODE={ccmi:{lbl:"CCMI (constructeur)",c:0.05},moe:{lbl:"Ma\u00eetre d\u2019\u0153uvre",c:0.085},archi:{lbl:"Architecte",c:0.12},auto:{lbl:"Autopromotion / auto-construction",c:0.02}};
+  function standingCoef(catKey){
+    if(catKey!=="construction")return 1;
+    const a=(WX_TYPE[wparams.ctype]||WX_TYPE.plainpied).c;
+    const b=(WX_FINITION[wparams.fin]||WX_FINITION.standard).c;
+    const c=(WX_CHANTIER[wparams.chantier]||WX_CHANTIER.urbain).c;
+    const v=a*b*c;
+    return(v>0.4&&v<3)?v:1; // garde-fou : jamais de coefficient aberrant
+  }
+  /* Base de calcul des honoraires : surface projet x (gros oeuvre + second oeuvre).
+   * Volontairement NON recursive (lit les pu du catalogue, jamais coutItem/totalCat)
+   * pour eviter toute boucle infinie via unitPU. */
+  function honoBase(){
+    try{
+      const b=wxBase(),S=b&&b.S>0?b.S:0;if(!S)return 0;
+      let pu=0;POSTES.construction.items.forEach(function(it){if(it.id==="nGrosOeuvre"||it.id==="nSecondOeuvre")pu+=it.pu;});
+      return S*pu*idxRatio("construction")*regionCoef()*standingCoef("construction");
+    }catch(_){return 0;}
+  }
+  /* ===== R18 / Vague 8 : distribution DPE du parc communal (ADEME) =====
+   * CSV agrege par commune : code INSEE, nombre de DPE enregistres, % passoires F-G,
+   * % logements affectes par les echeances d'interdiction (E-F-G).
+   * Source : ADEME/alerte-dpe.fr, extraction 10/06/2026, licence ouverte.
+   * Logistique : charge le CSV COMPLET une seule fois, le cache en localStorage 30 jours
+   * comme tableau d'objets, puis cherche par code INSEE au runtime (logarithmique / grep).
+   * NOTE : aucun coefficient prix n'en est derive (donnee purement informationnelle). */
+  const _dpeCache={key:"_estimo_dpe_distrib_v1",ttl:30*24*3600*1000};
+  function parseDpeCsv(csvText){
+    const lines=csvText.trim().split("\n");if(lines.length<2)return[];
+    const h=lines[0].split(",").map(s=>s.trim());
+    const data=[];
+    for(let i=1;i<lines.length;i++){
+      const parts=lines[i].split(","),o={};
+      for(let j=0;j<h.length;j++){
+        const key=h[j],val=parts[j]||"";
+        o[key]=(key==="code_commune")?val:parseFloat(val)||0;
+      }
+      if(o.code_commune)data.push(o);
+    }
+    return data;
+  }
+  function lookupDpe(code){
+    if(!code)return null;
+    try{
+      let cached=null,cachedMeta=null;
+      try{const s=localStorage.getItem(_dpeCache.key);if(s){const p=JSON.parse(s);cachedMeta=p.meta;cached=p.data;}}catch(_){}
+      const now=Date.now();
+      if(cachedMeta&&cachedMeta.timestamp&&(now-cachedMeta.timestamp)<_dpeCache.ttl){
+        const found=cached.find(r=>String(r.code_commune)===String(code));
+        return found||null;
+      }
+      return null;
+    }catch(e){return null;}
+  }
+  async function provDpeDistrib(insee){
+    if(!insee)return null;
+    const lk=lookupDpe(insee);if(lk)return{real:true,nb_dpe:lk.nb_dpe,pct_fg:lk.pct_fg,pct_efg:lk.pct_efg};
+    try{
+      const url="https://www.data.gouv.fr/api/1/datasets/r/c1acdd05-0ade-4af1-9b26-b56a799eb382";
+      const resp=await fetch(url,{method:"GET",mode:"cors",cache:"force-cache"});
+      if(!resp.ok)return null;
+      const csv=await resp.text();
+      const data=parseDpeCsv(csv);
+      localStorage.setItem(_dpeCache.key,JSON.stringify({meta:{timestamp:Date.now()},data:data}));
+      const found=data.find(r=>String(r.code_commune)===String(insee));
+      return found?{real:true,nb_dpe:found.nb_dpe,pct_fg:found.pct_fg,pct_efg:found.pct_efg}:null;
+    }catch(_){return null;}
+  }
+
   /* R14 : coefficient regional de cout (EPTB/SDES). 1 = bareme national, aucun effet. */
   function regionCoef(){
     const rc=(typeof state!=="undefined"&&state._wxRegion&&state._wxRegion.coef)||null;
     return(rc>0.5&&rc<1.8)?rc:1;
   }
-  function unitPU(it,catKey){return Math.round(it.pu*idxRatio(catKey)*regionCoef());}
+  function unitPU(it,catKey){
+    // Honoraires de MOE : proportionnels au cout travaux (le poste documentait deja
+    // "8-12 % du cout travaux" sans l'appliquer). Repli sur le forfait si base absente.
+    if(it.id==="nArchi"){const hb=honoBase();if(hb>0)return Math.round(hb*(WX_MODE[wparams.mode]||WX_MODE.moe).c);}
+    return Math.round(it.pu*idxRatio(catKey)*regionCoef()*standingCoef(catKey));
+  }
   // Retrouve la categorie d'un item (le catalogue est petit : lookup direct, sans index)
   function catOf(it){
     for(const k in POSTES){if(POSTES[k].items.indexOf(it)>=0)return k;}
@@ -8761,12 +8931,27 @@ const WX=(function(){
       f+='<div class="wx-f" style="flex:1.2;min-width:130px"><div class="wx-f-lbl">Surface projet (SHAB, m\u00b2)</div><input type="number" min="10" step="5" value="'+(wparams.proj||"")+'" placeholder="'+b.S+'" data-wxparam="proj"/></div>';
     }
     f+='<div class="wx-f" style="flex:1;min-width:120px"><div class="wx-f-lbl">Niveaux</div><select data-wxparam="niv">'+[[1,"Plain-pied"],[2,"R+1 (2 niveaux)"],[3,"R+2 (3 niveaux)"]].map(function(o){return '<option value="'+o[0]+'"'+(b.niv===o[0]?" selected":"")+'>'+o[1]+'</option>';}).join("")+'</select></div>';
+    // R18 : modulation du cout de construction neuve (terrain a batir uniquement)
+    if(b.isTer){
+      const selW=function(key,lbl,map,cur){
+        return '<div class="wx-f" style="flex:1;min-width:135px"><div class="wx-f-lbl">'+lbl+'</div><select data-wxparam="'+key+'">'+
+          Object.keys(map).map(function(o){return '<option value="'+o+'"'+(cur===o?" selected":"")+'>'+map[o].lbl+'</option>';}).join("")+
+          '</select></div>';};
+      f+=selW("ctype","Type de construction",WX_TYPE,wparams.ctype);
+      f+=selW("fin","Niveau de finition",WX_FINITION,wparams.fin);
+      f+=selW("chantier","Contexte chantier",WX_CHANTIER,wparams.chantier);
+      f+=selW("mode","Ma\u00eetrise d\u2019\u0153uvre",WX_MODE,wparams.mode);
+    }
     let n="";
     if(b.isTer){
       const bl=(lastResult&&lastResult.terrain&&lastResult.terrain.buildable)||0;
       n='<div style="font-size:10px;color:var(--ink-soft);width:100%;margin-top:2px;line-height:1.45">M\u00e9tr\u00e9s sugg\u00e9r\u00e9s sur la <b>surface projet</b> ('+b.S+' m\u00b2'+(b.niv>1?", "+b.niv+" niveaux, empreinte "+Math.round(b.foot)+" m\u00b2":"")+'), jamais sur la parcelle.'+(bl>0&&lastResult.terrain.ces>0?' Emprise max estim\u00e9e (CES '+lastResult.terrain.ces+') : '+bl+' m\u00b2.':'')+'</div>';
     }else if(b.niv>1){
       n='<div style="font-size:10px;color:var(--ink-soft);width:100%;margin-top:2px">Empreinte au sol \u2248 '+Math.round(b.foot)+' m\u00b2 \u2014 toiture et charpente calcul\u00e9es sur l\u2019empreinte, fa\u00e7ades sur '+b.niv+' niveaux.</div>';
+    }
+    if(b.isTer){
+      const sc=standingCoef("construction"),hb=honoBase(),hm=(WX_MODE[wparams.mode]||WX_MODE.moe);
+      n+='<div style="font-size:10px;color:var(--ink-soft);width:100%;margin-top:4px;line-height:1.45">Modulation appliqu\u00e9e aux postes de construction neuve\u00a0: <b>\u00d7'+sc.toFixed(2).replace(".",",")+'</b> ('+(WX_TYPE[wparams.ctype]||WX_TYPE.plainpied).lbl.toLowerCase()+' \u00b7 finition '+(WX_FINITION[wparams.fin]||WX_FINITION.standard).lbl.toLowerCase()+' \u00b7 '+(WX_CHANTIER[wparams.chantier]||WX_CHANTIER.urbain).lbl.toLowerCase()+')'+(hb>0?' \u00b7 honoraires '+hm.lbl.toLowerCase()+' '+(hm.c*100).toFixed(1).replace(".",",").replace(",0","")+'\u00a0% \u2248 <b>'+eur0(Math.round(hb*hm.c))+'\u00a0\u20ac</b>':'')+'. Ratios issus des ordres de grandeur professionnels du projet, <b>non</b> d\u2019un indice public officiel (aucun bar\u00e8me gratuit de co\u00fbt de construction par finition n\u2019existe).</div>';
     }
     return '<div class="wx-row" style="margin-bottom:11px;padding:10px 12px;background:var(--bg);border-radius:10px">'+f+n+'</div>';
   }
@@ -8901,6 +9086,7 @@ const WX=(function(){
       inp.addEventListener(ev,function(){
         const k=inp.dataset.wxparam;
         if(k==="niv")wparams.niv=Math.max(1,Math.min(3,+inp.value||1));
+        else if(k==="ctype"||k==="fin"||k==="chantier"||k==="mode")wparams[k]=inp.value;
         else wparams[k]=inp.value===""?0:Math.max(0,+inp.value||0);
         const pos=inp.selectionStart;
         render();
