@@ -1145,7 +1145,9 @@ const state={type:"appartement",pieces:3,dpe:"D",ges:"D",loc:"nue",statut:"resid
 /* Segmented */
 function bindSeg(wrapId,key,cb){const w=$(wrapId);w.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{w.querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on");state[key]=isNaN(b.dataset.v)?b.dataset.v:Number(b.dataset.v);if(cb)cb();}));}
 bindSeg("segType","type",updateTypeUI);
-["viabEau","viabAssain","viabElec","viabVoirie","viabTelecom"].forEach(id=>{const el=$(id);if(el)el.addEventListener("change",updateViabCost);});
+/* R23 : memorise que l'utilisateur a REELLEMENT renseigne la viabilite, afin de
+ * distinguer "reseau absent" de "case jamais touchee" (cf. tri-etat estimateTerrain). */
+["viabEau","viabAssain","viabElec","viabVoirie","viabTelecom"].forEach(id=>{const el=$(id);if(el)el.addEventListener("change",function(){state.viabTouched=true;updateViabCost();});});
 // R4 : toute saisie manuelle de la nature du sol bloque le pré-remplissage RGA
 (function(){const s=$("terrainSol");if(s)s.addEventListener("change",function(){state._solTouched=true;state._solAuto=false;const n=$("terrainSolNote");if(n)n.style.display="none";});})();
 bindSeg("segPieces","pieces");
@@ -1638,7 +1640,55 @@ async function fetchLive(coord){
         if(DEBUG)dbg("Sites/sols pollues (500 m): "+n);}
     }catch(_){}
   }
-  if(DEBUG)dbg("Live -> pop:"+(out.pop||"n/a")+" | risque:"+(out.risqueLbl||"n/a")+" | radon:"+(out.radon?out.radon.classe:"n/a")+" | sols(BASIAS/BASOL):"+(out.basias||0)+"/"+(out.basol||0));
+  // ===== R10 : zonage sismique, inondation (AZI), cavites, ICPE =====
+  // Endpoints v1 confirmes par recherche externe ; parametre non garanti par une
+  // documentation officielle consultee directement -> repli multi-variantes.
+  if(coord.lat!=null&&coord.lon!=null){
+    const ll=coord.lon.toFixed(6)+","+coord.lat.toFixed(6);
+    // --- Zonage sismique (precision parcelle, comme le RGA) ---
+    try{
+      let zs=await dvfFetch("https://georisques.gouv.fr/api/v1/zonage-sismique?latlon="+ll);
+      if(!zs||!zs.json||(Array.isArray(zs.json.data)&&!zs.json.data.length))
+        zs=await dvfFetch("https://georisques.gouv.fr/api/v1/zonage-sismique?code_insee="+coord.insee);
+      if(zs&&zs.json){
+        const d0=Array.isArray(zs.json.data)?zs.json.data[0]:zs.json;
+        const zone=d0&&(d0.code_zone||d0.zone_sismicite||d0.zone||null);
+        const lib=d0&&(d0.libelle||d0.zone_sismicite_libelle||null);
+        if(zone!=null||lib)out.seisme={zone,lib,fort:/^[45]$/.test(String(zone))||/fort|\u00e9lev/i.test(lib||"")};
+        if(DEBUG)dbg("Zonage sismique: "+JSON.stringify(out.seisme));
+      }
+    }catch(_){}
+    // --- Inondation : Atlas des Zones Inondables (precision parcelle) ---
+    try{
+      let az=await dvfFetch("https://georisques.gouv.fr/api/v1/azi?latlon="+ll+"&rayon=200");
+      if(!az||!az.json||(Array.isArray(az.json.data)&&!az.json.data.length))
+        az=await dvfFetch("https://georisques.gouv.fr/api/v1/azi?code_insee="+coord.insee);
+      if(az&&az.json){
+        const arr=Array.isArray(az.json.data)?az.json.data:(az.json.data?[az.json.data]:[]);
+        const n=az.json.total_results!=null?az.json.total_results:arr.length;
+        if(n>0)out.inondation={n,lib:(arr[0]&&(arr[0].libelle_azi||arr[0].libelle))||null};
+        if(DEBUG)dbg("AZI (inondation): "+n);
+      }
+    }catch(_){}
+    // --- Cavites souterraines (rayon 500 m, meme schema que BASIAS/BASOL) ---
+    try{
+      const cv=await dvfFetch("https://georisques.gouv.fr/api/v1/cavites?latlon="+ll+"&rayon=500&page=1&page_size=10");
+      if(cv&&cv.json){const n=cv.json.total_results!=null?cv.json.total_results:((cv.json.data||[]).length);if(n>0)out.cavites=n;
+        if(DEBUG)dbg("Cavites souterraines (500 m): "+n);}
+    }catch(_){}
+  }
+  // --- ICPE / SEVESO (schema confirme : code_insee + rayon, identique a gaspar/risques) ---
+  try{
+    const ic=await dvfFetch("https://georisques.gouv.fr/api/v1/installations_classees?code_insee="+coord.insee+"&rayon=1000");
+    if(ic&&ic.json){
+      const arr=ic.json.data||[];
+      const n=ic.json.total_results!=null?ic.json.total_results:arr.length;
+      const seveso=arr.filter(o=>/seveso/i.test(o.seveso||o.regime||o.statut_seveso||"")).length;
+      if(n>0)out.icpe={n,seveso};
+      if(DEBUG)dbg("ICPE (1 km): "+n+" dont Seveso: "+seveso);
+    }
+  }catch(_){}
+  if(DEBUG)dbg("Live -> pop:"+(out.pop||"n/a")+" | risque:"+(out.risqueLbl||"n/a")+" | radon:"+(out.radon?out.radon.classe:"n/a")+" | sols(BASIAS/BASOL):"+(out.basias||0)+"/"+(out.basol||0)+" | R10 seisme:"+(out.seisme?(out.seisme.zone||out.seisme.lib):"n/a")+" inond:"+(out.inondation?out.inondation.n:0)+" cavites:"+(out.cavites||0)+" ICPE:"+(out.icpe?out.icpe.n:0)+"/Seveso:"+(out.icpe?out.icpe.seveso:0));
   return out;
 }
 /* ===== Module Enrichissement : donnees de proximite (API publiques sans cle, CORS direct) ===== */
@@ -2462,6 +2512,11 @@ function backtestLocal(pts,subjSurf){
 const BTF_TARGETS=80;      // cibles testees
 const BTF_CORPUS_CAP=250;  // corpus maximal retenu (ventes les plus recentes)
 const BTF_PERF_SAMPLE=30;  // echantillon interne de enginePerf en mode backtest
+/* R23 : bornes de la correction de taille du foncier. Le malus -45 % existait deja ;
+ * la prime est desormais autorisee mais plafonnee a +30 %, car l'elasticite est
+ * estimee par regression log-log et extrapole mal sur les tres petites parcelles. */
+const TERR_ELAS_MIN=0.55;
+const TERR_ELAS_MAX=1.30;
 const BTF_MIN_CORPUS=45;   // corpus minimal pour qu'un leave-one-out ait du sens
 const BTF_MIN_BAND=12;     // ventes minimales dans la bande de surface d'une cible
 
@@ -2479,6 +2534,12 @@ function backtestFull(pts,opts){
   // Cibles = ventes les plus recentes : ce sont elles qui refletent le marche actuel.
   const byRec=[...clean].sort((a,b)=>yr(b)-yr(a));
   const pool=byRec.slice(0,BTF_CORPUS_CAP);
+  /* R23 : en foncier, l'elasticite de taille fait partie de la chaine de prix et doit
+   * etre rejouee. Elle est calculee sur la BANDE DE SURFACE de chaque cible, et non
+   * sur le corpus entier : c'est ce que fait la production (landSizeElasticity recoit
+   * realStats.clean, deja filtre par surface). La calculer sur le corpus surestimait
+   * le rapport parcelle/mediane et introduisait un biais haussier de +2,4 points --
+   * detecte par le backtest lui-meme. */
   const targets=pool.slice(0,BTF_TARGETS);
   const eMarket=[],eBuyer=[];
   targets.forEach(t=>{
@@ -2496,7 +2557,7 @@ function backtestFull(pts,opts){
     const central=(eng&&eng.base>0)?eng.base:(st.west||st.med);
     if(!(central>0))return;
     // --- Chaine VENDEUR : estimateur central corrige VEFA, sans prudence -------
-    const mkt=central*vf;
+    let mkt=central*vf;
     // --- Chaine ACQUEREUR : ancrage prudent min() sur toutes les ancres dispo ---
     /* R22 : la chaine acquereur du backtest doit rejouer EXACTEMENT l'ancrage de
      * production, sinon on remesurerait un modele different (l'erreur corrigee en R20).
@@ -2507,18 +2568,30 @@ function backtestFull(pts,opts){
         .filter(v=>typeof v==="number"&&isFinite(v)&&v>0);
       buy=Math.min.apply(null,anchors)*vf;
     }else{
-      const _a=_arbitrateAnchor({rooms:st.westGRooms||0,nRooms:st.typedCount||0,
+      // R23 : en foncier, aucune ancre typologique (le nombre de pieces n'a pas de sens).
+      const _a=_arbitrateAnchor({rooms:o.terrain?0:(st.westGRooms||0),nRooms:st.typedCount||0,
         surf:st.westSurfStrict||0,nSurf:st.strictCount||0,mix:central,nMix:st.n||0});
       buy=(_a>0?_a:central)*vf;
     }
     // Plafond DVF final : transcription au m2 de applyFinalDvfCap
+    /* R23 : la correction de taille s'applique aux DEUX chaines. Ce n'est pas un
+     * dispositif de prudence mais une conversion d'unite : elle ramene un prix/m2
+     * "parcelle mediane" au prix/m2 de la taille reelle de la parcelle testee. */
+    if(o.terrain&&t.surf>0){
+      let _el2=null;try{_el2=landSizeElasticity(st.clean);}catch(_){}
+      if(_el2&&_el2.medSurf>0){
+        const _fe=Math.max(TERR_ELAS_MIN,Math.min(TERR_ELAS_MAX,Math.pow(t.surf/_el2.medSurf,_el2.b)));
+        buy*=_fe;mkt*=_fe;
+      }
+    }
     const _w0=st.west||st.med,_wss=st.westSurfStrict;
     // R22 : reference de plafond alignee sur le mode d'ancrage effectivement utilise
     const _refArb=(o.arbitrate===false)?null:_arbitrateAnchor({rooms:st.westGRooms||0,
       nRooms:st.typedCount||0,surf:st.westSurfStrict||0,nSurf:st.strictCount||0,
       mix:central,nMix:st.n||0});
     const refCap=(_refArb>0?_refArb:(st.westGRooms||((_wss&&_wss<_w0)?_wss:_w0)))*vf;
-    if(refCap>0)buy=Math.max(refCap*0.80,Math.min(refCap*capHi,buy));
+    // R23 : applyFinalDvfCap ignore deja le foncier -> le backtest doit faire de meme.
+    if(refCap>0&&!o.terrain)buy=Math.max(refCap*0.80,Math.min(refCap*capHi,buy));
     buy=buy*(1-prud);
     if(mkt>0)eMarket.push((mkt-t.ppm)/t.ppm);
     if(buy>0)eBuyer.push((buy-t.ppm)/t.ppm);
@@ -2759,32 +2832,56 @@ function landSizeElasticity(pts){
   const surfs=ok.map(p=>p.surf).sort((a,b2)=>a-b2);
   return{b:+b.toFixed(3),n,medSurf:median(surfs)};
 }
-function estimateTerrain(realBase,parcelSurf,city,cp,realStats){
+function estimateTerrain(realBase,parcelSurf,city,cp,realStats,btf){
   const dyn=computeDynamics(city,cp),ctx=marketCtx(realBase);parcelSurf=parcelSurf||0;
   let landSqm,conf,srcNote,landAnchor=null;
   if(realBase&&realBase>0){
     /* R13 — ancrage PRUDENT c\u00f4t\u00e9 acqu\u00e9reur, coh\u00e9rent avec le moteur b\u00e2ti : on retient la
      * plus basse des ancres disponibles (base moteur, percentile adaptatif sur bande de
      * surface, m\u00e9diane pond\u00e9r\u00e9e surface). Jamais la plus haute : biais baissier assum\u00e9. */
-    const _cands=[realBase];
-    if(realStats){
-      if(realStats.westSurfP40>0)_cands.push(realStats.westSurfP40);
-      if(realStats.westSurfStrict>0)_cands.push(realStats.westSurfStrict);
-      if(realStats.west>0)_cands.push(realStats.west);
+    /* R23 : arbitrage des ancres (extension du R22 au foncier), actif UNIQUEMENT si le
+     * backtest est disponible. L'ancien min() sur quatre ancres, P40 compris, cumulait
+     * un biais d'ordre d'autant plus severe que les ancres etaient nombreuses. */
+    const _arbT=(btf&&btf.n>=20&&realStats)?_arbitrateAnchor({
+      rooms:0,nRooms:0,
+      surf:realStats.westSurfStrict||0,nSurf:realStats.strictCount||0,
+      mix:realBase,nMix:realStats.n||0
+    }):null;
+    let _anchorLbl;
+    if(_arbT){
+      landSqm=_arbT;
+      _anchorLbl="ancre arbitr\u00e9e (pond\u00e9r\u00e9e par la pr\u00e9cision), prudence appliqu\u00e9e une seule fois en aval";
+    }else{
+      const _cands=[realBase];
+      if(realStats){
+        if(realStats.westSurfP40>0)_cands.push(realStats.westSurfP40);
+        if(realStats.westSurfStrict>0)_cands.push(realStats.westSurfStrict);
+        if(realStats.west>0)_cands.push(realStats.west);
+      }
+      landSqm=Math.min.apply(null,_cands);
+      _anchorLbl=landSqm===realBase?"base moteur DVF":(realStats&&landSqm===realStats.westSurfP40)?"percentile P"+Math.round((realStats.westSurfPct||0.4)*100)+" bande de surface":"m\u00e9diane DVF pond\u00e9r\u00e9e";
     }
-    landSqm=Math.min.apply(null,_cands);
-    const _anchorLbl=landSqm===realBase?"base moteur DVF":(realStats&&landSqm===realStats.westSurfP40)?"percentile P"+Math.round((realStats.westSurfPct||0.4)*100)+" bande de surface":"m\u00e9diane DVF pond\u00e9r\u00e9e";
     /* Correction de d\u00e9gressivit\u00e9 : si la parcelle du sujet est PLUS GRANDE que la parcelle
      * m\u00e9diane des comparables, son prix au m\u00b2 doit \u00eatre revu \u00e0 la baisse selon l'\u00e9lasticit\u00e9
      * MESUR\u00c9E localement. Volontairement MALUS UNIQUEMENT (aucune prime si la parcelle est
      * plus petite) : r\u00e8gle de prudence acqu\u00e9reur d\u00e9j\u00e0 appliqu\u00e9e au b\u00e2ti. */
+    /* R23 : la correction de taille devient SYMETRIQUE lorsque le backtest est
+     * disponible. Supprimer la prime etait une regle de prudence, pas un resultat
+     * statistique : l'elasticite est MESUREE localement et vaut dans les deux sens.
+     * La conserver a sens unique revenait a decoter deux fois, la prudence etant
+     * desormais pilotee en un point unique (R21-B). Sans backtest, comportement
+     * historique inchange (malus uniquement). */
     const _el=realStats?landSizeElasticity(realStats.clean):null;
-    if(_el&&parcelSurf>0&&_el.medSurf>0&&parcelSurf>_el.medSurf){
-      const _f=Math.pow(parcelSurf/_el.medSurf,_el.b); // b<0 et ratio>1 -> _f<1
-      const _fc=Math.max(0.55,Math.min(1,_f)); // garde-fou : d\u00e9cote taille plafonn\u00e9e \u00e0 -45 %
-      landAnchor={before:Math.round(landSqm),b:_el.b,n:_el.n,medSurf:Math.round(_el.medSurf),factor:+_fc.toFixed(3)};
-      landSqm=Math.round(landSqm*_fc);
-      landAnchor.after=landSqm;
+    const _elSym=!!_arbT;
+    if(_el&&parcelSurf>0&&_el.medSurf>0&&(_elSym||parcelSurf>_el.medSurf)){
+      const _f=Math.pow(parcelSurf/_el.medSurf,_el.b);
+      const _fc=_elSym?Math.max(TERR_ELAS_MIN,Math.min(TERR_ELAS_MAX,_f))
+                      :Math.max(TERR_ELAS_MIN,Math.min(1,_f));
+      if(Math.abs(_fc-1)>0.005){
+        landAnchor={before:Math.round(landSqm),b:_el.b,n:_el.n,medSurf:Math.round(_el.medSurf),factor:+_fc.toFixed(3),sym:_elSym};
+        landSqm=Math.round(landSqm*_fc);
+        landAnchor.after=landSqm;
+      }
     }
     landSqm=Math.round(landSqm);
     conf="\u00e9lev\u00e9e";
@@ -2813,15 +2910,33 @@ function estimateTerrain(realBase,parcelSurf,city,cp,realStats){
   if(zAdj!=null)add((lib?"PLU "+lib+(zone&&zone!==lib?" ("+zone+")":""):zone?"Zone PLU "+zone:"Zone inconnue"),zAdj);
   const prescrAdj=(state.ctx2&&state.ctx2.terrainPrescr)||null;
   if(prescrAdj&&prescrAdj.adj)add(prescrAdj.label,prescrAdj.adj);
+  // R23 : lecture anticipee du type de terrain (necessaire au tri-etat de viabilite)
+  const ttypePre=$("terrainType")?$("terrainType").value:"batir";
   const ckV=id=>{const e=$(id);return e&&e.checked;};
   const vEau=ckV("viabEau"),vAss=ckV("viabAssain"),vElec=ckV("viabElec"),vVoi=ckV("viabVoirie"),vTel=ckV("viabTelecom");
-  // Décotes viab bornées
-  const _vP=landSqm*parcelSurf;const _vc=function(v){return _vP>80000?v*0.4:_vP>40000?v*0.6:v;};
-  if(!vEau) add("Eau potable absente (raccordement ~2\u20138 k\u20ac)",-_vc(0.03));
-  if(!vAss) add("Assainissement collectif absent \u2014 ANC ou raccordement ~5\u201315 k\u20ac)",-_vc(0.06));
-  if(!vElec)add("\u00c9lectricit\u00e9 absente (~1\u20134 k\u20ac)",-_vc(0.015));
-  if(!vVoi) add("Voirie goudronn\u00e9e absente (~5\u201330 k\u20ac)",-_vc(0.06));
-  if(!vTel) add("Fibre / t\u00e9l\u00e9com absents",-0.005);
+  /* ===== R23 : la viabilite devient TRI-ETAT =====
+   * Les cinq cases sont decochees par defaut. Traiter "non renseigne" comme "reseau
+   * absent" appliquait jusqu'a -17 % en silence, sur la seule base d'un formulaire
+   * non rempli. C'est la cause la plus directe des estimations foncieres trop basses.
+   * Trois etats desormais :
+   *   - RENSEIGNE (l'utilisateur a coche au moins une case) -> comportement inchange ;
+   *   - NON RENSEIGNE en zone U ou en lotissement -> reseaux presumes presents, aucune
+   *     decote. Fondement : une zone U d'un PLU designe, au sens de l'article R151-18
+   *     du code de l'urbanisme, un secteur deja urbanise ou les equipements publics
+   *     existants ont une capacite suffisante. La presomption est signalee a l'ecran ;
+   *   - NON RENSEIGNE ailleurs -> decote de prudence REDUITE DE MOITIE, signalee. */
+  const _viabRenseigne=!!(state.viabTouched||vEau||vAss||vElec||vVoi||vTel);
+  const _viabPresume=(z0==="U"||ttypePre==="lotissement");
+  const _viabK=_viabRenseigne?1:(_viabPresume?0:0.5);
+  const _vP=landSqm*parcelSurf;
+  const _vc=function(v){const b=_vP>80000?v*0.4:_vP>40000?v*0.6:v;return b*_viabK;};
+  if(_viabK>0){
+    if(!vEau) add("Eau potable absente (raccordement ~2\u20138 k\u20ac)",-_vc(0.03));
+    if(!vAss) add("Assainissement collectif absent \u2014 ANC ou raccordement ~5\u201315 k\u20ac)",-_vc(0.06));
+    if(!vElec)add("\u00c9lectricit\u00e9 absente (~1\u20134 k\u20ac)",-_vc(0.015));
+    if(!vVoi) add("Voirie goudronn\u00e9e absente (~5\u201330 k\u20ac)",-_vc(0.06));
+    if(!vTel) add("Fibre / t\u00e9l\u00e9com absents",-0.005*_viabK);
+  }
   if(vEau&&vAss&&vElec&&vVoi)add("Raccord\u00e9 \u00e0 tous les r\u00e9seaux essentiels",0.06);
   const ttype=$("terrainType")?$("terrainType").value:"batir";
   const ttM={batir:[0,""],lotissement:[0.02,"Lotissement r\u00e9glement\u00e9 (r\u00e9seaux garantis)"],division:[-0.03,"Division \u2014 g\u00e9om\u00e8tre + ADU"],agricole_pc:[0.15,"Agricole avec PC obtenu"],demolir:[-0.06,"Construction \u00e0 d\u00e9molir (~5\u201315 k\u20ac)"]};
@@ -2848,6 +2963,11 @@ function estimateTerrain(realBase,parcelSurf,city,cp,realStats){
   if(z0==="A"||z0==="N")spread=Math.min(0.40,spread*1.5);
   const prixSdp=buildable>0?Math.round(price/buildable):null;
   const dispRows=adjRows.map(([l,a])=>[l,null,(a>0?"+":"")+(a*100).toFixed(1)+" %"]);
+  if(!_viabRenseigne){
+    dispRows.push(_viabPresume
+      ?["R\u00e9seaux non renseign\u00e9s \u2014 pr\u00e9sum\u00e9s PR\u00c9SENTS (zone U du PLU ou lotissement, art. R151-18 c. urb.). \u00c0 confirmer aupr\u00e8s de la mairie.",null,"aucune d\u00e9cote"]
+      :["R\u00e9seaux non renseign\u00e9s \u2014 d\u00e9cote de prudence r\u00e9duite de moiti\u00e9. Renseignez la viabilit\u00e9 pour fiabiliser l\u2019estimation.",null,"d\u00e9cote \u00e0 50 %"]);
+  }
   dispRows.unshift(["Prix/m\u00b2 terrain de base ("+srcNote+")",null,eur0(landSqm)+" \u20ac/m\u00b2"]);
   if(landAnchor)dispRows.splice(1,0,["D\u00e9gressivit\u00e9 taille mesur\u00e9e sur "+landAnchor.n+" ventes (\u00e9lasticit\u00e9 "+landAnchor.b+") \u00b7 parcelle "+eur0(parcelSurf)+" m\u00b2 vs m\u00e9diane locale "+eur0(landAnchor.medSurf)+" m\u00b2",null,eur0(landAnchor.before)+" \u2192 "+eur0(landAnchor.after)+" \u20ac/m\u00b2"]);
   dispRows.push(["CES estim\u00e9 ("+(lib||zone||"d\u00e9faut")+") \u00b7 SDP constructible",null,"CES "+ces+" \u00d7 "+parcelSurf+" m\u00b2 = "+buildable+" m\u00b2"]);
@@ -2929,7 +3049,7 @@ function _arbitrateAnchor(a){
 function estimate(realBase,realStats,btf){
   const city=$("ville").value,cp=$("cp").value,type=state.type;
   const surface=type==="terrain"?numv("terrain"):numv("surface");
-  if(type==="terrain")return estimateTerrain(realBase,surface,city,cp,realStats);
+  if(type==="terrain")return estimateTerrain(realBase,surface,city,cp,realStats,btf);
   // Fix13 — base segmentée par typologie : on substitue westGRooms à westG quand disponible.
   // Évite d’appliquer des hédoniques sur une base qui mélange T1→T5 (+10–18 % de biais).
   // La correction rooms (±5 %) via effMult reste comme garde-fou si westGRooms indisponible.
@@ -3160,8 +3280,14 @@ function renderLocStats(r){const d=r.dyn;
   const radon=(state.live&&state.live.radon)?`<div style="margin-top:8px;font-size:13px;color:var(--ink)">Potentiel radon : <b style="color:${state.live.radon.classe>=3?"var(--bad)":state.live.radon.classe===2?"var(--warn)":"var(--good)"}">${state.live.radon.label}</b> (classe ${state.live.radon.classe}/3, G\u00e9orisques)</div>`:"";
   const _bi=(state.live&&state.live.basias)||0,_bo=(state.live&&state.live.basol)||0,_hasSol=!!(state.live&&(state.live.basias!=null||state.live.basol!=null));
   const sols=_hasSol?`<div style="margin-top:8px;font-size:13px;color:var(--ink)">Pollution des sols (\u00e0 500 m) : ${(_bi+_bo)===0?'<b style="color:var(--good)">aucun site recens\u00e9</b>':`<b style="color:${_bo>0?"var(--warn)":"var(--ink)"}">${_bi} ancien(s) site(s) industriel(s)${_bo>0?" \u00b7 "+_bo+" site(s)/sol(s) pollu\u00e9(s)":""}</b>`} <span style="color:var(--ink-soft);font-size:11px">(G\u00e9orisques)</span></div>`:"";
+  // R10 : sismique / inondation / cavites / ICPE, sur le meme modele que radon/sols.
+  const _lvR=state.live||{};
+  const seisme=(_lvR.seisme&&(_lvR.seisme.zone!=null||_lvR.seisme.lib))?`<div style="margin-top:8px;font-size:13px;color:var(--ink)">Zonage sismique : <b style="color:${_lvR.seisme.fort?"var(--warn)":"var(--ink)"}">${esc(_lvR.seisme.lib||("zone "+_lvR.seisme.zone))}</b> <span style="color:var(--ink-soft);font-size:11px">(G\u00e9orisques)</span></div>`:"";
+  const inond=(_lvR.inondation&&_lvR.inondation.n>0)?`<div style="margin-top:8px;font-size:13px;color:var(--ink)">Inondation (AZI) : <b style="color:var(--warn)">zone recens\u00e9e \u00e0 proximit\u00e9</b> <span style="color:var(--ink-soft);font-size:11px">(G\u00e9orisques \u2014 v\u00e9rifier le PPRi)</span></div>`:"";
+  const cav=(_lvR.cavites>0)?`<div style="margin-top:8px;font-size:13px;color:var(--ink)">Cavit\u00e9s souterraines (500 m) : <b style="color:var(--warn)">${_lvR.cavites} recens\u00e9e(s)</b> <span style="color:var(--ink-soft);font-size:11px">(G\u00e9orisques)</span></div>`:"";
+  const icpeH=(_lvR.icpe&&_lvR.icpe.n>0)?`<div style="margin-top:8px;font-size:13px;color:var(--ink)">Installations class\u00e9es (1 km) : <b style="color:${_lvR.icpe.seveso>0?"var(--bad)":"var(--ink)"}">${_lvR.icpe.n}${_lvR.icpe.seveso>0?" dont "+_lvR.icpe.seveso+" Seveso":""}</b> <span style="color:var(--ink-soft);font-size:11px">(G\u00e9orisques)</span></div>`:"";
   let html=emploi+estAccess;
-  html+=`<div style="padding:10px 0 2px;border-top:1px solid var(--line);margin-top:6px"><div style="font-size:13px;color:var(--ink-soft);margin-bottom:5px">Risques naturels recens\u00e9s (G\u00e9orisques) ${isReal?'<span style="color:var(--brand-dark);font-weight:700">\u00b7 r\u00e9el</span>':'<span style="color:var(--ink-soft)">\u00b7 estim\u00e9</span>'}</div><div style="font-size:13.5px;line-height:1.55;color:var(--ink)">${risk}</div>${radon}${sols}`;
+  html+=`<div style="padding:10px 0 2px;border-top:1px solid var(--line);margin-top:6px"><div style="font-size:13px;color:var(--ink-soft);margin-bottom:5px">Risques naturels recens\u00e9s (G\u00e9orisques) ${isReal?'<span style="color:var(--brand-dark);font-weight:700">\u00b7 r\u00e9el</span>':'<span style="color:var(--ink-soft)">\u00b7 estim\u00e9</span>'}</div><div style="font-size:13.5px;line-height:1.55;color:var(--ink)">${risk}</div>${radon}${sols}${seisme}${inond}${cav}${icpeH}`;
   if(state.coord){const la=state.coord.lat,lo2=state.coord.lon;html+=`<div style="margin-top:10px"><iframe title="Carte du bien" src="https://www.openstreetmap.org/export/embed.html?bbox=${(lo2-0.013).toFixed(5)}%2C${(la-0.008).toFixed(5)}%2C${(lo2+0.013).toFixed(5)}%2C${(la+0.008).toFixed(5)}&layer=mapnik&marker=${la.toFixed(5)}%2C${lo2.toFixed(5)}" style="width:100%;height:220px;border:1px solid var(--line);border-radius:10px" loading="lazy"></iframe><div class="hint" style="margin-top:5px">Localisation du bien. Carte des risques d\u00e9taill\u00e9e : <a href="https://www.georisques.gouv.fr/mes-risques/connaitre-les-risques-pres-de-chez-moi" target="_blank" rel="noopener" style="color:var(--brand-dark)">georisques.gouv.fr</a>.</div></div>`;}
   html+=`</div>`;
   $("locStats").innerHTML=html;
@@ -4938,6 +5064,14 @@ function contextAnomalies(r,pc){
     A.push("CatNat : "+_lv.catnat.last10y+" arr\u00eat\u00e9(s) de catastrophe naturelle ces 10 derni\u00e8res ann\u00e9es"+(_lv.catnat.dernier?" (dernier : "+_lv.catnat.dernier.slice(0,7)+")":" \u2014 commune fr\u00e9quemment sinistr\u00e9e : assurabilit\u00e9 \u00e0 v\u00e9rifier, surco\u00fbt de prime possible.")+". Total historique : "+_lv.catnat.nb+" arr\u00eat\u00e9(s) (source\u00a0: GASPAR/G\u00e9orisques).");
   else if(_lv.catnat&&_lv.catnat.last5y>=1)
     A.push("CatNat : "+_lv.catnat.last5y+" arr\u00eat\u00e9(s) ces 5 derni\u00e8res ann\u00e9es. V\u00e9rifier l\u2019historique sinistre avec l\u2019assureur.");
+  if(_lv.seisme&&_lv.seisme.fort)
+    A.push("Zonage sismique "+(_lv.seisme.lib||("zone "+_lv.seisme.zone))+" : r\u00e8gles parasismiques applicables aux constructions neuves et extensions (source\u00a0: G\u00e9orisques).");
+  if(_lv.inondation&&_lv.inondation.n>0)
+    A.push("Zone inondable (Atlas des Zones Inondables) recens\u00e9e \u00e0 proximit\u00e9 : v\u00e9rifier le PPRi et l\u2019exposition r\u00e9elle de la parcelle (source\u00a0: G\u00e9orisques).");
+  if(_lv.cavites&&_lv.cavites>0)
+    A.push(_lv.cavites+" cavit\u00e9(s) souterraine(s) recens\u00e9e(s) \u00e0 moins de 500\u00a0m : risque d\u2019effondrement localis\u00e9, \u00e0 v\u00e9rifier avant construction ou extension (source\u00a0: G\u00e9orisques).");
+  if(_lv.icpe&&_lv.icpe.seveso>0)
+    A.push(_lv.icpe.seveso+" installation(s) class\u00e9e(s) Seveso \u00e0 moins de 1\u00a0km : contrainte d\u2019urbanisme et de revente possible (source\u00a0: G\u00e9orisques).");
   if(_lv.rga&&_lv.rga.fort)
     A.push("RGA \u2014 retrait-gonflement des argiles\u00a0: exposition <b>forte</b> à l'adè du bien. Risque structurel de mouvements différentiels (fondations, façades). Diagnostic de sol recommandé avant offre.");
   else if(_lv.rga&&_lv.rga.moyen)
@@ -5070,6 +5204,20 @@ function renderContext(r){
   if(_lvCtx.rga&&(_lvCtx.rga.code||_lvCtx.rga.lib)){
     const cl=_lvCtx.rga.fort?"var(--bad)":_lvCtx.rga.moyen?"var(--warn)":"var(--good)";
     extra.push("RGA (argiles)\u00a0: <b style=\"color:"+cl+"\">"+(_lvCtx.rga.lib||_lvCtx.rga.code)+"</b> (G\u00e9orisques \u2014 retrait-gonflement des argiles, risque structurel fondations)");
+  }
+  if(_lvCtx.seisme&&(_lvCtx.seisme.zone!=null||_lvCtx.seisme.lib)){
+    const cl=_lvCtx.seisme.fort?"var(--warn)":"var(--ink)";
+    extra.push("Zonage sismique\u00a0: <b style=\"color:"+cl+"\">"+(_lvCtx.seisme.lib||("zone "+_lvCtx.seisme.zone))+"</b> (G\u00e9orisques \u2014 impacte les r\u00e8gles parasismiques de construction)");
+  }
+  if(_lvCtx.inondation&&_lvCtx.inondation.n>0){
+    extra.push("Inondation (AZI)\u00a0: <b style=\"color:var(--warn)\">zone recens\u00e9e \u00e0 proximit\u00e9</b>"+(_lvCtx.inondation.lib?" \u2014 "+_lvCtx.inondation.lib:"")+" (G\u00e9orisques \u2014 v\u00e9rifier le PPRi applicable)");
+  }
+  if(_lvCtx.cavites>0){
+    extra.push("Cavit\u00e9s souterraines (500\u00a0m)\u00a0: <b style=\"color:var(--warn)\">"+_lvCtx.cavites+"</b> recens\u00e9e(s) (G\u00e9orisques)");
+  }
+  if(_lvCtx.icpe&&_lvCtx.icpe.n>0){
+    const cl=_lvCtx.icpe.seveso>0?"var(--bad)":"var(--ink)";
+    extra.push("Installations class\u00e9es (1\u00a0km)\u00a0: <b style=\"color:"+cl+"\">"+_lvCtx.icpe.n+"</b>"+(_lvCtx.icpe.seveso>0?" dont <b style=\"color:var(--bad)\">"+_lvCtx.icpe.seveso+" Seveso</b>":"")+" (G\u00e9orisques)");
   }
   if(x2.bpe&&x2.bpe.total>0&&x2.iris&&x2.iris.population>0){
     const _bp10k=Math.round(x2.bpe.total/x2.iris.population*10000);
@@ -5412,7 +5560,17 @@ function marketDynamicsAdjust(r){
  * aucun risque de rendre l'outil moins prudent qu'avant.
  * Sans backtest exploitable, l'heuristique historique est conservee a l'identique. */
 const PRUD_TARGET=-0.055;  // biais acquereur vise (centre de la plage -3 % / -8 %)
-const PRUD_MAX=0.05;       // plafond de decote, inchange
+/* R23 : DEUX plafonds distincts, car les deux modes n'ont pas le meme statut.
+ *  - Mode PILOTE : la decote vise une cible mesuree. Le plafond de 5 % avait ete
+ *    calibre pour une chaine portant encore sa prudence implicite ; depuis R22
+ *    (bati) et R23 (foncier) l'amont est neutre et atteindre la cible demande
+ *    jusqu'a ~7 points sur le foncier. Le plafond devenait mordant et laissait le
+ *    biais a -3,5 % au lieu de -5,5 %. Porte a 10 %, il conserve son role de
+ *    garde-fou contre un backtest aberrant. Sur le bati il n'est jamais atteint.
+ *  - Mode HEURISTIQUE : aucune mesure ne justifie d'elargir. Plafond MAINTENU a
+ *    5 %, donc comportement stricteent identique a l'existant. */
+const PRUD_MAX=0.05;        // mode heuristique (inchange)
+const PRUD_MAX_TARGET=0.10; // mode pilote par la cible mesuree
 
 /* ===== R21-A : VALEUR DE MARCHE (reference VENDEUR) =====
  * r.price est volontairement biaise a la baisse : c'est un prix ACQUEREUR. Le
@@ -5456,7 +5614,7 @@ function _applyPrudence(r){
     _prud=(r.spread||0.10)*(1-_cs)*0.5;
     r.prudenceMode="heuristique";
   }
-  _prud=Math.min(PRUD_MAX,Math.max(0,_prud));
+  _prud=Math.min(r.prudenceMode==="cible"?PRUD_MAX_TARGET:PRUD_MAX,Math.max(0,_prud));
   if(_prud<0.003){r.prudenceAdj=0;return;}
   r.prudenceAdj=-_prud;r.priceBeforePrud=r.price;
   r.price=Math.round(r.price*(1-_prud));
@@ -6016,12 +6174,17 @@ function buildEstimation(data){
   // ──────────────────────────────────────────────────────────────────────────────
   /* R22 : le backtest est calcule AVANT estimate() car il CONDITIONNE le mode
    * d'ancrage (arbitre si mesurable, cascade min() historique sinon). */
+  /* R23 : le foncier est desormais backteste lui aussi. Adaptations : pas de
+   * correction VEFA (une vente de terrain nu n'est pas contaminee par le neuf) et
+   * pas de plafond DVF (applyFinalDvfCap ignore deja le foncier). */
+  const _isTerrainType=(state.type==="terrain");
   let _btf=null;
-  if(realBase&&realStats&&realStats.clean&&state.type!=="terrain"){
-    try{_btf=backtestFull(realStats.clean,{vefaFactor:vefaCorr.factor,prudence:0,
-      capHi:(state.dvfScope==="bbox"?1.15:1.20),arbitrate:true});}catch(_){_btf=null;}
+  if(realBase&&realStats&&realStats.clean){
+    try{_btf=backtestFull(realStats.clean,{
+      vefaFactor:_isTerrainType?1:vefaCorr.factor,prudence:0,
+      capHi:(state.dvfScope==="bbox"?1.15:1.20),arbitrate:true,terrain:_isTerrainType});}catch(_){_btf=null;}
   }
-  const r=estimate(_adjBase,realStats,_btf);r.backtestFull=_btf;r.anchorArb=(_btf&&_btf.n>=20&&realStats)?_arbitrateAnchor({rooms:realStats.westGRooms||0,nRooms:realStats.typedCount||0,surf:realStats.westSurfStrict||0,nSurf:realStats.strictCount||0,mix:_adjBase,nMix:realStats.n||0}):null;r.bandWidened=bandWidened;r.realPts=realPts;r.ptsVefa=data.ptsVefa||[];r.realStats=realStats;r.realCount=realStats?realStats.n:0;r.engines=engineData?engineData.engines:[];r.engineBase=engineData?engineData.base:realBase;r.engineTop=engineData?engineData.top:[];r.pxHedonic=r.price;r.vefaCorr=vefaCorr;r.sqmBaseRaw=realBase||0;
+  const r=estimate(_adjBase,realStats,_btf);r.backtestFull=_btf;r.anchorArb=(_btf&&_btf.n>=20&&realStats&&!_isTerrainType)?_arbitrateAnchor({rooms:realStats.westGRooms||0,nRooms:realStats.typedCount||0,surf:realStats.westSurfStrict||0,nSurf:realStats.strictCount||0,mix:_adjBase,nMix:realStats.n||0}):null;r.bandWidened=bandWidened;r.realPts=realPts;r.ptsVefa=data.ptsVefa||[];r.realStats=realStats;r.realCount=realStats?realStats.n:0;r.engines=engineData?engineData.engines:[];r.engineBase=engineData?engineData.base:realBase;r.engineTop=engineData?engineData.top:[];r.pxHedonic=r.price;r.vefaCorr=vefaCorr;r.sqmBaseRaw=realBase||0;
   // DIAGNOSTICS : decote liee aux pathologies detectees (amiante, elec, termites, assainissement...)
   var _dg=(typeof diagsTotal==="function")?diagsTotal():null;
   if(_dg&&_dg.impact<0){
@@ -7070,6 +7233,10 @@ function buildReportHtml(r,name,color,logo){
   if(live.risqueLbl)risk+="<li><b>Risques naturels :</b> "+live.risqueLbl.replace(/^\d+\s*:\s*/,"")+"</li>";
   if(live.radon)risk+="<li><b>Radon :</b> "+live.radon.label+" (classe "+live.radon.classe+"/3)</li>";
   if(live&&(live.basias||live.basol))risk+="<li><b>Sols (500\u00a0m) :</b> "+(live.basias||0)+" ancien(s) site(s) industriel(s)"+(live.basol?" \u00b7 "+live.basol+" site(s)/sol(s) pollu\u00e9(s)":"")+",</li>";
+  if(live&&live.seisme&&(live.seisme.zone!=null||live.seisme.lib))risk+="<li><b>Zonage sismique :</b> "+(live.seisme.lib||("zone "+live.seisme.zone))+"</li>";
+  if(live&&live.inondation&&live.inondation.n>0)risk+="<li><b>Inondation (AZI) :</b> zone recens\u00e9e \u00e0 proximit\u00e9, PPRi \u00e0 v\u00e9rifier</li>";
+  if(live&&live.cavites>0)risk+="<li><b>Cavit\u00e9s souterraines (500\u00a0m) :</b> "+live.cavites+" recens\u00e9e(s)</li>";
+  if(live&&live.icpe&&live.icpe.n>0)risk+="<li><b>Installations class\u00e9es (1\u00a0km) :</b> "+live.icpe.n+(live.icpe.seveso>0?" dont "+live.icpe.seveso+" Seveso":"")+"</li>";
   if(attr!=null)risk+="<li><b>Attractivit\u00e9 locale :</b> "+attr+"/100</li>";
   if(e.air&&e.air.aqi!=null)risk+="<li><b>Qualit\u00e9 de l\u2019air :</b> AQI "+e.air.aqi+"</li>";
   // RNIC alerte (R6)
@@ -7394,6 +7561,8 @@ function renderReport(r){
   const risks=[];
   if(state.live&&state.live.risqueLbl&&nbRisk>0)risks.push("G\u00e9orisques : "+state.live.risqueLbl.replace(/^\d+\s*:\s*/,"")+".");
   if(state.live&&state.live.radon&&state.live.radon.classe>=2)risks.push("Potentiel radon "+state.live.radon.label+" : pr\u00e9voir une bonne ventilation.");
+  if(state.live&&state.live.inondation&&state.live.inondation.n>0)risks.push("Zone inondable recens\u00e9e \u00e0 proximit\u00e9 (AZI) : v\u00e9rifier le PPRi avant tout projet de travaux.");
+  if(state.live&&state.live.icpe&&state.live.icpe.seveso>0)risks.push("Installation(s) Seveso \u00e0 moins de 1\u00a0km : contrainte d\u2019urbanisme et impact potentiel sur la revente.");
   if(van<0)risks.push("VAN n\u00e9gative : l'op\u00e9ration d\u00e9truit de la valeur sur l'horizon retenu.");
   else if(fragile)risks.push("Projet fragile : plusieurs sc\u00e9narios d\u00e9favorables (taux, vacance, baisse) annulent la rentabilit\u00e9.");
   if(d.trendReal&&d.evo12<-1)risks.push("March\u00e9 baissier : risque de moins-value \u00e0 la revente \u00e0 court terme.");
