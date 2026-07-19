@@ -1334,6 +1334,119 @@ function dbg(m){if(!DEBUG)return;let b=document.getElementById("__dbg");if(!b){b
 // (format : "https://ton-worker.workers.dev/?url=") -> il passe en priorite 1, fallback sur les relais publics.
 const USER_PROXY="";
 const CORS_PROXIES=(USER_PROXY?[USER_PROXY]:[]).concat(["https://corsproxy.io/?url=","https://api.allorigins.win/raw?url=","https://api.codetabs.com/v1/proxy/?quest=","https://thingproxy.freeboard.io/fetch/"]);
+/* ===== R15 : RESILIENCE RESEAU ET TRANSPARENCE DES SOURCES =====
+ * Constat corrige apres lecture du code : l'appel DIRECT etait deja tente en premier,
+ * contrairement a ce que l'audit affirmait. Le vrai defaut est ailleurs :
+ *
+ *  1) AUCUNE MEMOIRE. Pour un hote qui ne renvoie pas d'en-tete CORS, chaque URL
+ *     repayait une requete directe vouee a l'echec AVANT de basculer sur les proxies,
+ *     a chaque appel et a chaque session. Pur gaspillage, et lenteur percue.
+ *  2) SALVE DE PROXIES. Les 4 proxies partaient EN PARALLELE (Promise.any) : le tri
+ *     par _proxyOK ne servait a rien puisque tous etaient lances. C'est precisement
+ *     ce qui declenche le rate-limiting des services gratuits utilises.
+ *  3) AUCUNE VISIBILITE. L'utilisateur ignorait quelle source avait repondu, par quel
+ *     chemin, et si la donnee affichee sortait d'un cache vieux de 30 jours.
+ *
+ * Corrections : memoire CORS par hote (persistee, TTL 7 j, resondage automatique),
+ * proxies en cascade des qu'un proxy fiable est connu, et journal de qualite affichable. */
+const _CORS_LS="estimo_cors_v1";
+const _CORS_TTL=7*86400*1000;   // duree de validite d'une observation CORS
+const _corsMem=new Map();
+(function _restoreCors(){
+  try{
+    const raw=localStorage.getItem(_CORS_LS);if(!raw)return;
+    const o=JSON.parse(raw),now=Date.now();
+    Object.keys(o).forEach(h=>{if(o[h]&&now-o[h].ts<_CORS_TTL)_corsMem.set(h,o[h]);});
+  }catch(_){}
+})();
+function _persistCors(){
+  try{const o={};_corsMem.forEach((v,k)=>{o[k]=v;});localStorage.setItem(_CORS_LS,JSON.stringify(o));}catch(_){}
+}
+function _hostOf(u){try{return new URL(u).host;}catch(_){return "";}}
+/** "direct" = le direct a marche recemment | "proxy" = il a echoue | "" = jamais teste. */
+function _corsMode(host){
+  const m=_corsMem.get(host);
+  if(!m||Date.now()-m.ts>=_CORS_TTL)return "";
+  return m.d?"direct":"proxy";
+}
+function _corsMark(host,ok){
+  if(!host)return;
+  const prev=_corsMem.get(host);
+  /* Un echec isole ne condamne pas un hote connu bon : il faut DEUX echecs consecutifs
+   * pour le basculer en mode proxy (un timeout reseau n'est pas une absence de CORS). */
+  if(!ok&&prev&&prev.d){_corsMem.set(host,{d:1,ts:prev.ts,miss:(prev.miss||0)+1});
+    if((prev.miss||0)+1>=2)_corsMem.set(host,{d:0,ts:Date.now(),miss:0});
+    _persistCors();return;}
+  _corsMem.set(host,{d:ok?1:0,ts:Date.now(),miss:0});_persistCors();
+}
+
+/* --- Journal de qualite des donnees ---------------------------------------
+ * Une ligne par hote interroge : nombre d'appels, chemin emprunte, latence,
+ * anciennete de la donnee servie depuis le cache. Aucune donnee personnelle. */
+const _netLog=new Map();
+function _logNet(url,kind,ms,ageMs){
+  const h=_hostOf(url);if(!h)return;
+  const e=_netLog.get(h)||{host:h,n:0,direct:0,proxy:0,cache:0,fail:0,ms:0,age:null};
+  e.n++;if(e[kind]!=null)e[kind]++;
+  if(ms>0)e.ms=Math.round((e.ms*(e.n-1)+ms)/e.n);
+  if(ageMs!=null&&(e.age==null||ageMs<e.age))e.age=ageMs;
+  _netLog.set(h,e);
+}
+/* Libelles : uniquement des hotes REELLEMENT interroges par le code (verifies). */
+const NET_LABELS={
+  "api-adresse.data.gouv.fr":"BAN \u2014 g\u00e9ocodage d'adresse",
+  "geo.api.gouv.fr":"API D\u00e9coupage administratif",
+  "apicarto.ign.fr":"IGN ApiCarto \u2014 cadastre & PLU",
+  "data.geopf.fr":"IGN G\u00e9oplateforme \u2014 isochrones",
+  "georisques.gouv.fr":"G\u00e9orisques",
+  "www.georisques.gouv.fr":"G\u00e9orisques",
+  "www.data.gouv.fr":"data.gouv.fr",
+  "tabular-api.data.gouv.fr":"data.gouv.fr \u2014 API tabulaire",
+  "public.opendatasoft.com":"Opendatasoft \u2014 jeux publics",
+  "data.education.gouv.fr":"MEN \u2014 IPS & \u00e9tablissements",
+  "data.ademe.fr":"ADEME \u2014 DPE",
+  "data.arcep.fr":"ARCEP \u2014 couverture fibre",
+  "data.economie.gouv.fr":"DGFiP \u2014 fiscalit\u00e9 locale",
+  "data.statistiques.developpement-durable.gouv.fr":"SDES \u2014 statistiques logement",
+  "recherche-entreprises.api.gouv.fr":"Annuaire des entreprises",
+  "api.bdnb.io":"BDNB \u2014 base nationale des b\u00e2timents",
+  "rnb-api.beta.gouv.fr":"RNB \u2014 r\u00e9f\u00e9rentiel des b\u00e2timents",
+  "overpass-api.de":"OpenStreetMap \u2014 Overpass",
+  "api.open-meteo.com":"Open-Meteo \u2014 air & altitude",
+  "www.insee.fr":"INSEE",
+  "apidf-preprod.cerema.fr":"Cerema \u2014 DVF"
+};
+function _netLabel(h){return NET_LABELS[h]||h;}
+
+/** Fiche de qualite des donnees : HTML, ou "" si aucun appel n'a eu lieu. */
+function dataQualityPanel(){
+  if(!_netLog.size)return "";
+  const rows=[..._netLog.values()].sort((a,b)=>b.n-a.n);
+  const jour=ms=>ms==null?"":(ms<3600000?"< 1 h":ms<86400000?Math.round(ms/3600000)+" h":Math.round(ms/86400000)+" j");
+  let nD=0,nP=0,nC=0,nF=0;
+  rows.forEach(r=>{nD+=r.direct;nP+=r.proxy;nC+=r.cache;nF+=r.fail;});
+  const li=rows.map(r=>{
+    let st,col;
+    if(r.direct>0){st="direct";col="var(--good)";}
+    else if(r.cache>0&&r.proxy===0&&r.fail===0){st="cache";col="var(--ink-soft)";}
+    else if(r.proxy>0){st="via proxy";col="var(--warn)";}
+    else{st="\u00e9chec";col="var(--bad)";}
+    const det=[];
+    if(r.cache>0)det.push(r.cache+" en cache"+(r.age!=null?" ("+jour(r.age)+")":""));
+    if(r.ms>0)det.push(r.ms+" ms");
+    if(r.fail>0)det.push(r.fail+" \u00e9chec"+(r.fail>1?"s":""));
+    return '<div style="display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:1px solid var(--line)">'+
+      '<span style="font-size:11.5px;color:var(--ink);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_netLabel(r.host)+'</span>'+
+      '<span style="font-size:11px;color:'+col+';font-weight:700;white-space:nowrap">'+st+'</span>'+
+      '<span style="font-size:10.5px;color:var(--ink-soft);white-space:nowrap">'+det.join(" \u00b7 ")+'</span></div>';
+  }).join("");
+  return '<div style="margin-top:10px;padding:10px 11px;background:var(--bg);border-radius:9px">'+
+    '<div style="font-size:12px;font-weight:800;color:var(--ink);margin-bottom:6px">Qualit\u00e9 des donn\u00e9es \u00b7 '+rows.length+' sources interrog\u00e9es</div>'+
+    '<div style="font-size:11px;color:var(--ink-soft);margin-bottom:7px">'+nD+' en direct \u00b7 '+nP+' via proxy \u00b7 '+nC+' depuis le cache \u00b7 '+nF+' en \u00e9chec</div>'+
+    li+
+    '<div style="font-size:10.5px;color:var(--ink-soft);margin-top:7px;line-height:1.5">Une source en <b>\u00e9chec</b> n\u2019invalide pas l\u2019estimation : le prix repose sur DVF, les autres sources enrichissent l\u2019analyse. Le passage <b>via proxy</b> concerne les API sans en-t\u00eate CORS ; le r\u00e9sultat est identique.</div></div>';
+}
+
 function fetchT(url,ms){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);return fetch(url,{signal:c.signal}).finally(()=>clearTimeout(t));}
 /* Cache des reponses reseau : evite de refaire une requete identique dans la meme session.
  * Cle = URL. Duree de vie = la session (les donnees publiques changent peu en cours d'usage).
@@ -1358,17 +1471,20 @@ function _persistProxy(){try{localStorage.setItem("estimo_proxy_ok",JSON.stringi
  * Évite de re-fetcher des données annuelles à chaque rechargement de page.
  * Ne stocke QUE les résultats JSON valides ; les clés expirent selon le TTL. */
 const _LS_PREFIX="estimo_nc_";
+let _lsLastAge=null;   // R15 : anciennete du dernier hit de cache localStorage
 function _lsGet(url){
   try{
     const raw=localStorage.getItem(_LS_PREFIX+url);
     if(!raw)return null;
-    const {v,ex}=JSON.parse(raw);
+    const {v,ex,t}=JSON.parse(raw);
     if(Date.now()>ex){localStorage.removeItem(_LS_PREFIX+url);return null;}
+    _lsLastAge=(t?Date.now()-t:null);   // R15 : anciennete de la donnee servie
     return v;
   }catch(_){return null;}
 }
 function _lsSet(url,val,ttlMs){
-  try{localStorage.setItem(_LS_PREFIX+url,JSON.stringify({v:val,ex:Date.now()+ttlMs}));}catch(_){}
+  // R15 : on horodate la creation pour pouvoir afficher la fraicheur reelle.
+  try{localStorage.setItem(_LS_PREFIX+url,JSON.stringify({v:val,ex:Date.now()+ttlMs,t:Date.now()}));}catch(_){}
 }
 /* TTL en ms selon le domaine de l'URL (données stables = longue durée).
  * DVF, geo.api, overpass, open-meteo → 0 (pas de cache LS = session uniquement).
@@ -1395,10 +1511,11 @@ function _urlTTL(url){
 const _netPending=new Map();
 async function dvfFetch(url){
   // 1. Cache session (le plus rapide)
-  if(_netCache.has(url))return _netCache.get(url);
+  if(_netCache.has(url)){_logNet(url,"cache",0,0);return _netCache.get(url);}
   // 2. Cache localStorage TTL (données stables, cross-reload)
   const _ttl=_urlTTL(url);
-  if(_ttl>0){const _ls=_lsGet(url);if(_ls){_netCache.set(url,_ls);return _ls;}}
+  if(_ttl>0){_lsLastAge=null;const _ls=_lsGet(url);
+    if(_ls){_netCache.set(url,_ls);_logNet(url,"cache",0,_lsLastAge);return _ls;}}
   // 3. Déduplication des requêtes en vol
   if(_netPending.has(url))return _netPending.get(url);
   const _p=_dvfFetchRaw(url,_ttl);
@@ -1413,19 +1530,38 @@ async function _dvfFetchRaw(url,ttlMs=0){
     return{json:JSON.parse(s),raw:t};
   });
   let out=null;
-  // Etape 1 : appel direct
-  try{ out=await one(url,9000); }catch(_){}
-  // Etape 2 : proxies en parallele, priorises par _proxyOK (persistant cross-reload)
+  const _host=_hostOf(url),_mode=_corsMode(_host),_t0=Date.now();
+  // Etape 1 : appel direct, SAUF si cet hote est connu pour refuser le CORS.
+  // R15 : evite une requete morte par URL et par session sur les hotes sans CORS.
+  if(_mode!=="proxy"){
+    try{ out=await one(url,9000); }catch(_){}
+    _corsMark(_host,!!out);
+    if(out)_logNet(url,"direct",Date.now()-_t0,null);
+  }
+  // Etape 2 : proxies. R15 : CASCADE (sequentielle) des qu'un proxy fiable est connu,
+  // au lieu d'une salve de 4 requetes simultanees qui declenchait le rate-limiting.
+  // La salve parallele n'est conservee que pour la toute premiere decouverte.
   if(!out&&CORS_PROXIES.length){
-    const ordered=CORS_PROXIES.slice().sort((a,b)=>(_proxyOK.has(b)?1:0)-(_proxyOK.has(a)?1:0));
-    const tries=ordered.map(px=>one(px+encodeURIComponent(url),12000).then(r=>{_proxyOK.add(px);_persistProxy();return r;}));
-    try{ out=await Promise.any(tries); }catch(_){}
+    const known=CORS_PROXIES.filter(px=>_proxyOK.has(px));
+    for(const px of known){
+      try{ out=await one(px+encodeURIComponent(url),10000); if(out)break; }catch(_){}
+    }
+    if(!out){
+      const rest=CORS_PROXIES.filter(px=>!_proxyOK.has(px));
+      if(rest.length){
+        const tries=rest.map(px=>one(px+encodeURIComponent(url),12000).then(r=>{_proxyOK.add(px);_persistProxy();return r;}));
+        try{ out=await Promise.any(tries); }catch(_){}
+      }
+    }
+    if(out)_logNet(url,"proxy",Date.now()-_t0,null);
   }
   // Etape 3 : retry direct unique (reseau instable)
   if(!out){
     await new Promise(r=>setTimeout(r,400));
     try{ out=await one(url,9000); }catch(_){}
+    if(out){_corsMark(_host,true);_logNet(url,"direct",Date.now()-_t0,null);}
   }
+  if(!out)_logNet(url,"fail",Date.now()-_t0,null);
   if(out){
     _netCache.set(url,out);
     if(ttlMs>0)_lsSet(url,out,ttlMs); // cache LS pour les données stables
@@ -3905,7 +4041,7 @@ function renderPriceFormation(r){
   const band=(lab,o,col,prob)=>`<div style="margin-bottom:7px"><div style="display:flex;justify-content:space-between;font-size:11.5px"><span style="font-weight:700;color:${col}">${lab} <span style="color:var(--ink-soft);font-weight:600">(${prob})</span></span><span class="num" style="color:var(--ink)">${eur0(o.low)} \u2013 ${eur0(o.high)} \u20ac</span></div></div>`;
   const A=`<div style="font-size:12px;font-weight:800;color:var(--ink);margin-bottom:7px">Fourchette probabiliste</div>`+band("50 % central",iv.p50,"#0a8f7e","1 chance sur 2")+band("80 %",iv.p80,"var(--brand-dark)","8 sur 10")+band("95 %",iv.p95,"var(--ink-soft)","quasi certain")+`<div class="hint" style="margin:2px 0 0">Probabilit\u00e9 que le prix de vente r\u00e9el tombe dans chaque fourchette, selon la dispersion du march\u00e9 et la fiabilit\u00e9 des donn\u00e9es.</div>`;
   let B;if(rel.pillars.length){const bar=p=>`<div style="height:6px;border-radius:4px;background:var(--line);overflow:hidden;margin-top:3px"><div style="height:100%;width:${Math.round(p[1]*100)}%;background:${p[1]>=0.66?'var(--good)':p[1]>=0.4?'var(--warn)':'var(--bad)'}"></div></div>`,relC=rel.score>=70?"var(--good)":rel.score>=50?"var(--warn)":"var(--bad)";
-    B=`<div style="border-top:1px solid var(--line);margin-top:13px;padding-top:13px"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px"><span style="font-size:12px;font-weight:800;color:var(--ink)">Fiabilit\u00e9 de l'estimation</span><span class="num" style="font-size:16px;font-weight:800;color:${relC}">${rel.score}/100 \u00b7 ${rel.label}</span></div>`+rel.pillars.map(p=>`<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:11.5px"><span style="font-weight:700;color:var(--ink)">${p[0]}</span><span style="color:var(--ink-soft)">${p[2]}</span></div>${bar(p)}</div>`).join("")+`${r.backtest?`<div style="margin-top:6px;padding:8px 11px;background:var(--brand-tint);border-radius:9px;font-size:11.5px;color:var(--ink)">Erreur du moteur DVF brut (sans ajustements du bien) : <b class="num">\u00b1${r.backtest.mdape} %</b> sur ${r.backtest.n} ventes r\u00e9elles (80 % des pr\u00e9dictions \u00e0 \u00b1${r.backtest.p80} %). La fourchette de prix int\u00e8gre cette erreur de base${r.spreadSrc==="HQ-IQR"?" (affin\u00e9e sur les comparables proches en surface)":""}. \u26a0\ufe0f Cette mesure ne couvre pas les ajustements h\u00e9doniques (\u00e9tat, DPE, standing\u2026) ni la correction VEFA — l'erreur r\u00e9elle du prix final peut \u00eatre 1,5\u00d7 sup\u00e9rieure</div>`:""}${r.backtestFull?`<div style="margin-top:6px;padding:9px 11px;background:var(--bg);border-radius:9px;font-size:11.5px;color:var(--ink);line-height:1.7"><b>Backtest du prix FINAL \u00b7 ${r.backtestFull.n} ventes r\u00e9elles</b> <span style="color:var(--ink-soft)">(cha\u00eene compl\u00e8te : ancrage, VEFA, plafond, prudence)</span><br>\u2022 <b>Valeur de march\u00e9</b> (r\u00e9f\u00e9rence vendeur) \u2014 biais m\u00e9dian <b class="num" style="color:${r.backtestFull.marketOk?"var(--good)":"var(--warn)"}">${_pctSigned(r.backtestFull.market.mpe)} %</b> \u00b7 erreur \u00b1${r.backtestFull.market.mdape} % \u00b7 P80 \u00b1${r.backtestFull.market.p80} %<br>\u2022 <b>Prix acqu\u00e9reur</b> (r\u00e9f\u00e9rence acheteur) \u2014 biais m\u00e9dian <b class="num" style="color:${r.backtestFull.buyerOk?"var(--good)":"var(--warn)"}">${_pctSigned(r.backtestFull.buyerApplied)} %</b> \u00b7 erreur \u00b1${r.backtestFull.buyer.mdape} % \u00b7 P80 \u00b1${r.backtestFull.buyer.p80} %<br><span style="color:var(--ink-soft)">Le <b>biais sign\u00e9</b> est la mesure d\u00e9cisive : il doit \u00eatre <b>proche de 0 pour la valeur de march\u00e9</b> (le vendeur a droit \u00e0 une valeur juste) et <b>n\u00e9gatif mais ma\u00eetris\u00e9 (\u22123 \u00e0 \u22128 %) pour le prix acqu\u00e9reur</b> (marge de n\u00e9gociation prot\u00e9g\u00e9e sans devenir irr\u00e9aliste). Les ajustements h\u00e9doniques (\u00e9tat, DPE, vue) restent hors mesure : DVF ne les documente pas.<br>D\u00e9cote de prudence : <b>${r.prudenceMode==="cible"?"pilot\u00e9e par la cible":"heuristique (backtest indisponible)"}</b>${r.prudenceAdj?" \u00b7 "+_pctSigned(+(r.prudenceAdj*100).toFixed(1))+" % appliqu\u00e9s":" \u00b7 aucune (la cha\u00eene amont couvre d\u00e9j\u00e0 la cible)"}${r.marketValue?" \u00b7 valeur de march\u00e9 reconstitu\u00e9e \u00e0 +"+r.marketValueUplift+" % ("+r.marketValueSrc+")":""}</span></div>`:""}<div class="hint" style="margin-top:2px">Fiabilit\u00e9 fond\u00e9e sur la quantit\u00e9 de comparables, la dispersion des prix, l'homog\u00e9n\u00e9it\u00e9 du quartier, la qualit\u00e9 des donn\u00e9es, la r\u00e9cence, la pr\u00e9cision de la g\u00e9olocalisation${r.backtest?" et l'erreur mesur\u00e9e par backtest sur les ventes locales":""}.</div>`+
+    B=`<div style="border-top:1px solid var(--line);margin-top:13px;padding-top:13px"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px"><span style="font-size:12px;font-weight:800;color:var(--ink)">Fiabilit\u00e9 de l'estimation</span><span class="num" style="font-size:16px;font-weight:800;color:${relC}">${rel.score}/100 \u00b7 ${rel.label}</span></div>`+rel.pillars.map(p=>`<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:11.5px"><span style="font-weight:700;color:var(--ink)">${p[0]}</span><span style="color:var(--ink-soft)">${p[2]}</span></div>${bar(p)}</div>`).join("")+`${r.backtest?`<div style="margin-top:6px;padding:8px 11px;background:var(--brand-tint);border-radius:9px;font-size:11.5px;color:var(--ink)">Erreur du moteur DVF brut (sans ajustements du bien) : <b class="num">\u00b1${r.backtest.mdape} %</b> sur ${r.backtest.n} ventes r\u00e9elles (80 % des pr\u00e9dictions \u00e0 \u00b1${r.backtest.p80} %). La fourchette de prix int\u00e8gre cette erreur de base${r.spreadSrc==="HQ-IQR"?" (affin\u00e9e sur les comparables proches en surface)":""}. \u26a0\ufe0f Cette mesure ne couvre pas les ajustements h\u00e9doniques (\u00e9tat, DPE, standing\u2026) ni la correction VEFA — l'erreur r\u00e9elle du prix final peut \u00eatre 1,5\u00d7 sup\u00e9rieure</div>`:""}${r.backtestFull?`<div style="margin-top:6px;padding:9px 11px;background:var(--bg);border-radius:9px;font-size:11.5px;color:var(--ink);line-height:1.7"><b>Backtest du prix FINAL \u00b7 ${r.backtestFull.n} ventes r\u00e9elles</b> <span style="color:var(--ink-soft)">(cha\u00eene compl\u00e8te : ancrage, VEFA, plafond, prudence)</span><br>\u2022 <b>Valeur de march\u00e9</b> (r\u00e9f\u00e9rence vendeur) \u2014 biais m\u00e9dian <b class="num" style="color:${r.backtestFull.marketOk?"var(--good)":"var(--warn)"}">${_pctSigned(r.backtestFull.market.mpe)} %</b> \u00b7 erreur \u00b1${r.backtestFull.market.mdape} % \u00b7 P80 \u00b1${r.backtestFull.market.p80} %<br>\u2022 <b>Prix acqu\u00e9reur</b> (r\u00e9f\u00e9rence acheteur) \u2014 biais m\u00e9dian <b class="num" style="color:${r.backtestFull.buyerOk?"var(--good)":"var(--warn)"}">${_pctSigned(r.backtestFull.buyerApplied)} %</b> \u00b7 erreur \u00b1${r.backtestFull.buyer.mdape} % \u00b7 P80 \u00b1${r.backtestFull.buyer.p80} %<br><span style="color:var(--ink-soft)">Le <b>biais sign\u00e9</b> est la mesure d\u00e9cisive : il doit \u00eatre <b>proche de 0 pour la valeur de march\u00e9</b> (le vendeur a droit \u00e0 une valeur juste) et <b>n\u00e9gatif mais ma\u00eetris\u00e9 (\u22123 \u00e0 \u22128 %) pour le prix acqu\u00e9reur</b> (marge de n\u00e9gociation prot\u00e9g\u00e9e sans devenir irr\u00e9aliste). Les ajustements h\u00e9doniques (\u00e9tat, DPE, vue) restent hors mesure : DVF ne les documente pas.<br>D\u00e9cote de prudence : <b>${r.prudenceMode==="cible"?"pilot\u00e9e par la cible":"heuristique (backtest indisponible)"}</b>${r.prudenceAdj?" \u00b7 "+_pctSigned(+(r.prudenceAdj*100).toFixed(1))+" % appliqu\u00e9s":" \u00b7 aucune (la cha\u00eene amont couvre d\u00e9j\u00e0 la cible)"}${r.marketValue?" \u00b7 valeur de march\u00e9 reconstitu\u00e9e \u00e0 +"+r.marketValueUplift+" % ("+r.marketValueSrc+")":""}</span></div>`:""}${dataQualityPanel()}<div class="hint" style="margin-top:2px">Fiabilit\u00e9 fond\u00e9e sur la quantit\u00e9 de comparables, la dispersion des prix, l'homog\u00e9n\u00e9it\u00e9 du quartier, la qualit\u00e9 des donn\u00e9es, la r\u00e9cence, la pr\u00e9cision de la g\u00e9olocalisation${r.backtest?" et l'erreur mesur\u00e9e par backtest sur les ventes locales":""}.</div>`+
       // POINT10 : explication chiffree complete du calcul de fiabilite
       (rel.detail&&rel.detail.length?explainPanel(
         "Calcul d\u00e9taill\u00e9 de l'indice de fiabilit\u00e9",
