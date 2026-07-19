@@ -4362,6 +4362,12 @@ function priceFormation(r){
   if(geoDelta)lines.push({k:"geo",label:"Micro-localisation",eur:geoDelta,pct:pct(geoDelta),note:"Transports, \u00e9coles, commerces, air, risques (au sein de la commune)"});
   if(r.finalCap)lines.push({k:"capfinal",label:"Garde-fou final (+"+(r.finalCapHiPct||20)+" %/\u221220 % m\u00e9diane DVF)",eur:r.finalCap,pct:pct(r.finalCap),note:"Bornage final autour de la m\u00e9diane pond\u00e9r\u00e9e des ventes r\u00e9elles"});
   if(r.prudenceAdj&&r.priceBeforePrud){const _pE=r.price-r.priceBeforePrud;lines.push({k:"prud",label:"Principe de pr\u00e9caution (incertitude)",eur:_pE,pct:pct(_pE),note:"Confiance "+(r.confScore!=null?r.confScore:"?")+"/100 \u00b7 l'incertitude oriente l'estimation vers le bas (posture acqu\u00e9reur, d\u00e9cote "+(Math.abs(r.prudenceAdj)*100).toFixed(1).replace(".",",")+" %)"});}
+  /* R30 : recalage temporel, trace comme une etape a part entiere. */
+  if(r.tempo){
+    const _tE=r.tempo.after-r.tempo.before;
+    lines.push({k:"tempo",label:"Actualisation \u00e0 aujourd\u2019hui",eur:_tE,pct:pct(_tE),
+      note:"Ventes DVF m\u00e9dianes de "+Math.floor(r.tempo.medianYear)+" \u00b7 "+r.tempo.years.toFixed(1).replace(".",",")+" an(s) \u00e9coul\u00e9(s) \u00b7 tendance locale "+(r.tempo.evoPerYear>=0?"+":"")+String(r.tempo.evoPerYear).replace(".",",")+" %/an"+(r.tempo.capped?" \u00b7 plafonn\u00e9e":"")});
+  }
   lines.push({k:"final",label:"Estimation finale",eur:r.price,pct:pct(r.price),final:true,note:eur0(r.sqm||0)+" \u20ac/m\u00b2"});
   return lines;
 }
@@ -5225,12 +5231,44 @@ async function provCoutRegion(insee){
     return{resourceId:res.id,fields:{region:kReg,prix:kPrix,surf:kSurf},resolved:false};
   }catch(_){return null;}
 }
+/* R29 : monument historique le plus proche (base Merimee, data.culture.gouv.fr).
+ * Purement informationnel -- aucun impact sur le prix. */
+async function provMonuments(coord){
+  if(!coord||coord.lat==null||coord.lon==null)return null;
+  try{
+    const url="https://data.culture.gouv.fr/api/records/1.0/search/?dataset="+
+      "liste-des-immeubles-proteges-au-titre-des-monuments-historiques&"+
+      "geofilter.distance="+coord.lat+","+coord.lon+",2000&rows=5";
+    const r=await dvfFetch(url);
+    if(!r||!r.json)return null;
+    const recs=r.json.records||r.json.data||[];
+    if(!recs.length)return{count:0,nearest:null};
+    /* Schema non certifie : repli multi-variantes sur les noms de champs
+     * (observes dans la documentation du jeu de donnees, non verifies en direct). */
+    let best=null;
+    recs.forEach(function(rec){
+      const f=rec.fields||rec||{};
+      const geo=f.geolocalisation||f.coordonnees||f.geo_point_2d||null;
+      let lat=null,lon=null;
+      if(Array.isArray(geo)){lat=geo[0];lon=geo[1];}
+      else if(geo&&geo.lat!=null){lat=geo.lat;lon=geo.lon;}
+      if(lat==null||lon==null)return;
+      const d=haversineKm(coord.lat,coord.lon,lat,lon);
+      const nom=f.denomination_de_l_edifice||f.denomination||f.edifice||f.nom||"Monument class\u00e9";
+      const protec=f.nature_de_la_protection||f.protection||f.type_protection||null;
+      if(!best||d<best.distKm)best={nom:nom,protec:protec,distKm:d};
+    });
+    if(!best)return{count:recs.length,nearest:null};
+    return{count:recs.length,nearest:{nom:best.nom,protec:best.protec,
+      distM:Math.round(best.distKm*1000)}};
+  }catch(_){return null;}
+}
 async function fetchContextProviders(coord){
   if(!coord)return{};
-  const res=await Promise.allSettled([provDemo(coord.insee),provEntreprises(coord.insee),provPlu(coord),provFilosofi(coord.insee),provLoyers(coord.insee,state.type),provRPLS(coord.insee),provFibre(coord.insee),provCrime(coord.insee),provVacance(coord.insee),provIPS(coord.insee),provSitadel(coord.insee),provTaxeFonciere(coord.insee),provZoneABC(coord.insee),provBPE(coord.insee),provCopro(coord.insee),provQuartier(coord),provBDNB(coord),provBruit(coord),provDpeDistrib(coord.insee)]);
+  const res=await Promise.allSettled([provDemo(coord.insee),provEntreprises(coord.insee),provPlu(coord),provFilosofi(coord.insee),provLoyers(coord.insee,state.type),provRPLS(coord.insee),provFibre(coord.insee),provCrime(coord.insee),provVacance(coord.insee),provIPS(coord.insee),provSitadel(coord.insee),provTaxeFonciere(coord.insee),provZoneABC(coord.insee),provBPE(coord.insee),provCopro(coord.insee),provQuartier(coord),provBDNB(coord),provBruit(coord),provDpeDistrib(coord.insee),provMonuments(coord)]);
   const v=i=>res[i]&&res[i].status==="fulfilled"?res[i].value:null;
-  const ctx={},iris=v(0),ent=v(1),plu=v(2),filo=v(3),loy=v(4),rpls=v(5),fib=v(6),crime=v(7),vac=v(8),ips=v(9),sitadel=v(10),tf=v(11),za=v(12),bpe=v(13),copro=v(14),quart=v(15),bdnb=v(16),bruit=v(17),dpeDistrib=v(18);
-  if(iris)ctx.iris=iris;if(ent)ctx.sirene=ent;if(plu)ctx.plu=plu;if(filo)ctx.filosofi=filo;if(loy)ctx.loyers=loy;if(rpls)ctx.rpls=rpls;if(fib)ctx.fibre=fib;if(crime)ctx.crime=crime;if(vac)ctx.vacance=vac;if(ips)ctx.ips=ips;if(sitadel)ctx.sitadel=sitadel;if(tf)ctx.taxeFonciere=tf;if(za)ctx.zoneABC=za;if(bpe)ctx.bpe=bpe;if(copro)ctx.copro=copro;if(quart)ctx.quartier=quart;if(bdnb)ctx.bdnb=bdnb;if(bruit)ctx.bruit=bruit;if(dpeDistrib)ctx.dpeDistrib=dpeDistrib;
+  const ctx={},iris=v(0),ent=v(1),plu=v(2),filo=v(3),loy=v(4),rpls=v(5),fib=v(6),crime=v(7),vac=v(8),ips=v(9),sitadel=v(10),tf=v(11),za=v(12),bpe=v(13),copro=v(14),quart=v(15),bdnb=v(16),bruit=v(17),dpeDistrib=v(18),monum=v(19);
+  if(iris)ctx.iris=iris;if(ent)ctx.sirene=ent;if(plu)ctx.plu=plu;if(filo)ctx.filosofi=filo;if(loy)ctx.loyers=loy;if(rpls)ctx.rpls=rpls;if(fib)ctx.fibre=fib;if(crime)ctx.crime=crime;if(vac)ctx.vacance=vac;if(ips)ctx.ips=ips;if(sitadel)ctx.sitadel=sitadel;if(tf)ctx.taxeFonciere=tf;if(za)ctx.zoneABC=za;if(bpe)ctx.bpe=bpe;if(copro)ctx.copro=copro;if(quart)ctx.quartier=quart;if(bdnb)ctx.bdnb=bdnb;if(bruit)ctx.bruit=bruit;if(dpeDistrib)ctx.dpeDistrib=dpeDistrib;if(monum)ctx.monuments=monum;
   return ctx;
 }
 // ===== Reconciliation ChatGPT x Grok \u2014 W1 : socle contextuel (additif, ZERO impact prix) =====
@@ -5422,6 +5460,14 @@ function renderContext(r){
   if(_lvCtx.icpe&&_lvCtx.icpe.n>0){
     const cl=_lvCtx.icpe.seveso>0?"var(--bad)":"var(--ink)";
     extra.push("Installations class\u00e9es (1\u00a0km)\u00a0: <b style=\"color:"+cl+"\">"+_lvCtx.icpe.n+"</b>"+(_lvCtx.icpe.seveso>0?" dont <b style=\"color:var(--bad)\">"+_lvCtx.icpe.seveso+" Seveso</b>":"")+" (G\u00e9orisques)");
+  }
+  if(x2.monuments&&x2.monuments.nearest){
+    const mo=x2.monuments.nearest,close=mo.distM<=500;
+    extra.push("Monument historique le plus proche (2\u00a0km)\u00a0: <b"+
+      (close?' style="color:var(--warn)"':'')+">"+esc(mo.nom)+"</b>"+
+      (mo.protec?" ("+esc(mo.protec)+")":"")+" \u00e0 "+mo.distM+"\u00a0m"+
+      (close?" \u2014 p\u00e9rim\u00e8tre ABF probable, \u00e0 confirmer aupr\u00e8s de l\u2019Architecte des B\u00e2timents de France":"")+
+      " (base M\u00e9rim\u00e9e, minist\u00e8re de la Culture)");
   }
   if(x2.bpe&&x2.bpe.total>0&&x2.iris&&x2.iris.population>0){
     const _bp10k=Math.round(x2.bpe.total/x2.iris.population*10000);
@@ -5805,6 +5851,65 @@ function _computeMarketValue(r){
   return Math.round(r.price*f);
 }
 
+/* ===== R30 : ACTUALISATION TEMPORELLE =====
+ * Le corpus DVF decrit le passe. Sans recalage, l'estimation vaut a la date
+ * mediane des ventes, pas aujourd'hui. */
+const TEMPO_MAX_YEARS=4;      // au-dela, extrapolation trop incertaine : on plafonne
+const TEMPO_MAX_ADJ=0.15;     // borne dure de l'actualisation cumulee (+/-15 %)
+const TEMPO_MIN_PTS=10;       // en deca, la tendance locale n'est pas fiable
+let TEMPO_ENABLED=true;       // desactivable (bouton), pour comparer avant/apres
+
+/** Age median du corpus, en annees decimales ecoulees depuis les ventes.
+ *  On utilise la MEDIANE des dates et non l'etendue : une vente ancienne isolee
+ *  ne doit pas commander le recalage de tout le corpus. */
+function _corpusAgeYears(pts){
+  if(!pts||!pts.length)return null;
+  const ys=[];
+  pts.forEach(function(p){
+    const d=String(p.date||"");
+    const y=+d.slice(0,4);
+    if(!(y>1990&&y<2100))return;
+    const mo=+d.slice(5,7);
+    ys.push(y+((mo>=1&&mo<=12)?(mo-0.5)/12:0.5));
+  });
+  if(ys.length<TEMPO_MIN_PTS)return null;
+  ys.sort(function(a,b){return a-b;});
+  const m=ys.length>>1;
+  const medY=ys.length%2?ys[m]:(ys[m-1]+ys[m])/2;
+  const now=new Date();
+  const nowY=now.getFullYear()+(now.getMonth()+0.5)/12;
+  return{years:nowY-medY,medianYear:medY,n:ys.length};
+}
+
+/** Actualise la valeur de la date mediane du corpus a aujourd'hui.
+ *  APPELE APRES _applyPrudence : voir l'en-tete du round pour la justification. */
+function _applyTemporal(r,pts){
+  r.tempo=null;
+  if(!TEMPO_ENABLED||!r||!(r.price>0))return;
+  const age=_corpusAgeYears(pts);
+  if(!age||!(age.years>0.25))return;          // corpus recent : rien a recaler
+  const tr=dvfTrend(pts);
+  if(!tr||tr.evo12==null)return;              // pas de tendance locale mesurable
+  const yrs=Math.min(TEMPO_MAX_YEARS,age.years);
+  let f=Math.pow(1+tr.evo12/100,yrs)-1;
+  f=Math.max(-TEMPO_MAX_ADJ,Math.min(TEMPO_MAX_ADJ,f));
+  if(Math.abs(f)<0.005)return;                // effet negligeable : on n'alourdit pas l'affichage
+  const before=r.price;
+  r.price=Math.round(r.price*(1+f));
+  r.sqm=Math.round(r.price/(r.surface||1));
+  r.low=r.price*(1-r.spread);r.high=r.price*(1+r.spread);
+  r.tempo={adj:f,years:+yrs.toFixed(1),medianYear:age.medianYear,
+           evoPerYear:tr.evo12,n:age.n,before:before,after:r.price,
+           capped:Math.abs(f)>=TEMPO_MAX_ADJ-1e-9||age.years>TEMPO_MAX_YEARS};
+}
+/** Active/desactive l'actualisation temporelle et relance l'estimation.
+ *  Expose pour permettre la comparaison avant/apres sur un bien connu. */
+function toggleTemporal(){
+  TEMPO_ENABLED=!TEMPO_ENABLED;
+  try{localStorage.setItem("estimo_tempo_v1",TEMPO_ENABLED?"1":"0");}catch(_){}
+  if(typeof showResults==="function")showResults();
+}
+try{if(localStorage.getItem("estimo_tempo_v1")==="0")TEMPO_ENABLED=false;}catch(_){}
 function _applyPrudence(r){
   if(!r||!r.real)return;
   let _prud;
@@ -5861,6 +5966,8 @@ function applyGeoDyn(r){
   r.sqm=Math.round(r.price/(r.surface||1));r.low=r.price*(1-r.spread);r.high=r.price*(1+r.spread);
   applyFinalDvfCap(r);
   _applyPrudence(r);
+  // R30 : APRES la prudence (sinon le backtest l'annulerait, cf. en-tete du round).
+  _applyTemporal(r,(typeof lastResult!=="undefined"&&lastResult&&lastResult.realPts)||null);
   if($("pcPrice"))countUp($("pcPrice"),r.price," \u20ac");
   if($("pcSqm"))$("pcSqm").textContent=eur0(r.sqm)+" \u20ac";
   if($("gLow"))$("gLow").textContent=eur(r.low);if($("gMid"))$("gMid").textContent=eur(r.price);if($("gHigh"))$("gHigh").textContent=eur(r.high);
@@ -6427,6 +6534,9 @@ function buildEstimation(data){
   /* R21/R22 : le backtest (deja calcule avant estimate) fournit le biais RESIDUEL
    * de la chaine amont ; _applyPrudence n'ajoute que l'ecart a la cible. */
   _applyPrudence(r);
+  /* R30 : actualisation APRES la prudence. Placee avant, elle serait integralement
+   * annulee par le pilotage de la decote (le backtest verrait un biais positif). */
+  _applyTemporal(r,realPts);
   /* Biais acquereur REELLEMENT servi = biais amont compose avec la decote appliquee. */
   if(r.backtestFull&&r.backtestFull.buyer){
     const _b0=r.backtestFull.buyer.mpe/100;
