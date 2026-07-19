@@ -2141,12 +2141,54 @@ function _otsuSplit(v){
 
 /** Sous-corpus homogene "terrains a batir". Retourne aussi le mode retenu pour
  *  que l'interface puisse l'expliquer. Ne filtre jamais jusqu'a l'inexploitable. */
-function terrainHomogeneous(pts){
-  const ok=(pts||[]).filter(p=>p&&p.surf>0&&p.ppm>0);
+/* @param {object} [opts] opts.stat=false : selection par NATURE uniquement, sans
+ *   nettoyage statistique. Indispensable pour MESURER l'effet taille : les grandes
+ *   parcelles de lotisseur, peu cheres au m2, ne sont pas des aberrations -- elles
+ *   SONT le signal recherche. Les retirer aplatit l'elasticite et surevalue les
+ *   grandes parcelles. La base /m2, elle, se calcule sur le corpus nettoye. */
+function terrainHomogeneous(pts,opts){
+  const _stat=!(opts&&opts.stat===false);
+  let ok=(pts||[]).filter(p=>p&&p.surf>0&&p.ppm>0);
   if(ok.length<TERR_MIN_HOMOG)return{pts:ok,mode:"corpus trop petit",removed:0,cut:null};
-  const ab=ok.filter(p=>p._ab===true);
-  if(ab.length>=TERR_MIN_HOMOG)
-    return{pts:ab,mode:"libell\u00e9 \u00e0 b\u00e2tir",removed:ok.length-ab.length,cut:null};
+  /* ===== R28 : DEUX ETAPES SUCCESSIVES, plus jamais exclusives =====
+   * Etape 1 - selection par NATURE (code Cerema). Etape 2 - decontamination
+   * STATISTIQUE du corpus ainsi selectionne. Auparavant l'etape 1 retournait
+   * directement, ce qui rendait R24 et R27 inertes des qu'un libelle explicite
+   * existait : un corpus TAB de dispersion 1,81 n'etait jamais nettoye. */
+  let base=ok,selMode=null,selRemoved=0;
+  const parCls=function(c){return ok.filter(p=>p._cls===c);};
+  const tab=parCls("tab"),artif=parCls("artif");
+  if(tab.length>=TERR_MIN_HOMOG){
+    base=tab;selMode="terrains \u00e0 b\u00e2tir (Cerema)";
+  }else if(tab.length+artif.length>=TERR_MIN_HOMOG){
+    // Corpus TAB trop mince : on elargit aux terrains ARTIFICIALISES (deja urbanises),
+    // jamais aux terrains naturels ou agricoles.
+    base=tab.concat(artif);selMode="\u00e0 b\u00e2tir + artificialis\u00e9s (Cerema)";
+  }else{
+    const nonNat=ok.filter(p=>p._cls!=="nat"&&p._cls!=="bati");
+    if(nonNat.length>=TERR_MIN_HOMOG){base=nonNat;selMode="hors naturel/agricole (Cerema)";}
+  }
+  /* La selection par nature n'est reputee OPERANTE que si elle a effectivement trie.
+   * Sur un corpus sans codtypbien exploitable, tous les points retombent dans la
+   * meme classe : selMode doit rester nul pour que le repli statistique s'applique. */
+  if(base.length===ok.length)selMode=null;
+  selRemoved=ok.length-base.length;
+  /* Etape 2 : decontamination statistique du corpus selectionne. On la delegue a
+   * une passe recursive sur `base` en neutralisant l'etape 1 (les points conserves
+   * partagent deja la meme nature). */
+  if(selMode&&!_stat)
+    return{pts:base,mode:selMode,removed:selRemoved,cut:null,selMode:selMode,selRemoved:selRemoved};
+  if(selMode&&base.length>=TERR_MIN_HOMOG&&base.length<ok.length){
+    const inner=terrainHomogeneous(base.map(function(p){
+      const c={};for(const k in p)c[k]=p[k];c._cls="_done";return c;
+    }));
+    return{pts:inner.pts,
+           mode:selMode+(inner.removed>0?" + "+inner.mode:""),
+           removed:selRemoved+inner.removed,cut:inner.cut,
+           selMode:selMode,selRemoved:selRemoved};
+  }
+  ok=base;
+  if(!_stat)return{pts:ok,mode:selMode||"nature seule",removed:selRemoved,cut:null};
   /* R27 : separation bimodale AVANT le plancher relatif. Contrairement a lui, elle
    * ne presuppose pas que la mediane appartienne au marche des terrains a batir,
    * et fonctionne donc meme quand les parcelles agricoles sont majoritaires. */
@@ -2183,6 +2225,21 @@ function _isTerrainABatir(lbl,code){
   if(/terrain.*b[a\u00e2]tir/.test(s))return true;
   return false;
 }
+/* R28 : classification par CODE Cerema (codtypbien) plutot que par regex de libelle.
+ * La nomenclature DVF+ est hierarchique et se lit directement dans les libelles
+ * renvoyes par l'API : 1xx bati / 20 non bati indetermine / 21 terrain a batir /
+ * 22x terrain artificialise / 23xx terrain naturel ou agricole.
+ * Le libelle reste utilise en REPLI quand le code est absent ou inconnu. */
+function _terrClass(code,lbl){
+  const c=String(code==null?"":code).trim();
+  if(/^21/.test(c))return "tab";      // terrain a batir
+  if(/^22/.test(c))return "artif";    // artificialise (agrement, mixte)
+  if(/^23/.test(c))return "nat";      // naturel / agricole
+  if(/^1/.test(c))return "bati";      // mutation batie
+  if(_isTerrainABatir(lbl,code))return "tab";
+  if(_isTerrainNonConstructible(lbl))return "nat";
+  return "indet";
+}
 // Exclusion explicite des natures non constructibles (best effort, non bloquant).
 function _isTerrainNonConstructible(lbl){
   const s=(lbl||"").toLowerCase();
@@ -2216,7 +2273,8 @@ function parsePtsTerrain(arr,dep){
     const _lonT=(o._lon!=null?o._lon:null)||(recVal(o,["lon","longitude","lng","lon_centparce","x_centroid"])||null);
     raw.push({ppm,surf:st,price:v,rooms:null,date:recVal(o,["datemut","date_mutation"]),land:true,
               lat:_latT!=null?parseFloat(_latT):null,lon:_lonT!=null?parseFloat(_lonT):null,
-              _lbl:lbl,_code:code,_ab:_isTerrainABatir(lbl,code),_nc:_isTerrainNonConstructible(lbl)});
+              _lbl:lbl,_code:code,_cls:_terrClass(code,lbl),
+              _ab:_isTerrainABatir(lbl,code),_nc:_isTerrainNonConstructible(lbl)});
   });
   if(typeof DEBUG!=="undefined"&&DEBUG&&typeof dbg==="function"){
     const inv=Object.keys(seen).sort((a,b)=>seen[b]-seen[a]).slice(0,12).map(k=>k+" x"+seen[k]).join(" | ");
@@ -2226,7 +2284,7 @@ function parsePtsTerrain(arr,dep){
   // privait la regression d'elasticite de la seule information de nature disponible.
   // R25 : lat/lon conserves (necessaires a _narrowBbox et compDistFactor).
   const strip=a=>a.map(p=>({ppm:p.ppm,surf:p.surf,price:p.price,rooms:null,date:p.date,land:true,
-                             lat:p.lat,lon:p.lon,_ab:p._ab,_nc:p._nc}));
+                             lat:p.lat,lon:p.lon,_ab:p._ab,_nc:p._nc,_cls:p._cls}));
   // 1. Detection positive : si assez de lots explicitement "a batir", on n'utilise qu'eux.
   const ab=raw.filter(p=>p._ab);
   if(ab.length>=10){
@@ -2943,7 +3001,14 @@ function updateViabCost(){
  * corpus, pas l'effet taille : c'est la cause racine des grandes parcelles
  * sous-evaluees. Meme principe que la segmentation typologique du bati (westGRooms). */
 function landSizeElasticity(pts){
-  const _h=terrainHomogeneous(pts);
+  /* R28 : pour MESURER l'effet taille, on veut conserver les grandes parcelles peu
+   * cheres au m2 -- elles sont le signal, pas du bruit. On se fie donc a la selection
+   * par NATURE (codes Cerema), qui ecarte l'agricole sans toucher a l'effet taille.
+   * Mais si les codes sont absents (API ancienne, champ vide), cette selection ne
+   * trie rien : il faut alors retomber sur la decontamination STATISTIQUE, sans quoi
+   * les terres agricoles satureraient a nouveau la pente (defaut corrige en R24). */
+  const _nat=terrainHomogeneous(pts,{stat:false});
+  const _h=_nat.selMode?_nat:terrainHomogeneous(pts);
   const ok=(_h.pts||[]).filter(p=>p&&p.surf>0&&p.ppm>0);
   if(ok.length<12)return null;
   const xs=ok.map(p=>Math.log(p.surf)),ys=ok.map(p=>Math.log(p.ppm));
@@ -2960,7 +3025,13 @@ function landSizeElasticity(pts){
    * L'ancienne borne servait de filet a un corpus contamine ; la contamination etant
    * traitee en amont, la borne peut redevenir un vrai garde-fou. CHOIX DE MODELISATION. */
   b=Math.max(-0.45,b);
-  const surfs=ok.map(p=>p.surf).sort((a,b2)=>a-b2);
+  /* R28 : la PENTE se mesure sur le corpus large (il contient l'effet taille), mais
+   * la SURFACE DE REFERENCE doit etre celle du corpus qui produit la BASE /m2, sinon
+   * le bonus de taille est compte deux fois : la base reflete deja des parcelles de
+   * detail, et on lui appliquerait en plus un bonus relatif a une mediane plus grande. */
+  const _hb=terrainHomogeneous(pts);
+  const _refPts=(_hb.pts&&_hb.pts.length>=TERR_MIN_HOMOG)?_hb.pts:ok;
+  const surfs=_refPts.map(p=>p.surf).sort((a,b2)=>a-b2);
   return{b:+b.toFixed(3),n,medSurf:median(surfs),homogMode:_h.mode,homogRemoved:_h.removed};
 }
 function estimateTerrain(realBase,parcelSurf,city,cp,realStats,btf){
@@ -3425,7 +3496,9 @@ function renderLocStats(r){const d=r.dyn;
 }
 function genComparables(r){const list=$("compList");list.innerHTML="";const ic=r.type==="maison"?"\ud83c\udfe0":r.type==="terrain"?"\ud83c\udf33":"\ud83c\udfe2";
   if(r.realPts&&r.realPts.length){
-    const subjSurf=r.surface||0;
+    // R28 : pour un terrain, la surface de reference est celle de la PARCELLE.
+    // r.surface vaut 0 sur ce type, ce qui desactivait le tri par similarite.
+    const subjSurf=(r.type==="terrain"?(r.terrain||r.parcelSurf||numv("terrain")):r.surface)||0;
     let pool=r.realPts.slice();
     // Point12 : selection des comparables VRAIMENT similaires
     // On score chaque vente par proximite de surface (priorite) ET recence (secondaire)
