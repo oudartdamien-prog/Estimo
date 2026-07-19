@@ -2082,6 +2082,35 @@ function parsePts(arr,type){
  *     mediane, plafond volontairement genereux.
  * Les points ecartes sont comptes et journalises. */
 const TERR_SURF_MIN=150, TERR_SURF_MAX=5000, TERR_EPTB_FLOOR=0.25;
+/* ===== R24 : DECONTAMINATION DU CORPUS FONCIER =====
+ * Le plancher EPTB ci-dessus depend d'un bareme departemental parfois indisponible
+ * (repli : 5 EUR/m2, soit aucun filtre utile). On ajoute un plancher RELATIF a la
+ * mediane du corpus lui-meme : une vente a moins de 25 % de la mediane locale
+ * n'appartient pas au marche des terrains a batir. Ce critere est independant des
+ * libelles DVF, souvent vides, et s'auto-calibre sur chaque commune.
+ * Le seuil de 25 % est un CHOIX DE MODELISATION : il separe deux marches dont les
+ * prix unitaires different typiquement d'un facteur 5 a 40. Il est journalise en
+ * mode debug et le filtre ne s'applique jamais s'il vide le corpus. */
+const TERR_PPM_REL_FLOOR=0.25;
+const TERR_MIN_HOMOG=10;
+
+/** Sous-corpus homogene "terrains a batir". Retourne aussi le mode retenu pour
+ *  que l'interface puisse l'expliquer. Ne filtre jamais jusqu'a l'inexploitable. */
+function terrainHomogeneous(pts){
+  const ok=(pts||[]).filter(p=>p&&p.surf>0&&p.ppm>0);
+  if(ok.length<TERR_MIN_HOMOG)return{pts:ok,mode:"corpus trop petit",removed:0,cut:null};
+  const ab=ok.filter(p=>p._ab===true);
+  if(ab.length>=TERR_MIN_HOMOG)
+    return{pts:ab,mode:"libell\u00e9 \u00e0 b\u00e2tir",removed:ok.length-ab.length,cut:null};
+  const sorted=ok.map(p=>p.ppm).sort((x,y)=>x-y);
+  const med=sorted[sorted.length>>1];
+  if(!(med>0))return{pts:ok,mode:"m\u00e9diane indisponible",removed:0,cut:null};
+  const cut=med*TERR_PPM_REL_FLOOR;
+  const kept=ok.filter(p=>p.ppm>=cut);
+  if(kept.length<TERR_MIN_HOMOG)
+    return{pts:ok,mode:"filtre inapplicable",removed:0,cut:null};
+  return{pts:kept,mode:"plancher relatif",removed:ok.length-kept.length,cut:Math.round(cut)};
+}
 function _terrLabel(o){
   return String(recVal(o,["libtypbien","libtyploc","type_local","nature_culture","natcult"])||"");
 }
@@ -2119,14 +2148,23 @@ function parsePtsTerrain(arr,dep){
     const ppm=v/st;if(ppm<5||ppm>3000)return; // borne large, affinee ensuite
     const key=(code||"?")+"|"+(lbl||"?");
     seen[key]=(seen[key]||0)+1;
+    /* R25 : meme extraction lat/lon que parsePts (bati) -- le champ _lat/_lon est
+     * deja porte par la reponse geomutations, simplement jamais lu ici jusqu'ici. */
+    const _latT=(o._lat!=null?o._lat:null)||(recVal(o,["lat","latitude","lat_centparce","y_centroid"])||null);
+    const _lonT=(o._lon!=null?o._lon:null)||(recVal(o,["lon","longitude","lng","lon_centparce","x_centroid"])||null);
     raw.push({ppm,surf:st,price:v,rooms:null,date:recVal(o,["datemut","date_mutation"]),land:true,
+              lat:_latT!=null?parseFloat(_latT):null,lon:_lonT!=null?parseFloat(_lonT):null,
               _lbl:lbl,_code:code,_ab:_isTerrainABatir(lbl,code),_nc:_isTerrainNonConstructible(lbl)});
   });
   if(typeof DEBUG!=="undefined"&&DEBUG&&typeof dbg==="function"){
     const inv=Object.keys(seen).sort((a,b)=>seen[b]-seen[a]).slice(0,12).map(k=>k+" x"+seen[k]).join(" | ");
     dbg("Terrain - codtypbien|libtypbien observes : "+(inv||"aucun"));
   }
-  const strip=a=>a.map(p=>({ppm:p.ppm,surf:p.surf,price:p.price,rooms:null,date:p.date,land:true}));
+  // R24 : _ab/_nc sont calcules ci-dessus puis etaient JETES par strip(), ce qui
+  // privait la regression d'elasticite de la seule information de nature disponible.
+  // R25 : lat/lon conserves (necessaires a _narrowBbox et compDistFactor).
+  const strip=a=>a.map(p=>({ppm:p.ppm,surf:p.surf,price:p.price,rooms:null,date:p.date,land:true,
+                             lat:p.lat,lon:p.lon,_ab:p._ab,_nc:p._nc}));
   // 1. Detection positive : si assez de lots explicitement "a batir", on n'utilise qu'eux.
   const ab=raw.filter(p=>p._ab);
   if(ab.length>=10){
@@ -2144,6 +2182,19 @@ function parsePtsTerrain(arr,dep){
   if(kept.length<8)kept=raw.filter(p=>!p._nc&&p.surf>=TERR_SURF_MIN&&p.surf<=TERR_SURF_MAX);
   if(kept.length<8)kept=raw.filter(p=>!p._nc);
   if(kept.length<8)kept=raw;
+  /* R24 : plancher de prix RELATIF, applique APRES la cascade existante. Corrige la
+   * contamination du corpus par les terres agricoles/loisir que les libelles DVF ne
+   * permettent pas d'identifier. Sans lui, la mediane locale est sous-evaluee ET la
+   * pente taille sature (mesure : -0,60 au lieu de -0,18 sur le marche reel). */
+  {
+    const _h=terrainHomogeneous(kept);
+    if(_h.removed>0&&_h.pts.length>=TERR_MIN_HOMOG){
+      if(typeof DEBUG!=="undefined"&&DEBUG&&typeof dbg==="function")
+        dbg("Terrain R24 - decontamination : "+_h.removed+" vente(s) ecartee(s) sur "+kept.length+
+            " (mode "+_h.mode+(_h.cut?", plancher "+_h.cut+" EUR/m2":"")+")");
+      kept=_h.pts;
+    }
+  }
   if(typeof DEBUG!=="undefined"&&DEBUG&&typeof dbg==="function")
     dbg("Terrain - filtre heuristique : "+kept.length+"/"+raw.length+" ventes retenues (plancher "+Math.round(floor)+" EUR/m2"+(eptb!=null?", EPTB dep "+dep+"="+eptb:", EPTB indisponible")+", surface "+TERR_SURF_MIN+"-"+TERR_SURF_MAX+" m2)");
   return strip(kept);
@@ -2309,9 +2360,12 @@ async function fetchDvf(coord,type){
         if(DEBUG)dbg("Neuf exclu (libnatmut+vefa+codtypbien): "+_gres.nNeuf+"/"+_gres.nTotal+" ventes");
         if(DEBUG)dbg(`DVF bbox ~${_radKm} km (tentative ${attempt+1}) : `+(gcount||garr.length)+" mutations, "+_gres.pts.length+" anciennes exploitables"+(_gres.nNeuf>0?" ("+_gres.nNeuf+" VEFA exclus)":""));
         if(_gres.pts.length>=_minPts){
-          /* R19 : resserrement local du rayon (0 appel reseau). Le foncier en est
-           * exclu : ses ventes sont deja rares, les resserrer serait contre-productif. */
-          const _nar=_isTerr?null:_narrowBbox(_gres.pts,coord,_radKm);
+          /* R19/R25 : resserrement local du rayon (0 appel reseau). Le foncier y est
+           * desormais eligible depuis que parsePtsTerrain porte lat/lon (R25) -- mais
+           * _narrowBbox exige deja un corpus dense (NARROW_TRIGGER=100 ventes) : les
+           * ventes de terrain etant rares, le declenchement restera naturellement
+           * l'exception, jamais la regle, sans qu'aucun seuil dedie soit necessaire. */
+          const _nar=_narrowBbox(_gres.pts,coord,_radKm);
           const _fPts=_nar?_nar.pts:_gres.pts,_fRad=_nar?_nar.radiusKm:_radKm;
           if(DEBUG&&_nar)dbg("DVF R19 affinage local : rayon "+_radKm+" km -> "+_fRad+" km ("+_gres.pts.length+" -> "+_fPts.length+" ventes, aucun appel reseau)");
           return _storeAndReturn({pts:_fPts,ptsNeuf:_gres.ptsNeuf||[],nNeuf:_gres.nNeuf,nTotal:_gres.nTotal,natSeen:_gres.natSeen,status:"ok",scope:"bbox",radiusKm:_fRad,narrowed:!!_nar,nBeforeNarrow:_gres.pts.length});
@@ -2681,12 +2735,17 @@ function marketCtx(realBase){
   const alt=(state.coord&&state.coord.alt!=null)?state.coord.alt:120;
   return {lvl:lvl,tier:tier,alt:alt,cold:alt>=550,mountain:alt>=900,premium:(tier==="recherche"||tier==="premium"),realBase:realBase||REF,type:state.type};
 }
+/* R26 : bareme de valeur verte par classe DPE, partage entre l'estimation du bien
+ * (coefficients) et la valorisation des travaux (WX.wxGreenValue). Une seule source. */
+const DPE_VAL_MAP={A:0.06,B:0.04,C:0.02,D:0,E:-0.03,F:-0.07,G:-0.12};
 function coefficients(ctx,realBase,realStats){const rows=[];let m=1;let detail=0;
   ctx=ctx||marketCtx(null);const tier=ctx.tier,cold=ctx.cold,mountain=ctx.mountain,premium=ctx.premium;
   if(state.type==="terrain")return{mult:1,rows,detail:0};
   const etatMap={vetuste:[-0.25,"V\u00e9tuste"],renover:[-0.15,"\u00c0 r\u00e9nover"],correct:[-0.03,"\u00c9tat correct"],bon:[0.05,"Bon \u00e9tat"],renove:[0.10,"R\u00e9nov\u00e9 r\u00e9cemment"],neuf:[0.14,"Neuf / refait"]};
   let [v,lbl]=etatMap[$("etat").value];m*=(1+v);rows.push([lbl,v]);const etatKey=$("etat").value;
-  const dpeMap={A:0.06,B:0.04,C:0.02,D:0,E:-0.03,F:-0.07,G:-0.12};let dv=dpeMap[state.dpe];
+  // R26 : bareme hoiste au niveau module (DPE_VAL_MAP) pour que la valorisation
+  // des travaux (wxGreenValue) et l'estimation du bien partagent la MEME echelle.
+  let dv=DPE_VAL_MAP[state.dpe];
   let dpeAppris=false;
   if(realBase&&realStats&&realStats.clean&&state.dpe&&dv!==undefined){
     const withDpe=realStats.clean.filter(p=>p.dpe&&/^[A-G]$/.test(p.dpe));
@@ -2817,8 +2876,13 @@ function updateViabCost(){
  * @param {Array} pts  ventes terrain {surf, ppm}
  * @returns {{b:number, n:number, medSurf:number}|null}
  */
+/* R24 : la regression est desormais conduite sur le sous-corpus HOMOGENE. Mesurer
+ * une elasticite sur un melange de marches revient a mesurer la composition du
+ * corpus, pas l'effet taille : c'est la cause racine des grandes parcelles
+ * sous-evaluees. Meme principe que la segmentation typologique du bati (westGRooms). */
 function landSizeElasticity(pts){
-  const ok=(pts||[]).filter(p=>p&&p.surf>0&&p.ppm>0);
+  const _h=terrainHomogeneous(pts);
+  const ok=(_h.pts||[]).filter(p=>p&&p.surf>0&&p.ppm>0);
   if(ok.length<12)return null;
   const xs=ok.map(p=>Math.log(p.surf)),ys=ok.map(p=>Math.log(p.ppm));
   const n=xs.length;
@@ -2828,9 +2892,14 @@ function landSizeElasticity(pts){
   if(!(den>0))return null;
   let b=num/den;
   if(!(b<0)||!isFinite(b))return null; // pas d'effet taille d\u00e9tectable
-  b=Math.max(-0.60,b);
+  /* R24 : borne resserree de -0,60 a -0,45. Justification : sur un marche de terrains
+   * a batir HOMOGENE, une pente inferieure a -0,45 implique que le prix total croit
+   * moins vite que S^0,55 -- economiquement invraisemblable pour du constructible.
+   * L'ancienne borne servait de filet a un corpus contamine ; la contamination etant
+   * traitee en amont, la borne peut redevenir un vrai garde-fou. CHOIX DE MODELISATION. */
+  b=Math.max(-0.45,b);
   const surfs=ok.map(p=>p.surf).sort((a,b2)=>a-b2);
-  return{b:+b.toFixed(3),n,medSurf:median(surfs)};
+  return{b:+b.toFixed(3),n,medSurf:median(surfs),homogMode:_h.mode,homogRemoved:_h.removed};
 }
 function estimateTerrain(realBase,parcelSurf,city,cp,realStats,btf){
   const dyn=computeDynamics(city,cp),ctx=marketCtx(realBase);parcelSurf=parcelSurf||0;
@@ -2878,7 +2947,7 @@ function estimateTerrain(realBase,parcelSurf,city,cp,realStats,btf){
       const _fc=_elSym?Math.max(TERR_ELAS_MIN,Math.min(TERR_ELAS_MAX,_f))
                       :Math.max(TERR_ELAS_MIN,Math.min(1,_f));
       if(Math.abs(_fc-1)>0.005){
-        landAnchor={before:Math.round(landSqm),b:_el.b,n:_el.n,medSurf:Math.round(_el.medSurf),factor:+_fc.toFixed(3),sym:_elSym};
+        landAnchor={before:Math.round(landSqm),b:_el.b,n:_el.n,medSurf:Math.round(_el.medSurf),factor:+_fc.toFixed(3),sym:_elSym,homogMode:_el.homogMode,homogRemoved:_el.homogRemoved};
         landSqm=Math.round(landSqm*_fc);
         landAnchor.after=landSqm;
       }
@@ -2969,7 +3038,7 @@ function estimateTerrain(realBase,parcelSurf,city,cp,realStats,btf){
       :["R\u00e9seaux non renseign\u00e9s \u2014 d\u00e9cote de prudence r\u00e9duite de moiti\u00e9. Renseignez la viabilit\u00e9 pour fiabiliser l\u2019estimation.",null,"d\u00e9cote \u00e0 50 %"]);
   }
   dispRows.unshift(["Prix/m\u00b2 terrain de base ("+srcNote+")",null,eur0(landSqm)+" \u20ac/m\u00b2"]);
-  if(landAnchor)dispRows.splice(1,0,["D\u00e9gressivit\u00e9 taille mesur\u00e9e sur "+landAnchor.n+" ventes (\u00e9lasticit\u00e9 "+landAnchor.b+") \u00b7 parcelle "+eur0(parcelSurf)+" m\u00b2 vs m\u00e9diane locale "+eur0(landAnchor.medSurf)+" m\u00b2",null,eur0(landAnchor.before)+" \u2192 "+eur0(landAnchor.after)+" \u20ac/m\u00b2"]);
+  if(landAnchor)dispRows.splice(1,0,["D\u00e9gressivit\u00e9 taille mesur\u00e9e sur "+landAnchor.n+" ventes (\u00e9lasticit\u00e9 "+landAnchor.b+") \u00b7 parcelle "+eur0(parcelSurf)+" m\u00b2 vs m\u00e9diane locale "+eur0(landAnchor.medSurf)+" m\u00b2"+(landAnchor.homogRemoved>0?" \u00b7 "+landAnchor.homogRemoved+" vente(s) hors march\u00e9 \u00e0 b\u00e2tir \u00e9cart\u00e9e(s) ("+landAnchor.homogMode+")":""),null,eur0(landAnchor.before)+" \u2192 "+eur0(landAnchor.after)+" \u20ac/m\u00b2"]);
   dispRows.push(["CES estim\u00e9 ("+(lib||zone||"d\u00e9faut")+") \u00b7 SDP constructible",null,"CES "+ces+" \u00d7 "+parcelSurf+" m\u00b2 = "+buildable+" m\u00b2"]);
   if(prixSdp)dispRows.push(["Prix/m\u00b2 SDP (indicateur constructeur/promoteur)",null,eur0(prixSdp)+" \u20ac/m\u00b2 SDP"]);
   return{price,sqm:effSqm,sqmBase:landSqm,sqmAdj,low:Math.round(price*(1-spread)),high:Math.round(price*(1+spread)),spread,conf,rows:dispRows,surface:parcelSurf,type:"terrain",city,cp,pieces:state.pieces,real:!!realBase,econSurface:parcelSurf,ctx,dyn,terrain:{landSqm,buildable,ces,zone,lib,adj,viabDetail:{eau:vEau,assain:vAss,elec:vElec,voirie:vVoi,telecom:vTel},prixSdp,srcNote,pente,sol,forme,ttype,landAnchor}};
@@ -9612,6 +9681,206 @@ const WX=(function(){
     {cat:"chauffage",match:function(it){return it.id==="cPAC";},rank:4,lbl:"Chauffage (PAC en remplacement d'une \u00e9nergie fossile)"},
     {cat:"chauffage",match:function(it){return it.id==="cVMC";},rank:5,lbl:"Ventilation (apr\u00e8s isolation)"}
   ];
+  /* ===================================================================
+   * R26 \u2014 n5 : CHAINAGE TRAVAUX -> GAIN ENERGETIQUE -> CLASSE -> PLUS-VALUE
+   * ===================================================================
+   * Modele d'enveloppe simplifie. Ce n'est PAS un DPE et ne s'y substitue pas :
+   * un DPE n'est valide que realise par un diagnostiqueur certifie selon la
+   * methode 3CL reglementaire (une soixantaine de parametres). On estime ici un
+   * ORDRE DE GRANDEUR du gain, avec sa fourchette, a partir de la repartition
+   * moyenne des deperditions publiee par l'ADEME. */
+
+  /* Repartition ADEME (guide "Isoler sa maison", nov. 2023), milieux de fourchette
+   * normalises a 100 % : toiture 25-30 -> 28, murs 20-25 -> 23, air 20-25 -> 22,
+   * fenetres 10-15 -> 13, planchers 7-10 -> 9, solde en ponts thermiques. */
+  const WX_LOSS={toiture:0.28,murs:0.23,air:0.22,fenetres:0.13,plancher:0.09,ponts:0.05};
+
+  /* Seuils de classe (kWh/m2/an, energie primaire) et milieu de classe.
+   * Identiques a ceux affiches par renderDpe(). Le milieu de G est conventionnel
+   * (classe ouverte) : CHOIX DE MODELISATION. */
+  const WX_DPE_MAX={A:70,B:110,C:180,D:250,E:330,F:420,G:9999};
+  const WX_DPE_MID={A:50,B:90,C:145,D:215,E:290,F:375,G:500};
+  function wxClassOf(c){
+    const L="ABCDEFG".split("");
+    for(let i=0;i<L.length;i++)if(c<=WX_DPE_MAX[L[i]])return L[i];
+    return "G";
+  }
+
+  /* Part de l'enveloppe encore AMELIORABLE selon la classe de depart : un logement
+   * deja classe C a, par construction, moins de gisement qu'une passoire.
+   * CHOIX DE MODELISATION, volontairement conservateur. */
+  const WX_GISEMENT={A:0.20,B:0.30,C:0.50,D:0.70,E:0.85,F:1.00,G:1.00};
+
+  /* Rendement de chaque geste sur le poste de deperdition qu'il traite.
+   * CHOIX DE MODELISATION : une isolation ne supprime jamais 100 % des pertes
+   * (ponts thermiques residuels, mise en oeuvre reelle). */
+  const WX_GESTES=[
+    {id:"mComble",poste:"toiture", eff:0.80,ref:function(S){return S;},          lbl:"Isolation combles/toiture"},
+    {id:"mITE",   poste:"murs",    eff:0.75,ref:function(S){return S*1.2;},      lbl:"Isolation des murs par l\u2019ext\u00e9rieur"},
+    {id:"mITI",   poste:"murs",    eff:0.65,ref:function(S){return S*1.2;},      lbl:"Isolation des murs par l\u2019int\u00e9rieur"},
+    {id:"nFenPVC",poste:"fenetres",eff:0.55,ref:function(S){return S/12;},       lbl:"Fen\u00eatres PVC double vitrage"},
+    {id:"nFenAlu",poste:"fenetres",eff:0.55,ref:function(S){return S/12;},       lbl:"Fen\u00eatres aluminium double vitrage"},
+    {id:"nFenBois",poste:"fenetres",eff:0.55,ref:function(S){return S/12;},      lbl:"Fen\u00eatres bois double vitrage"},
+    {id:"cVMC",   poste:"air",     eff:0.50,ref:function(){return 1;},           lbl:"VMC double flux"}
+  ];
+
+  /* Gain SYSTEME (rendement de conversion), distinct des deperditions : une PAC ne
+   * reduit pas les pertes, elle produit la meme chaleur avec moins d'energie.
+   * Fourchette large et assumee : le resultat depend du systeme remplace, inconnu ici.
+   * La reforme du coefficient electrique au 01/01/2026 (2,58 -> 1,79 kWhep/kWhef)
+   * accroit encore l'incertitude : elle est repercutee dans la fourchette. */
+  const WX_SYS={cPAC:{lo:0.55,hi:0.75,lbl:"Pompe \u00e0 chaleur air/eau"}};
+
+  function wxEnergy(wb){
+    if(state.type==="terrain")return null;
+    const dpe=state.dpe,rank="ABCDEFG".indexOf(dpe);
+    /* Garde-fou : "ABCDEFG".indexOf("") vaut 0, pas -1 -- un DPE vide serait donc
+     * silencieusement traite comme une classe A. Le test de verite est la presence
+     * de la classe dans le bareme, pas son rang. */
+    if(!dpe||rank<0||WX_DPE_MID[dpe]==null)return null;
+    const S=(wb&&wb.S>0)?wb.S:0;
+    if(!(S>0))return null;
+    const conso0=WX_DPE_MID[dpe];
+    const gis=WX_GISEMENT[dpe]||0.7;
+    const rows=[];
+    let reduc=0;                                  // part des deperditions evitee
+    WX_GESTES.forEach(function(g){
+      const qte=q(g.id);
+      if(!(qte>0))return;
+      const ref=Math.max(1,g.ref(S));
+      const cover=Math.max(0,Math.min(1,qte/ref));      // couverture reelle du poste
+      const part=WX_LOSS[g.poste]*g.eff*cover*gis;
+      if(part<=0)return;
+      reduc+=part;
+      rows.push({lbl:g.lbl,poste:g.poste,cover:Math.round(cover*100),gain:part});
+    });
+    reduc=Math.min(0.62,reduc);                   // garde-fou : jamais plus de 62 % par l'enveloppe seule
+    let consoEnv=conso0*(1-reduc);
+    // Gain systeme, applique APRES l'enveloppe (une PAC dimensionnee sur un bati isole)
+    let sysLo=1,sysHi=1,sysLbl=null;
+    Object.keys(WX_SYS).forEach(function(id){
+      if(q(id)>0){sysLo=WX_SYS[id].lo;sysHi=WX_SYS[id].hi;sysLbl=WX_SYS[id].lbl;}
+    });
+    const consoLo=Math.round(consoEnv*sysLo);     // hypothese favorable
+    const consoHi=Math.round(consoEnv*sysHi);     // hypothese prudente
+    const consoMid=Math.round((consoLo+consoHi)/2);
+    if(!rows.length&&!sysLbl)return null;
+    const clAvant=dpe,clApres=wxClassOf(consoMid),clPrudent=wxClassOf(consoHi);
+    const sauts=Math.max(0,"ABCDEFG".indexOf(clAvant)-"ABCDEFG".indexOf(clApres));
+    const sautsPrudent=Math.max(0,"ABCDEFG".indexOf(clAvant)-"ABCDEFG".indexOf(clPrudent));
+    return{conso0:conso0,consoMid:consoMid,consoLo:consoLo,consoHi:consoHi,
+           reduc:reduc,rows:rows,sysLbl:sysLbl,S:S,
+           clAvant:clAvant,clApres:clApres,clPrudent:clPrudent,
+           sauts:sauts,sautsPrudent:sautsPrudent};
+  }
+
+  /* Valorisation du saut de classe : on reutilise EXACTEMENT le bareme DPE deja
+   * employe par coefficients() pour l'estimation du bien. Aucune seconde echelle
+   * n'est introduite : si le bareme evolue, les deux suivent ensemble. */
+  function wxGreenValue(en){
+    if(!en||!(en.sauts>0))return null;
+    if(typeof lastResult==="undefined"||!lastResult||!(lastResult.price>0))return null;
+    if(typeof DPE_VAL_MAP==="undefined")return null;
+    const map=DPE_VAL_MAP;
+    const vA=map[en.clAvant],vB=map[en.clApres],vP=map[en.clPrudent];
+    if(vA==null||vB==null)return null;
+    const base=lastResult.price/(1+vA);            // valeur "hors effet DPE"
+    const gainMid=Math.round(base*(vB-vA));
+    const gainPru=Math.round(base*((vP!=null?vP:vA)-vA));
+    return{gainMid:gainMid,gainPrudent:gainPru};
+  }
+
+  /* ===================================================================
+   * R26 \u2014 n6 : FOURCHETTE P20-P80 PAR CATEGORIE
+   * ===================================================================
+   * Un devis affiche a l'euro pres est faux par construction. La dispersion reelle
+   * entre devis croit avec la technicite et l'incertitude sur l'existant : la
+   * peinture se chiffre a vue, une depollution ne se connait qu'une fois ouvert.
+   * CHOIX DE MODELISATION, calibre sur la hierarchie de technicite du catalogue. */
+  const WX_DISP={peinture:0.20,sols:0.22,murs:0.28,menuiseries:0.22,chauffage:0.30,
+                 cuisine:0.25,sdb:0.28,elec:0.32,exterieur:0.30,depollution:0.42,construction:0.25};
+  function wxDispersion(){
+    let tot=0,varSum=0;const parts=[];
+    Object.keys(POSTES).forEach(function(k){
+      const c=totalCat(k);
+      if(c<=0)return;
+      const d=WX_DISP[k]!=null?WX_DISP[k]:0.28;
+      tot+=c;varSum+=c*d;
+      parts.push({k:k,lbl:POSTES[k].cat,cout:c,d:d,lo:Math.round(c*(1-d)),hi:Math.round(c*(1+d))});
+    });
+    if(tot<=0)return null;
+    const dMoy=varSum/tot;
+    return{total:tot,d:dMoy,lo:Math.round(tot*(1-dMoy)),hi:Math.round(tot*(1+dMoy)),parts:parts};
+  }
+
+  /* ===================================================================
+   * R26 \u2014 n7 : PLAFONDS DE DEPENSES ELIGIBLES (renovation d'ampleur)
+   * ===================================================================
+   * Verifie et date : 30 000 EUR HT pour un gain de 2 classes, 40 000 EUR HT pour
+   * 3 classes ou plus (plafonds revus a la baisse depuis septembre 2025 ; l'ancien
+   * plafond de 70 000 EUR et le bonus "sortie de passoire" de +10 % sont supprimes).
+   * Les COUTS PLAFONDS PAR GESTE au m2 ne sont PAS implementes : non verifiables
+   * de facon fiable a la date d'audit, on ne les invente pas. */
+  const WX_MPR_CAP={deux:30000,trois:40000};
+  const WX_MPR_CAP_DATE=new Date("2026-07-19T00:00:00");
+  const WX_CATS_ENERGIE=["murs","menuiseries","chauffage"];
+  function wxAidesCap(en){
+    if(!en||!(en.sauts>=2))return null;            // le parcours d'ampleur exige 2 classes
+    if("EFG".indexOf(en.clAvant)<0)return null;    // et un logement classe E, F ou G
+    let dep=0;
+    WX_CATS_ENERGIE.forEach(function(k){dep+=proCat(k);});
+    if(dep<=0)return null;
+    const depHT=dep/1.1;                            // le catalogue est en TTC 10 %
+    const cap=en.sauts>=3?WX_MPR_CAP.trois:WX_MPR_CAP.deux;
+    return{depHT:Math.round(depHT),cap:cap,depasse:depHT>cap,
+           horsPlafond:Math.max(0,Math.round(depHT-cap)),sauts:en.sauts};
+  }
+
+  function wxEnergyHtml(wb){
+    const en=wxEnergy(wb);
+    const disp=wxDispersion();
+    if(!en&&!disp)return "";
+    let h='<div style="margin-bottom:11px;padding:11px 13px;background:var(--bg);border-radius:10px">';
+    if(en){
+      const gv=wxGreenValue(en);
+      const cap=wxAidesCap(en);
+      const badge=function(c){return '<b style="display:inline-block;min-width:17px;text-align:center;border-radius:4px;padding:0 4px;background:'+
+        ({A:"#2E9C46",B:"#5BB848",C:"#B6D43A",D:"#F2D31C",E:"#F0A828",F:"#E8742A",G:"#E0402E"}[c]||"#999")+
+        ';color:'+(c==="D"?"#5a4b00":"#fff")+'">'+c+'</b>';};
+      h+='<div style="font-size:11px;font-weight:800;color:var(--ink);text-transform:uppercase;margin-bottom:4px">\u26a1 Gain \u00e9nerg\u00e9tique estim\u00e9</div>'+
+         '<div style="font-size:10px;color:var(--ink-soft);margin-bottom:7px;line-height:1.45">Estimation d\u2019ordre de grandeur \u2014 <b>ce n\u2019est pas un DPE</b> et cela ne s\u2019y substitue pas. Fond\u00e9e sur la r\u00e9partition moyenne des d\u00e9perditions publi\u00e9e par l\u2019ADEME et sur les quantit\u00e9s que vous avez saisies. Seul un diagnostiqueur certifi\u00e9 (m\u00e9thode 3CL) fait foi.</div>'+
+         '<div style="font-size:12.5px;color:var(--ink);margin-bottom:6px">'+badge(en.clAvant)+' <span style="color:var(--ink-soft)">'+en.conso0+' kWh/m\u00b2/an</span> \u2192 '+badge(en.clApres)+' <span style="color:var(--ink-soft)">~'+en.consoMid+' kWh/m\u00b2/an</span>'+
+         (en.sauts>0?' <b style="color:var(--good)">'+en.sauts+' classe'+(en.sauts>1?"s":"")+'</b>':' <span style="color:var(--ink-soft)">(pas de changement de classe)</span>')+'</div>'+
+         '<div style="font-size:10.5px;color:var(--ink-soft);margin-bottom:7px">Hypoth\u00e8se prudente : '+badge(en.clPrudent)+' ('+en.consoHi+' kWh/m\u00b2/an) \u00b7 favorable : '+en.consoLo+' kWh/m\u00b2/an</div>';
+      if(en.rows.length){
+        h+='<div style="border-top:1px solid var(--line);padding-top:6px;margin-bottom:6px">'+
+           en.rows.map(function(r){return '<div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0"><span style="color:var(--ink)">'+r.lbl+'</span><span style="color:var(--ink-soft)">couverture '+r.cover+' % \u00b7 \u2212'+Math.round(r.gain*100)+' % de pertes</span></div>';}).join("")+'</div>';
+      }
+      if(en.sysLbl)h+='<div style="font-size:10.5px;color:var(--ink-soft);margin-bottom:6px">'+en.sysLbl+' : gain de rendement syst\u00e8me inclus, fourchette large (le syst\u00e8me remplac\u00e9 n\u2019est pas connu de l\u2019outil).</div>';
+      if(gv&&gv.gainMid>0){
+        h+='<div style="padding:7px 9px;background:#fff;border-radius:8px;font-size:11.5px;color:var(--ink);margin-bottom:6px">'+
+           '<b>Valeur verte estim\u00e9e :</b> <b class="num" style="color:var(--good)">+'+eur0(gv.gainMid)+' \u20ac</b>'+
+           (gv.gainPrudent!==gv.gainMid?' <span style="color:var(--ink-soft)">(hypoth\u00e8se prudente : +'+eur0(gv.gainPrudent)+' \u20ac)</span>':'')+
+           '<div style="font-size:10px;color:var(--ink-soft);margin-top:2px">Calcul\u00e9e avec le m\u00eame bar\u00e8me DPE que l\u2019estimation du bien \u2014 aucune seconde \u00e9chelle introduite.</div></div>';
+      }
+      if(cap){
+        h+='<div style="padding:7px 9px;background:#fff;border-radius:8px;font-size:11px;color:var(--ink)">'+
+           '<b>Plafond MaPrimeR\u00e9nov\u2019 (r\u00e9novation d\u2019ampleur) :</b> d\u00e9pense \u00e9nerg\u00e9tique ~'+eur0(cap.depHT)+' \u20ac HT pour un plafond de '+eur0(cap.cap)+' \u20ac HT ('+cap.sauts+' classes).'+
+           (cap.depasse?' <b style="color:var(--warn)">'+eur0(cap.horsPlafond)+' \u20ac hors plafond</b> \u2014 non pris en compte dans le calcul de l\u2019aide.':' <b style="color:var(--good)">Int\u00e9gralement dans le plafond.</b>')+
+           '<div style="font-size:10px;color:var(--ink-soft);margin-top:2px">Plafonds v\u00e9rifi\u00e9s au '+WX_MPR_CAP_DATE.toLocaleDateString("fr-FR")+'. Les co\u00fbts plafonds <i>par geste</i> ne sont pas int\u00e9gr\u00e9s : aucune source fiable n\u2019a pu \u00eatre v\u00e9rifi\u00e9e.</div></div>';
+      }
+    }
+    if(disp){
+      h+='<div style="'+(en?'border-top:1px solid var(--line);padding-top:8px;margin-top:8px':'')+'">'+
+         '<div style="font-size:11px;font-weight:800;color:var(--ink);text-transform:uppercase;margin-bottom:4px">\ud83d\udcc9 Fourchette de co\u00fbt (P20\u2013P80)</div>'+
+         '<div style="font-size:10px;color:var(--ink-soft);margin-bottom:6px;line-height:1.45">Un devis annonc\u00e9 \u00e0 l\u2019euro pr\u00e8s est faux par construction. La dispersion entre devis cro\u00eet avec la technicit\u00e9 et l\u2019incertitude sur l\u2019existant.</div>'+
+         '<div style="font-size:14px;font-weight:800;color:var(--ink);margin-bottom:6px" class="num">'+eur0(disp.lo)+' \u2013 '+eur0(disp.hi)+' \u20ac <span style="font-size:10.5px;font-weight:600;color:var(--ink-soft)">(\u00b1'+Math.round(disp.d*100)+' %)</span></div>'+
+         disp.parts.map(function(p){return '<div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0;border-bottom:1px solid var(--line)"><span style="color:var(--ink)">'+p.lbl+'</span><span class="num" style="color:var(--ink-soft)">'+eur0(p.lo)+' \u2013 '+eur0(p.hi)+' \u20ac</span></div>';}).join("")+
+         '</div>';
+    }
+    return h+'</div>';
+  }
+
   function dpeLeversHtml(){
     if(state.type==="terrain")return"";
     const dpe=state.dpe,rank="ABCDEFG".indexOf(dpe);
@@ -9826,7 +10095,7 @@ const WX=(function(){
     el.innerHTML='<div class="wx-intro">'+
       '<b>Mode expert :</b> saisissez les m\u00e9tr\u00e9s r\u00e9els (surfaces de murs, sols, toiture, nombre de fen\u00eatres\u2026). Prix moyens France 2025-2026, <b>fourniture et pose comprises, TTC</b> (TVA 10 % r\u00e9novation). '+
       'Cochez \u00ab je le fais moi-m\u00eame \u00bb sur les postes accessibles pour chiffrer l\u2019\u00e9conomie et le temps \u00e0 y consacrer.'+
-    '</div>'+idxNoteHtml()+aidesNoteHtml()+dpeLeversHtml()+wxParamsBlock(wb)+wxToolbar+cats+synth;
+    '</div>'+idxNoteHtml()+aidesNoteHtml()+dpeLeversHtml()+wxEnergyHtml(wb)+wxParamsBlock(wb)+wxToolbar+cats+synth;
     bind();
   }
   function bind(){
