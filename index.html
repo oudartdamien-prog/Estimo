@@ -228,6 +228,25 @@
   .real-tag{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;background:#d4f4e8;color:#1a6b40;padding:3px 8px;border-radius:6px;vertical-align:middle;margin-left:7px}
 
   @media(min-width:560px){.pc-price{font-size:46px}}
+  /* ===== R16 : paliers tablette et desktop =====
+   * Aucun point de rupture n'existait au-dela de 560px : le conteneur restait fige
+   * a 680px sur tablette comme sur grand ecran. On elargit SOBREMENT, sans toucher
+   * a la composition en colonne unique : les cartes de #results sont ordonnees par
+   * `order:` en flex-column, une grille multi-colonnes casserait la hierarchie de
+   * lecture construite depuis le debut du projet. On gagne de la surface utile,
+   * pas une nouvelle mise en page. */
+  @media(min-width:900px){
+    .container{max-width:820px;padding-left:24px;padding-right:24px}
+    .card{padding:24px 22px}
+    .row3{gap:12px}
+  }
+  @media(min-width:1280px){
+    .container{max-width:900px}
+  }
+  /* Tablette en portrait : les grilles a 3 colonnes deviennent illisibles sous 700px. */
+  @media(min-width:521px) and (max-width:760px){
+    .row3{grid-template-columns:1fr 1fr}
+  }
   @media(prefers-reduced-motion:reduce){#results.show{animation:none}.cta:hover,.cta:active{transform:none}}
 .bchips button{flex:1;min-width:64px;padding:9px 6px;border:1px solid var(--line);background:#fff;border-radius:10px;font:600 13px/1 var(--body);color:var(--ink);cursor:pointer;transition:.15s}
 .bchips button:hover{border-color:var(--brand);color:var(--brand)}
@@ -446,7 +465,7 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
   <!-- 1 &#183; LE BIEN -->
   <section class="card">
     <div class="card-head"><div class="step-no">1</div><div><h2>Le bien</h2><div class="sub">Plus vous d&#233;taillez, plus l'estimation est pr&#233;cise</div></div></div>
-    <div class="wprog"><div class="wprog-bar"><span id="wprogFill"></span></div><div class="wprog-txt" id="wprogTxt">&#201;tape 1 / 3</div></div>
+    <div class="wprog"><div class="wprog-bar"><span id="wprogFill"></span></div><div class="wprog-txt" id="wprogTxt" role="status" aria-live="polite">&#201;tape 1 / 3</div></div>
 
     <div class="wstep on" data-s="1">
     <div class="field ac-wrap">
@@ -677,6 +696,7 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
     </div>
 
     <div class="wnav" id="wNav"><button id="wPrev" type="button">Pr&#233;c&#233;dent</button><button id="wNext" type="button">Suivant</button></div>
+    <div class="hint" id="wEarlyHint" style="display:none;margin-top:8px"></div>
     <button class="cta" id="btnEstim">Estimer le bien</button>
     <div class="err" id="formErr"></div>
     <div class="hint">
@@ -6637,8 +6657,31 @@ if($("terrainVendeurPro"))$("terrainVendeurPro").addEventListener("change",funct
     if(prev)prev.style.display=cur>0?"":"none";
     const onLast=cur>=L;
     if(next)next.style.display=onLast?"none":"";
-    if(estim)estim.style.display=onLast?"":"none";
+    refreshCta(onLast);
     if(scroll){const c=allSteps[0].closest('.card');if(c&&c.scrollIntoView)c.scrollIntoView({behavior:(window.matchMedia&&matchMedia("(prefers-reduced-motion:reduce)").matches)?"auto":"smooth",block:"start"});}
+  }
+  /* ===== R16 : le verdict des que le minimum vital est saisi =====
+   * Minimum requis par le moteur : une adresse + une surface. Tout le reste
+   * (energie, etat, details) n'est que de l'AFFINAGE. Rien ne justifiait de
+   * retenir l'estimation derriere un ecran supplementaire.
+   * L'etape suivante reste accessible : on ajoute un chemin, on n'en retire aucun. */
+  function minOK(){
+    const a=$("adresse"),adr=!!(a&&(a.value||"").trim());
+    const s=state.type==="terrain"?numv("terrain"):numv("surface");
+    return adr&&s>0;
+  }
+  function refreshCta(onLast){
+    if(!estim)return;
+    if(onLast===undefined)onLast=cur>=last();
+    const early=!onLast&&minOK();
+    estim.style.display=(onLast||early)?"":"none";
+    estim.textContent=onLast?"Estimer le bien":"Estimer maintenant";
+    const h=$("wEarlyHint");
+    if(h){
+      h.style.display=early?"":"none";
+      h.textContent="Vous avez le minimum n\u00e9cessaire : vous pouvez estimer d\u00e8s maintenant. "+
+        "L\u2019\u00e9tape suivante affine le r\u00e9sultat (\u00e9nergie, \u00e9tat, d\u00e9tails) sans \u00eatre obligatoire.";
+    }
   }
   function flag(m){const e=$("formErr");if(e){e.textContent=m;e.classList.add("show");}}
   function clr(){const e=$("formErr");if(e)e.classList.remove("show");}
@@ -6650,6 +6693,15 @@ if($("terrainVendeurPro"))$("terrainVendeurPro").addEventListener("change",funct
   if(next)next.addEventListener('click',()=>{if(!valid())return;clr();cur++;show(true);});
   if(prev)prev.addEventListener('click',()=>{clr();cur=Math.max(0,cur-1);show(true);});
   const segT=$("segType");if(segT)segT.addEventListener('click',()=>setTimeout(()=>{updateTypeUI();show(false);},0));
+  /* R16 : reevaluation du CTA pendant la frappe (et non au seul changement d'etape),
+   * sinon le bouton n'apparaitrait qu'apres une navigation. Handler leger : il ne
+   * touche que la visibilite du bouton, jamais les etapes ni les calculs. */
+  ["adresse","surface","terrain"].forEach(function(id){
+    const e=$(id);
+    if(!e)return;
+    e.addEventListener("input",function(){refreshCta();});
+    e.addEventListener("change",function(){refreshCta();});
+  });
   window.__wizShow=function(scroll){
     // Permet de forcer l'etape depuis l'exterieur via window.__wizCur
     if(window.__wizCur!=null){cur=Math.min(window.__wizCur,last());window.__wizCur=null;}
