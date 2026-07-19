@@ -2113,6 +2113,31 @@ const TERR_SURF_MIN=150, TERR_SURF_MAX=5000, TERR_EPTB_FLOOR=0.25;
  * mode debug et le filtre ne s'applique jamais s'il vide le corpus. */
 const TERR_PPM_REL_FLOOR=0.25;
 const TERR_MIN_HOMOG=10;
+/* R27 : rapport minimal entre la mediane du groupe haut et celle du groupe bas
+ * pour conclure a DEUX marches distincts. Les terrains a batir et les terres
+ * agricoles different typiquement d'un facteur 5 a 40 ; en deca de 2,5 on est
+ * plus vraisemblablement devant un marche unique avec sa dispersion normale.
+ * CHOIX DE MODELISATION, volontairement exigeant pour ne jamais scinder a tort. */
+const TERR_BIMODAL_RATIO=2.5;
+
+/** Seuil de separation optimal d'une serie 1D (methode d'Otsu : maximisation de la
+ *  variance inter-classe). Retourne l'INDEX de fin du groupe bas, ou null.
+ *  @param {number[]} v serie triee par ordre croissant */
+function _otsuSplit(v){
+  const n=v.length;
+  if(n<8)return null;
+  let sumAll=0;for(let i=0;i<n;i++)sumAll+=v[i];
+  let sumL=0,best=null,bestVar=-1;
+  for(let i=0;i<n-1;i++){
+    sumL+=v[i];
+    const nL=i+1,nR=n-nL;
+    const wL=nL/n,wR=nR/n;
+    const mL=sumL/nL,mR=(sumAll-sumL)/nR;
+    const d=mL-mR,varInter=wL*wR*d*d;
+    if(varInter>bestVar){bestVar=varInter;best=i;}
+  }
+  return best;
+}
 
 /** Sous-corpus homogene "terrains a batir". Retourne aussi le mode retenu pour
  *  que l'interface puisse l'expliquer. Ne filtre jamais jusqu'a l'inexploitable. */
@@ -2122,6 +2147,23 @@ function terrainHomogeneous(pts){
   const ab=ok.filter(p=>p._ab===true);
   if(ab.length>=TERR_MIN_HOMOG)
     return{pts:ab,mode:"libell\u00e9 \u00e0 b\u00e2tir",removed:ok.length-ab.length,cut:null};
+  /* R27 : separation bimodale AVANT le plancher relatif. Contrairement a lui, elle
+   * ne presuppose pas que la mediane appartienne au marche des terrains a batir,
+   * et fonctionne donc meme quand les parcelles agricoles sont majoritaires. */
+  {
+    const logs=ok.map(p=>Math.log(p.ppm)).sort((x,y)=>x-y);
+    const idx=_otsuSplit(logs);
+    if(idx!=null&&idx<logs.length-1){
+      const cutB=Math.exp((logs[idx]+logs[idx+1])/2);
+      const bas=ok.filter(p=>p.ppm<cutB),haut=ok.filter(p=>p.ppm>=cutB);
+      if(haut.length>=TERR_MIN_HOMOG&&bas.length>0){
+        const medB=median(bas.map(p=>p.ppm).sort((x,y)=>x-y));
+        const medH=median(haut.map(p=>p.ppm).sort((x,y)=>x-y));
+        if(medB>0&&medH/medB>=TERR_BIMODAL_RATIO)
+          return{pts:haut,mode:"s\u00e9paration bimodale",removed:bas.length,cut:Math.round(cutB)};
+      }
+    }
+  }
   const sorted=ok.map(p=>p.ppm).sort((x,y)=>x-y);
   const med=sorted[sorted.length>>1];
   if(!(med>0))return{pts:ok,mode:"m\u00e9diane indisponible",removed:0,cut:null};
