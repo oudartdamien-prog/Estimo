@@ -251,6 +251,9 @@
 #results.simple .expert-only{display:none!important}
 #results.simple .invest-only{display:none!important}
 #results.invest .expert-only{display:none!important}
+/* FIX3 : une carte marquee "invest-only" DOIT rester visible en mode investisseur.
+   Specificite superieure (2 classes) a la regle ci-dessus. */
+#results.invest .expert-only.invest-only{display:block!important}
 #decisionCard{background:linear-gradient(180deg,#fff,#fbfcfd);border:1px solid var(--line)}
 .dash-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:6px}
 @media(max-width:520px){.dash-grid{grid-template-columns:1fr 1fr}}
@@ -514,7 +517,7 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
         </div>
       </div>
       <div id="cadastreNote" style="display:none;font-size:11.5px;color:var(--ink-soft);margin-top:5px;padding:5px 9px;background:var(--bg);border-radius:7px;line-height:1.5"></div>
-    </div></div>
+    </div>
 
     <div class="field" id="wrapPieces"><label class="lbl">Nombre de pi&#232;ces</label>
       <div class="seg" id="segPieces" role="group" aria-label="Nombre de pièces"><button data-v="1" aria-label="1 pièce">1</button><button data-v="2" aria-label="2 pièces">2</button><button data-v="3" class="on" aria-label="3 pièces">3</button><button data-v="4" aria-label="4 pièces">4</button><button data-v="5" aria-label="5 pièces">5</button><button data-v="6" aria-label="6 pièces ou plus">6+</button></div>
@@ -1230,18 +1233,24 @@ function resetForm(){
   window.scrollTo({top:0,behavior:"smooth"});
   const ad=$("adresse");if(ad)ad.focus();
 }
+/* FIX1 : masquage/affichage defensif d'un champ du formulaire.
+ * Un seul element absent ne doit jamais interrompre updateTypeUI : sinon les champs
+ * suivants (dont "Nombre de pieces") restent affiches en mode terrain. */
+function _sd(id,v){const e=$(id);if(e)e.style.display=v;}
 function updateTypeUI(){const t=state.type,isTerrain=(t==="terrain");
-  _clearIrrelevantFields(); // POINT2 : nettoyer les champs devenus non pertinents
-  $("wrapTerrain").style.display=(t==="maison"||t==="terrain")?"":"none";
-  const _wv=$("wrapViab");if(_wv)_wv.style.display=isTerrain?"":"none";
-  const _wvp=$("wrapVendeurPro");if(_wvp)_wvp.style.display=isTerrain?"":"none";
-  if(isTerrain)updateViabCost();
-  $("wrapSurface").style.display=isTerrain?"none":"";
-  ["wrapPieces","wrapEtat","wrapDpe","accCarac"].forEach(id=>$(id).style.display=isTerrain?"none":"");
-  $("wrapEtage").style.display=(t==="appartement")?"":"none";
-  $("wrapJardin").style.display=(t==="appartement")?"none":"";
-  $("wrapMaison").style.display=(t==="maison")?"":"none";
-  $("wrapNeuf").style.display=isTerrain?"none":"";
+  // Le nettoyage des champs ne doit pas pouvoir bloquer la mise a jour de l'affichage.
+  try{ _clearIrrelevantFields(); }catch(e){ console.warn("_clearIrrelevantFields:",e); }
+  _sd("wrapTerrain",(t==="maison"||t==="terrain")?"":"none");
+  _sd("wrapViab",isTerrain?"":"none");
+  _sd("wrapVendeurPro",isTerrain?"":"none");
+  if(isTerrain){try{updateViabCost();}catch(e){console.warn("updateViabCost:",e);}}
+  _sd("wrapSurface",isTerrain?"none":"");
+  // Pieces, etat, DPE et caracteristiques n'ont aucun sens sur du foncier nu.
+  ["wrapPieces","wrapEtat","wrapDpe","accCarac"].forEach(id=>_sd(id,isTerrain?"none":""));
+  _sd("wrapEtage",(t==="appartement")?"":"none");
+  _sd("wrapJardin",(t==="appartement")?"none":"");
+  _sd("wrapMaison",(t==="maison")?"":"none");
+  _sd("wrapNeuf",isTerrain?"none":"");
   // Terrain : masquer les sections exclusivement locatives (loyer, fiscalite LMNP, financement locatif)
   // Conserver : revente (utile pour projeter la valeur du projet), travaux (viabilisation), achat-revente
   ["rentalCard","proKpiCard","fiscalCard","dispositifCard","ownVsRentCard",
@@ -1867,20 +1876,91 @@ function parsePts(arr,type){
   });
   return {pts, ptsNeuf, nNeuf:ptsNeuf.length, nTotal:pts.length+ptsNeuf.length, natSeen};
 }
-function parsePtsTerrain(arr){
-  const pts=[];
+/* ===== FIX2 : le corpus terrain doit contenir UNIQUEMENT du terrain a batir =====
+ * Probleme : DVF melange dans les ventes sans bati les parcelles agricoles, bois,
+ * pres, landes et terrains de loisir (1-30 EUR/m2) avec les vrais lots a batir
+ * (80-400 EUR/m2). Melangees, la mediane s'effondre.
+ *
+ * Trois garde-fous, du plus fiable au plus heuristique :
+ *  1. DETECTION POSITIVE sur libtypbien/codtypbien : si le corpus contient assez de
+ *     parcelles explicitement identifiees "a batir", on n'utilise QUE celles-la.
+ *     Les valeurs reelles de ces champs n'ayant pas pu etre verifiees hors production,
+ *     elles sont journalisees en debug (dbg) pour calage ulterieur : AUCUN code n'est
+ *     invente, la detection echoue proprement si le libelle ne correspond pas.
+ *  2. PLANCHER DE PRIX relatif ancre sur EPTB_DEP (bareme SDES "prix des terrains a
+ *     batir", deja present dans l'outil) : on ecarte ce qui vaut moins du quart du
+ *     prix departemental de reference. Le foncier agricole vaut 1-10 % d'un lot a
+ *     batir : le seuil separe les deux populations sans exclure un lot bon marche.
+ *  3. FENETRE DE SURFACE 150-5000 m2 : heuristique (et non donnee sourcee) encadrant
+ *     un lot constructible. Mediane nationale ~900 m2 (EPTB/SDES) ; 5000 m2 = ~5x la
+ *     mediane, plafond volontairement genereux.
+ * Les points ecartes sont comptes et journalises. */
+const TERR_SURF_MIN=150, TERR_SURF_MAX=5000, TERR_EPTB_FLOOR=0.25;
+function _terrLabel(o){
+  return String(recVal(o,["libtypbien","libtyploc","type_local","nature_culture","natcult"])||"");
+}
+// Detection positive d'un terrain a batir a partir du libelle/code (best effort).
+function _isTerrainABatir(lbl,code){
+  const s=(lbl||"").toLowerCase();
+  if(/\u00e0 b\u00e2tir|a batir|\u00e0 batir|a b\u00e2tir|constructible|\bTAB\b/i.test(lbl||""))return true;
+  if(/terrain.*b[a\u00e2]tir/.test(s))return true;
+  return false;
+}
+// Exclusion explicite des natures non constructibles (best effort, non bloquant).
+function _isTerrainNonConstructible(lbl){
+  const s=(lbl||"").toLowerCase();
+  return /agricol|\bterre\b|\bterres\b|\bpr[e\u00e9]\b|\bpr[e\u00e9]s\b|\bbois\b|land[e]?s?\b|vigne|verger|friche|carri[e\u00e8]re|\b[e\u00e9]tang\b|p[a\u00e2]ture|taillis|futaie/.test(s);
+}
+/* Code departement depuis le code INSEE (2A/2B pour la Corse). */
+function _depOf(coord){
+  const i=String((coord&&coord.insee)||"");
+  if(!i)return null;
+  if(/^2[AB]/i.test(i))return i.slice(0,2).toUpperCase();
+  return i.length>=3?i.slice(0,2):null;
+}
+function parsePtsTerrain(arr,dep){
+  const raw=[],seen={};
   arr.forEach(o=>{
     const v=Number(recVal(o,["valeurfonc","valeur_fonciere","valeur"]));
     const bati=Number(recVal(o,["sbati","surface_reelle_bati","surface_bati","sbatapt","sbatmai"]))||0;
     const st=Number(recVal(o,["sterr","surface_terrain","stier","surfterr","contenance"]))||0;
-    const typ=String(recVal(o,["libtypbien","libtyploc","type_local","nature_culture","natcult"])||"").toLowerCase();
+    const lbl=_terrLabel(o);
+    const code=String(recVal(o,["codtypbien"])||"");
+    const typ=lbl.toLowerCase();
     if(!v||!st||st<50)return;
-    if(bati>8)return; // exclut les ventes avec du bati -> on veut du terrain nu / a batir
+    if(bati>8)return; // exclut les ventes avec du bati -> on veut du terrain nu
     if(typ&&/appartement|maison|d\u00e9pendance|dependance|local|commerc/.test(typ))return;
-    const ppm=v/st;if(ppm<5||ppm>3000)return; // fourchette plausible pour du foncier
-    pts.push({ppm,surf:st,price:v,rooms:null,date:recVal(o,["datemut","date_mutation"]),land:true});
+    const ppm=v/st;if(ppm<5||ppm>3000)return; // borne large, affinee ensuite
+    const key=(code||"?")+"|"+(lbl||"?");
+    seen[key]=(seen[key]||0)+1;
+    raw.push({ppm,surf:st,price:v,rooms:null,date:recVal(o,["datemut","date_mutation"]),land:true,
+              _lbl:lbl,_code:code,_ab:_isTerrainABatir(lbl,code),_nc:_isTerrainNonConstructible(lbl)});
   });
-  return pts;
+  if(typeof DEBUG!=="undefined"&&DEBUG&&typeof dbg==="function"){
+    const inv=Object.keys(seen).sort((a,b)=>seen[b]-seen[a]).slice(0,12).map(k=>k+" x"+seen[k]).join(" | ");
+    dbg("Terrain - codtypbien|libtypbien observes : "+(inv||"aucun"));
+  }
+  const strip=a=>a.map(p=>({ppm:p.ppm,surf:p.surf,price:p.price,rooms:null,date:p.date,land:true}));
+  // 1. Detection positive : si assez de lots explicitement "a batir", on n'utilise qu'eux.
+  const ab=raw.filter(p=>p._ab);
+  if(ab.length>=10){
+    if(typeof DEBUG!=="undefined"&&DEBUG&&typeof dbg==="function")
+      dbg("Terrain - filtre A BATIR explicite : "+ab.length+"/"+raw.length+" ventes retenues");
+    return strip(ab);
+  }
+  // 2+3. Repli heuristique : exclusion des natures non constructibles, fenetre de
+  //      surface, plancher de prix ancre sur le bareme departemental EPTB/SDES.
+  const eptb=(dep&&typeof EPTB_DEP!=="undefined"&&EPTB_DEP[dep]!=null)?EPTB_DEP[dep]:null;
+  const floor=eptb!=null?Math.max(5,eptb*TERR_EPTB_FLOOR):5;
+  let kept=raw.filter(p=>!p._nc&&p.surf>=TERR_SURF_MIN&&p.surf<=TERR_SURF_MAX&&p.ppm>=floor);
+  // Garde-fou anti-corpus-vide : si le filtre est trop mordant, on relache le plancher
+  // de prix (le plus incertain) avant de relacher la surface.
+  if(kept.length<8)kept=raw.filter(p=>!p._nc&&p.surf>=TERR_SURF_MIN&&p.surf<=TERR_SURF_MAX);
+  if(kept.length<8)kept=raw.filter(p=>!p._nc);
+  if(kept.length<8)kept=raw;
+  if(typeof DEBUG!=="undefined"&&DEBUG&&typeof dbg==="function")
+    dbg("Terrain - filtre heuristique : "+kept.length+"/"+raw.length+" ventes retenues (plancher "+Math.round(floor)+" EUR/m2"+(eptb!=null?", EPTB dep "+dep+"="+eptb:", EPTB indisponible")+", surface "+TERR_SURF_MIN+"-"+TERR_SURF_MAX+" m2)");
+  return strip(kept);
 }
 /* ===== G : Prix median DVF communal — graine dynamique pour baseSqm() =====
  * Interroge l’API Cerema sur la commune entiere et calcule le median /m2
@@ -1911,6 +1991,70 @@ async function fetchCommuneMedian(insee,type){
     return result;
   }catch(_){return null;}
 }
+/* ===== R19 : PRECISION GEOGRAPHIQUE DES COMPARABLES =====
+ * Constat d'audit : le rayon DVF du bati etait FIXE a ~1,1 km et la distance
+ * n'intervenait NULLE PART dans la ponderation. En tissu urbain dense, 1,1 km
+ * traverse plusieurs sous-marches dont le prix au m2 peut differer de 30 a 50 %.
+ * Deux ventes situees a 50 m et a 1,1 km pesaient donc identiquement.
+ *
+ * Correction en deux volets, sans aucun appel reseau supplementaire :
+ *   A) _narrowBbox   : resserrement LOCAL du rayon en exploitant les coordonnees
+ *                      deja portees par chaque vente (champs lat/lon de parsePts).
+ *   B) compDistFactor: facteur de proximite applique au POIDS des comparables.
+ */
+
+/* --- A) Resserrement local du rayon ---------------------------------------
+ * Regles de non-regression :
+ *  - on ne resserre QUE si le corpus initial est dense (>= NARROW_TRIGGER ventes) ;
+ *  - le rayon reduit doit conserver au moins NARROW_MIN ventes, seuil tres
+ *    superieur au minimum d'exploitation (12) ET suffisant pour que la bande de
+ *    surface et le backtest local (>= 25 ventes) restent alimentes ;
+ *  - si les coordonnees sont trop lacunaires, on ne touche a rien ;
+ *  - ce mecanisme ne peut JAMAIS elargir le rayon. */
+const NARROW_RADII=[0.35,0.70];  // km testes, du plus fin au plus large
+const NARROW_TRIGGER=100;        // densite minimale du corpus initial
+const NARROW_MIN=50;             // ventes minimales exigees apres resserrement
+const NARROW_GEO_RATIO=0.70;     // part minimale de ventes geolocalisees
+
+function _narrowBbox(pts,coord,curRadiusKm){
+  if(!pts||pts.length<NARROW_TRIGGER)return null;
+  if(!coord||coord.lat==null||coord.lon==null)return null;
+  const geo=pts.filter(p=>p.lat!=null&&p.lon!=null&&isFinite(p.lat)&&isFinite(p.lon));
+  if(geo.length<NARROW_MIN||geo.length/pts.length<NARROW_GEO_RATIO)return null;
+  const withD=[];
+  geo.forEach(p=>{const d=haversineKm(coord.lat,coord.lon,p.lat,p.lon);if(isFinite(d)&&d>=0)withD.push({p:p,d:d});});
+  for(let i=0;i<NARROW_RADII.length;i++){
+    const r=NARROW_RADII[i];
+    if(r>=curRadiusKm)break;               // jamais d'elargissement par ce biais
+    const sub=withD.filter(x=>x.d<=r);
+    if(sub.length>=NARROW_MIN)return{pts:sub.map(x=>x.p),radiusKm:r};
+  }
+  return null;
+}
+
+/* --- B) Facteur de proximite ----------------------------------------------
+ * MULTIPLICATIF, borne [COMP_DIST_FLOOR ; 1], NEUTRE (=1) des qu'une coordonnee
+ * manque : aucune vente n'est jamais exclue par ce facteur, seule sa
+ * contribution a la moyenne ponderee est modulee.
+ * Reperes : 0 m -> 1,00 | 350 m -> 0,59 | 700 m -> 0,41 | 1,1 km -> 0,32 | 2 km -> 0,26
+ * Calibrage : un premier reglage doux (tau 0,7 km / plancher 0,55) ne deplacait
+ * l'estimation que de 2,5 % entre deux sous-marches ecartes de 40 % au banc d'essai
+ * -- c'est-a-dire un effet cosmetique. Le reglage retenu donne un rapport de poids
+ * d'environ 3,2 entre une vente mitoyenne et une vente a 1,1 km, ce qui correspond
+ * a la raideur reelle des gradients de prix intra-urbains. CHOIX DE MODELISATION
+ * EXPLICITE, a valider par le backtest du prix final (reco n2) : si le biais signe
+ * se degrade, tau est le premier parametre a rouvrir. */
+const COMP_DIST_TAU=0.45;        // km : constante de decroissance
+const COMP_DIST_FLOOR=0.25;      // poids plancher : aucune vente n'est jamais exclue
+
+function compDistFactor(p,ref){
+  if(!p||!ref)return 1;
+  if(ref.lat==null||ref.lon==null||p.lat==null||p.lon==null)return 1;
+  const d=haversineKm(ref.lat,ref.lon,p.lat,p.lon);
+  if(!isFinite(d)||d<0)return 1;
+  return COMP_DIST_FLOOR+(1-COMP_DIST_FLOOR)*Math.exp(-d/COMP_DIST_TAU);
+}
+
 async function fetchDvf(coord,type){
   if(!coord||!coord.insee)return {pts:null,status:"no-conn"};
   // Fix14 — cache resultat DVF : garantit la coherence entre consultations successives
@@ -1941,7 +2085,11 @@ async function fetchDvf(coord,type){
      * Pour le bati, le tableau ne contient qu'un seul rayon => comportement STRICTEMENT
      * identique a la version precedente (aucune regression). */
     const _isTerr=(type==="terrain");
-    const _radii=_isTerr?[0.0099,0.0225,0.0450]:[0.0099];
+    /* R19 : le bati dispose desormais d'un rayon de SECOURS a ~2 km. Auparavant,
+     * moins de 12 ventes a 1,1 km basculait directement sur le scope COMMUNE, qui
+     * melange des quartiers heterogenes (le defaut que Fix15 cherchait a corriger).
+     * Un rayon de 2 km reste infiniment plus homogene qu'une commune entiere. */
+    const _radii=_isTerr?[0.0099,0.0225,0.0450]:[0.0099,0.0180];
     const _minPts=_isTerr?8:12;
     let bboxAnswered=false;
     for(let _ri=0;_ri<_radii.length;_ri++){
@@ -1969,12 +2117,19 @@ async function fetchDvf(coord,type){
           garr=[];more.forEach(m=>{if(m)garr=garr.concat(extractArr(m.json));});
           if(!garr.length)garr=extractArr(g1.json);
         }else garr=extractArr(g1.json);
-        const _gres=type==="terrain"?{pts:parsePtsTerrain(garr),nNeuf:0,nTotal:0,natSeen:false}:parsePts(garr,type);
+        const _gres=type==="terrain"?{pts:parsePtsTerrain(garr,_depOf(coord)),nNeuf:0,nTotal:0,natSeen:false}:parsePts(garr,type);
         if(DEBUG&&garr[0])dbg("Champs mutation API: "+Object.keys(garr[0]).join(", "));
         if(DEBUG&&_gres.pts){const _nr=_gres.pts.filter(p=>p.rooms>0).length;dbg("Pi\u00e8ces renseign\u00e9es: "+_nr+"/"+_gres.pts.length+" ventes");}
         if(DEBUG)dbg("Neuf exclu (libnatmut+vefa+codtypbien): "+_gres.nNeuf+"/"+_gres.nTotal+" ventes");
-        if(DEBUG)dbg(`DVF bbox ~1 km (tentative ${attempt+1}) : `+(gcount||garr.length)+" mutations, "+_gres.pts.length+" anciennes exploitables"+(_gres.nNeuf>0?" ("+_gres.nNeuf+" VEFA exclus)":""));
-        if(_gres.pts.length>=_minPts)return _storeAndReturn({pts:_gres.pts,ptsNeuf:_gres.ptsNeuf||[],nNeuf:_gres.nNeuf,nTotal:_gres.nTotal,natSeen:_gres.natSeen,status:"ok",scope:"bbox",radiusKm:_radKm});
+        if(DEBUG)dbg(`DVF bbox ~${_radKm} km (tentative ${attempt+1}) : `+(gcount||garr.length)+" mutations, "+_gres.pts.length+" anciennes exploitables"+(_gres.nNeuf>0?" ("+_gres.nNeuf+" VEFA exclus)":""));
+        if(_gres.pts.length>=_minPts){
+          /* R19 : resserrement local du rayon (0 appel reseau). Le foncier en est
+           * exclu : ses ventes sont deja rares, les resserrer serait contre-productif. */
+          const _nar=_isTerr?null:_narrowBbox(_gres.pts,coord,_radKm);
+          const _fPts=_nar?_nar.pts:_gres.pts,_fRad=_nar?_nar.radiusKm:_radKm;
+          if(DEBUG&&_nar)dbg("DVF R19 affinage local : rayon "+_radKm+" km -> "+_fRad+" km ("+_gres.pts.length+" -> "+_fPts.length+" ventes, aucun appel reseau)");
+          return _storeAndReturn({pts:_fPts,ptsNeuf:_gres.ptsNeuf||[],nNeuf:_gres.nNeuf,nTotal:_gres.nTotal,natSeen:_gres.natSeen,status:"ok",scope:"bbox",radiusKm:_fRad,narrowed:!!_nar,nBeforeNarrow:_gres.pts.length});
+        }
         if(DEBUG)dbg("DVF bbox r="+_radKm+" km : <"+_minPts+" ventes exploitables malgre reponse valide"+(_ri<_radii.length-1?" -> elargissement du rayon":" -> repli commune (zone reellement peu dense)"));
         break;
       }catch(_){if(DEBUG)dbg(`DVF bbox tentative ${attempt+1}: exception -> `+_);bboxAnswered=false;}
@@ -2008,7 +2163,7 @@ async function fetchDvf(coord,type){
     }
     if(!arr.length)arr=extractArr(r1.json);
   }else arr=extractArr(r1.json);
-  const _res=type==="terrain"?{pts:parsePtsTerrain(arr),nNeuf:0,nTotal:0,natSeen:false}:parsePts(arr,type);
+  const _res=type==="terrain"?{pts:parsePtsTerrain(arr,_depOf(coord)),nNeuf:0,nTotal:0,natSeen:false}:parsePts(arr,type);
   if(DEBUG)dbg("Ventes "+type+" anciennes exploitables: "+_res.pts.length+(_res.nNeuf>0?" ("+_res.nNeuf+" VEFA exclus)":""));
   const _commRes=_res.pts.length>0?{pts:_res.pts,ptsNeuf:_res.ptsNeuf||[],nNeuf:_res.nNeuf,nTotal:_res.nTotal,natSeen:_res.natSeen,status:"ok",scope:"commune"}:{pts:null,status:"no-data"};
   return _storeAndReturn(_commRes);
@@ -2017,21 +2172,30 @@ async function fetchDvf(coord,type){
 /* ===== Estimation ===== */
 /* ===== Vague 3 : moteur de scoring multicritere (base ponderee par similarite + indice de confiance) ===== */
 // ===== Vague 4 : moteurs d'estimation independants combines par confiance =====
-function estimationEngines(pts,surf,stats){
+function estimationEngines(pts,surf,stats,refPt,perfSample){
   const year=new Date().getFullYear();
   const clean=(pts||[]).filter(p=>p.surf>0&&p.ppm>0);
   if(clean.length<3||!stats)return{base:stats?Math.round(stats.med):null,engines:[],nEff:0,top:[]};
   const engines=[];
   const score=p=>{const sr=Math.log((p.surf||surf)/surf);const ss=Math.exp(-(sr*sr)/(2*0.20*0.20));const age=Math.max(0,year-(p.date?+String(p.date).slice(0,4):year));const rs=Math.exp(-age/4.5);return 100*(0.55*ss+0.35*rs+0.10);};
-  const scored=clean.map(p=>({p,s:score(p)})).sort((a,b)=>b.s-a.s);
+  /* R19 : le score de SELECTION (seuil 70) reste STRICTEMENT inchange, donc la
+   * population de comparables retenue est identique a la version precedente.
+   * Seul le POIDS de chaque vente dans la moyenne ponderee est module par la
+   * proximite geographique. Le tri integre la distance afin que le repli
+   * "30 % des mieux scores" privilegie les ventes proches. */
+  /* R20 : refPt permet au backtest de se placer du point de vue de la vente testee.
+   * Absent (production, 3 arguments) -> comportement strictement inchange. */
+  const _ref=(refPt!==undefined&&refPt!==null)?refPt:((typeof state!=="undefined"&&state.coord)?state.coord:null);
+  const scored=clean.map(p=>({p,s:score(p),fd:compDistFactor(p,_ref)})).sort((a,b)=>(b.s*b.fd)-(a.s*a.fd));
   const keep=scored.filter(x=>x.s>=70),used=keep.length>=5?keep:scored.slice(0,Math.max(5,Math.ceil(scored.length*0.3)));
-  let sw=0,swp=0,sw2=0;used.forEach(x=>{const w=x.s/100;sw+=w;swp+=w*x.p.ppm;sw2+=w*w;});
+  let sw=0,swp=0,sw2=0;used.forEach(x=>{const w=(x.s/100)*x.fd;sw+=w;swp+=w*x.p.ppm;sw2+=w*w;});
   const e1=sw>0?swp/sw:stats.med,nEff=sw>0?(sw*sw)/sw2:0;
   engines.push({key:"comp",label:"Comparables scor\u00e9s",ppm:Math.round(e1),w:Math.min(1,nEff/14),detail:keep.length+" ventes \u226570/100"});
   let n=clean.length,sx=0,sy=0,sxx=0,sxy=0;clean.forEach(p=>{const x=p.surf,y=p.price||p.ppm*p.surf;sx+=x;sy+=y;sxx+=x*x;sxy+=x*y;});
   const den=n*sxx-sx*sx;let slopeReg=null,intcReg=null;
   if(den!==0){slopeReg=(n*sxy-sx*sy)/den;intcReg=(sy-slopeReg*sx)/n;}
-  const withRooms=clean.filter(p=>p.rooms>0),subjPcs=+state.pieces||0;
+  // R20 : en backtest, la typologie de reference est celle de la vente testee.
+  const withRooms=clean.filter(p=>p.rooms>0),subjPcs=(refPt&&refPt.rooms>0)?refPt.rooms:(+state.pieces||0);
   let regDone=false;
   if(subjPcs>0&&withRooms.length>=20&&den!==0){
     let S1=0,Sx=0,Sr=0,Sxx=0,Srr=0,Sxr=0,Sy=0,Sxy2=0,Sry=0;
@@ -2055,7 +2219,7 @@ function estimationEngines(pts,surf,stats){
   }
   if(!regDone&&den!==0&&slopeReg!=null){const pred=slopeReg*surf+intcReg;if(pred>0){const ybar=sy/n;let ssr=0,sst=0;clean.forEach(p=>{const y=p.price||p.ppm*p.surf,yh=slopeReg*p.surf+intcReg;ssr+=(y-yh)*(y-yh);sst+=(y-ybar)*(y-ybar);});const r2=sst>0?Math.max(0,1-ssr/sst):0;engines.push({key:"reg",label:"R\u00e9gression statistique",ppm:Math.round(pred/surf),w:r2*Math.min(1,n/30),detail:"R\u00b2 "+r2.toFixed(2)});}}
   engines.push({key:"rec",label:"M\u00e9diane (r\u00e9cence)",ppm:Math.round(stats.west||stats.med),w:0.5,detail:"robuste"});
-  const perf=enginePerf(clean,surf,slopeReg,intcReg);
+  const perf=enginePerf(clean,surf,slopeReg,intcReg,perfSample);
   if(perf){
     engines.forEach(e=>{const mape=perf[e.key];
       if(mape!=null){
@@ -2068,11 +2232,14 @@ function estimationEngines(pts,surf,stats){
   const base=W>0?Math.round(B/W):Math.round(stats.med);
   return{base,engines,nEff,top:scored.slice(0,6).map(x=>Object.assign({},x.p,{score:Math.round(x.s)})),perf:perf||null};
 }
-function enginePerf(clean,subjSurf,slope,intc){
+function enginePerf(clean,subjSurf,slope,intc,sampleN){
   if(!clean||clean.length<20)return null;
   const year=new Date().getFullYear();
   const yr=p=>p.date?+String(p.date).slice(0,4):year;
-  const sample=[...clean].sort((a,b)=>yr(b)-yr(a)).slice(0,80);
+  /* R20 : taille d'echantillon parametrable. Defaut 80 (production, inchange).
+   * Le backtest la reduit : il execute deja 40 leave-one-out imbriques, le cout
+   * serait quadratique. Une mediane d'erreurs converge des ~30 observations. */
+  const sample=[...clean].sort((a,b)=>yr(b)-yr(a)).slice(0,(sampleN>0?sampleN:80));
   const eComp=[],eReg=[],eRec=[];
   sample.forEach(t=>{
     const others=clean.filter(p=>p!==t);
@@ -2106,7 +2273,10 @@ function backtestLocal(pts,subjSurf){
       const sr=Math.log(p.surf/t.surf),ss=Math.exp(-(sr*sr)/(2*0.20*0.20));
       const rs=Math.exp(-Math.max(0,year-yr(p))/4.5);
       const s=0.55*ss+0.35*rs+0.10;
-      if(s>=0.45){sw+=s;swp+=s*p.ppm;}
+      /* R19 : le backtest applique EXACTEMENT la meme ponderation de distance que
+       * le moteur de production (reference = la vente cible t). Indispensable :
+       * sans cela il mesurerait l'erreur d'un modele different de celui utilise. */
+      if(s>=0.45){const w=s*compDistFactor(p,t);sw+=w;swp+=w*p.ppm;}
     });
     let pred=sw>0?swp/sw:0;
     if(!(pred>0)&&den){const pv=slope*t.surf+intc;if(pv>0)pred=pv/t.surf;}
@@ -2117,6 +2287,119 @@ function backtestLocal(pts,subjSurf){
   const q=f=>errs[Math.min(errs.length-1,Math.floor(f*errs.length))];
   return{mdape:+(q(0.5)*100).toFixed(1),p80:+(q(0.8)*100).toFixed(1),n:errs.length};
 }
+/* ===== R20 : BACKTEST DU PRIX FINAL (biais signe) =====
+ * backtestLocal ne mesurait que le moteur de comparables BRUT : ni l'ancrage
+ * prudent min(), ni la correction VEFA, ni le plafond DVF final, ni la decote de
+ * prudence n'etaient evalues. L'erreur affichee etait donc celle d'un modele que
+ * l'utilisateur ne voit jamais -- l'interface le reconnaissait d'ailleurs
+ * explicitement ("l'erreur reelle du prix final peut etre 1,5x superieure").
+ *
+ * backtestFull rejoue en leave-one-out, sur des ventes REELLES, la chaine de
+ * formation du prix pilotee par le corpus, et separe DEUX lectures :
+ *
+ *  - VALEUR DE MARCHE (reference VENDEUR) : estimateur central, corrige VEFA,
+ *    AUCUNE prudence. Cible : biais signe median proche de 0. Un vendeur a besoin
+ *    d'une valeur JUSTE ; lui servir une valeur prudente reviendrait a lui faire
+ *    brader son bien.
+ *  - PRIX ACQUEREUR (reference ACHETEUR) : ancrage prudent min() + VEFA + plafond
+ *    + decote de prudence. Cible : biais signe NEGATIF et MAITRISE (-3 % a -8 %).
+ *    Un biais quasi nul signifierait que la prudence ne protege pas l'acheteur ;
+ *    un biais tres negatif rendrait l'outil inutilisable en negociation reelle.
+ *
+ * TROIS METRIQUES par chaine :
+ *  - mdape : erreur ABSOLUE mediane -> dispersion (a quel point on se trompe)
+ *  - p80   : 80 % des estimations sont dans cette marge
+ *  - mpe   : erreur SIGNEE mediane -> BIAIS (dans quel sens on se trompe)
+ * Le biais signe est la metrique nouvelle et decisive : c'est la seule qui dise
+ * si la prudence est calibree ou subie.
+ *
+ * LIMITE ASSUMEE ET NON CONTOURNABLE : les ajustements hedoniques (etat, DPE, vue,
+ * exposition, standing) ne sont PAS rejouables, car DVF ne documente aucun de ces
+ * attributs pour les ventes passees. La mesure porte donc sur le NOYAU
+ * GEO-STATISTIQUE. La couverture reste tres superieure a backtestLocal. */
+/* R20b - CALIBRAGE DU BANC, corrige apres mesure :
+ *  - 40 cibles donnaient un ecart-type d'echantillonnage de ~3 a 5 points sur le
+ *    biais median : la mesure etait plus bruitee que l'effet a mesurer. Porte a 80.
+ *  - le corpus est borne a 250 ventes (les plus recentes) : au-dela, le cout
+ *    croit lineairement sans gain de precision, et le calcul bloquait le rendu
+ *    (1 690 ms mesures sur 800 ventes). */
+const BTF_TARGETS=80;      // cibles testees
+const BTF_CORPUS_CAP=250;  // corpus maximal retenu (ventes les plus recentes)
+const BTF_PERF_SAMPLE=30;  // echantillon interne de enginePerf en mode backtest
+const BTF_MIN_CORPUS=45;   // corpus minimal pour qu'un leave-one-out ait du sens
+const BTF_MIN_BAND=12;     // ventes minimales dans la bande de surface d'une cible
+
+/** Formate un pourcentage signe pour l'affichage (+3,2 % / -4,1 %). */
+function _pctSigned(v){return(v>0?"+":"")+String(v).replace(".",",");}
+
+function backtestFull(pts,opts){
+  const clean=(pts||[]).filter(p=>p.surf>0&&p.ppm>0);
+  if(clean.length<BTF_MIN_CORPUS)return null;
+  const o=opts||{};
+  const vf=(o.vefaFactor>0&&o.vefaFactor<=1)?o.vefaFactor:1;
+  const prud=Math.max(0,Math.min(0.15,o.prudence||0));
+  const capHi=o.capHi>1?o.capHi:1.15;
+  const year=new Date().getFullYear(),yr=p=>p.date?+String(p.date).slice(0,4):year;
+  // Cibles = ventes les plus recentes : ce sont elles qui refletent le marche actuel.
+  const byRec=[...clean].sort((a,b)=>yr(b)-yr(a));
+  const pool=byRec.slice(0,BTF_CORPUS_CAP);
+  const targets=pool.slice(0,BTF_TARGETS);
+  const eMarket=[],eBuyer=[];
+  targets.forEach(t=>{
+    const corpus=pool.filter(p=>p!==t);
+    // Fenetre de surface IDENTIQUE a celle de fetchAllData (meme regle d'elargissement)
+    let band=corpus.filter(p=>p.surf>=t.surf*0.55&&p.surf<=t.surf*1.7);
+    if(band.length<25){
+      const b2=corpus.filter(p=>p.surf>=t.surf*0.40&&p.surf<=t.surf*2.30);
+      if(b2.length>band.length+4)band=b2;
+    }
+    if(band.length<BTF_MIN_BAND)return;
+    let st=null;try{st=dvfStats(band,t.surf,t.rooms||0);}catch(_){return;}
+    if(!st||!st.clean||!st.clean.length)return;
+    let eng=null;try{eng=estimationEngines(st.clean,t.surf,st,t,BTF_PERF_SAMPLE);}catch(_){}
+    const central=(eng&&eng.base>0)?eng.base:(st.west||st.med);
+    if(!(central>0))return;
+    // --- Chaine VENDEUR : estimateur central corrige VEFA, sans prudence -------
+    const mkt=central*vf;
+    // --- Chaine ACQUEREUR : ancrage prudent min() sur toutes les ancres dispo ---
+    /* R22 : la chaine acquereur du backtest doit rejouer EXACTEMENT l'ancrage de
+     * production, sinon on remesurerait un modele different (l'erreur corrigee en R20).
+     * Mode arbitre par defaut ; min() historique conserve si arbitrate===false. */
+    let buy;
+    if(o.arbitrate===false){
+      const anchors=[central,st.westSurfP40,st.westSurfStrict,st.westGRooms,st.west]
+        .filter(v=>typeof v==="number"&&isFinite(v)&&v>0);
+      buy=Math.min.apply(null,anchors)*vf;
+    }else{
+      const _a=_arbitrateAnchor({rooms:st.westGRooms||0,nRooms:st.typedCount||0,
+        surf:st.westSurfStrict||0,nSurf:st.strictCount||0,mix:central,nMix:st.n||0});
+      buy=(_a>0?_a:central)*vf;
+    }
+    // Plafond DVF final : transcription au m2 de applyFinalDvfCap
+    const _w0=st.west||st.med,_wss=st.westSurfStrict;
+    // R22 : reference de plafond alignee sur le mode d'ancrage effectivement utilise
+    const _refArb=(o.arbitrate===false)?null:_arbitrateAnchor({rooms:st.westGRooms||0,
+      nRooms:st.typedCount||0,surf:st.westSurfStrict||0,nSurf:st.strictCount||0,
+      mix:central,nMix:st.n||0});
+    const refCap=(_refArb>0?_refArb:(st.westGRooms||((_wss&&_wss<_w0)?_wss:_w0)))*vf;
+    if(refCap>0)buy=Math.max(refCap*0.80,Math.min(refCap*capHi,buy));
+    buy=buy*(1-prud);
+    if(mkt>0)eMarket.push((mkt-t.ppm)/t.ppm);
+    if(buy>0)eBuyer.push((buy-t.ppm)/t.ppm);
+  });
+  if(eMarket.length<20||eBuyer.length<20)return null;
+  const stat=a=>{
+    const abs=a.map(Math.abs).sort((x,y)=>x-y),sgn=a.slice().sort((x,y)=>x-y);
+    const q=(arr,f)=>arr[Math.min(arr.length-1,Math.floor(f*arr.length))];
+    return{mdape:+(q(abs,0.5)*100).toFixed(1),p80:+(q(abs,0.8)*100).toFixed(1),mpe:+(q(sgn,0.5)*100).toFixed(1)};
+  };
+  const out={n:eBuyer.length,market:stat(eMarket),buyer:stat(eBuyer)};
+  /* Verdict de calibration : cible acquereur -8 % a -3 %, cible marche -2 % a +2 %. */
+  out.buyerOk=(out.buyer.mpe<=-3&&out.buyer.mpe>=-8);
+  out.marketOk=(Math.abs(out.market.mpe)<=2);
+  return out;
+}
+
 function estimationConfidence(stats,ctx){
   const cl=(v,a,b)=>Math.max(a,Math.min(b,v)),yr=new Date().getFullYear();
   const bc=ctx.baseConf,bcN=bc==="\u00e9lev\u00e9e"?46:bc==="moyenne"?26:10,bcD=bc==="\u00e9lev\u00e9e"?55:bc==="moyenne"?36:16;
@@ -2469,7 +2752,45 @@ function terrainCompteARebours(r){
     perM2Terrain:r.surface>0?Math.round(chargeFonciere/r.surface):null};
 }
 
-function estimate(realBase,realStats){
+/* ===== R22 : ARBITRAGE DES ANCRES (fin de l'empilement) =====
+ * Diagnostic R20/R21 : trois ancres estiment la MEME grandeur (le prix/m2 du bien),
+ * et le code retenait systematiquement la PLUS BASSE via min(). Or min() n'est pas
+ * un estimateur : c'est une statistique d'ordre, dont le biais baissier CROIT
+ * mecaniquement avec le nombre d'ancres et leur dispersion. Empiler min() + P40 +
+ * plafond asymetrique + decote produisait les -10 % mesures en R20, sans que
+ * personne ne pilote la somme.
+ *
+ * On remplace min() par une COMBINAISON PONDEREE PAR LA PRECISION. Chaque ancre
+ * recoit un poids = taille de son echantillon x un coefficient de specificite.
+ * La hierarchie de specificite (typologie > bande de surface > mix toutes
+ * typologies) n'est pas inventee : c'est exactement l'ordre de priorite que le
+ * code affirmait deja par sa cascade `_wgR || (_surfBaseUsed ? ... : realBase)`.
+ * On convertit une priorite BINAIRE en ponderation CONTINUE, ce qui supprime le
+ * biais d'ordre tout en conservant le jugement metier.
+ *
+ * La prudence n'est pas supprimee : elle est DEPLACEE en un point unique, mesure
+ * et pilote (R21-B). Une seule decote explicite remplace quatre decotes implicites.
+ *
+ * GARDE-FOU ABSOLU : ce mode ne s'active QUE si le backtest est disponible, donc
+ * seulement quand l'effet est mesurable et corrigeable. Sans backtest, la cascade
+ * min() historique s'applique a l'identique. */
+const ANCH_W_ROOMS=1.5;  // ancre typologique : la plus specifique, la moins contaminee
+const ANCH_W_SURF=1.0;   // ancre bande de surface +-25 %
+const ANCH_W_MIX=0.6;    // mix toutes typologies : le plus large, le plus heterogene
+
+function _arbitrateAnchor(a){
+  if(!a)return null;
+  const list=[];
+  if(a.rooms>0)list.push([a.rooms,Math.max(1,a.nRooms||15)*ANCH_W_ROOMS]);
+  if(a.surf>0) list.push([a.surf, Math.max(1,a.nSurf||10)*ANCH_W_SURF]);
+  if(a.mix>0)  list.push([a.mix,  Math.max(1,a.nMix||20)*ANCH_W_MIX]);
+  if(!list.length)return null;
+  let sw=0,sv=0;
+  list.forEach(x=>{sw+=x[1];sv+=x[1]*x[0];});
+  return sw>0?Math.round(sv/sw):null;
+}
+
+function estimate(realBase,realStats,btf){
   const city=$("ville").value,cp=$("cp").value,type=state.type;
   const surface=type==="terrain"?numv("terrain"):numv("surface");
   if(type==="terrain")return estimateTerrain(realBase,surface,city,cp,realStats);
@@ -2487,8 +2808,17 @@ function estimate(realBase,realStats){
   const _wssP40=(!_wgR&&type==="appartement"&&(+state.pieces||0)>=3&&realStats&&realStats.westSurfP40)?realStats.westSurfP40:null;
   // P40 < P50 par construction → conservateur ; P40 disponible ssi >10 ventes dans la fenêtre
   const _activeWss=(_wssP40&&_wssP40<(_wss||Infinity))?_wssP40:_wss;
-  const _surfBaseUsed=!!(_activeWss&&_activeWss<realBase);
-  const _effectiveBase=_wgR||(_surfBaseUsed?_activeWss:realBase);
+  /* R22 : mode ARBITRE si et seulement si le backtest est disponible. On n'utilise
+   * alors PLUS le percentile P40 (qui n'etait qu'une injection de prudence dans
+   * l'ancre) : la mediane P50, non biaisee, sert de reference, et la prudence est
+   * appliquee une seule fois en aval, pilotee par sa cible mesuree. */
+  const _arb=(btf&&btf.n>=20&&realBase&&realStats)?_arbitrateAnchor({
+    rooms:realStats.westGRooms||0, nRooms:realStats.typedCount||0,
+    surf:realStats.westSurfStrict||0, nSurf:realStats.strictCount||0,
+    mix:realBase, nMix:realStats.n||0
+  }):null;
+  const _surfBaseUsed=_arb?false:!!(_activeWss&&_activeWss<realBase);
+  const _effectiveBase=_arb||_wgR||(_surfBaseUsed?_activeWss:realBase);
   const {sqm,conf}=_effectiveBase?{sqm:_effectiveBase,conf:"\u00e9lev\u00e9e"}:baseSqm(city,cp,type);
   const ctx=marketCtx(_effectiveBase||realBase);
   const {mult,rows,detail}=coefficients(ctx,realBase,realStats);
@@ -2499,7 +2829,15 @@ function estimate(realBase,realStats){
     const _pLbl=_activeWss===_wssP40?"P"+_pctShown+" adaptatif (biais acqu\u00e9reur \u2014 "+(100-_pctShown)+" % des ventes comparables sont plus ch\u00e8res)":"P50 (m\u00e9diane)";
     rows.push(["Base surface \u00b125 % – "+_pLbl+" : "+eur0(_effectiveBase)+" \u20ac/m\u00b2 (vs mix "+eur0(realBase)+" \u20ac/m\u00b2"+(_g2?", "+_g2+" %":"")+", "+(realStats.strictCount||0)+" ventes)",_effectiveBase/realBase-1]);
   }
-  if(_roomsBaseUsed&&realBase&&realStats.westGRooms){
+  if(_arb){
+    const _gA=Math.round((_arb/realBase-1)*100);
+    const _parts=[];
+    if(realStats.westGRooms>0)_parts.push("typologie "+eur0(realStats.westGRooms)+" \u20ac/m\u00b2 ("+(realStats.typedCount||0)+" ventes)");
+    if(realStats.westSurfStrict>0)_parts.push("surface \u00b125 % "+eur0(realStats.westSurfStrict)+" \u20ac/m\u00b2 ("+(realStats.strictCount||0)+" ventes)");
+    _parts.push("mix moteurs "+eur0(realBase)+" \u20ac/m\u00b2 ("+(realStats.n||0)+" ventes)");
+    rows.push(["Ancre arbitr\u00e9e (pond\u00e9r\u00e9e par la pr\u00e9cision) : "+eur0(_arb)+" \u20ac/m\u00b2"+(_gA?", "+(_gA>0?"+":"")+_gA+" %":"")+" \u2014 "+_parts.join(" \u00b7 ")+". Prudence appliqu\u00e9e une seule fois en aval.",_effectiveBase/realBase-1]);
+  }
+  if(!_arb&&_roomsBaseUsed&&realBase&&realStats.westGRooms){
     const _gap=Math.round((_effectiveBase/realBase-1)*100);
     rows.push(["Base segment\u00e9e "+state.pieces+" pi\u00e8ces"+(realStats.roomsLoose?" (\u00b11 pi\u00e8ce)":"")+" : "+eur0(_effectiveBase)+" \u20ac/m\u00b2 (vs mix toutes typologies "+eur0(realBase)+" \u20ac/m\u00b2"+(_gap?", "+(_gap>0?"+":"")+_gap+" %":"")+", "+(realStats.typedCount||0)+" ventes typ\u00e9es)",_effectiveBase/realBase-1]);
   }
@@ -3567,7 +3905,7 @@ function renderPriceFormation(r){
   const band=(lab,o,col,prob)=>`<div style="margin-bottom:7px"><div style="display:flex;justify-content:space-between;font-size:11.5px"><span style="font-weight:700;color:${col}">${lab} <span style="color:var(--ink-soft);font-weight:600">(${prob})</span></span><span class="num" style="color:var(--ink)">${eur0(o.low)} \u2013 ${eur0(o.high)} \u20ac</span></div></div>`;
   const A=`<div style="font-size:12px;font-weight:800;color:var(--ink);margin-bottom:7px">Fourchette probabiliste</div>`+band("50 % central",iv.p50,"#0a8f7e","1 chance sur 2")+band("80 %",iv.p80,"var(--brand-dark)","8 sur 10")+band("95 %",iv.p95,"var(--ink-soft)","quasi certain")+`<div class="hint" style="margin:2px 0 0">Probabilit\u00e9 que le prix de vente r\u00e9el tombe dans chaque fourchette, selon la dispersion du march\u00e9 et la fiabilit\u00e9 des donn\u00e9es.</div>`;
   let B;if(rel.pillars.length){const bar=p=>`<div style="height:6px;border-radius:4px;background:var(--line);overflow:hidden;margin-top:3px"><div style="height:100%;width:${Math.round(p[1]*100)}%;background:${p[1]>=0.66?'var(--good)':p[1]>=0.4?'var(--warn)':'var(--bad)'}"></div></div>`,relC=rel.score>=70?"var(--good)":rel.score>=50?"var(--warn)":"var(--bad)";
-    B=`<div style="border-top:1px solid var(--line);margin-top:13px;padding-top:13px"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px"><span style="font-size:12px;font-weight:800;color:var(--ink)">Fiabilit\u00e9 de l'estimation</span><span class="num" style="font-size:16px;font-weight:800;color:${relC}">${rel.score}/100 \u00b7 ${rel.label}</span></div>`+rel.pillars.map(p=>`<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:11.5px"><span style="font-weight:700;color:var(--ink)">${p[0]}</span><span style="color:var(--ink-soft)">${p[2]}</span></div>${bar(p)}</div>`).join("")+`${r.backtest?`<div style="margin-top:6px;padding:8px 11px;background:var(--brand-tint);border-radius:9px;font-size:11.5px;color:var(--ink)">Erreur du moteur DVF brut (sans ajustements du bien) : <b class="num">\u00b1${r.backtest.mdape} %</b> sur ${r.backtest.n} ventes r\u00e9elles (80 % des pr\u00e9dictions \u00e0 \u00b1${r.backtest.p80} %). La fourchette de prix int\u00e8gre cette erreur de base${r.spreadSrc==="HQ-IQR"?" (affin\u00e9e sur les comparables proches en surface)":""}. \u26a0\ufe0f Cette mesure ne couvre pas les ajustements h\u00e9doniques (\u00e9tat, DPE, standing\u2026) ni la correction VEFA — l'erreur r\u00e9elle du prix final peut \u00eatre 1,5\u00d7 sup\u00e9rieure</div>`:""}<div class="hint" style="margin-top:2px">Fiabilit\u00e9 fond\u00e9e sur la quantit\u00e9 de comparables, la dispersion des prix, l'homog\u00e9n\u00e9it\u00e9 du quartier, la qualit\u00e9 des donn\u00e9es, la r\u00e9cence, la pr\u00e9cision de la g\u00e9olocalisation${r.backtest?" et l'erreur mesur\u00e9e par backtest sur les ventes locales":""}.</div>`+
+    B=`<div style="border-top:1px solid var(--line);margin-top:13px;padding-top:13px"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px"><span style="font-size:12px;font-weight:800;color:var(--ink)">Fiabilit\u00e9 de l'estimation</span><span class="num" style="font-size:16px;font-weight:800;color:${relC}">${rel.score}/100 \u00b7 ${rel.label}</span></div>`+rel.pillars.map(p=>`<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:11.5px"><span style="font-weight:700;color:var(--ink)">${p[0]}</span><span style="color:var(--ink-soft)">${p[2]}</span></div>${bar(p)}</div>`).join("")+`${r.backtest?`<div style="margin-top:6px;padding:8px 11px;background:var(--brand-tint);border-radius:9px;font-size:11.5px;color:var(--ink)">Erreur du moteur DVF brut (sans ajustements du bien) : <b class="num">\u00b1${r.backtest.mdape} %</b> sur ${r.backtest.n} ventes r\u00e9elles (80 % des pr\u00e9dictions \u00e0 \u00b1${r.backtest.p80} %). La fourchette de prix int\u00e8gre cette erreur de base${r.spreadSrc==="HQ-IQR"?" (affin\u00e9e sur les comparables proches en surface)":""}. \u26a0\ufe0f Cette mesure ne couvre pas les ajustements h\u00e9doniques (\u00e9tat, DPE, standing\u2026) ni la correction VEFA — l'erreur r\u00e9elle du prix final peut \u00eatre 1,5\u00d7 sup\u00e9rieure</div>`:""}${r.backtestFull?`<div style="margin-top:6px;padding:9px 11px;background:var(--bg);border-radius:9px;font-size:11.5px;color:var(--ink);line-height:1.7"><b>Backtest du prix FINAL \u00b7 ${r.backtestFull.n} ventes r\u00e9elles</b> <span style="color:var(--ink-soft)">(cha\u00eene compl\u00e8te : ancrage, VEFA, plafond, prudence)</span><br>\u2022 <b>Valeur de march\u00e9</b> (r\u00e9f\u00e9rence vendeur) \u2014 biais m\u00e9dian <b class="num" style="color:${r.backtestFull.marketOk?"var(--good)":"var(--warn)"}">${_pctSigned(r.backtestFull.market.mpe)} %</b> \u00b7 erreur \u00b1${r.backtestFull.market.mdape} % \u00b7 P80 \u00b1${r.backtestFull.market.p80} %<br>\u2022 <b>Prix acqu\u00e9reur</b> (r\u00e9f\u00e9rence acheteur) \u2014 biais m\u00e9dian <b class="num" style="color:${r.backtestFull.buyerOk?"var(--good)":"var(--warn)"}">${_pctSigned(r.backtestFull.buyerApplied)} %</b> \u00b7 erreur \u00b1${r.backtestFull.buyer.mdape} % \u00b7 P80 \u00b1${r.backtestFull.buyer.p80} %<br><span style="color:var(--ink-soft)">Le <b>biais sign\u00e9</b> est la mesure d\u00e9cisive : il doit \u00eatre <b>proche de 0 pour la valeur de march\u00e9</b> (le vendeur a droit \u00e0 une valeur juste) et <b>n\u00e9gatif mais ma\u00eetris\u00e9 (\u22123 \u00e0 \u22128 %) pour le prix acqu\u00e9reur</b> (marge de n\u00e9gociation prot\u00e9g\u00e9e sans devenir irr\u00e9aliste). Les ajustements h\u00e9doniques (\u00e9tat, DPE, vue) restent hors mesure : DVF ne les documente pas.<br>D\u00e9cote de prudence : <b>${r.prudenceMode==="cible"?"pilot\u00e9e par la cible":"heuristique (backtest indisponible)"}</b>${r.prudenceAdj?" \u00b7 "+_pctSigned(+(r.prudenceAdj*100).toFixed(1))+" % appliqu\u00e9s":" \u00b7 aucune (la cha\u00eene amont couvre d\u00e9j\u00e0 la cible)"}${r.marketValue?" \u00b7 valeur de march\u00e9 reconstitu\u00e9e \u00e0 +"+r.marketValueUplift+" % ("+r.marketValueSrc+")":""}</span></div>`:""}<div class="hint" style="margin-top:2px">Fiabilit\u00e9 fond\u00e9e sur la quantit\u00e9 de comparables, la dispersion des prix, l'homog\u00e9n\u00e9it\u00e9 du quartier, la qualit\u00e9 des donn\u00e9es, la r\u00e9cence, la pr\u00e9cision de la g\u00e9olocalisation${r.backtest?" et l'erreur mesur\u00e9e par backtest sur les ventes locales":""}.</div>`+
       // POINT10 : explication chiffree complete du calcul de fiabilite
       (rel.detail&&rel.detail.length?explainPanel(
         "Calcul d\u00e9taill\u00e9 de l'indice de fiabilit\u00e9",
@@ -4683,7 +5021,9 @@ function renderContext(r){
  *  ZERO impact sur l'estimation elle-meme : pur affichage derive. */
 function dualPricing(r){
   if(!r||!(r.price>0))return null;
-  const fair=r.price;
+  // R21-A : "fair" est affiche comme "Juste valeur (vendeur)" -> doit etre la
+  // valeur de marche, non le prix acquereur.
+  const fair=(r.marketValue>0?r.marketValue:r.price);
   // Incertitude calibree : mdape backtest (en %) sinon spread de la fourchette
   const unc=(r.backtest&&r.backtest.mdape>0)?r.backtest.mdape/100:(r.spread||0.08);
   const src=(r.backtest&&r.backtest.mdape>0)?"backtest local (\u00b1"+r.backtest.mdape+" % sur "+r.backtest.n+" ventes)":"dispersion de la fourchette";
@@ -4716,7 +5056,11 @@ function renderDualPrice(r){
 }
 // ===== Prompt 7 : moteur d'aide a la negociation =====
 function negotiation(r){
-  const _aEl=$("askPrice"),ask=(_aEl&&Number(_aEl.value))||numv("prixAchat")||r.price,just=r.price,dyn=r.dyn||{},idx=r.indices||{};
+  /* R21-A : la "juste valeur" de reference est la VALEUR DE MARCHE, pas le prix
+   * acquereur. Consequence voulue : la cible et l'offre conseillee sont desormais
+   * calculees comme une remise sur le marche reel, et non comme une remise sur un
+   * prix deja decote -- ce qui produisait des offres irrealistes (~-19 %). */
+  const _aEl=$("askPrice"),ask=(_aEl&&Number(_aEl.value))||numv("prixAchat")||r.price,just=(r.marketValue>0?r.marketValue:r.price),dyn=r.dyn||{},idx=r.indices||{};
   const tens=dyn.subTension!=null?Math.max(0,Math.min(1,dyn.subTension/100)):0.5;
   const rare=(idx.rarity||0)/100,passoire=(state.dpe==="F"||state.dpe==="G");
   const over=ask>just?(ask-just)/just:0;
@@ -4920,10 +5264,63 @@ function marketDynamicsAdjust(r){
  *   decote = 1/2 x spread x (1 - confiance/100), bornee a 5 %.
  * Ex : confiance 60/100, spread 15 % -> -3 %. Confiance 90/100 -> quasi nulle.
  * Idempotent : toujours applique sur un prix reconstruit depuis basePrice/cap. */
+/* ===== R21-B : PRUDENCE ACQUEREUR PILOTEE PAR SA CIBLE =====
+ * Le backtest R20 a mesure un biais acquereur de -10 % en moyenne, pour une cible
+ * de -3 a -8 %. Cause : l'empilement. Ancrage min() sur 5 ancres, percentile P40,
+ * plafond asymetrique (+15 %/-20 %) et decote finale sont chacun raisonnables,
+ * mais personne ne pilotait leur SOMME.
+ * Correction : la decote finale devient RESIDUELLE. Le backtest mesure le biais
+ * de la chaine amont (appele avec prudence:0), et on n'ajoute que ce qui manque
+ * pour atteindre la cible. Si l'amont a deja pris plus que la cible, on n'ajoute
+ * RIEN. La decote ne peut donc plus qu'ETRE REDUITE par rapport a l'existant :
+ * aucun risque de rendre l'outil moins prudent qu'avant.
+ * Sans backtest exploitable, l'heuristique historique est conservee a l'identique. */
+const PRUD_TARGET=-0.055;  // biais acquereur vise (centre de la plage -3 % / -8 %)
+const PRUD_MAX=0.05;       // plafond de decote, inchange
+
+/* ===== R21-A : VALEUR DE MARCHE (reference VENDEUR) =====
+ * r.price est volontairement biaise a la baisse : c'est un prix ACQUEREUR. Le
+ * servir au vendeur comme "juste valeur" revenait a lui faire brader son bien,
+ * d'un ecart median chiffre a ~10 points par le backtest R20. Or la meme mesure
+ * etablit que l'estimateur de marche, lui, est non biaise (-1,5 %).
+ *
+ * Le facteur de reconstitution est MESURE, jamais postule :
+ *     marche = prix_acquereur x (1 + biais_marche) / (1 + biais_acquereur)
+ * A defaut de backtest exploitable, on ne retire que la decote de prudence
+ * explicitement tracee : reconstitution partielle, mais exacte et sans invention.
+ * Le facteur est borne a [1 ; 1,18] et ne peut jamais abaisser le prix : la valeur
+ * de marche est superieure ou egale au prix acquereur par construction. */
+const MV_MAX_UPLIFT=1.18;
+
+function _computeMarketValue(r){
+  if(!r||!(r.price>0))return null;
+  let f=1,src="prix acqu\u00e9reur (aucune reconstitution)";
+  const bt=r.backtestFull;
+  if(bt&&bt.market&&bt.buyerApplied!=null&&isFinite(bt.buyerApplied)){
+    const mM=bt.market.mpe/100,mB=bt.buyerApplied/100;
+    if(mB>-0.5&&mM>-0.5&&(1+mB)!==0){f=(1+mM)/(1+mB);src="backtest sur "+bt.n+" ventes r\u00e9elles";}
+  }else if(r.prudenceAdj<0){
+    f=1/(1+r.prudenceAdj);src="d\u00e9cote de prudence trac\u00e9e";
+  }
+  f=Math.max(1,Math.min(MV_MAX_UPLIFT,f));
+  r.marketValueSrc=src;r.marketValueUplift=+((f-1)*100).toFixed(1);
+  return Math.round(r.price*f);
+}
+
 function _applyPrudence(r){
   if(!r||!r.real)return;
-  const _cs=(r.confScore!=null?r.confScore:70)/100;
-  const _prud=Math.min(0.05,Math.max(0,(r.spread||0.10)*(1-_cs)*0.5));
+  let _prud;
+  const _bt=r.backtestFull;
+  if(_bt&&_bt.buyer&&isFinite(_bt.buyer.mpe)&&_bt.n>=20){
+    const _b0=_bt.buyer.mpe/100;              // biais de la chaine AMONT (sans decote)
+    _prud=(_b0>PRUD_TARGET)?(1-(1+PRUD_TARGET)/(1+_b0)):0;
+    r.prudenceMode="cible";
+  }else{
+    const _cs=(r.confScore!=null?r.confScore:70)/100;
+    _prud=(r.spread||0.10)*(1-_cs)*0.5;
+    r.prudenceMode="heuristique";
+  }
+  _prud=Math.min(PRUD_MAX,Math.max(0,_prud));
   if(_prud<0.003){r.prudenceAdj=0;return;}
   r.prudenceAdj=-_prud;r.priceBeforePrud=r.price;
   r.price=Math.round(r.price*(1-_prud));
@@ -4940,7 +5337,9 @@ function applyFinalDvfCap(r){
   // min(m\u00e9diane pond\u00e9r\u00e9e, m\u00e9diane surface \u00b125 %) \u2014 ancre conservatrice acqu\u00e9reur.
   const _w0=r.realStats.west||r.realStats.med;
   const _wss2=r.realStats.westSurfStrict;
-  const _westRef=r.realStats.westGRooms||((_wss2&&_wss2<_w0)?_wss2:_w0);
+  /* R22 : en mode arbitre, le plafond se refere a l'ancre arbitree. Sinon il
+   * reintroduirait par la bande le min() que l'on vient de supprimer. */
+  const _westRef=(r.anchorArb>0)?r.anchorArb:(r.realStats.westGRooms||((_wss2&&_wss2<_w0)?_wss2:_w0));
   const ref=_westRef*(r.surface||1)*_vcFactor;if(!ref)return;
   // Fix16 — ancre geolocalisee fiable (scope bbox) : plafond haussier resserre a +15 %
   // (biais acquereur assume), plancher inchange -20 %. Scope commune : \u00b120 % conserve.
@@ -5323,7 +5722,7 @@ function renderExplain(r){
   if(bdN){
     if(r.backtest){
       const _sp=r.spread?Math.round(r.spread*100):null;
-      bdN.innerHTML="Erreur mesur\u00e9e sur ventes r\u00e9elles\u00a0: <b class=\"num\">\u00b1"+r.backtest.mdape+"\u00a0%</b> m\u00e9diane \u00b7 80\u00a0% des estimations \u00e0 <b class=\"num\">\u00b1"+r.backtest.p80+"\u00a0%</b> \u00b7 "+r.backtest.n+"\u00a0ventes test\u00e9es"+(_sp?" \u00b7 fourchette affich\u00e9e\u00a0\u00b1"+_sp+"\u00a0%":"")+". <span style=\"color:var(--ink-soft);font-size:10px\">D\u00e9tail en Mode Expert \u2192 Fiabilit\u00e9.</span>";
+      bdN.innerHTML="Erreur mesur\u00e9e sur ventes r\u00e9elles\u00a0: <b class=\"num\">\u00b1"+r.backtest.mdape+"\u00a0%</b> m\u00e9diane \u00b7 80\u00a0% des estimations \u00e0 <b class=\"num\">\u00b1"+r.backtest.p80+"\u00a0%</b> \u00b7 "+r.backtest.n+"\u00a0ventes test\u00e9es"+(_sp?" \u00b7 fourchette affich\u00e9e\u00a0\u00b1"+_sp+"\u00a0%":"")+(r.backtestFull?" \u00b7 <b>biais du prix final\u00a0:</b> "+_pctSigned(r.backtestFull.buyerApplied)+"\u00a0% acqu\u00e9reur / "+_pctSigned(r.backtestFull.market.mpe)+"\u00a0% march\u00e9":"")+". <span style=\"color:var(--ink-soft);font-size:10px\">D\u00e9tail en Mode Expert \u2192 Fiabilit\u00e9.</span>";
     } else {
       bdN.innerHTML="D\u00e9composition d\u00e9taill\u00e9e disponible en <b>Mode Expert</b> \u2192 \u00ab\u00a0Fiabilit\u00e9 &amp; formation du prix\u00a0\u00bb.";
     }
@@ -5479,7 +5878,14 @@ function buildEstimation(data){
   }
   const _adjBase=realBase&&vefaCorr.factor<1?Math.round(realBase*vefaCorr.factor):realBase;
   // ──────────────────────────────────────────────────────────────────────────────
-  const r=estimate(_adjBase,realStats);r.bandWidened=bandWidened;r.realPts=realPts;r.ptsVefa=data.ptsVefa||[];r.realStats=realStats;r.realCount=realStats?realStats.n:0;r.engines=engineData?engineData.engines:[];r.engineBase=engineData?engineData.base:realBase;r.engineTop=engineData?engineData.top:[];r.pxHedonic=r.price;r.vefaCorr=vefaCorr;r.sqmBaseRaw=realBase||0;
+  /* R22 : le backtest est calcule AVANT estimate() car il CONDITIONNE le mode
+   * d'ancrage (arbitre si mesurable, cascade min() historique sinon). */
+  let _btf=null;
+  if(realBase&&realStats&&realStats.clean&&state.type!=="terrain"){
+    try{_btf=backtestFull(realStats.clean,{vefaFactor:vefaCorr.factor,prudence:0,
+      capHi:(state.dvfScope==="bbox"?1.15:1.20),arbitrate:true});}catch(_){_btf=null;}
+  }
+  const r=estimate(_adjBase,realStats,_btf);r.backtestFull=_btf;r.anchorArb=(_btf&&_btf.n>=20&&realStats)?_arbitrateAnchor({rooms:realStats.westGRooms||0,nRooms:realStats.typedCount||0,surf:realStats.westSurfStrict||0,nSurf:realStats.strictCount||0,mix:_adjBase,nMix:realStats.n||0}):null;r.bandWidened=bandWidened;r.realPts=realPts;r.ptsVefa=data.ptsVefa||[];r.realStats=realStats;r.realCount=realStats?realStats.n:0;r.engines=engineData?engineData.engines:[];r.engineBase=engineData?engineData.base:realBase;r.engineTop=engineData?engineData.top:[];r.pxHedonic=r.price;r.vefaCorr=vefaCorr;r.sqmBaseRaw=realBase||0;
   // DIAGNOSTICS : decote liee aux pathologies detectees (amiante, elec, termites, assainissement...)
   var _dg=(typeof diagsTotal==="function")?diagsTotal():null;
   if(_dg&&_dg.impact<0){
@@ -5515,7 +5921,16 @@ function buildEstimation(data){
   r.basePrice=r.price;r.dynAdj=marketDynamicsAdjust(r);r.geoAdj={adj:0,score:null};
   if(r.dynAdj.adj){r.price=Math.round(r.basePrice*(1+r.dynAdj.adj));r.sqm=Math.round(r.price/(r.surface||1));r.low=r.price*(1-r.spread);r.high=r.price*(1+r.spread);}
   applyFinalDvfCap(r);
+  /* R21/R22 : le backtest (deja calcule avant estimate) fournit le biais RESIDUEL
+   * de la chaine amont ; _applyPrudence n'ajoute que l'ecart a la cible. */
   _applyPrudence(r);
+  /* Biais acquereur REELLEMENT servi = biais amont compose avec la decote appliquee. */
+  if(r.backtestFull&&r.backtestFull.buyer){
+    const _b0=r.backtestFull.buyer.mpe/100;
+    r.backtestFull.buyerApplied=+(((1+_b0)*(1+(r.prudenceAdj||0))-1)*100).toFixed(1);
+    r.backtestFull.buyerOk=(r.backtestFull.buyerApplied<=-3&&r.backtestFull.buyerApplied>=-8);
+  }
+  r.marketValue=_computeMarketValue(r);
   r.financialPrice=computeFinancialPrice(r);
   return{r,_conf,realBase,diag:data.diag};
 }
@@ -6496,7 +6911,8 @@ function buildReportHtml(r,name,color,logo){
   const metric=(l,v,sub)=>`<div class="kpi"><div class="kl">${l}</div><div class="kv num">${v}</div>${sub?`<div class="ksub">${sub}</div>`:""}</div>`;
   // --- KPIs synth\u00e8se ---
   const dp=dualPricing(r);
-  const kpiEstim=metric("Estimation (juste valeur)",eur(r.price),eur0(r.sqm)+" \u20ac/m\u00b2");
+  const kpiEstim=metric("Estimation acqu\u00e9reur (prudente)",eur(r.price),eur0(r.sqm)+" \u20ac/m\u00b2");
+  const kpiMarket=r.marketValue?metric("Valeur de march\u00e9 (vendeur)",eur(r.marketValue),"+"+r.marketValueUplift+" % vs acqu\u00e9reur"):"";
   const kpiAch=dp?metric("Prix cible acheteur",eur(dp.buyer),"\u2212"+(dp.discount*100).toFixed(1)+" % n\u00e9go"):"";
   const kpiConf=metric("Indice de confiance",(r.confScore||"\u2014")+"/100",r.backtest?"\u00b1"+r.backtest.mdape+" % (backtest "+r.backtest.n+" ventes)":"sans backtest local");
   const kpiFourch=metric("Fourchette probabiliste",eur(r.low)+"\u2013"+eur(r.high),"80\u00a0% de probabilit\u00e9");
@@ -6505,7 +6921,7 @@ function buildReportHtml(r,name,color,logo){
   // Score territoire (R2)
   const ts2=(state.ctx2)?territoryScore(state.ctx2):null;
   const kpiTS=ts2?metric("Score territoire",ts2.score+"/100",ts2.nInd+" indicateurs vs France"):"";
-  const synthMetrics=kpiEstim+kpiAch+kpiConf+kpiFourch+kpiVan+kpiCF+kpiTS;
+  const synthMetrics=kpiEstim+kpiMarket+kpiAch+kpiConf+kpiFourch+kpiVan+kpiCF+kpiTS;
   // --- Comparables ---
   let comps="";
   if(r.realPts&&r.realPts.length){const top=[...r.realPts].sort((a,c)=>Math.abs(a.surf-r.surface)-Math.abs(c.surf-r.surface)).slice(0,8);
@@ -9021,7 +9437,50 @@ const WX=(function(){
       let recVal=0;Object.keys(POSTES).forEach(function(k){recVal+=proCat(k)*(REC[k]||0.80);});
       const pv=Math.round(recVal-t.total),roi=t.total>0?pv/t.total*100:0;
       const roiCol=roi>=10?"var(--good)":roi>=0?"var(--warn)":"var(--bad)";
-      const pvBlock='<div style="font-size:9.5px;color:var(--ink-soft);text-transform:uppercase;font-weight:700;letter-spacing:.3px;margin:2px 0 7px">Cr\u00e9ation de valeur \u00e0 la revente <span style="font-weight:400;text-transform:none">\u2014 indicatif, prudent</span></div>'+
+      /* ===== FIX4 : construction neuve != renovation =====
+       * Le modele REC mesure la part d'un budget de RENOVATION recuperee a la revente.
+       * L'appliquer a une construction neuve est une erreur de categorie : il affichait
+       * un "ROI travaux" negatif (REC.construction 0,90 -> -10 %) a qui fait batir.
+       * Pour un terrain, la question reelle est : CONSTRUIRE OU ACHETER DE L'ANCIEN ?
+       * On affiche donc un bilan promoteur simplifie, avec les briques deja presentes :
+       *   valeur du bien acheve = prix neuf local /m2 (terrainCompteARebours) x SHAB
+       *   cout total            = prix du terrain (estimation) + travaux saisis
+       * Aucun coefficient nouveau n'est introduit. */
+      const _isTerWx=!!wb.isTer;
+      let pvBlockTer=null;
+      if(_isTerWx){
+        let _cab=null;
+        try{ if(typeof terrainCompteARebours==="function"&&typeof lastResult!=="undefined"&&lastResult)_cab=terrainCompteARebours(lastResult); }catch(_){ _cab=null; }
+        const _pxNeuf=(_cab&&_cab.prixNeufM2>0)?_cab.prixNeufM2:null;
+        const _Sp=wb.S>0?wb.S:0;
+        const _valAch=(_pxNeuf&&_Sp>0)?Math.round(_pxNeuf*_Sp):null;
+        const _pxTer=(typeof lastResult!=="undefined"&&lastResult&&lastResult.price>0)?Math.round(lastResult.price):0;
+        const _coutTot=_pxTer+t.total;
+        const _ecart=(_valAch!=null)?Math.round(_valAch-_coutTot):null;
+        const _ecCol=(_ecart==null)?"var(--ink)":(_ecart>=0?"var(--good)":"var(--bad)");
+        const tile=function(lbl,val,col){return '<div style="flex:1;min-width:104px;background:#fff;border-radius:9px;padding:9px 11px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase">'+lbl+'</div><div class="num" style="font-size:17px;font-weight:800;color:'+(col||"var(--ink)")+'">'+val+'</div></div>';};
+        pvBlockTer='<div style="font-size:9.5px;color:var(--ink-soft);text-transform:uppercase;font-weight:700;letter-spacing:.3px;margin:2px 0 7px">Construire ou acheter de l\u2019ancien\u00a0? <span style="font-weight:400;text-transform:none">\u2014 bilan indicatif</span></div>';
+        if(_valAch!=null){
+          pvBlockTer+='<div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:9px">'+
+            tile("Valeur du bien achev\u00e9",eur0(_valAch)+" \u20ac")+
+            tile("Co\u00fbt total du projet",eur0(_coutTot)+" \u20ac")+
+            tile("\u00c9cart",(_ecart>=0?"+":"")+eur0(_ecart)+" \u20ac",_ecCol)+
+          '</div>'+
+          '<div style="padding:9px 11px;background:#fff;border-radius:9px;font-size:10.5px;line-height:1.55;color:var(--ink-soft);margin-bottom:9px">'+
+            '<b style="color:var(--ink)">Co\u00fbt total = terrain ('+eur0(_pxTer)+'\u00a0\u20ac, estimation Estimo) + travaux saisis ('+eur0(t.total)+'\u00a0\u20ac).</b> '+
+            'Valeur du bien achev\u00e9 estim\u00e9e \u00e0 '+eur0(_pxNeuf)+'\u00a0\u20ac/m\u00b2 \u00d7 '+_Sp+'\u00a0m\u00b2 de surface projet. '+
+            (_ecart>=0
+              ? 'Construire ressort <b style="color:var(--good)">moins cher</b> que la valeur de march\u00e9 du bien fini : marge de s\u00e9curit\u00e9 sur l\u2019op\u00e9ration.'
+              : 'Construire revient <b style="color:var(--bad)">plus cher</b> que la valeur de march\u00e9 du bien fini : comparez avec l\u2019achat d\u2019une maison existante avant de vous engager.')+
+            ' Le prix au m\u00b2 du neuf est un proxy (m\u00e9diane locale \u00d7 prime VEFA nationale de 28\u00a0%), pas une cotation de march\u00e9\u00a0: bilan <b>indicatif</b>, hors frais financiers et al\u00e9as de chantier.'+
+          '</div>';
+        }else{
+          pvBlockTer+='<div style="padding:9px 11px;background:#fff;border-radius:9px;font-size:10.5px;line-height:1.55;color:var(--ink-soft);margin-bottom:9px">'+
+            'Bilan <b>construire ou acheter</b> indisponible\u00a0: le prix du neuf local n\u2019a pas pu \u00eatre estim\u00e9 (surface constructible ou march\u00e9 de r\u00e9f\u00e9rence manquant). Le budget travaux ci-dessus reste valable\u00a0; aucun ROI n\u2019est affich\u00e9 plut\u00f4t qu\u2019un chiffre faux.'+
+          '</div>';
+        }
+      }
+      const pvBlock=pvBlockTer!=null?pvBlockTer:'<div style="font-size:9.5px;color:var(--ink-soft);text-transform:uppercase;font-weight:700;letter-spacing:.3px;margin:2px 0 7px">Cr\u00e9ation de valeur \u00e0 la revente <span style="font-weight:400;text-transform:none">\u2014 indicatif, prudent</span></div>'+
         '<div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:9px">'+
           '<div style="flex:1;min-width:104px;background:#fff;border-radius:9px;padding:9px 11px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase">Valeur r\u00e9cup\u00e9r\u00e9e</div><div class="num" style="font-size:17px;font-weight:800;color:var(--ink)">'+eur0(Math.round(recVal))+' \u20ac</div></div>'+
           '<div style="flex:1;min-width:104px;background:#fff;border-radius:9px;padding:9px 11px;text-align:center"><div style="font-size:9px;color:var(--ink-soft);text-transform:uppercase">Plus-value estim\u00e9e</div><div class="num" style="font-size:17px;font-weight:800;color:'+(pv>=0?"var(--good)":"var(--bad)")+'">'+(pv>=0?"+":"")+eur0(pv)+' \u20ac</div></div>'+
