@@ -3081,6 +3081,13 @@ function estimateTerrain(realBase,parcelSurf,city,cp,realStats,btf){
                       :Math.max(TERR_ELAS_MIN,Math.min(1,_f));
       if(Math.abs(_fc-1)>0.005){
         landAnchor={before:Math.round(landSqm),b:_el.b,n:_el.n,medSurf:Math.round(_el.medSurf),factor:+_fc.toFixed(3),sym:_elSym,homogMode:_el.homogMode,homogRemoved:_el.homogRemoved};
+      /* Trace : savoir si la pente BUTE sur la borne est decisif pour juger le prix
+         des grandes parcelles -- une pente saturee signifie que le modele est a sa
+         limite et sous-evalue probablement au-dela de la surface de reference. */
+      if(typeof DEBUG!=="undefined"&&DEBUG&&typeof dbg==="function")
+        dbg("Terrain elasticite : b="+_el.b+(_el.b<=-0.449?" *** SATUREE (borne -0,45) ***":"")+
+            " | corpus "+_el.n+" ventes ("+(_el.homogMode||"n/a")+", "+(_el.homogRemoved||0)+" ecartees)"+
+            " | surface de reference "+Math.round(_el.medSurf)+" m2 | facteur applique "+_fc.toFixed(3));
         landSqm=Math.round(landSqm*_fc);
         landAnchor.after=landSqm;
       }
@@ -5859,9 +5866,15 @@ const TEMPO_MAX_ADJ=0.15;     // borne dure de l'actualisation cumulee (+/-15 %)
 const TEMPO_MIN_PTS=10;       // en deca, la tendance locale n'est pas fiable
 let TEMPO_ENABLED=true;       // desactivable (bouton), pour comparer avant/apres
 
-/** Age median du corpus, en annees decimales ecoulees depuis les ventes.
- *  On utilise la MEDIANE des dates et non l'etendue : une vente ancienne isolee
- *  ne doit pas commander le recalage de tout le corpus. */
+/** Age EFFECTIF du corpus tel qu'il pese reellement dans la base de prix.
+ *
+ *  Correctif important : dvfStats ne calcule pas une mediane simple mais une
+ *  MEDIANE PONDEREE PAR LA RECENCE (poids 0,82^anciennete). La base penche donc
+ *  deja vers les ventes recentes. Actualiser depuis la date MEDIANE du corpus
+ *  reviendrait a compter deux fois la correction temporelle : sur-correction
+ *  mesuree de 0,39 an sur un corpus de 5 ans, et de 1,54 an sur 10 ans.
+ *  On calcule donc l'age moyen PONDERE avec les MEMES poids que dvfStats. */
+const TEMPO_W_DECAY=0.82;     // identique a wRec dans dvfStats -- doit le rester
 function _corpusAgeYears(pts){
   if(!pts||!pts.length)return null;
   const ys=[];
@@ -5878,7 +5891,17 @@ function _corpusAgeYears(pts){
   const medY=ys.length%2?ys[m]:(ys[m-1]+ys[m])/2;
   const now=new Date();
   const nowY=now.getFullYear()+(now.getMonth()+0.5)/12;
-  return{years:nowY-medY,medianYear:medY,n:ys.length};
+  /* Age effectif = moyenne des anciennetes ponderee par 0,82^anciennete_entiere,
+     exactement la ponderation qui a produit la base. */
+  const ymax=Math.floor(ys[ys.length-1]);
+  let sw=0,swa=0;
+  ys.forEach(function(y){
+    const w=Math.pow(TEMPO_W_DECAY,Math.max(0,ymax-Math.floor(y)));
+    sw+=w;swa+=w*(nowY-y);
+  });
+  if(!(sw>0))return null;
+  const effYears=swa/sw;
+  return{years:effYears,medianYear:medY,rawYears:nowY-medY,n:ys.length};
 }
 
 /** Actualise la valeur de la date mediane du corpus a aujourd'hui.
@@ -5898,6 +5921,10 @@ function _applyTemporal(r,pts){
   r.price=Math.round(r.price*(1+f));
   r.sqm=Math.round(r.price/(r.surface||1));
   r.low=r.price*(1-r.spread);r.high=r.price*(1+r.spread);
+  if(typeof DEBUG!=="undefined"&&DEBUG&&typeof dbg==="function")
+    dbg("R30 actualisation : age effectif "+age.years.toFixed(2)+" an (mediane brute "+
+        age.rawYears.toFixed(2)+" an) | tendance "+tr.evo12+" %/an | facteur "+
+        (f>=0?"+":"")+(f*100).toFixed(1)+" % | "+before+" -> "+Math.round(before*(1+f))+" EUR");
   r.tempo={adj:f,years:+yrs.toFixed(1),medianYear:age.medianYear,
            evoPerYear:tr.evo12,n:age.n,before:before,after:r.price,
            capped:Math.abs(f)>=TEMPO_MAX_ADJ-1e-9||age.years>TEMPO_MAX_YEARS};
