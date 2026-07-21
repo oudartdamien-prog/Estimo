@@ -2378,23 +2378,38 @@ function parsePtsTerrain(arr,dep){
   // R25 : lat/lon conserves (necessaires a _narrowBbox et compDistFactor).
   const strip=a=>a.map(p=>({ppm:p.ppm,surf:p.surf,price:p.price,rooms:null,date:p.date,land:true,
                              lat:p.lat,lon:p.lon,_ab:p._ab,_nc:p._nc,_cls:p._cls}));
-  /* R33b — DETECTION POSITIVE par CODE Cerema + libellé (anciennement label seul).
-   * Avant : _ab = regex sur libtypbien uniquement → ignore codtypbien=21 sans libellé "à bâtir".
-   * Après : _cls==="tab" inclut codtypbien ^21 ET les détections par label → périmètre plus large.
-   * La décontamination statistique (terrainHomogeneous) est appliquée au corpus TAB retenu
-   * pour éliminer les outliers éventuels, ce que l'ancien code sautait entièrement. */
+  /* R35 — DETECTION POSITIVE par CODE Cerema + libellé (R33b corrigé).
+   * Fix : sur un corpus TAB pur (code ^21), l'Otsu bimodal est CONTRE-PRODUCTIF.
+   * Il suppose "haut = constructible, bas = agricole" — mais sur du TAB pur, "haut"
+   * peut être des anomalies (petites parcelles/accès voirie) et "bas" les vrais lots.
+   * Résultat observé Montélimar : Otsu retenait 12 anomalies à 748 €/m² en éjectant
+   * 16 vrais lots à ~100 €/m² → surestimation ×7 du terrain.
+   * Correction R35 :
+   *   1. Filtre surface TERR_SURF_MIN-TERR_SURF_MAX (absent de R33b)
+   *   2. Plancher EPTB (retire les sous-évalués)
+   *   3. Cap haussier 3× médiane (retire les anomalies sans Otsu)
+   *   4. Garde-fous anti-corpus-vide à chaque étape */
   const tabCls=raw.filter(p=>p._cls==="tab");
   if(tabCls.length>=TERR_MIN_HOMOG){
-    /* Décontamination statistique du corpus TAB (Otsu + plancher relatif si nécessaire).
-     * On réinitialise _cls à "_done" pour que terrainHomogeneous ne re-filtre pas par nature
-     * (les points sont déjà pré-sélectionnés comme TAB, l'étape 1 de terrainHomogeneous
-     * deviendrait incomplète sur un corpus homogène). */
-    const _tabH=terrainHomogeneous(tabCls.map(p=>{const c={};for(const k in p)c[k]=p[k];c._cls="_done";return c;}));
-    const _tabFinal=(_tabH.removed>0&&_tabH.pts.length>=TERR_MIN_HOMOG)?_tabH.pts:tabCls;
+    const _eptbTab=(dep&&typeof EPTB_DEP!=="undefined"&&EPTB_DEP[dep]!=null)?EPTB_DEP[dep]:null;
+    const _floorTab=_eptbTab!=null?Math.max(5,_eptbTab*TERR_EPTB_FLOOR):5;
+    /* Étape 1 : filtre de surface (absent de R33b, source principale d'anomalies ±/m²) */
+    let tabF=tabCls.filter(p=>p.surf>=TERR_SURF_MIN&&p.surf<=TERR_SURF_MAX&&p.ppm>=_floorTab);
+    if(tabF.length<TERR_MIN_HOMOG)tabF=tabCls.filter(p=>p.surf>=TERR_SURF_MIN&&p.surf<=TERR_SURF_MAX);
+    if(tabF.length<TERR_MIN_HOMOG)tabF=[...tabCls];
+    /* Étape 2 : plancher relatif 25 % de la médiane (retire sous-évalués) */
+    const _srtTab=[...tabF.map(p=>p.ppm)].sort((x,y)=>x-y);
+    const _medTab=_srtTab.length?_srtTab[_srtTab.length>>1]:0;
+    if(_medTab>0){const _flR=_medTab*TERR_PPM_REL_FLOOR;const _kFlR=tabF.filter(p=>p.ppm>=_flR);if(_kFlR.length>=TERR_MIN_HOMOG)tabF=_kFlR;}
+    /* Étape 3 : cap haussier 3× médiane (retire anomalies sans Otsu).
+     * Exemple : médiane 100 €/m² → cap 300 €/m². Retire les petites parcelles
+     * parasites (accès voirie, places de parking) sans toucher aux vrais lots. */
+    if(_medTab>0){const _cap3=_medTab*3;const _kCap=tabF.filter(p=>p.ppm<=_cap3);if(_kCap.length>=TERR_MIN_HOMOG)tabF=_kCap;}
+    const _rmTab=raw.length-tabF.length;
     if(typeof DEBUG!=="undefined"&&DEBUG&&typeof dbg==="function")
-      dbg("Terrain R33b TAB code+label : "+_tabFinal.length+"/"+raw.length+" ventes"+(_tabH.removed>0?" (décontam. "+_tabH.removed+" écarté[s], mode: "+_tabH.mode+")":""));
-    _terrainParseMeta={mode:(_tabH.removed>0?_tabH.mode:"TAB Cerema"),removed:_tabH.removed,n:_tabFinal.length,nRaw:raw.length,cut:_tabH.cut||null};
-    return strip(_tabFinal);
+      dbg("Terrain R35 TAB : "+tabF.length+"/"+raw.length+" ventes retenues (surf "+TERR_SURF_MIN+"-"+TERR_SURF_MAX+" m² | plancher "+Math.round(_floorTab)+" €/m² | médiane "+Math.round(_medTab)+" | cap 3×="+Math.round(_medTab*3)+" €/m²)");
+    _terrainParseMeta={mode:"TAB Cerema (R35)",removed:_rmTab,n:tabF.length,nRaw:raw.length,cut:Math.round(_medTab*3)||null};
+    return strip(tabF);
   }
   // 2+3. Repli heuristique : exclusion des natures non constructibles, fenetre de
   //      surface, plancher de prix ancre sur le bareme departemental EPTB/SDES.
