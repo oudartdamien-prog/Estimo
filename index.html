@@ -3269,8 +3269,24 @@ function estimateTerrain(realBase,parcelSurf,city,cp,realStats,btf){
         if(realStats.westSurfStrict>0)_cands.push(realStats.westSurfStrict);
         if(realStats.west>0)_cands.push(realStats.west);
       }
-      landSqm=Math.min.apply(null,_cands);
-      _anchorLbl=landSqm===realBase?"base moteur DVF":(realStats&&landSqm===realStats.westSurfP40)?"percentile P"+Math.round((realStats.westSurfPct||0.4)*100)+" bande de surface":"m\u00e9diane DVF pond\u00e9r\u00e9e";
+      /* R36 — CORRECTION DU BIAIS D'ORDRE (foncier, mode non arbitr\u00e9).
+       * min() de k estimateurs bruit\u00e9s issus du M\u00caME corpus a une esp\u00e9rance
+       * syst\u00e9matiquement inf\u00e9rieure \u00e0 la vraie valeur : E[min] \u2248 \u03bc \u2212 c(k)\u00b7\u03c3.
+       * \u00c0 n=12-25 ventes, l'erreur-type mesur\u00e9e (R31) atteint 10-17 % : le min de
+       * 3-4 ancres injecte \u00e0 lui seul \u221210 \u00e0 \u221215 % AVANT les d\u00e9cotes aval (viabilit\u00e9,
+       * forme, prudence), d\u00e9passant la cible acqu\u00e9reur \u22123/\u22128 % \u2014 mesur\u00e9 \u00e0
+       * Mont\u00e9limar : 150 \u20ac/m\u00b2 vs m\u00e9diane notaires 205 (\u2248\u2212 27 % apr\u00e8s taille).
+       * Correction : le min reste l'ancre, mais BORN\u00c9 \u00e0 \u22128 % sous la m\u00e9diane des
+       * ancres (= la borne basse de la cible de prudence). La prudence totale reste
+       * pilot\u00e9e en un point unique (_applyPrudence), conform\u00e9ment \u00e0 R21-B/R23. */
+      const _minC=Math.min.apply(null,_cands);
+      const _srtC=[..._cands].sort((a,b)=>a-b);
+      const _medC=_srtC.length%2?_srtC[_srtC.length>>1]:(_srtC[_srtC.length/2-1]+_srtC[_srtC.length/2])/2;
+      const _floorC=Math.round(_medC*0.92);
+      landSqm=Math.max(_minC,_floorC);
+      if(typeof DEBUG!=="undefined"&&DEBUG&&typeof dbg==="function"&&landSqm>_minC)
+        dbg("Terrain R36 biais d'ordre : min("+_cands.map(Math.round).join(",")+")="+Math.round(_minC)+" -> borne m\u00e9diane\u00d70,92="+_floorC+" \u20ac/m\u00b2 retenue");
+      _anchorLbl=(landSqm===_floorC&&_floorC>_minC)?"m\u00e9diane des ancres \u2212 8 % (biais d'ordre corrig\u00e9, R36)":landSqm===realBase?"base moteur DVF":(realStats&&landSqm===realStats.westSurfP40)?"percentile P"+Math.round((realStats.westSurfPct||0.4)*100)+" bande de surface":"m\u00e9diane DVF pond\u00e9r\u00e9e";
     }
     /* Correction de d\u00e9gressivit\u00e9 : si la parcelle du sujet est PLUS GRANDE que la parcelle
      * m\u00e9diane des comparables, son prix au m\u00b2 doit \u00eatre revu \u00e0 la baisse selon l'\u00e9lasticit\u00e9
