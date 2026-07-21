@@ -3258,6 +3258,11 @@ function estimateTerrain(realBase,parcelSurf,city,cp,realStats,btf){
       surf:realStats.westSurfStrict||0,nSurf:realStats.strictCount||0,
       mix:realBase,nMix:realStats.n||0
     }):null;
+    /* R39b : l'\u00e9lasticit\u00e9 est calcul\u00e9e EN AMONT pour pouvoir exprimer les ancres
+     * en unit\u00e9s comparables (prix/m\u00b2 \u00e0 la taille du sujet) AVANT le min(). */
+    const _el=realStats?landSizeElasticity(realStats.clean):null;
+    const _bShrPre=_el?+((_el.b)*(_el.n/(_el.n+10))).toFixed(3):null;
+    let _elPreApplied=false;
     let _anchorLbl;
     if(_arbT){
       landSqm=_arbT;
@@ -3267,7 +3272,42 @@ function estimateTerrain(realBase,parcelSurf,city,cp,realStats,btf){
       if(realStats){
         if(realStats.westSurfP40>0)_cands.push(realStats.westSurfP40);
         if(realStats.westSurfStrict>0)_cands.push(realStats.westSurfStrict);
-        if(realStats.west>0)_cands.push(realStats.west);
+        /* R39 — SHRINKAGE DE LA POND\u00c9RATION R\u00c9CENCE (foncier, faible n).
+         * west (m\u00e9diane pond\u00e9r\u00e9e 0,82^\u00e2ge) revient, \u00e0 n=17 ventes tr\u00e8s dispers\u00e9es,
+         * \u00e0 sur-pond\u00e9rer 5-6 ventes r\u00e9centes : estimateur \u00e0 forte variance.
+         * Mesur\u00e9 \u00e0 Mont\u00e9limar : west=177 vs m\u00e9diane robuste=222 (\u221220 %), \u00e9cart
+         * de pur bruit d'\u00e9chantillonnage, transmis tel quel \u00e0 l'ancre.
+         * Correction (m\u00eame famille que R32/R38) : blend west\u2192m\u00e9diane pond\u00e9r\u00e9
+         * par n/(n+15). \u00c0 n=17 \u2192 53 % west + 47 % m\u00e9diane ; \u00e0 n=100 \u2192 87 % west ;
+         * gros corpus \u2192 west intact (z\u00e9ro r\u00e9gression). Sp\u00e9cifique au foncier :
+         * le b\u00e2ti dispose d\u00e9j\u00e0 de l'arbitrage R22 et de corpus 10\u00d7 plus denses. */
+        if(realStats.west>0){
+          const _w39=realStats.n>0?realStats.n/(realStats.n+15):1;
+          const _westEff=(realStats.med>0&&_w39<0.9)
+            ?Math.round(_w39*realStats.west+(1-_w39)*realStats.med)
+            :realStats.west;
+          if(typeof DEBUG!=="undefined"&&DEBUG&&typeof dbg==="function"&&_westEff!==realStats.west)
+            dbg("Terrain R39 : west "+Math.round(realStats.west)+" \u2192 "+_westEff+" \u20ac/m\u00b2 (blend m\u00e9diane "+Math.round(realStats.med)+", poids west "+_w39.toFixed(2)+", n="+realStats.n+")");
+          /* R39b — FIN DU DOUBLE COMPTAGE DE L'EFFET TAILLE.
+           * realBase (moteur comp, scor\u00e9 par similarit\u00e9 de surface) et P40/strict
+           * (bande de surface du sujet) sont D\u00c9J\u00c0 exprim\u00e9s \u00e0 la taille du sujet.
+           * Seul west/med (global, m\u00e9diane toutes surfaces) ne l'est pas : on lui
+           * applique l'\u00e9lasticit\u00e9 ICI, avant le min(), pour que la cascade compare
+           * des grandeurs homog\u00e8nes. L'\u00e9lasticit\u00e9 aval est alors d\u00e9sactiv\u00e9e
+           * (branche non arbitr\u00e9e) : elle re-d\u00e9cotait la taille une seconde fois. */
+          let _westEffT=_westEff;
+          if(_el&&parcelSurf>0&&_el.medSurf>0&&parcelSurf>_el.medSurf&&_bShrPre!=null){
+            const _fPre=Math.max(TERR_ELAS_MIN,Math.min(1,Math.pow(parcelSurf/_el.medSurf,_bShrPre)));
+            if(_fPre<0.995){
+              _westEffT=Math.round(_westEff*_fPre);
+              _elPreApplied=true;
+              landAnchor={before:_westEff,after:_westEffT,b:_bShrPre,bRaw:_el.b,n:_el.n,medSurf:Math.round(_el.medSurf),factor:+_fPre.toFixed(3),sym:false,pre:true,homogMode:_el.homogMode,homogRemoved:_el.homogRemoved};
+              if(typeof DEBUG!=="undefined"&&DEBUG&&typeof dbg==="function")
+                dbg("Terrain R39b : \u00e9lasticit\u00e9 appliqu\u00e9e \u00e0 l'ancre globale AVANT le min : "+_westEff+" \u2192 "+_westEffT+" \u20ac/m\u00b2 (b_shrink="+_bShrPre+", "+Math.round(_el.medSurf)+"\u2192"+parcelSurf+" m\u00b2). realBase/P40/strict d\u00e9j\u00e0 \u00e0 la taille du sujet : aucune \u00e9lasticit\u00e9 aval.");
+            }
+          }
+          _cands.push(_westEffT);
+        }
       }
       /* R36 — CORRECTION DU BIAIS D'ORDRE (foncier, mode non arbitr\u00e9).
        * min() de k estimateurs bruit\u00e9s issus du M\u00caME corpus a une esp\u00e9rance
@@ -3298,19 +3338,30 @@ function estimateTerrain(realBase,parcelSurf,city,cp,realStats,btf){
      * La conserver a sens unique revenait a decoter deux fois, la prudence etant
      * desormais pilotee en un point unique (R21-B). Sans backtest, comportement
      * historique inchange (malus uniquement). */
-    const _el=realStats?landSizeElasticity(realStats.clean):null;
     const _elSym=!!_arbT;
-    if(_el&&parcelSurf>0&&_el.medSurf>0&&(_elSym||parcelSurf>_el.medSurf)){
-      const _f=Math.pow(parcelSurf/_el.medSurf,_el.b);
+    /* R39b : en branche non arbitr\u00e9e, l'\u00e9lasticit\u00e9 a d\u00e9j\u00e0 \u00e9t\u00e9 int\u00e9gr\u00e9e \u00e0 l'ancre
+     * globale avant le min (_elPreApplied) \u2014 ne PAS la r\u00e9appliquer. Elle ne
+     * s'ex\u00e9cute ici que : (a) en mode arbitr\u00e9 (flux R23 sym\u00e9trique inchang\u00e9),
+     * ou (b) en repli si l'ajustement amont n'a pas pu \u00eatre fait. */
+    if(_el&&!_elPreApplied&&parcelSurf>0&&_el.medSurf>0&&(_elSym||parcelSurf>_el.medSurf)){
+      /* R38 — SHRINKAGE de l'\u00e9lasticit\u00e9 (m\u00eame principe que R32).
+       * b est estim\u00e9 par r\u00e9gression log-log : \u00e0 n=17 ventes et dispersion 0,80,
+       * son erreur-type est du m\u00eame ordre que sa valeur. On r\u00e9gularise vers 0
+       * par le facteur n/(n+10) : \u00e0 n=17 \u2192 63 % du b local conserv\u00e9 ; \u00e0 n=100 \u2192
+       * 91 % ; \u00e0 n\u2192\u221e \u2192 b local intact (aucun effet sur les gros corpus).
+       * L'effet taille \u2014 fait de march\u00e9 \u00e9tabli \u2014 reste appliqu\u00e9, seulement
+       * temp\u00e9r\u00e9 par l'incertitude de sa mesure locale. */
+      const _bShr=_bShrPre!=null?_bShrPre:+((_el.b)*(_el.n/(_el.n+10))).toFixed(3);
+      const _f=Math.pow(parcelSurf/_el.medSurf,_bShr);
       const _fc=_elSym?Math.max(TERR_ELAS_MIN,Math.min(TERR_ELAS_MAX,_f))
                       :Math.max(TERR_ELAS_MIN,Math.min(1,_f));
       if(Math.abs(_fc-1)>0.005){
-        landAnchor={before:Math.round(landSqm),b:_el.b,n:_el.n,medSurf:Math.round(_el.medSurf),factor:+_fc.toFixed(3),sym:_elSym,homogMode:_el.homogMode,homogRemoved:_el.homogRemoved};
+        landAnchor={before:Math.round(landSqm),b:_bShr,bRaw:_el.b,n:_el.n,medSurf:Math.round(_el.medSurf),factor:+_fc.toFixed(3),sym:_elSym,homogMode:_el.homogMode,homogRemoved:_el.homogRemoved};
       /* Trace : savoir si la pente BUTE sur la borne est decisif pour juger le prix
          des grandes parcelles -- une pente saturee signifie que le modele est a sa
          limite et sous-evalue probablement au-dela de la surface de reference. */
       if(typeof DEBUG!=="undefined"&&DEBUG&&typeof dbg==="function")
-        dbg("Terrain elasticite : b="+_el.b+(_el.b<=-0.449?" *** SATUREE (borne -0,45) ***":"")+
+        dbg("Terrain elasticite R38 : b_brut="+_el.b+" -> b_shrink="+_bShr+" (n/(n+10)="+(_el.n/(_el.n+10)).toFixed(2)+")"+(_el.b<=-0.449?" *** SATUREE (borne -0,45) ***":"")+
             " | corpus "+_el.n+" ventes ("+(_el.homogMode||"n/a")+", "+(_el.homogRemoved||0)+" ecartees)"+
             " | surface de reference "+Math.round(_el.medSurf)+" m2 | facteur applique "+_fc.toFixed(3));
         landSqm=Math.round(landSqm*_fc);
@@ -3386,7 +3437,21 @@ function estimateTerrain(realBase,parcelSurf,city,cp,realStats,btf){
   if(forme==="allongee")add("Forme allong\u00e9e \u2014 constructibilit\u00e9 r\u00e9duite",-0.05);
   if(forme==="atypique")add("Forme atypique (triangle / irr\u00e9gulier)",-0.08);
   const nbR=(()=>{const t=(state.live&&state.live.risqueLbl)||"";const m=t.match(/^(\d+)/);return m?+m[1]:0;})();
-  if(nbR>0)add(nbR+" risque(s) G\u00e9orisques",-Math.min(0.12,nbR*0.025));
+  /* R37 — DOUBLE COMPTAGE des risques communaux corrig\u00e9.
+   * Les risques GASPAR sont recens\u00e9s au niveau COMMUNE : les comparables DVF du
+   * m\u00eame rayon subissent exactement les m\u00eames (inondation, s\u00e9isme, TMD...).
+   * Leur prix de vente les int\u00e8gre d\u00e9j\u00e0. D\u00e9coter \u00e0 nouveau = compter deux fois.
+   * Mesur\u00e9 \u00e0 Mont\u00e9limar : 6 risques \u2192 \u221212 % injustifi\u00e9s sur une base d\u00e9j\u00e0 locale.
+   * R\u00e8gle : d\u00e9cote conserv\u00e9e UNIQUEMENT en mode bar\u00e8me (pas de comparables locaux).
+   * Les risques PARCELLAIRES restent trait\u00e9s par leurs canaux propres (sol argileux
+   * via RGA, zone inondable AZI, cavit\u00e9s) qui, eux, diff\u00e9rencient la parcelle. */
+  if(nbR>0){
+    if(realBase){
+      adjRows.push([nbR+" risque(s) G\u00e9orisques communaux \u2014 d\u00e9j\u00e0 refl\u00e9t\u00e9s dans les prix des ventes locales (aucune double d\u00e9cote)",0]);
+    }else{
+      add(nbR+" risque(s) G\u00e9orisques",-Math.min(0.12,nbR*0.025));
+    }
+  }
   const alt=(state.coord&&state.coord.alt)||0;if(alt>=800)add("Altitude "+Math.round(alt)+" m",alt>=1200?-0.10:-0.04);
   adj=Math.max(-0.70,Math.min(0.25,adj));
   const sqmAdj=Math.round(landSqm*(1+adj)),price=Math.round(sqmAdj*parcelSurf),effSqm=parcelSurf>0?price/parcelSurf:sqmAdj;
