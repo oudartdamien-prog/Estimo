@@ -443,6 +443,7 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
   <div class="logo-txt"><b>Estimo</b><span>Estimez et analysez un bien immobilier</span></div>
 </header>
 
+<a href="#estimo-main" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;z-index:9999" class="skip-link" onfocus="this.style.left='50%';this.style.transform='translateX(-50%)';this.style.width='auto';this.style.height='auto';this.style.padding='10px 20px';this.style.background='var(--brand)';this.style.color='#fff';this.style.borderRadius='8px';this.style.top='8px'" onblur="this.style='position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden'">Aller au contenu principal</a>
 <main class="container" id="estimo-main" role="main">
 
 
@@ -470,7 +471,7 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
     <div class="wstep on" data-s="1">
     <div class="field ac-wrap">
       <label class="lbl" for="adresse">Adresse du bien <span class="opt">(pour les donnees reelles)</span></label>
-      <input class="input" id="adresse" type="text" autocomplete="off" placeholder="N, rue, ville - puis choisissez une suggestion" />
+      <input class="input" id="adresse" type="text" aria-label="Adresse du bien immobilier" autocomplete="off" placeholder="N, rue, ville - puis choisissez une suggestion" />
       <div class="ac-list" id="acList"></div>
     </div>
     <div id="autofillNote" class="autofill-note" style="display:none"></div>
@@ -489,8 +490,8 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
     </div>
 
     <div class="field"><div class="row">
-      <div id="wrapSurface"><label class="lbl" for="surface">Surface habitable</label><div class="with-unit"><input class="input num" id="surface" type="number" min="1" placeholder="65" /><span class="unit">m&#178;</span></div></div>
-      <div id="wrapTerrain" style="display:none"><label class="lbl" for="terrain">Surface terrain</label><div class="with-unit"><input class="input num" id="terrain" type="number" min="0" placeholder="300" /><span class="unit">m&#178;</span></div></div>
+      <div id="wrapSurface"><label class="lbl" for="surface">Surface habitable</label><div class="with-unit"><input class="input num" id="surface" type="number" min="1" placeholder="65" aria-label="Surface habitable en m²" /><span class="unit">m&#178;</span></div></div>
+      <div id="wrapTerrain" style="display:none"><label class="lbl" for="terrain">Surface terrain</label><div class="with-unit"><input class="input num" id="terrain" type="number" min="0" placeholder="300" aria-label="Surface du terrain en m²" /><span class="unit">m&#178;</span></div></div>
     </div></div>
     <div id="wrapVendeurPro" style="display:none;margin-bottom:12px">
         <label class="chk" style="gap:8px"><input type="checkbox" id="terrainVendeurPro" /><span style="font-weight:700;font-size:13px">Vendeur professionnel (assujetti TVA)</span></label>
@@ -529,6 +530,7 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
             <div><div class="terrain-charac-lbl">Forme parcelle</div><select class="input" id="terrainForme"><option value="reguliere" selected>R&#233;guli&#232;re</option><option value="allongee">Allong&#233;e</option><option value="atypique">Atypique</option></select></div>
           </div>
           <div id="terrainSolNote" class="hint" style="display:none;margin-top:7px"></div>
+          <div id="terrainPenteNote" class="hint" style="display:none;margin-top:4px"></div>
         </div>
         <!-- Note construction neuve -->
         <div class="terrain-build-note">
@@ -707,9 +709,9 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
 
   <div id="tocBar"></div>
   <!-- R&#201;SULTATS -->
-  <div id="results" class="simple">
+  <div id="results" class="simple" role="region" aria-label="Résultats de l'estimation">
 
-    <div id="modeBar" style="order:-1"><div class="seg" id="segMode" role="group" aria-label="Mode d'affichage"><button data-m="simple" class="on">&#9889; Essentiel</button><button data-m="invest">&#128188; Investisseur</button><button data-m="expert">&#128300; Expert</button></div><div class="hint" style="margin-top:6px"><b>Essentiel</b> : verdict + prix + risques. <b>Investisseur</b> : + locatif, fiscal, n'essentiel pour d&#233;égo, benchmark, travaux. <b>Expert</b> : tous les calculs.</div></div>
+    <div id="modeBar" style="order:-1"><div class="seg" id="segMode" role="group" aria-label="Mode d'affichage"><button data-m="simple" class="on" aria-pressed="true" aria-label="Mode Essentiel : verdict, prix et risques">&#9889; Essentiel</button><button data-m="invest" aria-pressed="false" aria-label="Mode Investisseur : locatif, fiscal, rentabilit&#233;">&#128188; Investisseur</button><button data-m="expert" aria-pressed="false" aria-label="Mode Expert : tous les calculs et d&#233;tails statistiques">&#128300; Expert</button></div><div class="hint" style="margin-top:6px"><b>Essentiel</b> : verdict + prix + risques. <b>Investisseur</b> : + locatif, fiscal, n'essentiel pour d&#233;égo, benchmark, travaux. <b>Expert</b> : tous les calculs.</div></div>
     <section class="card" id="synthCard" style="order:0;border-left:4px solid var(--brand)"><div class="card-head"><div class="step-no">&#9889;</div><div><h2>Synth&#232;se en 60 secondes</h2><div class="sub">L'essentiel pour d&#233;cider &#8212; touchez une ligne pour ouvrir le d&#233;tail</div></div></div><div id="synth60Panel"></div></section>
     <section class="card" id="decisionCard" style="order:0"><div id="decisionPanel"></div><div class="hint" style="padding:0 2px">Score d'acquisition : synth&#232;se multicrit&#232;re (prix, rentabilit&#233;, march&#233;, DPE, cash-flow, risque). Distinct du verdict fond&#233; sur la seule VAN affich&#233; plus bas dans la Synth&#232;se de l'investissement.</div></section>
     <section class="card expert-only" id="reportCard" style="order:7"><div class="card-head"><div class="step-no">&#128221;</div><div><h2>Rapport d'analyse</h2><div class="sub">Synth&#232;se r&#233;dig&#233;e automatiquement &#224; partir de vos donn&#233;es</div></div></div><div id="reportPanel"></div></section>
@@ -754,7 +756,7 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
 
     <section class="card price-card" id="priceCard" style="order:1">
       <div class="pc-eyebrow">Estimation</div>
-      <div class="pc-price num" id="pcPrice">&#8212;</div>
+      <div class="pc-price num" id="pcPrice" role="status" aria-live="polite" aria-atomic="true" aria-label="Prix estimé">&#8212;</div>
       <div class="pc-margin">marge d'erreur estim&#233;e : <b class="num" id="pcMargin">&#8212;</b></div>
       <div class="pc-sqm">soit <b class="num" id="pcSqm">&#8212;</b> /m&#178; &#183; <span id="pcType">&#8212;</span></div>
       <div id="pcDvfAnchor" style="display:none;margin-top:6px;font-size:11px;color:rgba(207,224,233,.75);letter-spacing:.1px"></div>
@@ -777,7 +779,7 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
     <section class="card" id="buyCard" style="order:1">
       <div class="card-head"><div class="step-no">&#8364;</div><div><h2>Votre projet d'achat</h2><div class="sub">Prix r&#233;ellement pay&#233; &#8212; base du financement et de la rentabilit&#233;</div></div></div>
       <label class="lbl" for="prixAchat" style="display:block;margin-bottom:6px">Prix d'achat envisag&#233;</label>
-      <div class="with-unit" style="max-width:240px"><input class="input num" id="prixAchat" type="number" min="0" style="font-size:22px;font-weight:800;letter-spacing:-.5px" /><span class="unit">&#8364;</span></div>
+      <div class="with-unit" style="max-width:240px"><input class="input num" id="prixAchat" type="number" aria-label="Prix d'achat envisagé en euros" min="0" style="font-size:22px;font-weight:800;letter-spacing:-.5px" /><span class="unit">&#8364;</span></div>
       <div class="bchips" id="buyChips" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
         <button type="button" data-pct="-10" aria-label="Prix moins 10 %">&#8722;10 %</button>
         <button type="button" data-pct="-5" aria-label="Prix moins 5 %">&#8722;5 %</button>
@@ -1075,6 +1077,40 @@ const CITY_APT={"paris":10200,"boulogne-billancourt":8200,"neuilly-sur-seine":11
 const HOUSE_FACTOR=0.92;
 const DEPT_APT={"75":10200,"92":7800,"93":3900,"94":4900,"77":3200,"78":4300,"91":3300,"95":3300,"69":4600,"13":3900,"06":5000,"33":4100,"31":3500,"44":3700,"35":3500,"34":3500,"67":3100,"59":3000,"38":3000,"83":3900,"74":4800,"73":3600,"64":3900,"17":3600,"29":2600,"56":3000,"49":2900,"37":2700,"45":2500,"14":2900,"76":2400,"57":2300,"54":2300,"21":2700,"51":2400,"63":2300,"42":1700,"87":1900,"86":2000,"16":1900,"24":2000,"19":1700,"23":1300,"15":1700,"43":1900,"03":1500,"58":1500,"89":1900,"10":2000,"52":1300,"55":1400,"88":1600,"68":2700,"70":1500,"25":2200,"39":1900,"71":1900,"01":2900,"07":2200,"26":2400,"30":2600,"48":1800,"11":2300,"66":3000,"81":2100,"82":2100,"32":2000,"65":2000,"40":3000,"47":1900,"12":1900,"46":2000,"09":1900,"04":2700,"05":2900,"84":3000,"2a":3500,"2b":3200,"50":2400,"53":1800,"61":1700,"72":2100,"28":2200,"41":2200,"18":1800,"36":1500,"02":1600,"60":2700,"80":2200,"62":2300,"08":1700,"90":1800};
 const NAT_APT=3050;
+
+/* ===== V5 — REGISTRE DES SOURCES STATIQUES =====
+ * Centralise les données figées + leurs dates de mise à jour.
+ * checkSourcesFreshness() retourne les entrées dont l'âge dépasse maxAge (mois).
+ * Mettre à jour 'updated' à chaque recalibrage manuel des constantes. */
+const SOURCE_REGISTRY=[
+  {key:"prix_ville",     label:"Prix/m\u00b2 villes (CITY_APT)",            source:"Observatoires notariaux",     updated:"2025-01", maxAge:18, url:"https://www.notaires.fr"},
+  {key:"prix_dept",      label:"Prix/m\u00b2 d\u00e9partements (DEPT_APT)",    source:"Observatoires notariaux",     updated:"2025-01", maxAge:18, url:"https://www.notaires.fr"},
+  {key:"eptb",           label:"Terrains \u00e0 b\u00e2tir (EPTB_DEP)",         source:"SDES EPTB 2024",              updated:"2024-07", maxAge:18, url:"https://www.statistiques.developpement-durable.gouv.fr"},
+  {key:"dpe_coef",       label:"Valeur verte DPE (DPE_VAL_MAP)",     source:"D\u00e9cret RE2020 ao\u00fbt 2025",       updated:"2025-08", maxAge:36, url:"https://www.legifrance.gouv.fr"},
+  {key:"dpe_reforme",    label:"R\u00e9forme DPE 2026 (chauffage \u00e9lec.)", source:"D\u00e9cret 2025 / ADEME",         updated:"2025-11", maxAge:24, url:"https://www.ademe.fr"},
+  {key:"locavantages",   label:"Loc'Avantages (art.\u00a0199 tricies CGI)",source:"ANAH / CGI 2024",              updated:"2024-01", maxAge:24, url:"https://www.anah.gouv.fr"},
+  {key:"notaire_remise", label:"Remise honoraires notaire",          source:"Art.\u00a0A444-174 Code commerce", updated:"2024-01", maxAge:36, url:"https://www.legifrance.gouv.fr"},
+  {key:"taux_credit",    label:"Taux cr\u00e9dit 20 ans (RATE20="+3.40+")",  source:"Observatoire Cr\u00e9dit Logement", updated:"2026-07", maxAge:3,  url:"https://www.credit-logement.fr"},
+  {key:"icc_ipea",       label:"Indices ICC / IPEA (travaux)",       source:"INSEE T1-2026",                updated:"2026-06", maxAge:4,  url:"https://www.insee.fr/fr/statistiques/serie/001620988"},
+  {key:"pinel",          label:"Taux Pinel 2024 (fin dispositif)",   source:"CGI art.\u00a0199 novovicies",      updated:"2024-01", maxAge:12, url:"https://www.legifrance.gouv.fr"},
+  {key:"ces_plu",        label:"CES PLU par zone (CES_PLU)",         source:"Code urbanisme (PLU types)",   updated:"2024-01", maxAge:36, url:"https://www.legifrance.gouv.fr"},
+  {key:"philosophie",    label:"Hypoth\u00e8ses financi\u00e8res (HYP.*)",      source:"INSEE / BDF 2024",             updated:"2024-01", maxAge:18, url:"https://www.banque-france.fr"},
+];
+function checkSourcesFreshness(){
+  const now=new Date();
+  return SOURCE_REGISTRY.filter(s=>{
+    if(!s.maxAge||!s.updated)return false;
+    const [y,m]=s.updated.split('-').map(Number);
+    return (now.getFullYear()-y)*12+(now.getMonth()+1-m)>s.maxAge;
+  });
+}
+/** Badge HTML compact de fraîcheur des sources (pour le rapport et le mode debug). */
+function renderSourcesFreshnessBadge(){
+  const stale=checkSourcesFreshness();
+  if(!stale.length)return '<span style="color:var(--good);font-weight:700;font-size:11px">\u2713 Toutes les sources sont \u00e0 jour.</span>';
+  return '<details style="margin-top:6px"><summary style="cursor:pointer;font-weight:700;color:var(--warn);font-size:11.5px">\u26a0\ufe0f '+stale.length+' source(s) \u00e0 mettre \u00e0 jour (cliquer pour d\u00e9tailler)</summary><ul style="margin:6px 0 0;padding-left:16px;font-size:11px">'+stale.map(s=>'<li><b>'+s.label+'</b> \u2014 '+s.source+' (mise \u00e0 jour\u00a0: '+s.updated+', valide '+s.maxAge+'\u00a0mois) <a href="'+s.url+'" target="_blank" style="color:var(--brand)">source \u2192</a></li>').join('')+'</ul></details>';
+}
+
 function getRentSqm(r){
   const lo=(state.ctx2||{}).loyers;
   if(lo&&lo.loyerM2>0){if(r&&r.dyn){r.dyn.loyerReal=true;r.dyn.loyerSource=lo.source||"Carte des loyers";r.dyn.loyerAnnee=lo.annee||null;r.dyn.loyerNbObs=lo.nbObs||null;}if(state.loc==="meuble"&&lo.loyerMeuble>0)return lo.loyerMeuble;return lo.loyerM2;}
@@ -1170,6 +1206,8 @@ bindSeg("segType","type",updateTypeUI);
 ["viabEau","viabAssain","viabElec","viabVoirie","viabTelecom"].forEach(id=>{const el=$(id);if(el)el.addEventListener("change",function(){state.viabTouched=true;updateViabCost();});});
 // R4 : toute saisie manuelle de la nature du sol bloque le pré-remplissage RGA
 (function(){const s=$("terrainSol");if(s)s.addEventListener("change",function(){state._solTouched=true;state._solAuto=false;const n=$("terrainSolNote");if(n)n.style.display="none";});})();
+// V3 : toute saisie manuelle de la pente bloque le pré-remplissage altimétrique
+(function(){const p=$("terrainPente");if(p)p.addEventListener("change",function(){state._penteTouched=true;state._penteAuto=false;const n=$("terrainPenteNote");if(n)n.style.display="none";});})();
 bindSeg("segPieces","pieces");
 $("segDpe").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{$("segDpe").querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on");state.dpe=b.dataset.v;_updateDpeReformeNote();}));
 function _updateDpeReformeNote(){
@@ -1199,6 +1237,7 @@ function _clearIrrelevantFields(){
     const tr=$("terrain");if(tr)tr.value="";
     ["terrainType","terrainPente","terrainSol","terrainForme"].forEach(function(id){const e=$(id);if(e)e.selectedIndex=0;});
     state._solTouched=false;state._solAuto=false;const _tsn=$("terrainSolNote");if(_tsn)_tsn.style.display="none";
+    state._penteTouched=false;state._penteAuto=false;const _tpn=$("terrainPenteNote");if(_tpn)_tpn.style.display="none";
     const p=$("piscine");if(p)p.checked=false;
   }
   // Jardin : pas pour un appartement
@@ -1566,7 +1605,11 @@ async function _dvfFetchRaw(url,ttlMs=0){
   if(!out&&CORS_PROXIES.length){
     const known=CORS_PROXIES.filter(px=>_proxyOK.has(px));
     for(const px of known){
-      try{ out=await one(px+encodeURIComponent(url),10000); if(out)break; }catch(_){}
+      try{ out=await one(px+encodeURIComponent(url),8000); if(out)break; }catch(_){}
+      /* R34 — éviction immédiate : si un proxy "fiable" échoue, il est retiré de la
+       * liste mémorisée. Il sera re-découvert via la salve parallèle s'il revient.
+       * Empêche d'attendre 8 s × N proxys morts sur les estimations suivantes. */
+      if(!out){_proxyOK.delete(px);_persistProxy();}
     }
     if(!out){
       const rest=CORS_PROXIES.filter(px=>!_proxyOK.has(px));
@@ -1590,6 +1633,35 @@ async function _dvfFetchRaw(url,ttlMs=0){
   }
   return out;
 }
+/* V3 — Pente automatique via altimétrie (open-meteo, 5 points autour de la parcelle).
+ * Calcule la pente maximale N-S et E-W sur 150 m et classe en plat/légère/forte.
+ * Seuils conformes aux labels du formulaire : <4 % = plat, 4-12 % = légère, >12 % = forte.
+ * Source : même API altitude que l'existant (open-meteo/SRTM, gratuit, pas de clé). */
+async function fetchTerrainPente(coord){
+  if(!coord||coord.lat==null||coord.lon==null)return null;
+  try{
+    const lt=coord.lat,ln=coord.lon;
+    /* 75 m en degrés : correction de longitude selon la latitude */
+    const dLat=0.000675,dLon=dLat/Math.max(0.01,Math.cos(lt*Math.PI/180));
+    /* 5 points : centre, N (+75 m), S (-75 m), E (+75 m), W (-75 m) */
+    const lats=[lt,lt+dLat,lt-dLat,lt,lt].join(',');
+    const lons=[ln,ln,ln,ln+dLon,ln-dLon].join(',');
+    const _r=await _withTimeout(dvfFetch(
+      "https://api.open-meteo.com/v1/elevation?latitude="+lats+"&longitude="+lons
+    ),6000,null);
+    if(!_r||!_r.json||!Array.isArray(_r.json.elevation)||_r.json.elevation.length<5)return null;
+    const [eC,eN,eS,eE,eW]=_r.json.elevation;
+    /* Pente en % : distance horizontale = 150 m (75+75 m) */
+    const sNS=Math.abs(eN-eS)/150,sEW=Math.abs(eE-eW)/150;
+    const pct=Math.max(sNS,sEW)*100;
+    return pct<4?'plat':pct<12?'legere':'forte';
+  }catch(_){return null;}
+}
+
+/* V3 — Métadonnées de décontamination terrain (remplies par parsePtsTerrain,
+ * lues par estimateTerrain pour afficher un résumé dans la décomposition). */
+let _terrainParseMeta=null;
+
 async function fetchLive(coord){
   const out={};
   try{const d=await dvfFetch("https://geo.api.gouv.fr/communes/"+coord.insee+"?fields=population,nom");if(d&&d.json&&d.json.population)out.pop=d.json.population;}catch(_){}
@@ -1912,6 +1984,25 @@ function dvfStats(pts,subjSurf,subjRooms){
   const ymax=yr.length?Math.max.apply(null,yr):0;
   const wRec=p=>Math.pow(0.82,Math.max(0,ymax-(p.date?+String(p.date).slice(0,4):ymax)));
   const west=clean.length?weightedMedian(clean.map(p=>({ppm:p.ppm,w:wRec(p)}))):0;
+  /* ===== R31 : erreur-type de la base (incertitude d'ECHANTILLONNAGE) =====
+   * Distincte de la dispersion du marche : mesure la precision avec laquelle on
+   * connait le NIVEAU central, pas l'ecart entre les biens. Decroit en 1/sqrt(n). */
+  let seBase=null,nEff=null;
+  if(clean.length>=8){
+    const lg=clean.map(p=>Math.log(p.ppm)).filter(isFinite);
+    if(lg.length>=8){
+      const mL=lg.reduce((a,b2)=>a+b2,0)/lg.length;
+      const sdL=Math.sqrt(lg.reduce((a,b2)=>a+(b2-mL)*(b2-mL),0)/lg.length);
+      let sw=0,sw2=0;
+      clean.forEach(function(p){const w=wRec(p);sw+=w;sw2+=w*w;});
+      nEff=sw2>0?(sw*sw)/sw2:lg.length;
+      if(nEff>=4&&sdL>0){
+        /* 1,2533 = sqrt(pi/2) : efficacite de la mediane vs la moyenne (loi normale). */
+        seBase=+(1.2533*sdL/Math.sqrt(nEff)).toFixed(4);
+        seBase=Math.min(0.20,seBase);   // garde-fou : au-dela, le corpus est inexploitable
+      }
+    }
+  }
   let westG=west;
   if(subjSurf>0&&clean.length>=10){
     const sig=0.25*subjSurf;
@@ -1981,13 +2072,14 @@ function dvfStats(pts,subjSurf,subjRooms){
       if(wGRsum>0)westGRooms=Math.round(weightedMedian(roomMatch.map(p=>({ppm:p.ppm,w:wGR(p)}))));
     }
   }
+  /* seBase/nEff exposes plus bas dans l'objet retourne (voir return de dvfStats). */
   let spreadHQ=null;
   if(subjSurf>0&&clean.length>=15){
     const year=new Date().getFullYear(),scored=clean.map(p=>{const sr=Math.log((p.surf||subjSurf)/subjSurf),ss=Math.exp(-(sr*sr)/(2*0.20*0.20));const rs=Math.exp(-Math.max(0,year-(p.date?+String(p.date).slice(0,4):year))/4.5);return{ppm:p.ppm,s:0.55*ss+0.35*rs+0.10};});
     const hq=scored.filter(x=>x.s>=0.70).map(x=>x.ppm).sort((a,b)=>a-b);
     if(hq.length>=10){const hq1=quantile(hq,0.25),hq3=quantile(hq,0.75);const hqMed=quantile(hq,0.5);spreadHQ=hqMed>0?+((hq3-hq1)/2/hqMed).toFixed(3):null;}
   }
-  return{n:clean.length,removed:pts.length-clean.length,clean,mean,med:quantile(cp,0.5),west:Math.round(westG),westRec:Math.round(west),westGRooms,roomsLoose,typedCount,westSurfStrict,westSurfP40,westSurfPct,strictCount,westSurfW,q1:quantile(cp,0.25),q3:quantile(cp,0.75),p10:quantile(cp,0.10),p90:quantile(cp,0.90),sd,min:cp[0]||0,max:cp[cp.length-1]||0,yMin:yr.length?Math.min.apply(null,yr):null,yMax:ymax||null,spreadHQ};
+  return{n:clean.length,removed:pts.length-clean.length,clean,mean,med:quantile(cp,0.5),west:Math.round(westG),westRec:Math.round(west),seBase,nEff:nEff!=null?Math.round(nEff):null,westGRooms,roomsLoose,typedCount,westSurfStrict,westSurfP40,westSurfPct,strictCount,westSurfW,q1:quantile(cp,0.25),q3:quantile(cp,0.75),p10:quantile(cp,0.10),p90:quantile(cp,0.90),sd,min:cp[0]||0,max:cp[cp.length-1]||0,yMin:yr.length?Math.min.apply(null,yr):null,yMax:ymax||null,spreadHQ};
 }
 async function enrichDvfDpe(pts){
   if(!pts||!pts.length)return;
@@ -2253,6 +2345,7 @@ function _depOf(coord){
   return i.length>=3?i.slice(0,2):null;
 }
 function parsePtsTerrain(arr,dep){
+  _terrainParseMeta=null; // V3 : reset avant chaque appel (EPCI peut appeler plusieurs fois)
   const raw=[],seen={};
   arr.forEach(o=>{
     const v=Number(recVal(o,["valeurfonc","valeur_fonciere","valeur"]));
@@ -2285,12 +2378,23 @@ function parsePtsTerrain(arr,dep){
   // R25 : lat/lon conserves (necessaires a _narrowBbox et compDistFactor).
   const strip=a=>a.map(p=>({ppm:p.ppm,surf:p.surf,price:p.price,rooms:null,date:p.date,land:true,
                              lat:p.lat,lon:p.lon,_ab:p._ab,_nc:p._nc,_cls:p._cls}));
-  // 1. Detection positive : si assez de lots explicitement "a batir", on n'utilise qu'eux.
-  const ab=raw.filter(p=>p._ab);
-  if(ab.length>=10){
+  /* R33b — DETECTION POSITIVE par CODE Cerema + libellé (anciennement label seul).
+   * Avant : _ab = regex sur libtypbien uniquement → ignore codtypbien=21 sans libellé "à bâtir".
+   * Après : _cls==="tab" inclut codtypbien ^21 ET les détections par label → périmètre plus large.
+   * La décontamination statistique (terrainHomogeneous) est appliquée au corpus TAB retenu
+   * pour éliminer les outliers éventuels, ce que l'ancien code sautait entièrement. */
+  const tabCls=raw.filter(p=>p._cls==="tab");
+  if(tabCls.length>=TERR_MIN_HOMOG){
+    /* Décontamination statistique du corpus TAB (Otsu + plancher relatif si nécessaire).
+     * On réinitialise _cls à "_done" pour que terrainHomogeneous ne re-filtre pas par nature
+     * (les points sont déjà pré-sélectionnés comme TAB, l'étape 1 de terrainHomogeneous
+     * deviendrait incomplète sur un corpus homogène). */
+    const _tabH=terrainHomogeneous(tabCls.map(p=>{const c={};for(const k in p)c[k]=p[k];c._cls="_done";return c;}));
+    const _tabFinal=(_tabH.removed>0&&_tabH.pts.length>=TERR_MIN_HOMOG)?_tabH.pts:tabCls;
     if(typeof DEBUG!=="undefined"&&DEBUG&&typeof dbg==="function")
-      dbg("Terrain - filtre A BATIR explicite : "+ab.length+"/"+raw.length+" ventes retenues");
-    return strip(ab);
+      dbg("Terrain R33b TAB code+label : "+_tabFinal.length+"/"+raw.length+" ventes"+(_tabH.removed>0?" (décontam. "+_tabH.removed+" écarté[s], mode: "+_tabH.mode+")":""));
+    _terrainParseMeta={mode:(_tabH.removed>0?_tabH.mode:"TAB Cerema"),removed:_tabH.removed,n:_tabFinal.length,nRaw:raw.length,cut:_tabH.cut||null};
+    return strip(_tabFinal);
   }
   // 2+3. Repli heuristique : exclusion des natures non constructibles, fenetre de
   //      surface, plancher de prix ancre sur le bareme departemental EPTB/SDES.
@@ -2317,6 +2421,7 @@ function parsePtsTerrain(arr,dep){
   }
   if(typeof DEBUG!=="undefined"&&DEBUG&&typeof dbg==="function")
     dbg("Terrain - filtre heuristique : "+kept.length+"/"+raw.length+" ventes retenues (plancher "+Math.round(floor)+" EUR/m2"+(eptb!=null?", EPTB dep "+dep+"="+eptb:", EPTB indisponible")+", surface "+TERR_SURF_MIN+"-"+TERR_SURF_MAX+" m2)");
+  _terrainParseMeta={mode:kept._terrainH?(kept._terrainH.mode||"filtre heuristique"):"filtre heuristique",removed:raw.length-kept.length,n:kept.length,nRaw:raw.length,cut:null};
   return strip(kept);
 }
 /* ===== G : Prix median DVF communal — graine dynamique pour baseSqm() =====
@@ -2412,6 +2517,48 @@ function compDistFactor(p,ref){
   return COMP_DIST_FLOOR+(1-COMP_DIST_FLOOR)*Math.exp(-d/COMP_DIST_TAU);
 }
 
+/* R33 — GRANULARITÉ EPCI : niveau intermédiaire entre commune et département.
+ * Quand la commune renvoie peu de ventes DVF (<EPCI_TRIGGER), on augmente le corpus
+ * avec les communes voisines appartenant au même EPCI (Établissement Public de
+ * Coopération Intercommunale). Source : geo.api.gouv.fr (API Découpage admin., gratuite).
+ * Gain typique : commune rurale de 2-5 ventes → 20-50 ventes EPCI exploitables.
+ * Contraintes :
+ *   - Max 4 communes voisines pour limiter la latence réseau (<12 s total)
+ *   - Timeout strict de 3 s par appel geo.api.gouv.fr
+ *   - Aucune régression si l'EPCI est introuvable ou le réseau silencieux → null */
+const EPCI_TRIGGER=15; // communes avec <15 ventes bénéficient de l'augmentation EPCI
+
+async function fetchDvfEpciAugment(coord,type,existingPts){
+  if(!coord||!coord.insee)return null;
+  try{
+    /* Étape 1 : code EPCI de la commune */
+    const _gR=await _withTimeout(dvfFetch("https://geo.api.gouv.fr/communes/"+coord.insee+"?fields=epci"),3000,null);
+    if(!_gR||!_gR.json||!_gR.json.epci||!_gR.json.epci.code)return null;
+    const _epciCode=_gR.json.epci.code;
+    /* Étape 2 : liste des communes de l'EPCI (limité à 100, on prend les 4 premières voisines) */
+    const _cR=await _withTimeout(dvfFetch("https://geo.api.gouv.fr/epcis/"+_epciCode+"/communes?fields=code&limit=100"),3000,null);
+    if(!_cR||!Array.isArray(_cR.json))return null;
+    const _neighbors=_cR.json.map(c=>c.code).filter(c=>c!==coord.insee).slice(0,4);
+    if(!_neighbors.length)return null;
+    if(typeof DEBUG!=="undefined"&&DEBUG&&typeof dbg==="function")
+      dbg("R33 EPCI "+_epciCode+" : "+_neighbors.length+" commune(s) voisine(s) interrogée(s) ("+_neighbors.join(", ")+")");
+    /* Étape 3 : DVF pour chaque commune voisine, agrégation */
+    const _dep=_depOf(coord);
+    let _allPts=[...(existingPts||[])];
+    for(const _insee of _neighbors){
+      const _r=await _withTimeout(dvfFetch(DVF_BASE+"?code_insee="+_insee+"&page_size=500"),5000,null);
+      if(!_r)continue;
+      const _arr=extractArr(_r.json);
+      const _parsed=type==="terrain"?{pts:parsePtsTerrain(_arr,_dep)}:parsePts(_arr,type);
+      if(_parsed.pts&&_parsed.pts.length)_allPts=_allPts.concat(_parsed.pts);
+    }
+    const _added=_allPts.length-(existingPts||[]).length;
+    if(typeof DEBUG!=="undefined"&&DEBUG&&typeof dbg==="function")
+      dbg("R33 EPCI résultat : +"+ _added+" ventes (total "+_allPts.length+")");
+    return _allPts.length>(existingPts||[]).length?_allPts:null;
+  }catch(_){return null;}
+}
+
 async function fetchDvf(coord,type){
   if(!coord||!coord.insee)return {pts:null,status:"no-conn"};
   // Fix14 — cache resultat DVF : garantit la coherence entre consultations successives
@@ -2503,7 +2650,9 @@ async function fetchDvf(coord,type){
   }
   const _btnP=$("btnEstim"),_setP=t=>{if(_btnP&&_btnP.disabled)_btnP.textContent=t;};
   const base=`${DVF_BASE}?code_insee=${coord.insee}&page_size=500`;
-  const r1=await dvfFetch(base);
+  let r1=await dvfFetch(base);
+  /* R34 — retry commune : purge cache session + 2e essai après 1,2 s (mobile/4G instable). */
+  if(!r1){_netCache.delete(base);await new Promise(rr=>setTimeout(rr,1200));r1=await dvfFetch(base);}
   if(!r1)return {pts:null,status:"no-conn"};
   const count=r1.json.count||0;
   if(DEBUG)dbg("INSEE "+coord.insee+" - "+count+" mutations");
@@ -2812,6 +2961,24 @@ function renderConfBreak(c){
 }
 /* ===== Donnees reelles : loyer ancre au prix DVF + tendance de prix calculee sur DVF ===== */
 function mktRentSqm(sqmBase){const y=Math.max(0.032,Math.min(0.075,0.082-sqmBase*9e-6));return +(sqmBase*y/12).toFixed(1);}
+/* R32 — SHRINKAGE JAMES-STEIN de la tendance DVF
+ * Problème : la régression log-linéaire sur corpus peu dense (peu d'années, peu de
+ * ventes/an) produit des pentes très incertaines — souvent ±5-8 %/an — qui amplifient
+ * l'actualisation temporelle au lieu de la corriger. Le simple bornage ±8 %/an ne
+ * protège pas : une pente de 7 %/an peut être pure variance si SE = 6 %/an.
+ *
+ * Solution : shrinkage "positive-part" 1D analogue à James-Stein.
+ *   F = max(0, 1 − λ/t²)   avec t = |pente_log| / SE(pente), λ = 1
+ *   pente_rétrécie = pente_OLS × F
+ *
+ * Comportement :
+ *   t < 1  (signal < bruit)     → F = 0  → aucune tendance affichée ✓
+ *   t = 1,4 (√2)                → F = 0,50 → tendance divisée par 2
+ *   t = 2                       → F = 0,75 → tendance fiable quasi-préservée
+ *   t ≥ 4  (signal très fort)   → F ≈ 0,94 → quasi-inchangé ✓
+ *
+ * Non-régression : si le corpus a ≥ 8 années denses, SE est faible et t >> 1,
+ * donc F → 1 : aucun effet sur les estimations bien fondées. */
 function dvfTrend(pts){
   if(!pts||pts.length<10)return null;
   const byY={};pts.forEach(p=>{const y=p.date?+String(p.date).slice(0,4):0;if(y&&p.ppm>0)(byY[y]=byY[y]||[]).push(p.ppm);});
@@ -2819,12 +2986,39 @@ function dvfTrend(pts){
   const ys=Object.keys(byY).map(Number).filter(y=>byY[y].length>=6).sort((a,b)=>a-b);
   if(ys.length<2)return null;
   const first=ys[0],last=ys[ys.length-1],span=Math.max(1,last-first);
+  /* Médiane annuelle stockée pour ne pas recalculer dans la boucle SE */
+  const meds={};
   let sw=0,sx=0,sy=0,sxx=0,sxy=0;
-  ys.forEach(y=>{const w=Math.min(byY[y].length,60),ly=Math.log(med(byY[y]));sw+=w;sx+=w*y;sy+=w*ly;sxx+=w*y*y;sxy+=w*y*ly;});
+  ys.forEach(y=>{const w=Math.min(byY[y].length,60),ly=Math.log(meds[y]=med(byY[y]));sw+=w;sx+=w*y;sy+=w*ly;sxx+=w*y*y;sxy+=w*y*ly;});
   const den=sw*sxx-sx*sx;
-  let perYear=den!==0?(Math.exp((sw*sxy-sx*sy)/den)-1)*100:(Math.pow(med(byY[last])/med(byY[first]),1/span)-1)*100;
-  perYear=Math.max(-8,Math.min(8,perYear)); // bornage : au-dela, artefact plus probable qu'un vrai marche
-  return{evo12:+perYear.toFixed(1),evoTot:+((med(byY[last])/med(byY[first])-1)*100).toFixed(0),span,fromY:first,toY:last,nYears:ys.length,smoothed:true};
+  if(!den)return null;                        // système dégénéré (très rare)
+  const slope=(sw*sxy-sx*sy)/den;             // pente log-linéaire pondérée
+  const intc=(sy-slope*sx)/sw;               // ordonnée à l'origine
+  /* ── Shrinkage R32 ─────────────────────────────────────────────────── */
+  const df=ys.length-2;
+  let shrinkFactor=1,tStat=Infinity,seAnnual=0;
+  if(df>=1){
+    /* Variance résiduelle pondérée : WRSS / (nAnnées − 2) */
+    let wrss=0;
+    ys.forEach(y=>{const w=Math.min(byY[y].length,60);wrss+=w*(Math.log(meds[y])-intc-slope*y)**2;});
+    const sigma2=wrss/df;
+    /* Variance de la pente OLS pondérée : Var(β̂) = σ² × sw / den */
+    const seSlope=Math.sqrt(Math.max(0,sigma2*sw/den));
+    tStat=seSlope>0?Math.abs(slope)/seSlope:Infinity;
+    seAnnual=+(seSlope*100).toFixed(2);       // ≈ SE annualisé en %/an
+    /* Facteur de rétraction positive-part (λ=1) : F = max(0, 1 − 1/t²) */
+    shrinkFactor=Math.max(0,1-1/(tStat*tStat));
+  }else{
+    /* 2 années seulement : régression exacte, pas d'estimation du bruit → prudence fixe */
+    shrinkFactor=0.50;
+  }
+  let perYear=(Math.exp(slope*shrinkFactor)-1)*100;
+  perYear=Math.max(-8,Math.min(8,perYear)); // bornage anti-artefact conservé
+  if(typeof DEBUG!=="undefined"&&DEBUG&&typeof dbg==="function")
+    dbg("R32 dvfTrend : pente="+slope.toFixed(4)+" t="+tStat.toFixed(2)+" shrink="+shrinkFactor.toFixed(2)+" \u2192 "+perYear.toFixed(1)+"%/an ("+ys.length+" ans, df="+df+")");
+  return{evo12:+perYear.toFixed(1),evoTot:+((meds[last]/meds[first]-1)*100).toFixed(0),
+         span,fromY:first,toY:last,nYears:ys.length,smoothed:true,
+         shrinkFactor:+shrinkFactor.toFixed(2),tStat:isFinite(tStat)?+tStat.toFixed(2):null,seAnnual};
 }
 /* R12 : rappel de fraicheur — CITY_APT/DEPT_APT/NAT_APT (lignes ~1051-1054) sont des reperes
  * STATIQUES (grille de prix indicative, non redatee automatiquement : pas de backend pour un
@@ -3181,7 +3375,11 @@ function estimateTerrain(realBase,parcelSurf,city,cp,realStats,btf){
   if(landAnchor)dispRows.splice(1,0,["D\u00e9gressivit\u00e9 taille mesur\u00e9e sur "+landAnchor.n+" ventes (\u00e9lasticit\u00e9 "+landAnchor.b+") \u00b7 parcelle "+eur0(parcelSurf)+" m\u00b2 vs m\u00e9diane locale "+eur0(landAnchor.medSurf)+" m\u00b2"+(landAnchor.homogRemoved>0?" \u00b7 "+landAnchor.homogRemoved+" vente(s) hors march\u00e9 \u00e0 b\u00e2tir \u00e9cart\u00e9e(s) ("+landAnchor.homogMode+")":""),null,eur0(landAnchor.before)+" \u2192 "+eur0(landAnchor.after)+" \u20ac/m\u00b2"]);
   dispRows.push(["CES estim\u00e9 ("+(lib||zone||"d\u00e9faut")+") \u00b7 SDP constructible",null,"CES "+ces+" \u00d7 "+parcelSurf+" m\u00b2 = "+buildable+" m\u00b2"]);
   if(prixSdp)dispRows.push(["Prix/m\u00b2 SDP (indicateur constructeur/promoteur)",null,eur0(prixSdp)+" \u20ac/m\u00b2 SDP"]);
-  return{price,sqm:effSqm,sqmBase:landSqm,sqmAdj,low:Math.round(price*(1-spread)),high:Math.round(price*(1+spread)),spread,conf,rows:dispRows,surface:parcelSurf,type:"terrain",city,cp,pieces:state.pieces,real:!!realBase,econSurface:parcelSurf,ctx,dyn,terrain:{landSqm,buildable,ces,zone,lib,adj,viabDetail:{eau:vEau,assain:vAss,elec:vElec,voirie:vVoi,telecom:vTel},prixSdp,srcNote,pente,sol,forme,ttype,landAnchor}};
+  /* V3 — Afficher la décontamination du corpus DVF terrain (séparation bimodale, plancher relatif…) */
+  const _tm=_terrainParseMeta;
+  if(_tm&&_tm.removed>0)
+    dispRows.push(["Corpus DVF : "+_tm.removed+" vente(s) \u00e9cart\u00e9e(s) sur "+_tm.nRaw+" ("+_tm.mode+(_tm.cut?", seuil "+_tm.cut+" \u20ac/m\u00b2":"")+")\u00a0\u2014 "+_tm.n+" retenues",null,_tm.n+" ventes exploitation"]);
+  return{price,sqm:effSqm,sqmBase:landSqm,sqmAdj,low:Math.round(price*(1-spread)),high:Math.round(price*(1+spread)),spread,conf,rows:dispRows,surface:parcelSurf,type:"terrain",city,cp,pieces:state.pieces,real:!!realBase,econSurface:parcelSurf,ctx,dyn,terrain:{landSqm,buildable,ces,zone,lib,adj,viabDetail:{eau:vEau,assain:vAss,elec:vElec,voirie:vVoi,telecom:vTel},prixSdp,srcNote,pente,sol,forme,ttype,landAnchor,decontam:_tm}};
 }
 // ===== R2 : Estimateur « Compte à rebours promoteur » pour terrains =====
 // Charge foncière maximale = Prix neuf local/m² × SDP constructible − coût construction − marge promoteur
@@ -3437,9 +3635,9 @@ function renderMarket(r){const d=r.dyn;const sign=x=>(x>=0?"+":"")+x;
   const cap=mtCapacity(1000,RATE20/100,20),capUp=mtCapacity(1000,(RATE20+1)/100,20);const effet=Math.round((1-capUp/cap)*100);
   const mois=(d.ratioOV*12).toFixed(0);
   let html=`<div class="stat" title="Prix /m\u00b2 m\u00e9dian issu du calcul multi-mod\u00e8les (DVF, m\u00e9diane, r\u00e9gression, moteurs IA). Base avant ajustements DPE/\u00e9tat/\u00e9tage."><span class="sl">Prix de base retenu (multi-mod\u00e8les)</span><span class="sv num">${eur0(r.sqmBase)} /m\u00b2</span></div>`+
-    `<div class="stat" title="${d.trendReal?'Croissance annuelle moyenne liss\u00e9e des prix m\u00e9dians DVF sur '+d.evoSpan+' ans, corrig\u00e9e de l\u2019inflation (INSEE IPC). Mesure la vraie appr\u00e9ciation du march\u00e9 local en \u20ac constants.':'Variation du prix /m\u00b2 sur les 12 derniers mois (nominal, non corrig\u00e9 de l\u2019inflation).'}"><span class="sl">${d.trendReal?'Tendance prix /an (liss\u00e9e) <span style="color:var(--brand-dark);font-weight:700;font-size:9px">r\u00e9el</span>':'\u00c9volution prix 12 mois'}</span><span class="sv num ${cls}">${arr} ${Math.abs(d.evo12)} %</span></div>`+
-    `<div class="stat" title="${d.trendReal?'\u00c9volution cumul\u00e9e du prix m\u00e9dian DVF sur '+d.evoSpan+' ans en \u20ac constants (corrig\u00e9e inflation). Ex : +6 % = le bien a gagn\u00e9 6 % de pouvoir d\u2019achat sur la p\u00e9riode.':'\u00c9volution cumul\u00e9e du prix /m\u00b2 sur 5 ans (nominal).'}"><span class="sl">\u00c9volution sur ${d.trendReal?d.evoSpan:5} ans${d.trendReal?' <span style="color:var(--brand-dark);font-weight:700;font-size:9px">r\u00e9el</span>':''}</span><span class="sv num">${sign(d.evo5)} %</span></div>`+
-    `<div class="stat" title="${d.trendReal?'Tendance annuelle liss\u00e9e calcul\u00e9e directement \u00e0 partir des transactions DVF (CAGR des m\u00e9dianes), en \u20ac courants. Diff\u00e8re de la tendance r\u00e9elle ci-dessus car elle inclut l\u2019inflation.':'Variation de l\u2019indice Notaires-INSEE sur 12 mois (r\u00e9f\u00e9rence nationale/d\u00e9partementale).'}"><span class="sl">${d.trendReal?"Tendance DVF (/an, liss\u00e9e)":"Indice Notaires-INSEE (1 an)"}</span><span class="sv num ${ncls}">${sign(d.notairesEvo)} %</span></div>`+
+    `<div class="stat" title="${d.trendReal?'Croissance annuelle moyenne liss\u00e9e des prix m\u00e9dians DVF sur '+d.evoSpan+' ans, corrig\u00e9e de l\u2019inflation (INSEE IPC). Mesure la vraie appr\u00e9ciation du march\u00e9 local en \u20ac constants.':'Variation du prix /m\u00b2 sur les 12 derniers mois (nominal, non corrig\u00e9 de l\u2019inflation).'}"><span class="sl">${d.trendReal?'Tendance prix /an (liss\u00e9e) <span style="color:var(--brand-dark);font-weight:700;font-size:9px">r\u00e9el</span>':'\u00c9volution prix 12 mois <span style="color:var(--ink-soft);font-size:9px">simul\u00e9</span>'}</span><span class="sv num ${cls}">${arr} ${Math.abs(d.evo12)} %</span></div>`+
+    `<div class="stat" title="${d.trendReal?'\u00c9volution cumul\u00e9e du prix m\u00e9dian DVF sur '+d.evoSpan+' ans en \u20ac constants (corrig\u00e9e inflation). Ex : +6 % = le bien a gagn\u00e9 6 % de pouvoir d\u2019achat sur la p\u00e9riode.':'\u00c9volution cumul\u00e9e du prix /m\u00b2 sur 5 ans (nominal).'}"><span class="sl">\u00c9volution sur ${d.trendReal?d.evoSpan:5} ans${d.trendReal?' <span style="color:var(--brand-dark);font-weight:700;font-size:9px">r\u00e9el</span>':'<span style="color:var(--ink-soft);font-size:9px">simul\u00e9</span>'}</span><span class="sv num">${sign(d.evo5)} %</span></div>`+
+    `<div class="stat" title="${d.trendReal?'Tendance annuelle liss\u00e9e calcul\u00e9e directement \u00e0 partir des transactions DVF (CAGR des m\u00e9dianes), en \u20ac courants. Diff\u00e8re de la tendance r\u00e9elle ci-dessus car elle inclut l\u2019inflation.':'Variation de l\u2019indice Notaires-INSEE sur 12 mois (r\u00e9f\u00e9rence nationale/d\u00e9partementale).'}"><span class="sl">${d.trendReal?"Tendance DVF (/an, liss\u00e9e)":"Tendance estim\u00e9e (/an) <span style=\"color:var(--ink-soft);font-size:9px\">simul\u00e9</span>"}</span><span class="sv num ${ncls}">${sign(d.notairesEvo)} %</span></div>`+
     (d.trendReal?`<div style="margin:6px 0 2px;padding:8px 10px;background:#f4f8fb;border-radius:8px;font-size:10.5px;line-height:1.55;color:var(--ink-soft)"><b style="color:var(--ink)">Comprendre ces 3 indicateurs :</b> <b>Tendance r\u00e9elle</b> = croissance annuelle moyenne des prix DVF, corrig\u00e9e de l\u2019inflation (pouvoir d\u2019achat r\u00e9el). <b>\u00c9volution ${d.evoSpan} ans</b> = variation cumul\u00e9e r\u00e9elle sur la p\u00e9riode. <b>Tendance DVF nominale</b> = m\u00eame calcul mais en \u20ac courants (inclut l\u2019inflation). Si tendance r\u00e9elle \u2248 0 et nominale > 0, les prix suivent l\u2019inflation sans r\u00e9elle appr\u00e9ciation.</div>`:'')+
     `<div class="stat"><span class="sl">Loyer de march\u00e9${d.loyerReal?(' <span style="color:var(--good);font-weight:700;font-size:9px">\u2713 Carte des loyers DHUP'+(d.loyerAnnee?' '+d.loyerAnnee:'')+'</span>'):d.rentReal?' <span style="color:var(--brand-dark);font-weight:700;font-size:9px">ancr\u00e9 DVF</span>':''}</span><span class="sv num">${d.loyerM2.toFixed(1).replace('.',',')} \u20ac/m\u00b2/mois${d.loyerReal&&d.loyerNbObs?' <span style="color:var(--ink-soft);font-size:9px">('+ d.loyerNbObs+' obs.)':' </span>'}</span></div>`+
     `<div class="stat"><span class="sl">Rendement locatif brut de march\u00e9</span><span class="sv num">${d.rendementMarche.toFixed(1).replace('.',',')} %</span></div>`+
@@ -3713,7 +3911,7 @@ function renderDvfStats(r){
    `<div style="font-weight:700;font-size:13px;margin:16px 0 4px;color:var(--ink)">Positionnement prix / surface</div>`+
    `<div class="hint" style="margin-bottom:8px">Chaque point = une vente r\u00e9cente. La croix = votre bien au <b>prix envisag\u00e9</b>. Les % se recalculent quand vous modifiez le prix d'achat.</div>`+
    `<div id="dvfScatter"></div>`+
-   `<div style="margin-top:13px;padding:11px 13px;background:var(--brand-tint);border-radius:10px;font-size:11.5px;color:var(--ink-soft);line-height:1.6"><b style="color:var(--ink)">S\u00e9lection des comparables</b><br>\u2022 M\u00eame type (<b>${typeLbl}</b>) ${state.dvfScope==="bbox"?`dans un <b>rayon ~${state.dvfRadiusKm||1} km</b> autour du bien \u2014 DVF/Cerema (g\u00e9olocalis\u00e9)`:`dans la <b>commune</b> ${r.city||""} \u2014 DVF/Cerema (pas de rayon en m\u00e8tres)`}<br>\u2022 Stats ci-dessus : ventes \u00e0 <b>surface proche</b> de la v\u00f4tre (r\u00e9centes, pond\u00e9r\u00e9es)<br>${r.bandWidened?"\u2022 <b>Fen\u00eatre de surface \u00e9largie automatiquement</b> (peu de ventes \u00e0 surface proche)<br>":""}\u2022 Nuage : <b>toutes</b> les ventes r\u00e9centes du type<br>\u2022 Aberrations de prix/m\u00b2 exclues (IQR de Tukey)</div>`;
+   `<div style="margin-top:13px;padding:11px 13px;background:var(--brand-tint);border-radius:10px;font-size:11.5px;color:var(--ink-soft);line-height:1.6"><b style="color:var(--ink)">S\u00e9lection des comparables</b><br>\u2022 M\u00eame type (<b>${typeLbl}</b>) ${state.dvfScope==="bbox"?`dans un <b>rayon ~${state.dvfRadiusKm||1} km</b> autour du bien \u2014 DVF/Cerema (g\u00e9olocalis\u00e9)`:(state.dvfScope==="epci"?`<b>commune + EPCI voisins</b> \u2014 DVF/Cerema (commune peu dense)`:`dans la <b>commune</b> ${r.city||""} \u2014 DVF/Cerema (pas de rayon en m\u00e8tres)`)}<br>\u2022 Stats ci-dessus : ventes \u00e0 <b>surface proche</b> de la v\u00f4tre (r\u00e9centes, pond\u00e9r\u00e9es)<br>${r.bandWidened?"\u2022 <b>Fen\u00eatre de surface \u00e9largie automatiquement</b> (peu de ventes \u00e0 surface proche)<br>":""}\u2022 Nuage : <b>toutes</b> les ventes r\u00e9centes du type<br>\u2022 Aberrations de prix/m\u00b2 exclues (IQR de Tukey)</div>`;
   renderScatter(r);
 }
 /* Distance geographique (vol d'oiseau) entre deux coords WGS84 */
@@ -4306,11 +4504,12 @@ function reliabilityIndex(r){
   const cleanRatio=(stats.n+(stats.removed||0))>0?stats.n/(stats.n+(stats.removed||0)):1,dataQ=cl(cleanRatio*0.6+r2*0.4,0,1);
   const ages=(r.realPts||[]).map(p=>year-(p.date?+String(p.date).slice(0,4):year)).filter(a=>a>=0);
   const avgAge=ages.length?ages.reduce((s,a)=>s+a,0)/ages.length:5,rec=cl(1-avgAge/6,0,1);
-  const lbl=(state.coord&&state.coord.label)||"",precise=!!(state.coord&&/\d/.test(lbl)),bbx=state.dvfScope==="bbox",_rk=state.dvfRadiusKm||1.1,
+  const lbl=(state.coord&&state.coord.label)||"",precise=!!(state.coord&&/\d/.test(lbl)),bbx=state.dvfScope==="bbox",_epci=state.dvfScope==="epci",_rk=state.dvfRadiusKm||1.1,
     /* R13 : un rayon elargi (foncier rare) reste geolocalise mais est MOINS precis
-     * qu'un rayon de 1 km : la confiance geographique doit le refleter honnetement. */
-    geoP=bbx?(_rk<=1.2?0.95:_rk<=2.6?0.88:0.80):(precise?0.85:0.55);
-  const pillars=[["Quantit\u00e9 de comparables",nq,(stats.n||0)+" ventes DVF"],["Dispersion des prix",disp,"\u00e9cart Q1\u2013Q3 "+Math.round(relIQR*100)+" %"],["Homog\u00e9n\u00e9it\u00e9 du quartier",agree,"accord moteurs "+Math.round(agree*100)+" %"],["Qualit\u00e9 des donn\u00e9es",dataQ,Math.round(cleanRatio*100)+" % conserv\u00e9es \u00b7 R\u00b2 "+r2.toFixed(2)],["R\u00e9cence des ventes",rec,"\u00e2ge moyen "+avgAge.toFixed(1)+" an(s)"],["Pr\u00e9cision g\u00e9oloc.",geoP,bbx?"adresse pr\u00e9cise \u00b7 DVF rayon ~"+(state.dvfRadiusKm||1)+" km":(precise?"adresse pr\u00e9cise \u00b7 DVF communal":"niveau commune")]];
+     * qu'un rayon de 1 km : la confiance geographique doit le refleter honnetement.
+     * R33 : scope EPCI = entre commune et bbox → confiance intermédiaire 0.72. */
+    geoP=bbx?(_rk<=1.2?0.95:_rk<=2.6?0.88:0.80):_epci?0.72:(precise?0.85:0.55);
+  const pillars=[["Quantit\u00e9 de comparables",nq,(stats.n||0)+" ventes DVF"],["Dispersion des prix",disp,"\u00e9cart Q1\u2013Q3 "+Math.round(relIQR*100)+" %"],["Homog\u00e9n\u00e9it\u00e9 du quartier",agree,"accord moteurs "+Math.round(agree*100)+" %"],["Qualit\u00e9 des donn\u00e9es",dataQ,Math.round(cleanRatio*100)+" % conserv\u00e9es \u00b7 R\u00b2 "+r2.toFixed(2)],["R\u00e9cence des ventes",rec,"\u00e2ge moyen "+avgAge.toFixed(1)+" an(s)"],["Pr\u00e9cision g\u00e9oloc.",geoP,bbx?"adresse pr\u00e9cise \u00b7 DVF rayon ~"+(state.dvfRadiusKm||1)+" km":_epci?"DVF commune + EPCI voisins":(precise?"adresse pr\u00e9cise \u00b7 DVF communal":"niveau commune")]];
   const _cl2=(stats&&stats.clean)||[],_sj=r.surface||0;
   let homS=0.5,homSd="surface du bien inconnue";
   if(_sj>0&&_cl2.length){const near=_cl2.filter(p=>p.surf>=_sj*0.75&&p.surf<=_sj*1.25).length/_cl2.length;homS=cl(near/0.7,0,1);homSd=Math.round(near*100)+" % \u00e0 \u00b125 % de votre surface";}
@@ -4444,7 +4643,21 @@ function renderPriceFormation(r){
     </div>
   </div>
 </div>`:'';
-  el.innerHTML=vefaPanel+A+B+C;
+  /* V4 Item 9 — Explication en langage naturel (formation du prix) */
+  const _nb=(()=>{
+    if(!r.price||!r.sqmBase)return '';
+    const isReal=r.real&&(r.realCount||0)>0,isT=r.type==='terrain';
+    const _src=isReal?`<b>${r.realCount}</b>\u00a0vente${r.realCount>1?'s':''} DVF r\u00e9elle${r.realCount>1?'s':''}`:isT?'bar\u00e8me d\u00e9partemental':'bar\u00e8me r\u00e9gional';
+    const _base=isT?`Le foncier de r\u00e9f\u00e9rence est <b>${eur0(r.sqmBase)}\u00a0\u20ac/m\u00b2</b>`:
+        `Le march\u00e9 local valorise ce bien\u00a0: <b>${eur0(r.sqmBase)}\u00a0\u20ac/m\u00b2</b>`;
+    const _rows=(r.rows||[]).filter(x=>x[1]&&Math.abs(x[1])>=0.03).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).slice(0,2);
+    const _adj=_rows.length?'\u00a0\u00b7 Ajustements principaux\u00a0: '+_rows.map(x=>`<em>${x[0]}</em>\u00a0${x[1]>0?'+':''}${(x[1]*100).toFixed(0)}\u00a0%`).join(', ')+'.':'';
+    const _conf=r.confScore!=null?` Confiance\u00a0<b>${r.confScore}/100</b> (fourchette \u00b1${Math.round((r.spread||0.1)*100)}\u00a0%).`:'';
+    const _prud=r.prudenceAdj&&r.prudenceAdj<-0.005?` D\u00e9cote acqu\u00e9reur\u00a0: ${(r.prudenceAdj*100).toFixed(1).replace('.',',')}\u00a0%.`:'';
+    const _tempo=r.tempo?`<span style="color:var(--ink-soft);font-size:11px;display:block;margin-top:4px">\u21ba Actualis\u00e9 \u00e0 aujourd\u2019hui\u00a0: tendance ${r.tempo.evoPerYear>=0?'+':''}${r.tempo.evoPerYear}\u00a0%/an sur ${r.tempo.years.toFixed(1).replace('.',',')}\u00a0an(s)\u00a0(R32\u00a0shrinkage t\u202f=\u202f${r._dvfTrend&&r._dvfTrend.tStat!=null?r._dvfTrend.tStat.toFixed(1):'?'}).</span>`:'';
+    return `<div style="margin-bottom:14px;padding:12px 14px;background:linear-gradient(135deg,var(--brand-tint),#f0fdf9);border-radius:11px;border-left:3px solid var(--brand);font-size:12.5px;line-height:1.7;color:var(--ink)"><div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:var(--brand);margin-bottom:5px">\u25b6\ufe0f Analyse en langage naturel</div>Estimation bas\u00e9e sur ${_src}. ${_base}.${_adj}${_conf}${_prud}${_tempo}</div>`;
+  })();
+  el.innerHTML=_nb+vefaPanel+A+B+C;
 }
 // ===== Reconciliation ChatGPT x Grok \u2014 W2 : fournisseurs open-data (defensifs, ZERO impact prix) =====
 async function provDemo(insee){
@@ -5911,7 +6124,7 @@ function _applyTemporal(r,pts){
   if(!TEMPO_ENABLED||!r||!(r.price>0))return;
   const age=_corpusAgeYears(pts);
   if(!age||!(age.years>0.25))return;          // corpus recent : rien a recaler
-  const tr=dvfTrend(pts);
+  const tr=(r&&r._dvfTrend)||dvfTrend(pts); // R34 : réutilise le calcul de showResults si disponible
   if(!tr||tr.evo12==null)return;              // pas de tendance locale mesurable
   const yrs=Math.min(TEMPO_MAX_YEARS,age.years);
   let f=Math.pow(1+tr.evo12/100,yrs)-1;
@@ -6365,10 +6578,21 @@ async function fetchAllData(coord){
   const livePromise=(coord&&coord.insee)?fetchLive(coord):Promise.resolve({});
   state.enrich=null;const enrichPromise=coord?fetchEnrich(coord):Promise.resolve(null);
   state.ctx2=null;const ctxProm=coord?fetchContextProviders(coord):Promise.resolve({});
+  /* V3 — Pente altimétrique : démarre en parallèle dès maintenant (open-meteo rapide) */
+  const pentePromise=(state.type==="terrain"&&coord&&coord.lat!=null)?fetchTerrainPente(coord):Promise.resolve(null);
   if(!coord){out.diag="adresse non localis\u00e9e \u2014 v\u00e9rifiez l'adresse saisie et choisissez une suggestion";}
   else{
     // Chaque etape est bornee dans le temps : une API muette ne doit jamais figer l'estimation.
-    const res=(await _withTimeout(fetchDvf(coord,state.type),28000,null))||{status:"bbox-fail",pts:null};
+    let res=(await _withTimeout(fetchDvf(coord,state.type),28000,null))||{status:"bbox-fail",pts:null};
+    /* R33 — EPCI : si la commune renvoie trop peu de ventes, augmenter avec l'EPCI voisin.
+     * Seulement si scope="commune" (pas de GPS précis) ET pts < EPCI_TRIGGER.
+     * Jamais si bbox a fonctionné (déjà géolocalisé) ni sur échec réseau (bbox-fail). */
+    if(res.pts&&res.pts.length>0&&res.pts.length<EPCI_TRIGGER&&res.scope==="commune"){
+      const _epciPts=await _withTimeout(fetchDvfEpciAugment(coord,state.type,res.pts),14000,null);
+      if(_epciPts&&_epciPts.length>res.pts.length){
+        res=Object.assign({},res,{pts:_epciPts,scope:"epci"});
+      }
+    }
     // G: Calcul du prix médian communal DVF — graine dynamique pour baseSqm()
     _withTimeout(fetchCommuneMedian(coord.insee,state.type),10000,null).then(med=>{
       if(med&&med.med>0){state._localApt={med:med.med,n:med.n,source:med.source,annee:med.annee};}
@@ -6386,7 +6610,7 @@ async function fetchAllData(coord){
       out.vefaInfo={nNeuf:res.nNeuf||0,nTotal:res.nTotal||0,natSeen:!!res.natSeen};
       out.ptsVefa=res.ptsNeuf||[];
       out.realStats=dvfStats(band,surf>0?surf:null,+state.pieces||0);
-      if(DEBUG&&out.realStats)dbg("Stats: west="+out.realStats.west+" | P50="+(out.realStats.westSurfStrict||"n/a")+" Padapt(P"+Math.round((out.realStats.westSurfPct||0.4)*100)+")="+(out.realStats.westSurfP40||"n/a")+" | disp="+(out.realStats.med>0?((out.realStats.q3-out.realStats.q1)/out.realStats.med).toFixed(2):"?")+" | "+(out.realStats.strictCount||0)+" ventes \u00b125% IQR-1x | westGRooms="+(out.realStats.westGRooms||"n/a")+")");
+      if(DEBUG&&out.realStats)dbg("Stats: west(global)="+out.realStats.west+" | medBandeSurf="+(out.realStats.westSurfStrict||"n/a")+" Padapt(P"+Math.round((out.realStats.westSurfPct||0.4)*100)+")="+(out.realStats.westSurfP40||"n/a")+" | disp="+(out.realStats.med>0?((out.realStats.q3-out.realStats.q1)/out.realStats.med).toFixed(2):"?")+" | "+(out.realStats.strictCount||0)+" ventes \u00b125% IQR-1x | westGRooms="+(out.realStats.westGRooms||"n/a")+")");
       out.engineData=estimationEngines(out.realStats.clean,surf,out.realStats);
       out.realBase=out.engineData.base||out.realStats.west||Math.round(out.realStats.med);
       // R13 : l'enrichissement DPE ne concerne que le bati (aucun DPE sur du foncier nu)
@@ -6413,6 +6637,25 @@ async function fetchAllData(coord){
         }else if(state._solAuto&&_ss.value==="argileux"&&(!_rg||(!_rg.fort&&!_rg.moyen))){
           _ss.value="normal";state._solAuto=false;if(_sn)_sn.style.display="none";
         }
+      }
+    }
+  }catch(_){}
+  /* V3 — Pente auto-fill : utiliser le résultat de pentePromise (lancé en parallèle). */
+  try{
+    if(state.type==="terrain"&&!state._penteTouched){
+      const _pente=await _withTimeout(pentePromise,6000,null);
+      const _sp=$("terrainPente"),_pn=$("terrainPenteNote");
+      if(_pente&&_sp){
+        const _prev=_sp.value;
+        if(!state._penteAuto||_sp.value!==_pente){_sp.value=_pente;state._penteAuto=true;}
+        if(_pn){
+          const _lab={plat:"plate (<\u202f4\u202f%)",legere:"l\u00e9g\u00e8re (4\u202f\u2013\u202f12\u202f%)",forte:"forte (>\u202f12\u202f%)"};
+          _pn.innerHTML="\ud83c\udfd4\ufe0f Pente d\u00e9tect\u00e9e\u202f: <b>"+(_lab[_pente]||_pente)+"</b> \u2014 calcul altim\u00e9trique (open-meteo, r\u00e9solution\u202f30\u202fm). Corrigez si un lev\u00e9 topographique indique autre chose.";
+          _pn.style.display="";
+        }
+      }else if(state._penteAuto&&_sp&&_sp.value!=="plat"){
+        /* Plus aucune donnée alti → remettre "plat" par défaut si auto-rempli */
+        _sp.value="plat";state._penteAuto=false;if(_pn)_pn.style.display="none";
       }
     }
   }catch(_){}
@@ -6492,7 +6735,10 @@ function buildEstimation(data){
   // ─── Correctif VEFA ───────────────────────────────────────────────────────────
   // Calcul du correctif avant estimate() pour que la base transmise soit nettoyée.
   const _ctx0=realBase?marketCtx(realBase):null;
-  const _evo12=(realPts&&realPts.length>0&&realStats)?((()=>{const _t=dvfTrend(realPts);return _t?_t.evo12:0;})() ):0;
+  /* R34 : dvfTrend est calculé UNE SEULE FOIS ici et réutilisé dans les 3 endroits
+   * où il était appelé (vefaCorr/_evo12, r.dyn enrichment, _applyTemporal). */
+  const _dvfTrendR=(realPts&&realPts.length>0&&realStats)?dvfTrend(realPts):null;
+  const _evo12=_dvfTrendR?_dvfTrendR.evo12:0;
   /* R13 : la correction VEFA ne s'applique QU'AU BATI. Une vente de terrain nu n'est jamais
    * une VEFA (vente en l'etat futur d'achevement porte sur un logement a construire), et
    * parsePtsTerrain exclut deja toute mutation comportant du bati. Appliquer le proxy VEFA
@@ -6533,9 +6779,9 @@ function buildEstimation(data){
     r.high=Math.round(r.high*(1+_dg.impact));
     if(r.surface>0)r.sqmBase=Math.round(r.price/r.surface);
   }
-  lastResult=r;
+  lastResult=r;r._dvfTrend=_dvfTrendR; // R34 : cache partagé avec _applyTemporal
   if(realBase){const _rent=getRentSqm(r);r.dyn.loyerM2=_rent;r.dyn.rendementMarche=+(_rent*12/r.sqmBase*100).toFixed(1);r.dyn.rentReal=true;
-    const _tr=dvfTrend(realPts);if(_tr){r.dyn.evo12=_tr.evo12;r.dyn.evo5=_tr.evoTot;r.dyn.notairesEvo=_tr.evo12;r.dyn.evoSpan=_tr.span;r.dyn.trendReal=true;}}
+    const _tr=_dvfTrendR;if(_tr){r.dyn.evo12=_tr.evo12;r.dyn.evo5=_tr.evoTot;r.dyn.notairesEvo=_tr.evo12;r.dyn.evoSpan=_tr.span;r.dyn.trendReal=true;}}
   patchDynReal(r);updateBadges(r);
   const _checks=[numv("surface")>0,numv("chambres")>0,numv("sdb")>0,(state.type!=="appartement"||numv("floorExact")>0),(numv("balconM2")>0||numv("terrasseM2")>0||numv("jardinM2")>0),!!state.coord];
   const _conf=estimationConfidence(realStats,{dyn:r.dyn,nTotal:(realPts?realPts.length:0),attrFilled:_checks.filter(Boolean).length,attrTotal:_checks.length,baseConf:r.conf});
@@ -6546,6 +6792,20 @@ function buildEstimation(data){
     const _sprHQ=_rs&&_rs.spreadHQ!=null?Math.max(0.06,Math.min(0.20,_rs.spreadHQ)):null;
     r.spread=_sprHQ||(r.backtest?Math.max(0.06,Math.min(0.20,r.backtest.p80/100)):_sprF);
     r.spreadSrc=_sprHQ?"HQ-IQR":r.backtest?"backtest":"formula";
+    /* R31 : l'incertitude d'ECHANTILLONNAGE de la base s'ajoute a la dispersion du
+     * marche. Sources independantes -> somme quadratique. Effet negligeable sur un
+     * gros corpus, elargissement reel quand les ventes sont rares (mesure : +/-8,9 %
+     * d'erreur-type a 30 ventes contre +/-1,8 % a 800). */
+    if(_rs&&_rs.seBase>0){
+      const _sp0=r.spread;
+      r.spread=Math.min(0.30,Math.sqrt(_sp0*_sp0+_rs.seBase*_rs.seBase));
+      r.seBase=_rs.seBase;r.nEff=_rs.nEff;
+      if(r.spread>_sp0+0.002)r.spreadSrc+="+SE";
+      if(typeof DEBUG!=="undefined"&&DEBUG&&typeof dbg==="function")
+        dbg("R31 base : n="+_rs.n+" (n_effectif "+_rs.nEff+") | erreur-type "+
+            (_rs.seBase*100).toFixed(1)+" % | fourchette "+(_sp0*100).toFixed(1)+
+            " % -> "+(r.spread*100).toFixed(1)+" %");
+    }
     r.low=r.price*(1-r.spread);r.high=r.price*(1+r.spread);}
   // Fix12 : ancre marché = médiane DVF corrigée VEFA × surface (avant hedonics)
   // Sert de référence "prix de marché brut" dans l'interface acquéreur
@@ -6731,7 +6991,8 @@ function renderAllPanels(r,_conf,realBase,diag){
     const _dvfDates=(r.realPts||[]).map(p=>p.date).filter(Boolean).sort().reverse();
     const _dvfLast=_dvfDates[0]?String(_dvfDates[0]).slice(0,7):"";
     r.dvfLastDate=_dvfLast;
-    sd.style.background="#7fe3d4";st.textContent=`Donn\u00e9es r\u00e9elles DVF \u00b7 ${r.realCount} ventes \u00b7 ${state.dvfScope==="bbox"?"rayon ~"+(state.dvfRadiusKm||1)+" km":"commune"}`+(_dvfLast?` \u00b7 derni\u00e8re vente ${_dvfLast}`:"");$("compTag").textContent="DVF \u00b7 r\u00e9el";
+    const _scopeLbl=state.dvfScope==="bbox"?"rayon ~"+(state.dvfRadiusKm||1)+" km":state.dvfScope==="epci"?"commune + EPCI":"commune";
+    sd.style.background="#7fe3d4";st.textContent=`Donn\u00e9es r\u00e9elles DVF \u00b7 ${r.realCount} ventes \u00b7 ${_scopeLbl}`+(_dvfLast?` \u00b7 derni\u00e8re vente ${_dvfLast}`:"");$("compTag").textContent="DVF \u00b7 r\u00e9el";
   }
   else{sd.style.background="#E8742A";st.textContent="Bar\u00e8me r\u00e9gional \u00b7 sans DVF ("+diag+")";$("compTag").textContent="DVF indisponible";}
   countUp($("pcPrice"),r.price," \u20ac");
@@ -6784,6 +7045,15 @@ function setupAsyncCallbacks(r,enrichPromise,ctxProm){
 let _estimRunning=false;
 const ESTIM_TIMEOUT_MS=30000; // timeout d'une tentative individuelle (chaque etape a deja son propre timeout)
 const ESTIM_DEADLINE_MS=45000; // budget total d'un clic : retries automatiques jusqu'a cette limite
+
+/* V5 — Contrôle de fraîcheur des sources au chargement (console uniquement) */
+(function(){
+  try{
+    const stale=checkSourcesFreshness();
+    if(stale.length>0&&typeof console!=="undefined"&&console.warn)
+      console.warn("[Estimo V5] "+stale.length+" source(s) statiques périmées : "+stale.map(s=>s.label+" ("+s.updated+")").join(", ")+". Pensez à recalibrer les constantes.");
+  }catch(_){}
+})();
 
 function _withTimeout(promise,ms,fallback){
   return Promise.race([
@@ -7670,7 +7940,7 @@ ul{margin:5px 0;padding-left:18px}li{margin:3px 0}p{margin:5px 0}
 <div class="page"><section class="sec"><h2>Analyse financi\u00e8re</h2>${grab("proKpiPanel")}${ch("Cash-flow","chartCF")}${ch("VAN selon l\u2019ann\u00e9e de revente","chartVanYear")}${ch("Patrimoine net","chartEq")}</section></div>
 <div class="page"><section class="sec"><h2>Fiscalit\u00e9</h2>${grab("fiscalPanel")}</section></div>
 <div class="page"><section class="sec"><h2>Risques &amp; environnement</h2>${risk}</section>
-<section class="sec first" style="margin-top:18px"><h2>M\u00e9thodologie &amp; sources</h2>
+<section class="sec first" style="margin-top:18px"><h2>M\u00e9thodologie &amp; sources</h2>'+renderSourcesFreshnessBadge()+'<br>
 <p>Estimation par comparaison de ventes r\u00e9elles (DVF/Cerema) pond\u00e9r\u00e9es par similarit\u00e9 de surface (poids 3\u00d7) et de r\u00e9cence, corrig\u00e9es contamination VEFA, ajust\u00e9es (DPE, \u00e9tat, \u00e9tage, exposition\u2026). Fusion de 6 estimateurs ind\u00e9pendants (comparables, OLS, h\u00e9donique, financier, IRL, CAGR). ${btNote}${dpNote}${tsNote}Projection actualis\u00e9e (VAN/TRI) sur ${P.H}\u00a0ans. Fiscalit\u00e9 et frais indicatifs.</p>
 ${sourcesHtml}
 <div class="foot">Document g\u00e9n\u00e9r\u00e9 par Estimo le ${today}. Estimation statistique \u00e0 but informatif \u2014 ne constitue ni une expertise immobili\u00e8re certifi\u00e9e (art. L271-6 CCH), ni un conseil fiscal ou en investissement. Valeurs indicatives \u00e0 confirmer par des professionnels agr\u00e9\u00e9s.</div>
@@ -8034,7 +8304,7 @@ document.querySelectorAll(".card-head").forEach(h=>{
     'dpeCard','projCard'];
   if(!c.classList.contains('price-card')&&keep.indexOf(c.id)<0)c.classList.add('expert-only');
 });
-const segM=$("segMode");if(segM)segM.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{segM.querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on");const m=b.dataset.m,res=$("results");res.classList.remove("simple","invest","expert");if(m==="simple")res.classList.add("simple");else if(m==="invest")res.classList.add("invest");}));
+const segM=$("segMode");if(segM)segM.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{segM.querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on");const m=b.dataset.m,res=$("results");res.classList.remove("simple","invest","expert");if(m==="simple")res.classList.add("simple");else if(m==="invest")res.classList.add("invest");segM.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b?"true":"false"));}));
 /* ===== R2 : digestibilite — synthese 60 s, sommaire sticky, chiffres-cles, repli =====
  * Trois couches, aucune donnee retiree :
  *  1. renderSynth60(r)      : carte de synthese en tete, valeurs DEJA calculees, lignes cliquables
@@ -8120,7 +8390,7 @@ function renderSynth60(r){
   const passoire=(state.dpe==="F"||state.dpe==="G");
   const rTxt=(nbR>0?nbR+" risque(s) G\u00e9orisques":"Aucun risque majeur recens\u00e9")+(passoire?' <small>\u00b7 passoire \u00e9nerg\u00e9tique DPE '+state.dpe+'</small>':'');
   row("\u26a0\ufe0f","Risques \u00e0 v\u00e9rifier",rTxt,(nbR>2||passoire)?"warn":(nbR>0?"":"pos"),"locCard");
-  el.innerHTML=rows.map(x=>'<div class="synth-row" data-goto="'+x.target+'" role="button" tabindex="0">'+
+  el.innerHTML=rows.map(x=>'<div class="synth-row" data-goto="'+x.target+'" role="button" tabindex="0" aria-label="'+x.lbl+' : voir le d\u00e9tail">'+
     '<div class="synth-ic">'+x.ic+'</div><div class="synth-main"><div class="synth-lbl">'+x.lbl+'</div>'+
     '<div class="synth-val '+(x.cls||"")+'">'+x.val+'</div></div><div class="synth-go">d\u00e9tail \u203a</div></div>').join("");
   el.querySelectorAll(".synth-row").forEach(rw=>{
