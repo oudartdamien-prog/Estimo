@@ -391,7 +391,11 @@
   [style*="font-size:10.5px"]{font-size:11.5px!important}
 }
 /* R2 : digestibilite — sommaire sticky, synthese 60 s, chiffre-cle de carte */
-#tocBar{display:none;gap:6px;overflow-x:auto;padding:8px 12px 9px;position:sticky;z-index:45;top:0;background:var(--bg);border-bottom:1px solid var(--line);scrollbar-width:none}
+/* Barre de mode : toujours visible, sticky au-dessus du tocBar */
+#modeBar{position:sticky;top:0;z-index:50;background:var(--surface);border-bottom:2px solid var(--line);padding:10px 14px 8px;box-shadow:0 2px 8px rgba(15,43,67,.07)}
+#modeBar .seg{gap:6px}
+#modeBar .seg button{font-size:13px;padding:8px 14px;font-weight:700}
+#tocBar{display:none;gap:6px;overflow-x:auto;padding:8px 12px 9px;position:sticky;z-index:45;top:58px;background:var(--bg);border-bottom:1px solid var(--line);scrollbar-width:none}
 #tocBar.show{display:flex}
 #tocBar::-webkit-scrollbar{display:none}
 .toc-chip{flex:none;font:600 12.5px/1 var(--body);color:var(--ink-soft);background:#fff;border:1.5px solid var(--line);border-radius:18px;padding:9px 14px;cursor:pointer;white-space:nowrap;transition:.12s;min-height:36px;display:flex;align-items:center}
@@ -708,10 +712,18 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
   </section>
 
   <div id="tocBar"></div>
+  <!-- BARRE DE MODE — toujours visible, positionnee avant les resultats -->
+  <div id="modeBar">
+    <div class="seg" id="segMode" role="group" aria-label="Mode d'affichage">
+      <button data-m="simple" class="on" aria-pressed="true" aria-label="Mode Essentiel : verdict, prix et risques">&#9889; Essentiel</button>
+      <button data-m="invest" aria-pressed="false" aria-label="Mode Investisseur : locatif, fiscal, rentabilit&#233;">&#128188; Investisseur</button>
+      <button data-m="expert" aria-pressed="false" aria-label="Mode Expert : tous les calculs et d&#233;tails statistiques">&#128300; Expert</button>
+    </div>
+    <div style="font-size:10.5px;color:var(--ink-soft);margin-top:5px;line-height:1.3"><b>&#9889;</b>&nbsp;Prix&nbsp;&amp;&nbsp;risques &nbsp;&#183;&nbsp; <b>&#128188;</b>&nbsp;+&nbsp;Locatif&nbsp;&amp;&nbsp;fiscal &nbsp;&#183;&nbsp; <b>&#128300;</b>&nbsp;Tous les calculs</div>
+  </div>
   <!-- R&#201;SULTATS -->
   <div id="results" class="simple" role="region" aria-label="Résultats de l'estimation">
 
-    <div id="modeBar" style="order:-1"><div class="seg" id="segMode" role="group" aria-label="Mode d'affichage"><button data-m="simple" class="on" aria-pressed="true" aria-label="Mode Essentiel : verdict, prix et risques">&#9889; Essentiel</button><button data-m="invest" aria-pressed="false" aria-label="Mode Investisseur : locatif, fiscal, rentabilit&#233;">&#128188; Investisseur</button><button data-m="expert" aria-pressed="false" aria-label="Mode Expert : tous les calculs et d&#233;tails statistiques">&#128300; Expert</button></div><div class="hint" style="margin-top:6px"><b>Essentiel</b> : verdict + prix + risques. <b>Investisseur</b> : + locatif, fiscal, n'essentiel pour d&#233;égo, benchmark, travaux. <b>Expert</b> : tous les calculs.</div></div>
     <section class="card" id="synthCard" style="order:0;border-left:4px solid var(--brand)"><div class="card-head"><div class="step-no">&#9889;</div><div><h2>Synth&#232;se en 60 secondes</h2><div class="sub">L'essentiel pour d&#233;cider &#8212; touchez une ligne pour ouvrir le d&#233;tail</div></div></div><div id="synth60Panel"></div></section>
     <section class="card" id="decisionCard" style="order:0"><div id="decisionPanel"></div><div class="hint" style="padding:0 2px">Score d'acquisition : synth&#232;se multicrit&#232;re (prix, rentabilit&#233;, march&#233;, DPE, cash-flow, risque). Distinct du verdict fond&#233; sur la seule VAN affich&#233; plus bas dans la Synth&#232;se de l'investissement.</div></section>
     <section class="card expert-only" id="reportCard" style="order:7"><div class="card-head"><div class="step-no">&#128221;</div><div><h2>Rapport d'analyse</h2><div class="sub">Synth&#232;se r&#233;dig&#233;e automatiquement &#224; partir de vos donn&#233;es</div></div></div><div id="reportPanel"></div></section>
@@ -757,14 +769,14 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
     <section class="card price-card" id="priceCard" style="order:1">
       <div class="pc-eyebrow">Estimation</div>
       <div class="pc-price num" id="pcPrice" role="status" aria-live="polite" aria-atomic="true" aria-label="Prix estimé">&#8212;</div>
-      <div class="pc-margin">marge d'erreur estim&#233;e : <b class="num" id="pcMargin">&#8212;</b></div>
+      <div class="pc-margin">Fourchette 80&nbsp;% (8&nbsp;chances&nbsp;sur&nbsp;10)&nbsp;: <b class="num" id="pcMargin">&#8212;</b></div>
       <div class="pc-sqm">soit <b class="num" id="pcSqm">&#8212;</b> /m&#178; &#183; <span id="pcType">&#8212;</span></div>
       <div id="pcDvfAnchor" style="display:none;margin-top:6px;font-size:11px;color:rgba(207,224,233,.75);letter-spacing:.1px"></div>
       <div id="pcMarketAnchor" style="display:none;margin-top:8px;padding:6px 10px;background:rgba(255,255,255,.08);border-radius:8px;font-size:11px"></div>
       <div id="srcBadge" style="display:inline-flex;align-items:center;gap:6px;margin-top:12px;font-size:11.5px;font-weight:700;letter-spacing:.3px;padding:5px 11px;border-radius:20px;background:rgba(255,255,255,.1);color:#cfe0e9"><span id="srcDot" style="width:7px;height:7px;border-radius:50%;background:#E8742A"></span><span id="srcTxt">&#8212;</span></div>
       <div class="gauge">
         <div class="gauge-track"><div class="gauge-fill" id="gFill"></div><div class="gauge-dot" id="gDot"></div></div>
-        <div class="gauge-labels"><div>Basse<b class="num" id="gLow">&#8212;</b></div><div class="mid">Estim&#233;e<b class="num" id="gMid">&#8212;</b></div><div class="hi">Haute<b class="num" id="gHigh">&#8212;</b></div></div>
+        <div class="gauge-labels"><div>Basse<b class="num" id="gLow">&#8212;</b><span style="font-size:9px;opacity:.7;display:block">&#8722;80&nbsp;%</span></div><div class="mid">Estim&#233;e<b class="num" id="gMid">&#8212;</b></div><div class="hi">Haute<b class="num" id="gHigh">&#8212;</b><span style="font-size:9px;opacity:.7;display:block">+80&nbsp;%</span></div></div>
         <div id="pcExplain" style="display:none;margin-top:10px;font-size:12px;line-height:1.55;color:#cfe0e9;text-align:left"></div>
       </div>
       <div id="dualPrice" style="display:none;margin-top:12px"></div>
@@ -1285,6 +1297,11 @@ function resetForm(){
   const rz=$("results");if(rz){rz.classList.remove("show");rz.style.display="";}
   const cv=$("cpVilleRow");if(cv)cv.style.display="none";
   const fe=$("formErr");if(fe)fe.classList.remove("show");
+  // Reset de l'etat d'estimation : si resetForm est appele pendant une estimation en cours
+  // (bien sauvegarde en chargement), _estimRunning et btn.disabled restaient bloques = clic sans effet.
+  _estimRunning=false;
+  const _rb=$("btnEstim");
+  if(_rb){_rb.disabled=false;_rb.style.background="";_rb.style.color="";delete _rb.dataset.origText;}
   // Rafraichir l'UI
   updateTypeUI();fillRegimes();refreshSavedSelect();
   if(typeof _renderIrlNote==="function")_renderIrlNote();
@@ -8438,9 +8455,10 @@ function gotoCard(id){
   const hd=c.querySelector(".card-head");if(hd)hd.setAttribute("aria-expanded","true");
   /* Calculer l'offset des barres sticky (appbar + tocBar) pour ne pas les masquer */
   function _doScroll(){
-    const appbarH=(document.querySelector(".appbar")||{}).offsetHeight||56;
+    const appbarH=(document.querySelector(".appbar")||{}).offsetHeight||0;
+    const modeH=($("modeBar")?$("modeBar").offsetHeight:0)||0;
     const tocH=($("tocBar")&&$("tocBar").classList.contains("show")?$("tocBar").offsetHeight:0)||0;
-    const offset=appbarH+tocH+8; // 8px d'air
+    const offset=appbarH+modeH+tocH+8; // 8px d'air
     const top=c.getBoundingClientRect().top+window.pageYOffset-offset;
     const smooth=!matchMedia("(prefers-reduced-motion:reduce)").matches;
     try{window.scrollTo({top:Math.max(0,top),behavior:smooth?"smooth":"auto"});}
