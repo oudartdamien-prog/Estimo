@@ -487,7 +487,7 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
 
     <div class="wstep" data-s="2">
     <div class="field"><label class="lbl">Type de bien</label>
-      <div class="seg" id="segType" role="group" aria-label="Type de bien"><button data-v="appartement" class="on">Appartement</button><button data-v="maison">Maison</button><button data-v="terrain">Terrain</button></div>
+      <div class="seg" id="segType" role="group" aria-label="Type de bien"><button data-v="appartement" class="on">Appartement</button><button data-v="maison">Maison</button><button data-v="terrain">Terrain</button><button data-v="garage">Parking</button></div>
     </div>
     <div class="field" id="wrapNeuf"><label class="lbl">&#201;tat du bien &#224; l'achat <span style="font-weight:500;color:var(--ink-soft)">(impacte les frais de notaire)</span></label>
       <div class="seg" id="segNeuf" role="group" aria-label="État du bien"><button data-v="ancien" class="on">Ancien</button><button data-v="neuf">Neuf / VEFA (&lt; 5 ans)</button></div>
@@ -704,7 +704,7 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
     <div class="wnav" id="wNav"><button id="wPrev" type="button">Pr&#233;c&#233;dent</button><button id="wNext" type="button">Suivant</button></div>
     <div class="hint" id="wEarlyHint" style="display:none;margin-top:8px"></div>
     <button class="cta" id="btnEstim">Estimer le bien</button>
-    <div class="err" id="formErr"></div>
+    <div class="err" id="formErr" role="alert" aria-live="assertive"></div>
     <div class="hint">
       <svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#5B7186" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#5B7186" stroke-width="2" stroke-linecap="round"/></svg>
       Prix, comparables et statistiques&#160;: <b>DVF r&#233;el (Cerema)</b>. Population et g&#233;orisques&#160;: <b>r&#233;els</b>. Revenus et ch&#244;mage&#160;: <b>Filosofi (quand disponible)</b>. Tendances de prix&#160;: <b>DVF r&#233;el</b>. Taux de cr&#233;dit&#160;: <b>hypoth&#232;se modifiable</b>.
@@ -733,7 +733,7 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
     <section class="card expert-only" id="globalCard" style="order:4"><div class="card-head"><div class="step-no">&#127941;</div><div><h2>Note globale du bien</h2><div class="sub">Indice /100 sur 7 dimensions ind&#233;pendantes</div></div></div><div id="globalPanel"></div></section>
     <section class="card expert-only invest-only" id="proKpiCard" style="order:4"><div class="card-head"><div class="step-no">&#128202;</div><div><h2>Tableau de bord investisseur</h2><div class="sub">Ratios financiers professionnels &#8212; calcul&#233;s en direct</div></div></div><div id="proKpiPanel"></div></section>
     <section class="card expert-only invest-only" id="negoCard" style="order:6"><div class="card-head"><div class="step-no">&#129309;</div><div><h2>Aide &#224; la n&#233;gociation</h2><div class="sub">Prix cible, offre, marge et probabilit&#233; d'acceptation</div></div></div><div id="negoPanel"></div></section>
-    <section class="card expert-only invest-only" id="contextCard" style="order:7"><div class="card-head"><div class="step-no">&#129517;</div><div><h2>Contexte &amp; signaux</h2><div class="sub">Donn&#233;es publiques, indices compl&#233;mentaires et anomalies &#8212; sans impact sur le prix</div></div></div><div id="contextPanel"></div></section>
+    <section class="card expert-only invest-only" id="contextCard" style="order:7"><div class="card-head"><div class="step-no">&#129517;</div><div><h2>Contexte &amp; signaux</h2><div class="sub">Donn&#233;es publiques, indices compl&#233;mentaires et anomalies &#8212; sans impact sur le prix</div></div></div><div id="contextPanel" role="region" aria-live="polite" aria-label="Contexte et signaux (chargement des données complémentaires)"></div></section>
     <section class="card expert-only invest-only" id="vendorCard" style="order:95"><div class="card-head"><div class="step-no">&#127991;&#65039;</div><div><h2>C&#244;t&#233; vendeur</h2><div class="sub">Strat&#233;gie de prix de mise en march&#233;</div></div></div><div id="vendorPanel"></div></section>
     <section class="card expert-only invest-only" id="fiscalCard" style="order:6"><div class="card-head"><div class="step-no">&#9878;&#65039;</div><div><h2>Comparateur fiscal</h2><div class="sub">Tous les r&#233;gimes compar&#233;s &#8212; recommandation automatique</div></div></div><div id="fiscalPanel"></div></section>
     <section class="card expert-only invest-only" id="dispositifCard" style="order:6"><div class="card-head"><div class="step-no">&#127963;&#65039;</div><div><h2>Dispositifs de d&#233;fiscalisation</h2><div class="sub">SCI IS, Nue-propri\u00e9t\u00e9, Loc'Avantages, Pinel, Denormandie, Malraux, MH, holding</div></div></div>
@@ -773,7 +773,7 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
       <div class="pc-sqm">soit <b class="num" id="pcSqm">&#8212;</b> /m&#178; &#183; <span id="pcType">&#8212;</span></div>
       <div id="pcDvfAnchor" style="display:none;margin-top:6px;font-size:11px;color:rgba(207,224,233,.75);letter-spacing:.1px"></div>
       <div id="pcMarketAnchor" style="display:none;margin-top:8px;padding:6px 10px;background:rgba(255,255,255,.08);border-radius:8px;font-size:11px"></div>
-      <div id="srcBadge" style="display:inline-flex;align-items:center;gap:6px;margin-top:12px;font-size:11.5px;font-weight:700;letter-spacing:.3px;padding:5px 11px;border-radius:20px;background:rgba(255,255,255,.1);color:#cfe0e9"><span id="srcDot" style="width:7px;height:7px;border-radius:50%;background:#E8742A"></span><span id="srcTxt">&#8212;</span></div>
+      <div id="srcBadge" role="status" aria-live="polite" style="display:inline-flex;align-items:center;gap:6px;margin-top:12px;font-size:11.5px;font-weight:700;letter-spacing:.3px;padding:5px 11px;border-radius:20px;background:rgba(255,255,255,.1);color:#cfe0e9"><span id="srcDot" aria-hidden="true" style="width:7px;height:7px;border-radius:50%;background:#E8742A"></span><span id="srcTxt">&#8212;</span></div>
       <div class="gauge">
         <div class="gauge-track"><div class="gauge-fill" id="gFill"></div><div class="gauge-dot" id="gDot"></div></div>
         <div class="gauge-labels"><div>Basse<b class="num" id="gLow">&#8212;</b><span style="font-size:9px;opacity:.7;display:block">&#8722;80&nbsp;%</span></div><div class="mid">Estim&#233;e<b class="num" id="gMid">&#8212;</b></div><div class="hi">Haute<b class="num" id="gHigh">&#8212;</b><span style="font-size:9px;opacity:.7;display:block">+80&nbsp;%</span></div></div>
@@ -826,13 +826,13 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
     <!-- INSEE -->
     <section class="card secondary expert-only" id="inseeCard" style="order:9">
       <div class="card-head"><div class="step-no">2</div><div><h2>Contexte du quartier<span class="demo-tag" id="inseeBadge">Pop. r&#233;elle &#183; reste estim&#233;</span></h2><div class="sub">Donn&#233;es socio-d&#233;mographiques de la commune</div></div></div>
-      <div id="inseeStats"></div>
+      <div id="inseeStats" role="region" aria-live="polite" aria-label="Contexte communal (chargement)"></div>
     </section>
 
     <!-- MARCH&#201; -->
     <section class="card secondary expert-only" id="marketCard" style="order:8">
       <div class="card-head"><div class="step-no">3</div><div><h2>Tendances du march&#233;<span class="demo-tag" id="dynTag">observatoire &#183; estimation</span></h2><div class="sub">Dynamique des prix et tension locale</div></div></div>
-      <div id="marketStats"></div>
+      <div id="marketStats" role="region" aria-live="polite" aria-label="Positionnement marché (chargement)"></div>
     </section>
 
     <section class="card secondary" id="compCard" style="order:7">
@@ -846,7 +846,7 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
       <div class="card-head"><div class="step-no">&#128205;</div><div><h2>Localisation, environnement &amp; proximit&#233;<span class="demo-tag">Air, &#233;coles, transports &amp; commerces r&#233;els</span></h2></div></div>
       <div class="loc"><div class="loc-ic"><svg aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z" stroke="#fff" stroke-width="2"/><circle cx="12" cy="10" r="2.5" stroke="#fff" stroke-width="2"/></svg></div><div><b id="locAddr">&#8212;</b><div class="coord num" id="locCoord">&#8212;</div></div></div>
       <div id="locStats" style="margin-top:12px"></div>
-      <div id="enrichPanel" style="margin-top:14px"></div>
+      <div id="enrichPanel" role="region" aria-live="polite" aria-label="Données complémentaires (chargement)" style="margin-top:14px"></div>
       <div id="mapBox" style="margin-top:14px"></div>
       <div class="hint" style="margin-top:6px">Carte interactive : bien, transports, &#233;coles et commerces (sources r&#233;elles, cliquables). Bruit, pollution fine, isochrones et heatmap de prix n&#233;cessitent des services cartographiques d&#233;di&#233;s &#8212; non int&#233;gr&#233;s ici. Risques d&#233;taill&#233;s sur <a href="https://www.georisques.gouv.fr" target="_blank" rel="noopener" style="color:var(--brand-dark)">G&#233;orisques</a>.</div>
     </section>
@@ -947,7 +947,7 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
     <!-- REVENTE -->
     <section class="card" style="order:4" id="benchCard">
       <div class="card-head"><div class="step-no">&#127465;&#127479;</div><div><h2>Ce secteur vs la France</h2><div class="sub">Positionnement sur les indicateurs cl&#233;s</div></div></div>
-      <div id="benchPanel"></div>
+      <div id="benchPanel" role="region" aria-live="polite" aria-label="Comparaison nationale (chargement)"></div>
     </section>
     <section class="card" style="order:6" id="ownVsRentCard">
       <div class="card-head"><div class="step-no">&#127968;</div><div><h2>Acheter ou louer&#160;?</h2><div class="sub">&#192; partir de quand la propri&#233;t&#233; devient-elle plus avantageuse&#160;?</div></div></div>
@@ -1315,7 +1315,9 @@ function resetForm(){
  * Un seul element absent ne doit jamais interrompre updateTypeUI : sinon les champs
  * suivants (dont "Nombre de pieces") restent affiches en mode terrain. */
 function _sd(id,v){const e=$(id);if(e)e.style.display=v;}
-function updateTypeUI(){const t=state.type,isTerrain=(t==="terrain");
+function updateTypeUI(){const t=state.type,isTerrain=(t==="terrain"),isGarage=(t==="garage");
+  /* R41 : un box n'a ni piece, ni DPE, ni etat, ni exterieur, ni etage, ni diagnostic.
+   * Meme logique de masquage que le terrain, appliquee a un jeu de champs distinct. */
   // Le nettoyage des champs ne doit pas pouvoir bloquer la mise a jour de l'affichage.
   try{ _clearIrrelevantFields(); }catch(e){ console.warn("_clearIrrelevantFields:",e); }
   _sd("wrapTerrain",(t==="maison"||t==="terrain")?"":"none");
@@ -1323,18 +1325,30 @@ function updateTypeUI(){const t=state.type,isTerrain=(t==="terrain");
   _sd("wrapVendeurPro",isTerrain?"":"none");
   if(isTerrain){try{updateViabCost();}catch(e){console.warn("updateViabCost:",e);}}
   _sd("wrapSurface",isTerrain?"none":"");
-  // Pieces, etat, DPE et caracteristiques n'ont aucun sens sur du foncier nu.
-  ["wrapPieces","wrapEtat","wrapDpe","accCarac"].forEach(id=>_sd(id,isTerrain?"none":""));
+  // Pieces, etat, DPE et caracteristiques n'ont aucun sens sur du foncier nu ni sur un box.
+  ["wrapPieces","wrapEtat","wrapDpe","accCarac"].forEach(id=>_sd(id,(isTerrain||isGarage)?"none":""));
   _sd("wrapEtage",(t==="appartement")?"":"none");
-  _sd("wrapJardin",(t==="appartement")?"none":"");
+  _sd("wrapJardin",(t==="appartement"||isGarage)?"none":"");
   _sd("wrapMaison",(t==="maison")?"":"none");
-  _sd("wrapNeuf",isTerrain?"none":"");
+  _sd("wrapNeuf",(isTerrain||isGarage)?"none":"");
   // Terrain : masquer les sections exclusivement locatives (loyer, fiscalite LMNP, financement locatif)
   // Conserver : revente (utile pour projeter la valeur du projet), travaux (viabilisation), achat-revente
   ["rentalCard","proKpiCard","fiscalCard","dispositifCard","ownVsRentCard",
-    "enginesCard","globalCard","bienIndicesCard","formationCard","dpeCard"].forEach(id=>{const el=$(id);if(el)el.style.display=isTerrain?"none":"";});
-  // Terrain : masquer l'impact diagnostics (pas de DPE/amiante/plomb sur un terrain nu)
-  const _diI=$("diagsImpact");if(_diI)_diI.style.display=isTerrain?"none":"";
+    "enginesCard","globalCard","bienIndicesCard","formationCard","dpeCard"].forEach(id=>{const el=$(id);if(el)el.style.display=(isTerrain||isGarage)?"none":"";});
+  // Terrain / parking : masquer l'impact diagnostics (aucun DPE, amiante ou plomb)
+  const _diI=$("diagsImpact");if(_diI)_diI.style.display=(isTerrain||isGarage)?"none":"";
+  // R41 : un box n'a pas de constructibilite -> masquer aussi les cartes propres au terrain
+  if(isGarage)["wrapViab","wrapVendeurPro","wrapTerrain"].forEach(id=>_sd(id,"none"));
+  /* R41b : dashCard (simulation VAN/credit/fiscalite locative) reste visible pour le
+   * terrain, dont la VAN est adaptee (scenario achat-construction-revente). Pour un
+   * box, aucune adaptation n'existe -- masquage garage-only, distinct de la liste
+   * partagee ci-dessus pour ne surtout pas affecter le terrain. */
+  const _dc=$("dashCard");if(_dc)_dc.style.display=isGarage?"none":"";
+  /* R41b : renderReport() est fortement specifique au bati (type de bien via une table
+   * sans entree garage -> "undefined", nombre de pieces et DPE inventes/non pertinents
+   * pour un box). L'adapter completement deborde le perimetre de ce round ; masquer est
+   * plus honnete qu'afficher un rapport professionnel contenant des valeurs fausses. */
+  ["reportCard","reportPdfCard"].forEach(id=>{const el=$(id);if(el)el.style.display=isGarage?"none":"";});
   // En mode terrain : afficher un message explicatif en haut de la revente
   const rc=$("resaleCard");if(rc){const bn=rc.querySelector(".terrain-resale-note");if(isTerrain&&!bn){const d=document.createElement("div");d.className="banner good terrain-resale-note";d.style.marginBottom="12px";d.innerHTML="<span>&#127961;&#65039; Mode terrain : la simulation de revente projette la valeur fonciere apres revalorisation. Ajoutez les travaux pour inclure le cout de viabilisation ou de construction.</span>";rc.insertBefore(d,rc.querySelector(".card-head").nextSibling);}else if(!isTerrain&&bn)bn.remove();}
 }
@@ -1492,7 +1506,8 @@ const NET_LABELS={
   "overpass-api.de":"OpenStreetMap \u2014 Overpass",
   "api.open-meteo.com":"Open-Meteo \u2014 air & altitude",
   "www.insee.fr":"INSEE",
-  "apidf-preprod.cerema.fr":"Cerema \u2014 DVF"
+  "apidf-preprod.cerema.fr":"Cerema \u2014 DVF",
+  "api.cquest.org":"DVF \u2014 source de secours (R38)"
 };
 function _netLabel(h){return NET_LABELS[h]||h;}
 
@@ -2138,9 +2153,86 @@ function roomsFromRec(o,want){
   if(m&&+m[1]>=1&&+m[1]<=5)return +m[1];
   return null;                 // JAMAIS nblocapt : c'est un nb de locaux, pas de pieces
 }
+/* ============================================================================
+ * R38 — REPLI DVF SUR SOURCE SECONDAIRE (echec reseau uniquement)
+ * ----------------------------------------------------------------------------
+ * DEFAUT CORRIGE. La source primaire (apidf-preprod.cerema.fr) est un point de
+ * defaillance UNIQUE : tout echec reseau se traduisait par status:"bbox-fail" /
+ * "no-conn" et une estimation refusee (Fix15), sans aucune tentative de repli.
+ *
+ * SOURCE SECONDAIRE : api.cquest.org/dvf, micro-API documentee et reference
+ * comme reutilisation officielle sur la page data.gouv.fr du jeu de donnees DVF
+ * geolocalisees (https://www.data.gouv.fr/reuses/micro-api-dvf-demande-de-valeurs-foncieres),
+ * code source public https://github.com/cquest/dvf_as_api. Parametres verifies dans
+ * cette documentation, aucun invente : lat+lon+dist (metres, plafond serveur 1000 m),
+ * ou code_commune (repli sans geolocalisation). Alimentee par les memes donnees DGFiP
+ * que la source primaire, au format DVF standard (valeur_fonciere, surface_reelle_bati,
+ * type_local, nombre_pieces_principales...) — les memes noms deja presents dans les
+ * listes recVal de parsePts : AUCUNE adaptation de parsing necessaire.
+ *
+ * AVERTISSEMENT ASSUME (transmis a l'utilisateur, jamais masque) : la documentation
+ * cquest/dvf_as_api indique explicitement "disponibilite non garantie, preuve de
+ * concept". Ce repli n'est donc jamais silencieux : chaque estimation qui l'utilise
+ * porte le flag degraded:true, exploite en aval pour afficher un statut explicite
+ * plutot qu'un badge "donnees reelles" ordinaire.
+ *
+ * PERIMETRE VOLONTAIREMENT RESTREINT :
+ *  - jamais pour le TERRAIN : la classification du foncier (terrainHomogeneous, Otsu,
+ *    plancher EPTB) repose sur codtypbien/libtypbien, nomenclature DVF+ propre au
+ *    Cerema. La source cquest ne l'expose pas : y recourir produirait un corpus
+ *    terrain non filtre (agricole + a batir melanges), pire que l'absence de resultat.
+ *  - jamais en repli du repli : declenche UNE fois, seulement quand la source primaire
+ *    a deja epuise ses tentatives (bbox : 4 essais x jusqu'a 3 rayons ; commune : 2
+ *    essais). Ne retarde donc l'estimation que dans le cas deja degrade.
+ *  - seuil de retenue abaisse a 8 ventes (au lieu de 12) : une source de secours qui
+ *    n'a pas rate est deja preferable a un echec complet ; RIEN n'est theorique de
+ *    plus qu'un corpus DVF plus mince, expose comme tel.
+ * ========================================================================== */
+async function fetchDvfFallback(coord,type){
+  if(type==="terrain"||type==="garage")return null;   // nomenclature Cerema requise, indisponible ici
+  if(!coord)return null;
+  try{
+    let url;
+    if(coord.lat!=null&&coord.lon!=null){
+      url="https://api.cquest.org/dvf?lat="+coord.lat.toFixed(6)+"&lon="+coord.lon.toFixed(6)+"&dist=1000";
+    }else if(coord.insee){
+      url="https://api.cquest.org/dvf?code_commune="+coord.insee;
+    }else return null;
+    const r=await dvfFetch(url);
+    if(!r||!r.json)return null;
+    const feats=Array.isArray(r.json.features)?r.json.features:[];
+    if(!feats.length)return null;
+    /* Geometrie non garantie Point (le service joint parfois la parcelle cadastrale,
+     * potentiellement un Polygon) : on n'extrait lat/lon que si le type est verifie,
+     * jamais par supposition de forme du tableau de coordonnees. */
+    const arr=feats.map(f=>{
+      const p=Object.assign({},f.properties||{});
+      const g=f.geometry;
+      if(g&&g.type==="Point"&&Array.isArray(g.coordinates)&&g.coordinates.length===2){
+        p._lon=g.coordinates[0];p._lat=g.coordinates[1];
+      }
+      return p;
+    });
+    const res=parsePts(arr,type);
+    if(!res.pts||res.pts.length<8)return null;
+    if(DEBUG)dbg("R38 repli DVF secondaire (api.cquest.org) : "+res.pts.length+" ventes exploitables sur "+arr.length+" mutations brutes \u2014 source non garantie (preuve de concept), statut degrade");
+    return{pts:res.pts,ptsNeuf:res.ptsNeuf||[],nNeuf:res.nNeuf,nTotal:res.nTotal,natSeen:res.natSeen,
+      status:"ok",scope:"fallback",degraded:true,radiusKm:coord.lat!=null?1:null};
+  }catch(_){return null;}
+}
+/* R39 — bornes de sanite/repli pour les bornes ppm adaptatives de parsePts (bati).
+ * Documentation complete dans parsePts, juste avant leur utilisation. */
+const PPM_SANITY_LO=50, PPM_SANITY_HI=200000;   // garde-fou absolu, jamais depasse
+const PPM_FIXED_LO=300, PPM_FIXED_HI=40000;     // repli historique (corpus insuffisant / VEFA)
+const R39_MIN_N=40;                              // taille minimale pour une borne adaptative fiable
+
 function parsePts(arr,type){
-  const want=type==="maison"?"maison":"appartement",pts=[],ptsNeuf=[];
+  const want=type==="maison"?"maison":"appartement",ptsNeuf=[];
   let natSeen=false; // true si le champ libnatmut/natmut est présent dans la réponse API
+  /* R36 : compteurs pour calage/production (aucun impact sur le corpus, log uniquement) */
+  let nCtbAbsent=0, nFallbackExcl=0, nFallbackKept=0, nFallbackBlind=0;
+  /* R39 : cf. bloc de commentaire complet apres la boucle forEach, juste avant son usage. */
+  const cands=[];
   arr.forEach(o=>{
     const v=Number(recVal(o,["valeurfonc","valeur_fonciere","valeur"]));
     const typ=String(recVal(o,["libtypbien","libtyploc","type_local"])||"").toLowerCase();
@@ -2155,8 +2247,50 @@ function parsePts(arr,type){
       if(want==="appartement"&&_ctb.slice(0,3)!=="121")return;   // exclut lots multiples (122x)
       if(want==="maison"&&_ctb.slice(0,3)!=="111")return;        // exclut maisons multiples (112)
       if(_ctb.slice(0,4)==="1214"||_ctb.slice(0,4)==="1114")return;
+    }else{
+      /* ===== R36 : FILET DE REPLI MULTI-LOTS quand codtypbien est absent =====
+       * DEFAUT CORRIGE. Sans codtypbien, une mutation portant PLUSIEURS logements
+       * (ex. un immeuble de 3 appartements vendu en bloc) entrait dans le corpus avec
+       * son ppm agrege : valeurfonc / sbatapt melange alors le prix de plusieurs biens,
+       * ce qui n'est pas le ppm d'UN bien comparable au sujet.
+       *
+       * Deux sources, par ordre de fiabilite decroissante :
+       *  1) nblocapt / nblocmai : nombre de locaux de type "appartement"/"maison" dans
+       *     la mutation. nblocapt est un champ REEL de la nomenclature Cerema DVF+, deja
+       *     identifie dans ce fichier (cf. commentaire "JAMAIS nblocapt" plus bas dans
+       *     roomsFromRec — verifie sur reponse API reelle, pas invente). nblocmai suit la
+       *     meme convention de nommage documentee par le Cerema ; sa presence est verifiee
+       *     au RUNTIME (o.hasOwnProperty) avant tout usage — jamais suppose a l'aveugle.
+       *  2) A defaut : somme des compteurs typologiques nbapt1pp..nbapt5pp / nbmai1pp..
+       *     nbmai5pp, deja exploites par roomsFromRec (aucun champ nouveau). tot>1 =
+       *     plusieurs logements du type recherche dans la mutation.
+       * Si aucune des deux sources n'est exploitable, comportement STRICTEMENT inchange
+       * (le point est conserve, comme avant R36) : on ne filtre jamais a l'aveugle. */
+      nCtbAbsent++;
+      const _lblocField=want==="maison"?"nblocmai":"nblocapt";
+      let _lot=null,_lotSrc=null;
+      if(Object.prototype.hasOwnProperty.call(o,_lblocField)){
+        const _n=Number(o[_lblocField]);
+        if(isFinite(_n)&&_n>=0){_lot=_n;_lotSrc="nbloc";}
+      }
+      if(_lot===null){
+        const pref=want==="maison"?"nbmai":"nbapt";
+        let tot=0,anyKey=false;
+        for(let k=1;k<=5;k++){if(Object.prototype.hasOwnProperty.call(o,pref+k+"pp")){anyKey=true;tot+=Number(o[pref+k+"pp"])||0;}}
+        if(anyKey){_lot=tot;_lotSrc="pp";}
+      }
+      if(_lot!==null&&_lot>1){nFallbackExcl++;return;}   // mutation multi-lots avérée -> exclue
+      if(_lot!==null&&_lot<=1)nFallbackKept++;            // mono-lot confirmé par repli
+      else nFallbackBlind++;                              // aucune source exploitable -> conservé (inchangé)
     }
-    const ppm=v/s;if(ppm<300||ppm>40000)return;
+    /* R39 — la borne fixe 300/40000 est deplacee en aval (bornes ADAPTATIVES, cf. fin
+     * de fonction) pour le seul corpus ANCIEN. Ici ne subsiste qu'un garde-fou de
+     * SANITE EXTREME, volontairement tres large : il n'ecarte que des valeurs
+     * impossibles pour un bien habitable (erreur de saisie/unite), jamais un marche
+     * cher mais reel. Le chemin VEFA (ptsNeuf) conserve EXACTEMENT la borne 300/40000
+     * historique juste apres, comportement strictement inchange (hors perimetre R39 :
+     * ptsNeuf n'alimente jamais le prix, seulement le comptage nNeuf/nTotal). */
+    const ppm=v/s;if(!(ppm>=PPM_SANITY_LO&&ppm<=PPM_SANITY_HI))return;
     // ─── Détection VEFA (Vente en l'État Futur d'Achèvement = neuf) ───────────
     // Le champ libnatmut / natmut contient la nature de la mutation (DVF Cerema DV3F).
     // Si présent et indique "futur" ou "vefa" → vente en VEFA → EXCLURE du corpus ancien.
@@ -2173,6 +2307,7 @@ function parsePts(arr,type){
     if(_nat.length>0||o.vefa!=null||_ctb)natSeen=true;
     const _isVefa=(_nat.length>0&&(_nat.indexOf("futur")>=0||_nat.indexOf("vefa")>=0||_nat.indexOf("\u00e9tat futur")>=0))||_vefaBool||_ctbNeuf;
     if(_isVefa){
+      if(ppm<PPM_FIXED_LO||ppm>PPM_FIXED_HI)return;  // R39 : VEFA garde la borne historique, inchange
       const _lat8v=(o._lat!=null?o._lat:null)||(recVal(o,['lat','latitude','lat_centparce','y_centroid'])||null);
       const _lon8v=(o._lon!=null?o._lon:null)||(recVal(o,['lon','longitude','lng','lon_centparce','x_centroid'])||null);
       ptsNeuf.push({ppm,surf:s,price:v,rooms:roomsFromRec(o,want),date:recVal(o,['datemut','date_mutation']),lat:_lat8v!=null?parseFloat(_lat8v):null,lon:_lon8v!=null?parseFloat(_lon8v):null,vefa:true});
@@ -2187,10 +2322,158 @@ function parsePts(arr,type){
     // Si _com est purement numerique (code INSEE mal mappe), l'ignorer
     if(_com&&/^\d+$/.test(String(_com).trim()))_com='';
     const _addr8=_addrBase?(_com&&_addrBase.indexOf(_com)<0?_addrBase+', '+_com:_addrBase):(_com||null);
-    pts.push({ppm,surf:s,price:v,rooms:roomsFromRec(o,want),date:recVal(o,['datemut','date_mutation']),lat:_lat8!=null?parseFloat(_lat8):null,lon:_lon8!=null?parseFloat(_lon8):null,addr:_addr8});
+    /* R35 \u2014 surface de la PARCELLE (champ sterr, nomenclature Cerema DVF+ ; la liste
+     * de noms alternatifs est celle deja utilisee par parsePtsTerrain, aucun champ invente).
+     * Pour une MAISON, valeurfonc couvre le bati ET le terrain alors que sbatmai ne mesure
+     * que le bati : sans cette variable, le ppm agrege deux actifs distincts. Extraction
+     * purement additive (aucun point n'est ecarte si le champ est absent). */
+    const _land=Number(recVal(o,["sterr","surface_terrain","stier","surfterr","contenance"]))||0;
+    /* R39 : stocke dans les CANDIDATS (pas encore le corpus final) — la borne ppm
+     * definitive (adaptative ou fixe) est appliquee juste apres la boucle, une fois
+     * la distribution du corpus entierement connue. */
+    cands.push({ppm,surf:s,price:v,land:_land>0?_land:null,rooms:roomsFromRec(o,want),date:recVal(o,['datemut','date_mutation']),lat:_lat8!=null?parseFloat(_lat8):null,lon:_lon8!=null?parseFloat(_lon8):null,addr:_addr8});
   });
-  return {pts, ptsNeuf, nNeuf:ptsNeuf.length, nTotal:pts.length+ptsNeuf.length, natSeen};
+  /* ============================================================================
+   * R39 — BORNES PPM ADAPTATIVES (quantiles du corpus, au lieu de 300/40000 figes)
+   * ----------------------------------------------------------------------------
+   * DEFAUT CORRIGE. Les bornes fixes coupaient silencieusement les marches tres
+   * chers (Paris central, Neuilly, littoral premium depassent regulierement
+   * 15 000-40 000 EUR/m2 et peuvent legitimement franchir le plafond) : des ventes
+   * REELLES disparaissaient du corpus sans trace, biaisant la base vers le bas la
+   * ou elle aurait du etre la plus fiable (marche dense).
+   *
+   * METHODE. IQR de Tukey en LOG-espace (coherent avec dvfStats/Fix8), multiplicateur
+   * 3x plutot que le 1,5x classique : parsePts ne joue ici qu'un role de FILTRE
+   * GROSSIER contre les valeurs aberrantes evidentes ; le nettoyage statistique fin
+   * (recentre sur le sujet, bande de surface) est deja assure en aval par dvfStats.
+   * Un filtre grossier plus permissif que le filtre fin ne cree aucun risque : il ne
+   * fait que laisser dvfStats voir des points qu'il aurait de toute facon lui-meme
+   * ecartes si necessaire — jamais l'inverse.
+   *
+   * GARDE-FOU. N'entre en vigueur que si le corpus compte au moins R39_MIN_N ventes
+   * (une borne calculee sur un echantillon rural de 8 ventes n'a aucune valeur
+   * statistique) ; sous ce seuil, comportement STRICTEMENT inchange : bornes fixes
+   * 300/40000, comme avant R39. Meme au-dela du seuil, la borne adaptative reste
+   * plafonnee par PPM_SANITY_LO/HI : jamais de derive incontrolee.
+   * ========================================================================== */
+  let _loB=PPM_FIXED_LO,_hiB=PPM_FIXED_HI,_adaptive=false;
+  if(cands.length>=R39_MIN_N){
+    const _lg=cands.map(c=>Math.log(c.ppm)).sort((a,b)=>a-b);
+    const _q1=quantile(_lg,0.25),_q3=quantile(_lg,0.75),_iqr=_q3-_q1;
+    if(_iqr>0){
+      _loB=Math.max(PPM_SANITY_LO,Math.exp(_q1-3*_iqr));
+      _hiB=Math.min(PPM_SANITY_HI,Math.exp(_q3+3*_iqr));
+      _adaptive=true;
+    }
+  }
+  const pts=cands.filter(c=>c.ppm>=_loB&&c.ppm<=_hiB);
+  if(DEBUG){
+    const _excl=cands.length-pts.length;
+    dbg("R39 bornes ppm "+(_adaptive?"ADAPTATIVES":"fixes (corpus "+cands.length+" < "+R39_MIN_N+")")+" : ["+Math.round(_loB)+" ; "+Math.round(_hiB)+"] \u20ac/m\u00b2 sur "+cands.length+" candidats -> "+pts.length+" retenus"+(_excl>0?" ("+_excl+" exclus)":""));
+    if(nCtbAbsent>0)dbg("R36 filet multi-lots (codtypbien absent, "+nCtbAbsent+" mutations) : "+nFallbackExcl+" exclues (multi-lots detectees), "+nFallbackKept+" mono-lot confirme, "+nFallbackBlind+" conservees sans source exploitable (comportement inchange)");
+  }
+  return {pts, ptsNeuf, nNeuf:ptsNeuf.length, nTotal:pts.length+ptsNeuf.length, natSeen, nCtbAbsent, nFallbackExcl, ppmBounds:{lo:Math.round(_loB),hi:Math.round(_hiB),adaptive:_adaptive}};
 }
+/* ============================================================================
+ * R41 - CORPUS PARKING / BOX (garage)
+ * ----------------------------------------------------------------------------
+ * NOMENCLATURE VERIFIEE le 27/07/2026 sur la documentation officielle Cerema
+ * (doc-datafoncier.cerema.fr/doc/dv3f/ann_typologie/codtypbien, licence CC BY-NC-SA).
+ * Aucun code invente. Modalites retenues :
+ *     1311 = UN GARAGE          1312 = UNE DEPENDANCE AUTRE
+ *     132  = DES DEPENDANCES    -> EXCLU (mutation multi-lots, prix non attribuable)
+ *
+ * POURQUOI UN PRIX UNITAIRE ET NON UN PRIX AU M2.
+ * La requete SQL publiee par le Cerema montre que la branche DEPENDANCE n'est atteinte
+ * que si :   nblocdep > 0 AND nblocapt = 0 AND nblocmai = 0 AND nblocact = 0
+ * et que le code 131x impose en outre nblocdep = 1. Autrement dit, un codtypbien 1311
+ * garantit UNE dependance et AUCUN logement dans la mutation : valeurfonc EST le prix
+ * d'un seul box. C'est le signal le plus robuste disponible, et il ne depend pas de
+ * sbati -- surface qui, pour une dependance, est frequemment absente de DVF.
+ * S'y ajoute la pratique de marche : un parking se negocie a la place, pas au m2.
+ *
+ * La surface reste exploitee quand elle est disponible, mais seulement comme
+ * AJUSTEMENT (elasticite mesuree, cf. garageSizeAdj), jamais comme unite de prix.
+ * ========================================================================== */
+const GARAGE_MIN_PRICE=1000, GARAGE_MAX_PRICE=250000;  // garde-fou de sanite (erreurs de saisie)
+let _garageParseMeta=null;   // journal du parsing, affiche dans la decomposition
+
+/** Corpus des ventes de parking/box a partir des mutations DVF.
+ *  @returns {Array} points {price, surf, ppm, date, lat, lon, addr, garageOnly} */
+function parsePtsGarage(arr){
+  const pts=[]; let nRaw=0,nNoCode=0,nMulti=0,nOutPrice=0,nSurf=0;
+  (arr||[]).forEach(o=>{
+    nRaw++;
+    const v=Number(recVal(o,["valeurfonc","valeur_fonciere","valeur"]));
+    if(!v||v<=0)return;
+    const ctb=String(recVal(o,["codtypbien"])||"");
+    const lib=String(recVal(o,["libtypbien","libtyploc","type_local"])||"").toLowerCase();
+    let ok=false,garageOnly=false;
+    if(ctb){
+      if(ctb==="1311"){ok=true;garageOnly=true;}          // UN GARAGE
+      else if(ctb==="1312"){ok=true;}                     // UNE DEPENDANCE AUTRE
+      else if(ctb.slice(0,3)==="132"){nMulti++;return;}   // DES DEPENDANCES -> exclu
+      else return;                                        // tout autre type
+    }else{
+      /* Repli sans codtypbien : le libelle seul ne permet PAS de garantir que la
+       * mutation ne contient qu'une dependance. On ne retient que les libelles
+       * explicites ET on marque le point comme non certifie mono-lot. */
+      nNoCode++;
+      if(!/d[eé]pendance|garage|parking|box|stationnement/.test(lib))return;
+      ok=true;
+    }
+    if(!ok)return;
+    if(v<GARAGE_MIN_PRICE||v>GARAGE_MAX_PRICE){nOutPrice++;return;}
+    const sRaw=Number(recVal(o,["sbati","surface_reelle_bati","surface_bati","sbatact"]))||0;
+    const surf=(sRaw>=4&&sRaw<=200)?sRaw:0;   // hors de cette plage : surface non credible
+    if(surf>0)nSurf++;
+    const _lat=(o._lat!=null?o._lat:null)||(recVal(o,['lat','latitude','lat_centparce','y_centroid'])||null);
+    const _lon=(o._lon!=null?o._lon:null)||(recVal(o,['lon','longitude','lng','lon_centparce','x_centroid'])||null);
+    const _addr=recVal(o,['l_adrmut','adrmut','l_adr','adresse','adr_voie','l_adresse','adresse_complete'])||null;
+    pts.push({price:v,surf,ppm:surf>0?v/surf:null,date:recVal(o,['datemut','date_mutation']),
+      lat:_lat!=null?parseFloat(_lat):null,lon:_lon!=null?parseFloat(_lon):null,addr:_addr,garageOnly});
+  });
+  _garageParseMeta={nRaw,n:pts.length,nNoCode,nMulti,nOutPrice,nSurf,
+    surfCov:pts.length?+(nSurf/pts.length).toFixed(2):0,
+    certified:pts.length?+(pts.filter(p=>p.garageOnly).length/pts.length).toFixed(2):0};
+  if(DEBUG)dbg("R41 corpus parking : "+pts.length+" ventes retenues sur "+nRaw+" mutations \u2014 "
+    +nMulti+" multi-dependances exclues, "+nOutPrice+" hors bornes de prix, "
+    +nNoCode+" sans codtypbien (repli libelle) \u2014 surface renseignee sur "
+    +Math.round(_garageParseMeta.surfCov*100)+" % des ventes");
+  return pts;
+}
+
+/** Elasticite prix/surface d'un box, mesuree localement puis retrecie (James-Stein,
+ *  meme mecanique que R32/R35). Renvoie null si non mesurable : aucun ajustement alors. */
+function garageSizeAdj(pts,subjSurf){
+  if(!(subjSurf>0)||!pts)return null;
+  const ok=pts.filter(p=>p.surf>0&&p.price>0);
+  if(ok.length<15)return null;
+  const n=ok.length;
+  const x=ok.map(p=>Math.log(p.surf)),y=ok.map(p=>Math.log(p.price));
+  const avg=a=>a.reduce((t,v)=>t+v,0)/a.length;
+  const mx=avg(x),my=avg(y);
+  let sxx=0,sxy=0,syy=0;
+  for(let i=0;i<n;i++){const dx=x[i]-mx,dy=y[i]-my;sxx+=dx*dx;sxy+=dx*dy;syy+=dy*dy;}
+  if(!(sxx>0))return null;
+  const b=sxy/sxx, ssr=Math.max(0,syy-b*sxy), dof=n-2;
+  if(dof<5)return null;
+  const varB=(ssr/dof)/sxx;
+  if(!isFinite(varB)||varB<0)return null;
+  const se=Math.sqrt(varB);
+  const shrink=(b*b)>0?((b*b)/((b*b)+(se*se))):0;
+  let bS=b*shrink;
+  if(!(bS>0))return null;                  // signe economiquement invalide -> pas d'ajustement
+  bS=Math.min(0.60,bS);
+  const meds=median(ok.map(p=>p.surf));
+  if(!(meds>0))return null;
+  const raw=Math.pow(subjSurf/meds,bS);
+  const factor=Math.max(0.80,Math.min(1.20,raw));
+  return{b:+b.toFixed(3),bShrink:+bS.toFixed(3),shrink:+shrink.toFixed(2),n,
+    medSurf:Math.round(meds),subjSurf:Math.round(subjSurf),factor:+factor.toFixed(4),
+    clamped:Math.abs(raw-factor)>1e-4};
+}
+
 /* ===== FIX2 : le corpus terrain doit contenir UNIQUEMENT du terrain a batir =====
  * Probleme : DVF melange dans les ventes sans bati les parcelles agricoles, bois,
  * pres, landes et terrains de loisir (1-30 EUR/m2) avec les vrais lots a batir
@@ -2549,6 +2832,124 @@ function compDistFactor(p,ref){
   return COMP_DIST_FLOOR+(1-COMP_DIST_FLOOR)*Math.exp(-d/COMP_DIST_TAU);
 }
 
+/* ============================================================================
+ * R37 — SEGMENTATION IRIS (maille infra-communale INSEE)
+ * ----------------------------------------------------------------------------
+ * DEFAUT CORRIGE. L'ancrage geographique du corpus reposait sur une bbox carree
+ * (~1,1 km) puis un resserrement local, tous deux purement METRIQUES : deux ventes
+ * equidistantes du sujet pesaient identiquement, meme si l'une se situe de l'autre
+ * cote d'une coupure urbaine (boulevard, voie ferree, riviere) qui separe deux
+ * sous-marches. compDistFactor mesure une distance, pas une appartenance.
+ *
+ * L'IRIS est la maille infra-communale de l'INSEE (~2 000 habitants), decoupee
+ * precisement pour etre HOMOGENE en type d'habitat : c'est le decoupage public
+ * gratuit le plus proche de la notion de quartier.
+ *
+ * REUTILISATION, AUCUN ENDPOINT NOUVEAU. Le dataset georef-france-iris et la requete
+ * intersects(geo_shape, geom'POINT(lon lat)') sont DEJA en production dans ce fichier
+ * (provQuartier, R11) et deja caches 30 jours (cf. regex _urlTTL). R37 n'ajoute qu'un
+ * seul appel reseau, mutualise avec ce cache. Le nom du champ geometrique n'est PAS
+ * code en dur : il est decouvert a l'execution en cherchant, parmi les valeurs de
+ * l'enregistrement, un objet de forme GeoJSON. Si rien n'est trouve -> aucune
+ * segmentation, comportement strictement inchange.
+ *
+ * EFFET. Aucun appel reseau par comparable : le contour est recupere une fois, puis
+ * l'appartenance de chaque vente est testee LOCALEMENT (ray casting). Le facteur ne
+ * touche QUE la ponderation, jamais la selection (le seuil de score 70/100 reste
+ * inchange, comme etabli en R19) : aucune vente n'est exclue.
+ *
+ * BORNES (choix de modelisation explicites) :
+ *  - IRIS_OUT_FACTOR=0,55 : la frontiere IRIS est ADMINISTRATIVE ; une vente a 100 m
+ *    de l'autre cote reste un comparable legitime. On attenue, on n'exclut jamais.
+ *    Valeur plus douce que le plancher de distance (0,25) car la distance traite deja
+ *    la proximite : l'IRIS n'apporte que l'information de discontinuite.
+ *  - IRIS_MIN_IN=10 : sous ce seuil, concentrer le poids sur une poignee de ventes
+ *    ajouterait plus de variance qu'il ne retirerait de biais -> segmentation inactive.
+ * ========================================================================== */
+const IRIS_OUT_FACTOR=0.55;   // poids des ventes hors IRIS du sujet
+const IRIS_MIN_IN=10;         // ventes minimales dans l'IRIS pour activer la segmentation
+
+/** Test d'appartenance d'un point a un anneau polygonal (algorithme du lancer de rayon).
+ *  @param {Array<Array<number>>} ring anneau [[lon,lat],...]
+ *  @returns {boolean} */
+function _ringContains(ring,lon,lat){
+  if(!ring||ring.length<3)return false;
+  let inside=false;
+  for(let i=0,j=ring.length-1;i<ring.length;j=i++){
+    const xi=ring[i][0],yi=ring[i][1],xj=ring[j][0],yj=ring[j][1];
+    if(((yi>lat)!==(yj>lat))&&(lon<(xj-xi)*(lat-yi)/((yj-yi)||1e-12)+xi))inside=!inside;
+  }
+  return inside;
+}
+/** Appartenance a une geometrie GeoJSON Polygon ou MultiPolygon, trous compris. */
+function _geoContains(geom,lon,lat){
+  if(!geom||!geom.type||!geom.coordinates)return false;
+  const poly=p=>{
+    if(!p||!p.length||!_ringContains(p[0],lon,lat))return false;
+    for(let h=1;h<p.length;h++)if(_ringContains(p[h],lon,lat))return false; // trou
+    return true;
+  };
+  if(geom.type==="Polygon")return poly(geom.coordinates);
+  if(geom.type==="MultiPolygon")return geom.coordinates.some(poly);
+  return false;
+}
+/** Decouverte a l'execution d'une geometrie GeoJSON dans un enregistrement opendatasoft.
+ *  Aucun nom de champ suppose : on inspecte les valeurs, pas les cles. */
+function _findGeoJson(rec){
+  if(!rec||typeof rec!=="object")return null;
+  const isGeom=v=>v&&typeof v==="object"&&(v.type==="Polygon"||v.type==="MultiPolygon")&&Array.isArray(v.coordinates);
+  for(const k of Object.keys(rec)){
+    const v=rec[k];
+    if(isGeom(v))return v;
+    if(v&&typeof v==="object"){
+      if(isGeom(v.geometry))return v.geometry;                       // Feature
+      if(Array.isArray(v.features)&&v.features[0]&&isGeom(v.features[0].geometry))return v.features[0].geometry;
+    }
+  }
+  return null;
+}
+/** Contour IRIS du point d'etude. Un seul appel reseau, mutualise avec le cache 30 j
+ *  deja en place pour georef-france-iris (cf. provQuartier / _urlTTL).
+ *  @returns {?{geom:Object,code:?string,nom:?string}} null si indisponible */
+async function fetchIrisShape(coord){
+  if(!coord||coord.lat==null||coord.lon==null)return null;
+  try{
+    const pt="geom'POINT("+coord.lon.toFixed(6)+" "+coord.lat.toFixed(6)+")'";
+    const url="https://public.opendatasoft.com/api/explore/v2.1/catalog/datasets/georef-france-iris/records?where="
+      +encodeURIComponent("intersects(geo_shape,"+pt+")")+"&limit=1";
+    const d=await dvfFetch(url);
+    const rec=(d&&d.json&&d.json.results&&d.json.results[0])||null;
+    if(!rec)return null;
+    const geom=_findGeoJson(rec);
+    if(!geom)return null;
+    const keys=Object.keys(rec);
+    const kCode=keys.find(k=>/^iris.*code$|^code.*iris$/i.test(k))||keys.find(k=>/iris/i.test(k)&&/code/i.test(k));
+    const kName=keys.find(k=>/^iris.*name$|^iris.*lib|lib.*iris/i.test(k));
+    const val=k=>k?String(Array.isArray(rec[k])?rec[k][0]:rec[k]):null;
+    const code=val(kCode);
+    // Commune mono-IRIS : le quartier EST la commune, la segmentation n'a aucun objet.
+    if(code&&/0000$/.test(code))return null;
+    return{geom,code,nom:val(kName)};
+  }catch(_){return null;}
+}
+/** Marque chaque vente comme interne ou externe a l'IRIS du sujet (p._iris).
+ *  Purement local (aucun appel reseau). Renvoie l'etat d'activation. */
+function tagIrisMembership(pts,shape){
+  if(!shape||!shape.geom||!pts||!pts.length)return null;
+  let nIn=0,nGeo=0;
+  pts.forEach(p=>{
+    if(p.lat==null||p.lon==null){p._iris=undefined;return;}
+    nGeo++;
+    p._iris=_geoContains(shape.geom,p.lon,p.lat);
+    if(p._iris)nIn++;
+  });
+  const nOut=nGeo-nIn;
+  // Inactif si trop peu de ventes dans l'IRIS (variance) ou si toutes y sont (sans effet).
+  const active=nIn>=IRIS_MIN_IN&&nOut>0;
+  if(!active)pts.forEach(p=>{p._iris=undefined;});
+  return{active,nIn,nOut,nGeo,code:shape.code,nom:shape.nom};
+}
+
 /* R33 — GRANULARITÉ EPCI : niveau intermédiaire entre commune et département.
  * Quand la commune renvoie peu de ventes DVF (<EPCI_TRIGGER), on augmente le corpus
  * avec les communes voisines appartenant au même EPCI (Établissement Public de
@@ -2581,7 +2982,7 @@ async function fetchDvfEpciAugment(coord,type,existingPts){
       const _r=await _withTimeout(dvfFetch(DVF_BASE+"?code_insee="+_insee+"&page_size=500"),5000,null);
       if(!_r)continue;
       const _arr=extractArr(_r.json);
-      const _parsed=type==="terrain"?{pts:parsePtsTerrain(_arr,_dep)}:parsePts(_arr,type);
+      const _parsed=type==="terrain"?{pts:parsePtsTerrain(_arr,_dep)}:type==="garage"?{pts:parsePtsGarage(_arr)}:parsePts(_arr,type);
       if(_parsed.pts&&_parsed.pts.length)_allPts=_allPts.concat(_parsed.pts);
     }
     const _added=_allPts.length-(existingPts||[]).length;
@@ -2653,7 +3054,7 @@ async function fetchDvf(coord,type){
           garr=[];more.forEach(m=>{if(m)garr=garr.concat(extractArr(m.json));});
           if(!garr.length)garr=extractArr(g1.json);
         }else garr=extractArr(g1.json);
-        const _gres=type==="terrain"?{pts:parsePtsTerrain(garr,_depOf(coord)),nNeuf:0,nTotal:0,natSeen:false}:parsePts(garr,type);
+        const _gres=type==="terrain"?{pts:parsePtsTerrain(garr,_depOf(coord)),nNeuf:0,nTotal:0,natSeen:false}:type==="garage"?{pts:parsePtsGarage(garr),nNeuf:0,nTotal:0,natSeen:false}:parsePts(garr,type);
         if(DEBUG&&garr[0])dbg("Champs mutation API: "+Object.keys(garr[0]).join(", "));
         if(DEBUG&&_gres.pts){const _nr=_gres.pts.filter(p=>p.rooms>0).length;dbg("Pi\u00e8ces renseign\u00e9es: "+_nr+"/"+_gres.pts.length+" ventes");}
         if(DEBUG)dbg("Neuf exclu (libnatmut+vefa+codtypbien): "+_gres.nNeuf+"/"+_gres.nTotal+" ventes");
@@ -2676,7 +3077,10 @@ async function fetchDvf(coord,type){
     if(!bboxAnswered)break; // echec reseau : inutile d'elargir, on sort (Fix15)
     }
     if(!bboxAnswered){
-      if(DEBUG)dbg("DVF bbox: echec reseau apres 4 tentatives -> AUCUN repli commune (Fix15), l'utilisateur doit relancer");
+      if(DEBUG)dbg("DVF bbox: echec reseau apres 4 tentatives -> tentative de repli sur source secondaire (R38)");
+      const _fb=await fetchDvfFallback(coord,type);
+      if(_fb)return _storeAndReturn(_fb);
+      if(DEBUG)dbg("R38 repli indisponible \u2014 aucun repli commune (Fix15), l'utilisateur doit relancer");
       return {pts:null,status:"bbox-fail"};
     }
   }
@@ -2685,7 +3089,12 @@ async function fetchDvf(coord,type){
   let r1=await dvfFetch(base);
   /* R34 — retry commune : purge cache session + 2e essai après 1,2 s (mobile/4G instable). */
   if(!r1){_netCache.delete(base);await new Promise(rr=>setTimeout(rr,1200));r1=await dvfFetch(base);}
-  if(!r1)return {pts:null,status:"no-conn"};
+  if(!r1){
+    if(DEBUG)dbg("DVF commune: echec reseau apres 2 tentatives -> tentative de repli sur source secondaire (R38)");
+    const _fb=await fetchDvfFallback(coord,type);
+    if(_fb)return _storeAndReturn(_fb);
+    return {pts:null,status:"no-conn"};
+  }
   const count=r1.json.count||0;
   if(DEBUG)dbg("INSEE "+coord.insee+" - "+count+" mutations");
   let arr;
@@ -2704,7 +3113,7 @@ async function fetchDvf(coord,type){
     }
     if(!arr.length)arr=extractArr(r1.json);
   }else arr=extractArr(r1.json);
-  const _res=type==="terrain"?{pts:parsePtsTerrain(arr,_depOf(coord)),nNeuf:0,nTotal:0,natSeen:false}:parsePts(arr,type);
+  const _res=type==="terrain"?{pts:parsePtsTerrain(arr,_depOf(coord)),nNeuf:0,nTotal:0,natSeen:false}:type==="garage"?{pts:parsePtsGarage(arr),nNeuf:0,nTotal:0,natSeen:false}:parsePts(arr,type);
   if(DEBUG)dbg("Ventes "+type+" anciennes exploitables: "+_res.pts.length+(_res.nNeuf>0?" ("+_res.nNeuf+" VEFA exclus)":""));
   const _commRes=_res.pts.length>0?{pts:_res.pts,ptsNeuf:_res.ptsNeuf||[],nNeuf:_res.nNeuf,nTotal:_res.nTotal,natSeen:_res.natSeen,status:"ok",scope:"commune"}:{pts:null,status:"no-data"};
   return _storeAndReturn(_commRes);
@@ -2713,12 +3122,155 @@ async function fetchDvf(coord,type){
 /* ===== Estimation ===== */
 /* ===== Vague 3 : moteur de scoring multicritere (base ponderee par similarite + indice de confiance) ===== */
 // ===== Vague 4 : moteurs d'estimation independants combines par confiance =====
+/* ============================================================================
+ * R40 — CALIBRATION DES POIDS DE SIMILARITE (recherche sur grille, leave-one-out)
+ * ----------------------------------------------------------------------------
+ * DEFAUT CORRIGE. Le score de similarite  100*(0,55*ss + 0,35*rs + 0,10)  et la
+ * largeur de bande de surface (sigma = 0,20) etaient des constantes POSEES, jamais
+ * mesurees, alors que l'outil dispose deja de tout l'appareillage pour les evaluer
+ * (leave-one-out, MdAPE). Or l'arbitrage optimal entre "surface proche" et "vente
+ * recente" n'est PAS universel : dans un marche stable et heterogene en typologie,
+ * la surface prime ; dans un marche qui bouge vite et homogene, la recence prime.
+ * Un reglage unique national est donc necessairement sous-optimal localement.
+ *
+ * METHODE. Recherche sur grille 5x3 (15 points) minimisant l'erreur absolue mediane
+ * d'une prediction leave-one-out par comparables ponderes — exactement la quantite
+ * que ces poids controlent. On ne passe PAS par backtestFull : celui-ci mesure la
+ * chaine complete (ancrage, VEFA, plafond, prudence), ou l'effet des poids serait
+ * noye dans une dizaine d'autres mecanismes, pour un cout 15x superieur sur mobile.
+ * Isoler l'objectif est ici a la fois plus juste statistiquement et bien moins couteux.
+ *
+ * CONTRAINTE DE FORME. wS + wR = 0,90 (plancher 0,10 conserve) : l'echelle du score
+ * reste [10 ; 100], donc le SEUIL DE SELECTION 70 garde exactement le meme sens.
+ *
+ * DECOUPLAGE SELECTION / PONDERATION — point central de non-regression.
+ * Le score joue deux roles : il SELECTIONNE (seuil 70, fige depuis R19) et il PONDERE.
+ * Changer les poids deplacerait mecaniquement la population retenue, ce qui violerait
+ * l'invariant R19. R40 dissocie donc les deux : la selection, le tri, le repli
+ * "30 % des mieux scores" et le top 6 affiche continuent d'utiliser le score FIGE ;
+ * seul le POIDS de chaque vente deja selectionnee utilise les parametres calibres.
+ * La population de comparables est ainsi strictement identique a l'avant-R40.
+ *
+ * GARDE-FOUS ANTI-SURAPPRENTISSAGE :
+ *  - corpus minimal R40_MIN_CORPUS ventes (sous ce seuil, aucun reglage n'est fiable) ;
+ *  - >= 20 cibles evaluables, sinon abandon ;
+ *  - le reglage retenu doit battre le reglage par defaut d'au moins R40_MIN_GAIN en
+ *    RELATIF ; en deca, on conserve les valeurs historiques. Un gain marginal sur 40
+ *    cibles est du bruit, pas un signal : le defaut a la priorite en cas de doute.
+ *  - grille volontairement etroite autour du defaut : jamais de reglage exotique.
+ *
+ * SEPARATION TRAIN / VALIDATION (retrait du biais d'optimisme). Les 40 cibles sont
+ * partagees en deux moities de 20 (parite d'index sur la liste triee par recence) :
+ * la grille est evaluee et le couple (wS,sigma) gagnant choisi UNIQUEMENT sur la
+ * moitie ENTRAINEMENT ; le gain rapporte a l'utilisateur (mdape/mdapeDefault/gain)
+ * est mesure sur la moitie VALIDATION, jamais vue pendant la selection. Sans cette
+ * separation, choisir le meilleur reglage puis mesurer sa performance sur les memes
+ * donnees est optimiste par construction — corrige ici, pas seulement documente.
+ * ========================================================================== */
+const SCORE_WS_DEF=0.55, SCORE_WR_DEF=0.35, SCORE_FLOOR=0.10;
+const SCORE_SIGMA_DEF=0.20, SCORE_TAU_DEF=4.5;
+const R40_MIN_CORPUS=60;                          // corpus minimal pour tenter une calibration
+const R40_TARGETS=40;                             // cibles leave-one-out, avant partage train/validation
+const R40_MIN_TARGETS=20;                         // cibles evaluables minimales PAR MOITIE (train, puis validation)
+const R40_WS_GRID=[0.35,0.45,0.55,0.65,0.75];     // poids surface (wR = 0,90 - wS)
+const R40_SIGMA_GRID=[0.14,0.20,0.28];            // largeur de bande de surface (log)
+const R40_MIN_GAIN=0.03;                          // gain relatif minimal pour s'ecarter du defaut
+
+/** Parametres de similarite effectivement appliques a la PONDERATION.
+ *  Absence de calibration -> valeurs historiques, comportement strictement inchange. */
+function _scoreParams(){
+  const c=(typeof state!=="undefined"&&state.scoreCal&&state.scoreCal.applied)?state.scoreCal:null;
+  return c?{wS:c.wS,wR:c.wR,sigma:c.sigma}:{wS:SCORE_WS_DEF,wR:SCORE_WR_DEF,sigma:SCORE_SIGMA_DEF};
+}
+/** Score de similarite d'une vente au bien de reference, sur 100.
+ *  @param {number} refSurf surface du bien de reference (sujet, ou cible en backtest) */
+function _simScore(p,refSurf,year,wS,wR,sigma){
+  const sr=Math.log((p.surf||refSurf)/refSurf);
+  const ss=Math.exp(-(sr*sr)/(2*sigma*sigma));
+  const age=Math.max(0,year-(p.date?+String(p.date).slice(0,4):year));
+  const rs=Math.exp(-age/SCORE_TAU_DEF);
+  return 100*(wS*ss+wR*rs+SCORE_FLOOR);
+}
+/** Recherche sur grille des parametres de similarite minimisant l'erreur leave-one-out.
+ *  @returns {?Object} {wS,wR,sigma,mdape,mdapeDefault,gain,applied,n,nGrid} ou null */
+/* R40-FIX — SEPARATION TRAIN / VALIDATION (retrait du biais d'optimisme documente en R40).
+ * Le probleme original : le grille-recherche SELECTIONNAIT (wS,sigma) en minimisant
+ * l'erreur sur les 40 memes cibles dont l'erreur etait ensuite RAPPORTEE comme "gain" --
+ * choisir le meilleur reglage puis mesurer sa performance sur les donnees mêmes qui ont
+ * servi a le choisir est optimiste par construction (le gain affiche est structurellement
+ * superieur au gain reel en production).
+ * CORRECTION : les cibles sont partagees en deux moities (parite d'index sur la liste
+ * triee par recence, pour eviter qu'un split temporel brut ne biaise vers un seul
+ * segment de marche). La grille est evaluee et le gagnant choisi UNIQUEMENT sur la
+ * moitie ENTRAINEMENT ; le MdAPE rapporte (mdape/mdapeDefault/gain) est mesure sur la
+ * moitie VALIDATION, jamais vue pendant la selection. Le reglage retenu est identique
+ * dans l'esprit (memes bornes, meme grille, meme porte de selection figee R19) ; seule
+ * la mesure de performance devient honnete hors echantillon. */
+function calibrateScoreWeights(clean,subjSurf){
+  if(!clean||clean.length<R40_MIN_CORPUS)return null;
+  const year=new Date().getFullYear();
+  const yr=p=>p.date?+String(p.date).slice(0,4):year;
+  const targets=[...clean].sort((a,b)=>yr(b)-yr(a)).slice(0,R40_TARGETS);
+  if(targets.length<R40_MIN_TARGETS*2)return null;
+  const train=targets.filter((_,i)=>i%2===0), hold=targets.filter((_,i)=>i%2===1);
+  if(train.length<R40_MIN_TARGETS||hold.length<R40_MIN_TARGETS)return null;
+  /* Evalue un couple (wS, sigma) sur un sous-ensemble de cibles donne. La PORTE de
+   * selection reste le score FIGE : c'est exactement ce que fera la production, sans
+   * quoi on calibrerait un autre modele. */
+  const evalPairOn=(wS,sigma,tgts)=>{
+    const wR=0.90-wS,errs=[];
+    for(let i=0;i<tgts.length;i++){
+      const t=tgts[i];
+      if(!(t.surf>0)||!(t.ppm>0))continue;
+      let sw=0,swp=0;
+      for(let j=0;j<clean.length;j++){
+        const p=clean[j];
+        if(p===t||!(p.surf>0)||!(p.ppm>0))continue;
+        const sSel=_simScore(p,t.surf,year,SCORE_WS_DEF,SCORE_WR_DEF,SCORE_SIGMA_DEF);
+        if(sSel<70)continue;                                   // porte figee (R19)
+        const w=_simScore(p,t.surf,year,wS,wR,sigma)/100;      // poids calibre
+        sw+=w;swp+=w*p.ppm;
+      }
+      if(sw>0)errs.push(Math.abs(swp/sw-t.ppm)/t.ppm);
+    }
+    if(errs.length<R40_MIN_TARGETS)return null;
+    errs.sort((a,b)=>a-b);
+    return errs[errs.length>>1];
+  };
+  // 1) Selection du couple gagnant : UNIQUEMENT sur la moitie entrainement.
+  const baseTrain=evalPairOn(SCORE_WS_DEF,SCORE_SIGMA_DEF,train);
+  if(baseTrain==null||!(baseTrain>0)||!isFinite(baseTrain))return null;
+  let bWS=SCORE_WS_DEF,bSig=SCORE_SIGMA_DEF,bMTrain=baseTrain,nGrid=0;
+  for(const wS of R40_WS_GRID)for(const sg of R40_SIGMA_GRID){
+    const m=evalPairOn(wS,sg,train);nGrid++;
+    if(m!=null&&isFinite(m)&&m<bMTrain){bMTrain=m;bWS=wS;bSig=sg;}
+  }
+  // 2) Mesure rapportee : UNIQUEMENT sur la moitie validation, jamais vue ci-dessus.
+  const baseHold=evalPairOn(SCORE_WS_DEF,SCORE_SIGMA_DEF,hold);
+  const selHold=evalPairOn(bWS,0.90-bWS,hold);
+  if(baseHold==null||!(baseHold>0)||!isFinite(baseHold)||selHold==null||!isFinite(selHold))return null;
+  const gain=(baseHold-selHold)/baseHold;
+  const applied=gain>=R40_MIN_GAIN;
+  return{
+    wS:applied?bWS:SCORE_WS_DEF,
+    wR:applied?+(0.90-bWS).toFixed(2):SCORE_WR_DEF,
+    sigma:applied?bSig:SCORE_SIGMA_DEF,
+    mdape:+( (applied?selHold:baseHold)*100 ).toFixed(2),
+    mdapeDefault:+(baseHold*100).toFixed(2),
+    gain:applied?+(gain*100).toFixed(1):0,
+    applied,n:train.length+hold.length,nGrid
+  };
+}
 function estimationEngines(pts,surf,stats,refPt,perfSample){
   const year=new Date().getFullYear();
   const clean=(pts||[]).filter(p=>p.surf>0&&p.ppm>0);
   if(clean.length<3||!stats)return{base:stats?Math.round(stats.med):null,engines:[],nEff:0,top:[]};
   const engines=[];
-  const score=p=>{const sr=Math.log((p.surf||surf)/surf);const ss=Math.exp(-(sr*sr)/(2*0.20*0.20));const age=Math.max(0,year-(p.date?+String(p.date).slice(0,4):year));const rs=Math.exp(-age/4.5);return 100*(0.55*ss+0.35*rs+0.10);};
+  const score=p=>_simScore(p,surf,year,SCORE_WS_DEF,SCORE_WR_DEF,SCORE_SIGMA_DEF);
+  /* R40 : score de PONDERATION, seul a utiliser les parametres calibres. Identique
+   * au score de selection tant qu'aucune calibration n'est retenue. */
+  const _sp=_scoreParams();
+  const scoreW=p=>_simScore(p,surf,year,_sp.wS,_sp.wR,_sp.sigma);
   /* R19 : le score de SELECTION (seuil 70) reste STRICTEMENT inchange, donc la
    * population de comparables retenue est identique a la version precedente.
    * Seul le POIDS de chaque vente dans la moyenne ponderee est module par la
@@ -2727,9 +3279,20 @@ function estimationEngines(pts,surf,stats,refPt,perfSample){
   /* R20 : refPt permet au backtest de se placer du point de vue de la vente testee.
    * Absent (production, 3 arguments) -> comportement strictement inchange. */
   const _ref=(refPt!==undefined&&refPt!==null)?refPt:((typeof state!=="undefined"&&state.coord)?state.coord:null);
-  const scored=clean.map(p=>({p,s:score(p),fd:compDistFactor(p,_ref)})).sort((a,b)=>(b.s*b.fd)-(a.s*a.fd));
+  /* R37 : facteur d'appartenance IRIS. N'intervient QUE sur le poids, jamais sur la
+   * selection (seuil s>=70 inchange depuis R19). En production refPt est absent : la
+   * reference est le sujet, par construction DANS l'IRIS interroge (_iris implicite=true).
+   * En backtest refPt est une vente du corpus, deja marquee : la comparaison reste
+   * coherente des deux cotes, sans quoi le MAPE mesurerait un autre modele que celui
+   * reellement applique. Segmentation inactive -> facteur 1 partout, aucun changement. */
+  const _irisOn=(typeof state!=="undefined"&&state.irisSeg&&state.irisSeg.active);
+  const _refIn=_irisOn?((_ref&&_ref._iris!==undefined)?!!_ref._iris:true):null;
+  const _irisF=p=>(_irisOn&&p._iris!==undefined)?(p._iris===_refIn?1:IRIS_OUT_FACTOR):1;
+  const scored=clean.map(p=>({p,s:score(p),wsc:scoreW(p),fd:compDistFactor(p,_ref)*_irisF(p)})).sort((a,b)=>(b.s*b.fd)-(a.s*a.fd));
   const keep=scored.filter(x=>x.s>=70),used=keep.length>=5?keep:scored.slice(0,Math.max(5,Math.ceil(scored.length*0.3)));
-  let sw=0,swp=0,sw2=0;used.forEach(x=>{const w=(x.s/100)*x.fd;sw+=w;swp+=w*x.p.ppm;sw2+=w*w;});
+  /* R40 : le POIDS utilise le score calibre (wsc) ; la population `used` ci-dessus a
+   * ete determinee par le score fige (s). Aucune vente n'entre ni ne sort du corpus. */
+  let sw=0,swp=0,sw2=0;used.forEach(x=>{const w=(x.wsc/100)*x.fd;sw+=w;swp+=w*x.p.ppm;sw2+=w*w;});
   const e1=sw>0?swp/sw:stats.med,nEff=sw>0?(sw*sw)/sw2:0;
   engines.push({key:"comp",label:"Comparables scor\u00e9s",ppm:Math.round(e1),w:Math.min(1,nEff/14),detail:keep.length+" ventes \u226570/100"});
   let n=clean.length,sx=0,sy=0,sxx=0,sxy=0;clean.forEach(p=>{const x=p.surf,y=p.price||p.ppm*p.surf;sx+=x;sy+=y;sxx+=x*x;sxy+=x*y;});
@@ -2773,6 +3336,10 @@ function estimationEngines(pts,surf,stats,refPt,perfSample){
   const base=W>0?Math.round(B/W):Math.round(stats.med);
   return{base,engines,nEff,top:scored.slice(0,6).map(x=>Object.assign({},x.p,{score:Math.round(x.s)})),perf:perf||null};
 }
+/* R40 : `subjSurf` n'est plus lu — la surface de reference d'un leave-one-out est
+ * celle de la CIBLE (t.surf), ce qui est la definition correcte et ce que faisait deja
+ * la production. Le parametre est conserve pour ne pas modifier une signature appelee
+ * ailleurs ; `clean` etant deja filtre sur surf>0, aucun repli n'est requis. */
 function enginePerf(clean,subjSurf,slope,intc,sampleN){
   if(!clean||clean.length<20)return null;
   const year=new Date().getFullYear();
@@ -2781,14 +3348,19 @@ function enginePerf(clean,subjSurf,slope,intc,sampleN){
    * Le backtest la reduit : il execute deja 40 leave-one-out imbriques, le cout
    * serait quadratique. Une mediane d'erreurs converge des ~30 observations. */
   const sample=[...clean].sort((a,b)=>yr(b)-yr(a)).slice(0,(sampleN>0?sampleN:80));
+  /* R40 : la simulation du moteur "comparables" doit utiliser EXACTEMENT les poids
+   * effectivement appliques par estimationEngines, sinon le MdAPE mesure ici ne
+   * decrirait plus le moteur reellement en service. Porte de selection figee (R19),
+   * ponderation calibree — meme dissociation qu'en production. */
+  const _sp=_scoreParams();
   const eComp=[],eReg=[],eRec=[];
   sample.forEach(t=>{
     const others=clean.filter(p=>p!==t);
     let sw=0,swp=0,swr=0,swpr=0;
     others.forEach(p=>{
-      const sr=Math.log((p.surf||subjSurf)/t.surf),ss=Math.exp(-(sr*sr)/(2*0.20*0.20));
-      const age=Math.max(0,year-yr(p)),rs=Math.exp(-age/4.5);
-      const sc=0.55*ss+0.35*rs+0.10;if(sc>=0.70){sw+=sc;swp+=sc*p.ppm;}
+      const age=Math.max(0,year-yr(p)),rs=Math.exp(-age/SCORE_TAU_DEF);
+      const sSel=_simScore(p,t.surf,year,SCORE_WS_DEF,SCORE_WR_DEF,SCORE_SIGMA_DEF)/100;
+      if(sSel>=0.70){const w=_simScore(p,t.surf,year,_sp.wS,_sp.wR,_sp.sigma)/100;sw+=w;swp+=w*p.ppm;}
       swr+=rs;swpr+=rs*p.ppm; // recence seule
     });
     if(sw>0)eComp.push(Math.abs(swp/sw-t.ppm)/t.ppm);
@@ -3260,6 +3832,79 @@ function landSizeElasticity(pts){
   const surfs=_refPts.map(p=>p.surf).sort((a,b2)=>a-b2);
   return{b:+b.toFixed(3),n,medSurf:median(surfs),homogMode:_h.mode,homogRemoved:_h.removed};
 }
+/* ============================================================================
+ * R41 - ESTIMATION PARKING / BOX
+ * ----------------------------------------------------------------------------
+ * Estimateur DEDIE, sur le modele de estimateTerrain : la chaine hedonique du bati
+ * (DPE, etat, etage, exterieurs, pieces, diagnostics) n'a aucun sens pour un box et
+ * n'est donc jamais appelee. Aucune fonctionnalite existante n'est traversee.
+ *
+ * MODELE. Prix UNITAIRE (cf. justification dans parsePtsGarage), en trois temps :
+ *  1. Mediane ponderee par la RECENCE (decroissance 0.82^age, identique a `west` du
+ *     bati : meme convention dans tout l'outil).
+ *  2. Ancrage PRUDENT au percentile P40 de la distribution, puis retenue de la plus
+ *     basse des deux ancres. Biais acquereur assume, coherent avec le reste de l'outil.
+ *  3. Ajustement de taille si -- et seulement si -- l'elasticite est mesurable
+ *     (garageSizeAdj) ; sinon aucun ajustement, jamais de coefficient supplee.
+ *
+ * La fourchette derive de la dispersion reelle du corpus (IQR relatif), plancher 12 %
+ * -- un marche de parkings est structurellement plus disperse qu'un marche de
+ * logements (emplacement dans la copropriete, acces, taille), et l'afficher plus
+ * precis qu'il ne l'est serait trompeur.
+ * ========================================================================== */
+function estimateGarage(surfIn,city,cp,realStats){
+  const pts=(realStats&&realStats.pts)||[];
+  const dyn=computeDynamics(city,cp);
+  const surface=surfIn>0?surfIn:0;
+  const meta=_garageParseMeta;
+  const rows=[];
+  if(!pts.length){
+    return{price:0,sqm:0,sqmBase:0,low:0,high:0,spread:0.25,conf:"faible",rows:[["Aucune vente de parking exploitable dans le secteur",null,"n.d."]],
+      surface,type:"garage",city,cp,pieces:0,real:false,econSurface:surface,ctx:null,dyn,
+      garage:{n:0,unit:0,meta}};
+  }
+  const year=new Date().getFullYear();
+  const age=p=>Math.max(0,year-(p.date?+String(p.date).slice(0,4):year));
+  // 1. mediane ponderee par la recence
+  const sorted=[...pts].sort((a,b)=>a.price-b.price);
+  let wsum=0;sorted.forEach(p=>{wsum+=Math.pow(0.82,age(p));});
+  let acc=0,west=sorted[sorted.length>>1].price;
+  for(const p of sorted){acc+=Math.pow(0.82,age(p));if(acc>=wsum/2){west=p.price;break;}}
+  // 2. ancrage prudent
+  const prices=sorted.map(p=>p.price);
+  const p40=quantile(prices,0.40), med=median(prices);
+  const anchor=Math.min(west,p40);
+  rows.push(["M\u00e9diane pond\u00e9r\u00e9e par la r\u00e9cence (d\u00e9croissance 0,82^an)",null,eur0(west)+" \u20ac"]);
+  rows.push(["Ancrage prudent P40 du corpus \u2014 la plus basse des deux ancres est retenue",null,eur0(p40)+" \u20ac"]);
+  // 3. ajustement de taille
+  let price=anchor;
+  const sz=garageSizeAdj(pts,surface);
+  if(sz&&Math.abs(sz.factor-1)>=0.005){
+    price=Math.round(price*sz.factor);
+    rows.push(["Taille : "+sz.subjSurf+" m\u00b2 vs m\u00e9diane locale "+sz.medSurf+" m\u00b2 \u2014 \u00e9lasticit\u00e9 "+sz.bShrink
+      +" mesur\u00e9e sur "+sz.n+" ventes (brute "+sz.b+", r\u00e9tr\u00e9cie \u00d7"+sz.shrink+")"+(sz.clamped?" \u00b7 born\u00e9e":""),
+      null,(sz.factor>1?"+":"")+((sz.factor-1)*100).toFixed(1)+" %"]);
+  }else if(surface>0){
+    rows.push(["Taille non ajust\u00e9e : \u00e9lasticit\u00e9 non mesurable sur ce corpus (surface renseign\u00e9e sur "
+      +Math.round((meta?meta.surfCov:0)*100)+" % des ventes)",null,"aucun ajustement"]);
+  }
+  price=Math.round(price);
+  // fourchette derivee de la dispersion reelle
+  const q1=quantile(prices,0.25),q3=quantile(prices,0.75);
+  const iqrRel=med>0?(q3-q1)/med:0.3;
+  const spread=Math.max(0.12,Math.min(0.35,0.10+iqrRel*0.35));
+  const conf=pts.length>=25?"bonne":pts.length>=12?"moyenne":"faible";
+  if(meta){
+    rows.push(["Corpus DVF : "+meta.n+" vente(s) de d\u00e9pendance retenue(s) sur "+meta.nRaw+" mutations"
+      +(meta.nMulti>0?" \u00b7 "+meta.nMulti+" lot(s) multiple(s) \u00e9cart\u00e9(s)":"")
+      +(meta.certified<1?" \u00b7 "+Math.round(meta.certified*100)+" % certifi\u00e9es mono-lot par codtypbien":""),
+      null,pts.length+" ventes"]);
+  }
+  return{price,sqm:surface>0?Math.round(price/surface):0,sqmBase:surface>0?Math.round(anchor/surface):0,
+    low:Math.round(price*(1-spread)),high:Math.round(price*(1+spread)),spread,conf,rows,
+    surface,type:"garage",city,cp,pieces:0,real:true,econSurface:surface,ctx:marketCtx(null),dyn,
+    garage:{n:pts.length,unit:price,west,p40,med,anchor,sizeAdj:sz,meta}};
+}
 function estimateTerrain(realBase,parcelSurf,city,cp,realStats,btf){
   const dyn=computeDynamics(city,cp),ctx=marketCtx(realBase);parcelSurf=parcelSurf||0;
   let landSqm,conf,srcNote,landAnchor=null;
@@ -3566,10 +4211,104 @@ function _arbitrateAnchor(a){
   return sw>0?Math.round(sv/sw):null;
 }
 
+/* ============================================================================
+ * R35 \u2014 NORMALISATION FONCIERE DU CORPUS MAISON
+ * ----------------------------------------------------------------------------
+ * DEFAUT CORRIGE. Pour une maison, DVF fournit valeurfonc (prix TOTAL : bati +
+ * parcelle) et sbatmai (surface BATIE seule). Le prix au m2 du corpus incorpore
+ * donc la valeur du terrain sans jamais la normaliser : une maison de 100 m2 sur
+ * 2 000 m2 et une maison de 100 m2 sur 250 m2 pesaient identiquement dans la base.
+ * Le biais qui en resulte est STRUCTUREL (les grandes parcelles sont systematiquement
+ * plus cheres au m2 bati), pas aleatoire : il ne se compense pas par le nombre de
+ * ventes et fausse la base des que la parcelle du sujet s'ecarte de la mediane locale.
+ *
+ * MODELE. Regression log-log BIVARIEE sur le corpus nettoye :
+ *      log(ppm) = a + b*log(terrain) + c*log(bati)
+ * Le controle par log(bati) est indispensable : sans lui, b capterait aussi
+ *   (i) la correlation grande parcelle / grande maison, deja traitee en aval par la
+ *       prime de surface (double comptage),
+ *   (ii) l'effet peripherique (grandes parcelles = zones moins cheres), de sens oppose.
+ * b est l'elasticite du prix au m2 BATI a la surface de PARCELLE ; theoriquement b > 0
+ * (une parcelle plus grande ajoute de la valeur). Un b negatif est un artefact
+ * d'echantillon : on renonce alors a corriger plutot que corriger a contresens.
+ *
+ * RETRECISSEMENT. James-Stein vers zero, identique a la mecanique retenue en R32 pour
+ * dvfTrend :  b_retreci = b * b^2 / (b^2 + se_b^2).
+ * Un coefficient dont l'ecart-type egale la valeur est du bruit : il est divise par
+ * deux. Un coefficient significatif (se << b) est preserve quasi intact. se_b est
+ * l'erreur-type OLS exacte : sigma^2 * [(X'X)^-1]_11, avec [(X'X)^-1]_11 = S22/det.
+ *
+ * BORNES (choix de modelisation, explicitement asymetriques \u2014 outil ACQUEREUR) :
+ *   \u2022 b plafonne a 0,25 : au-dela, le terrain dominerait le prix d'une maison, ce qui
+ *     ne se rencontre que sur du quasi-terrain-a-batir, hors perimetre de ce corpus.
+ *   \u2022 facteur borne a [0,88 ; 1,05] : la DECOTE (petite parcelle) peut aller jusqu'a
+ *     -12 %, la PRIME est limitee a +5 %. Conforme au principe anti-surevaluation.
+ *
+ * SOURCES : Cerema DVF+ uniquement (valeurfonc, sbatmai, sterr). Aucun coefficient
+ * exterieur, aucune donnee payante. Neutralite totale si sterr est absent de la
+ * reponse API ou si la parcelle du sujet n'est pas renseignee.
+ * ========================================================================== */
+const HOUSE_LAND_B_MAX=0.25;   // plafond de l'elasticite retrecie
+const HOUSE_LAND_F_MIN=0.88;   // decote maximale appliquee a la base
+const HOUSE_LAND_F_MAX=1.05;   // prime maximale (asymetrie assumee : biais acquereur)
+const HOUSE_LAND_MIN_N=20;     // 3 parametres estimes -> 20 observations minimum
+
+/** Elasticite du prix au m2 bati a la surface de parcelle, mesuree sur le corpus local.
+ *  @param {Array}  clean    ventes nettoyees (realStats.clean), portant p.land, p.surf, p.ppm
+ *  @param {number} subjLand surface de parcelle du bien evalue, en m2
+ *  @returns {?Object} {b,bShrink,se,shrink,n,medLand,subjLand,factor,clamped,r2} ou null */
+function houseLandElasticity(clean,subjLand){
+  if(!clean||!clean.length||!(subjLand>0))return null;
+  let ok=clean.filter(p=>p&&p.land>0&&p.surf>0&&p.ppm>0);
+  if(ok.length<HOUSE_LAND_MIN_N)return null;
+  /* Ecretage P5-P95 sur la seule variable explicative : une exploitation isolee de
+   * plusieurs hectares ne doit pas piloter la pente a elle seule. */
+  const ls0=ok.map(p=>p.land).sort((a,b)=>a-b);
+  const lo=quantile(ls0,0.05),hi=quantile(ls0,0.95);
+  if(hi>lo)ok=ok.filter(p=>p.land>=lo&&p.land<=hi);
+  if(ok.length<HOUSE_LAND_MIN_N)return null;
+  const n=ok.length;
+  const x1=ok.map(p=>Math.log(p.land)),x2=ok.map(p=>Math.log(p.surf)),y=ok.map(p=>Math.log(p.ppm));
+  for(let i=0;i<n;i++){if(!isFinite(x1[i])||!isFinite(x2[i])||!isFinite(y[i]))return null;}
+  const avg=a=>a.reduce((t,v)=>t+v,0)/a.length;
+  const m1=avg(x1),m2=avg(x2),my=avg(y);
+  let S11=0,S22=0,S12=0,S1y=0,S2y=0,Syy=0;
+  for(let i=0;i<n;i++){
+    const d1=x1[i]-m1,d2=x2[i]-m2,dy=y[i]-my;
+    S11+=d1*d1;S22+=d2*d2;S12+=d1*d2;S1y+=d1*dy;S2y+=d2*dy;Syy+=dy*dy;
+  }
+  const det=S11*S22-S12*S12;
+  if(!(S11>0)||!(S22>0)||!(Math.abs(det)>1e-9))return null;   // colinearite / variance nulle
+  const b=(S22*S1y-S12*S2y)/det;   // elasticite / terrain
+  const c=(S11*S2y-S12*S1y)/det;   // elasticite / bati (variable de controle)
+  if(!isFinite(b)||!isFinite(c))return null;
+  const dof=n-3;
+  if(dof<5)return null;
+  const ssr=Math.max(0,Syy-(b*S1y+c*S2y));
+  const varB=(ssr/dof)*(S22/det);
+  if(!isFinite(varB)||varB<0)return null;
+  /* varB === 0 (ajustement parfait) = significativite maximale, donc shrink = 1.
+   * Le cas ne se rencontre pas sur donnees reelles mais le traiter comme un echec
+   * reviendrait a annuler la correction precisement quand elle est la mieux etablie. */
+  const seB=Math.sqrt(varB);
+  const shrink=(b*b)>0?((b*b)/((b*b)+(seB*seB))):0;   // James-Stein vers zero
+  let bS=b*shrink;
+  if(!(bS>0))return null;                             // signe economiquement invalide
+  bS=Math.min(HOUSE_LAND_B_MAX,bS);
+  const medLand=median(ok.map(p=>p.land));
+  if(!(medLand>0))return null;
+  const raw=Math.pow(subjLand/medLand,bS);
+  if(!isFinite(raw)||raw<=0)return null;
+  const factor=Math.max(HOUSE_LAND_F_MIN,Math.min(HOUSE_LAND_F_MAX,raw));
+  return{b:+b.toFixed(3),bShrink:+bS.toFixed(3),se:+seB.toFixed(3),shrink:+shrink.toFixed(2),
+    n,medLand:Math.round(medLand),subjLand:Math.round(subjLand),factor:+factor.toFixed(4),
+    clamped:Math.abs(raw-factor)>1e-4,r2:Syy>0?+Math.max(0,1-ssr/Syy).toFixed(2):0};
+}
 function estimate(realBase,realStats,btf){
   const city=$("ville").value,cp=$("cp").value,type=state.type;
   const surface=type==="terrain"?numv("terrain"):numv("surface");
   if(type==="terrain")return estimateTerrain(realBase,surface,city,cp,realStats,btf);
+  if(type==="garage")return estimateGarage(surface,city,cp,realStats);   // R41 : chaine hedonique non applicable
   // Fix13 — base segmentée par typologie : on substitue westGRooms à westG quand disponible.
   // Évite d’appliquer des hédoniques sur une base qui mélange T1→T5 (+10–18 % de biais).
   // La correction rooms (±5 %) via effMult reste comme garde-fou si westGRooms indisponible.
@@ -3655,6 +4394,23 @@ function estimate(realBase,realStats,btf){
           rows.push(["Prime de surface ("+Math.round(surface)+" m\u00b2 vs m\u00e9diane locale "+Math.round(medSurf)+" m\u00b2 \u2014 "+dir+" surface, "+gaussPct+" % d\u00e9j\u00e0 corrig\u00e9 par pond\u00e9ration Gaussienne)",surfAdj]);
         }
       }
+    }
+  }
+  /* ===== R35 : normalisation fonciere \u2014 MAISON uniquement =====
+   * Pour un appartement le terrain releve de la copropriete et sterr n'est pas
+   * interpretable : le bloc est strictement inoperant hors type maison. La correction
+   * est appliquee a effMult, donc bornee en aval par le meme garde-fou de dispersion
+   * locale que les autres ajustements (aucun chemin de contournement cree). */
+  if(type==="maison"&&realBase&&realStats&&realStats.clean&&realStats.clean.length){
+    const _subjLand=numv("terrain");
+    const _hl=houseLandElasticity(realStats.clean,_subjLand);
+    if(_hl&&Math.abs(_hl.factor-1)>=0.005){
+      effMult*=_hl.factor;
+      rows.push(["Normalisation fonci\u00e8re : parcelle "+eur0(_hl.subjLand)+" m\u00b2 vs m\u00e9diane locale "+eur0(_hl.medLand)+" m\u00b2 \u2014 \u00e9lasticit\u00e9 "+_hl.bShrink+" mesur\u00e9e sur "+_hl.n+" ventes (brute "+_hl.b+", r\u00e9tr\u00e9cie \u00d7"+_hl.shrink+")"+(_hl.clamped?" \u00b7 born\u00e9e":""),_hl.factor-1]);
+      if(DEBUG)dbg("R35 maison : b="+_hl.b+" se="+_hl.se+" shrink="+_hl.shrink+" -> b_eff="+_hl.bShrink+" | parcelle "+_hl.subjLand+" m2 vs mediane "+_hl.medLand+" m2 -> facteur "+_hl.factor+" ("+Math.round((_hl.factor-1)*100)+" %) | n="+_hl.n+" R2="+_hl.r2+(_hl.clamped?" [BORNE]":""));
+    }else if(DEBUG){
+      const _cov=realStats.clean.filter(p=>p.land>0).length;
+      dbg("R35 maison : aucune correction fonciere ("+(!(_subjLand>0)?"parcelle du sujet non renseignee":!_hl?"elasticite non exploitable":"facteur neutre "+_hl.factor)+") \u2014 sterr present sur "+_cov+"/"+realStats.clean.length+" ventes du corpus");
     }
   }
   let _prudent=false; // Fix22 : hoiste hors du bloc (ReferenceError au cap Fix21-C sinon)
@@ -3812,7 +4568,7 @@ function renderLocStats(r){const d=r.dyn;
   html+=`</div>`;
   $("locStats").innerHTML=html;
 }
-function genComparables(r){const list=$("compList");list.innerHTML="";const ic=r.type==="maison"?"\ud83c\udfe0":r.type==="terrain"?"\ud83c\udf33":"\ud83c\udfe2";
+function genComparables(r){const list=$("compList");list.innerHTML="";const ic=r.type==="maison"?"\ud83c\udfe0":r.type==="terrain"?"\ud83c\udf33":r.type==="garage"?"\ud83c\udd7f\ufe0f":"\ud83c\udfe2";
   if(r.realPts&&r.realPts.length){
     // R28 : pour un terrain, la surface de reference est celle de la PARCELLE.
     // r.surface vaut 0 sur ce type, ce qui desactivait le tri par similarite.
@@ -3847,12 +4603,16 @@ function genComparables(r){const list=$("compList");list.innerHTML="";const ic=r
       const div=document.createElement("div");div.className="comp";
       // Badge d'ecart de surface
       let surfBadge="";
-      if(subjSurf>0){
+      if(subjSurf>0&&p.surf>0){
         const dPct=Math.round((p.surf-subjSurf)/subjSurf*100);
         const badgeCol=Math.abs(dPct)<=15?"var(--good)":Math.abs(dPct)<=30?"var(--warn)":"var(--ink-soft)";
         surfBadge=' <span style="font-size:10px;font-weight:700;color:'+badgeCol+'">('+(dPct>0?"+":"")+dPct+'%)</span>';
       }
-      div.innerHTML='<div class="comp-ic">'+ic+'</div><div class="comp-main"><div class="t">'+Math.round(p.surf)+' m\u00b2'+surfBadge+(p.rooms?' \u00b7 '+p.rooms+' pi\u00e8ces':"")+'</div><div class="s">Vendu '+dt+' \u00b7 '+esc(r.city||"secteur")+(p.addr?' \u00b7 <span style="color:var(--ink-soft)">'+esc(p.addr)+'</span>':'')+'</div></div><div class="comp-price"><div class="p num">'+eur(p.price)+'</div><div class="pm num">'+eur0(p.ppm)+' /m\u00b2</div></div>';
+      /* R41b : un box vendu au prix UNITAIRE n'a pas de "prix/m2" -- l'afficher (souvent
+       * 0 /m2, faute de surface connue) laisserait croire que le bien est gratuit. */
+      const surfTxt=r.type==="garage"?(p.surf>0?Math.round(p.surf)+' m\u00b2':'surface non renseign\u00e9e'):Math.round(p.surf)+' m\u00b2';
+      const pmTxt=r.type==="garage"?'':'<div class="pm num">'+eur0(p.ppm)+' /m\u00b2</div>';
+      div.innerHTML='<div class="comp-ic">'+ic+'</div><div class="comp-main"><div class="t">'+surfTxt+surfBadge+(p.rooms?' \u00b7 '+p.rooms+' pi\u00e8ces':"")+'</div><div class="s">Vendu '+dt+' \u00b7 '+esc(r.city||"secteur")+(p.addr?' \u00b7 <span style="color:var(--ink-soft)">'+esc(p.addr)+'</span>':'')+'</div></div><div class="comp-price"><div class="p num">'+eur(p.price)+'</div>'+pmTxt+'</div>';
       list.appendChild(div);
     });
     // Note explicative sur le tri
@@ -3987,6 +4747,21 @@ function renderDvfStats(r){
       })();
     return;
   }
+  /* R41b — DEFAUT CORRIGE. Sans cette branche, le code ci-dessous calcule un percentile
+   * sur p.ppm, qui est null pour la quasi-totalite d'un corpus garage (cf. justification
+   * du prix UNITAIRE dans parsePtsGarage) : Math.round(NaN) remontait jusqu'a l'affichage.
+   * Meme modele que la branche terrain ci-dessus : contenu adapte, aucun calcul ppm/surface. */
+  if(r.type==="garage"){
+    box.style.display="";
+    const g=r.garage||{},meta=g.meta;
+    box.innerHTML='<div style="font-size:12.5px;font-weight:800;color:var(--ink);margin-bottom:8px">\ud83c\udd7f\ufe0f Parking / box</div>'+
+      '<div style="font-size:11.5px;line-height:1.6">Prix estim\u00e9 <b>\u00e0 l\u2019unit\u00e9</b> (et non au m\u00b2) \u2014 un box se n\u00e9gocie \u00e0 la place, et DVF ne renseigne quasiment jamais la surface d\u2019une d\u00e9pendance.</div>'+
+      (g.n?'<div class="hint" style="margin-top:8px">'+g.n+' vente(s) de parking/box retenue(s)'
+        +(meta&&meta.certified<1?' \u00b7 '+Math.round(meta.certified*100)+' % certifi\u00e9es mono-lot (codtypbien)':'')
+        +(meta&&meta.surfCov>0?' \u00b7 surface connue sur '+Math.round(meta.surfCov*100)+' % des ventes':'')+'</div>'
+        :'<div class="hint" style="margin-top:8px">Pas de vente DVF de parking dans le secteur \u2014 estimation indisponible</div>');
+    return;
+  }
   if(!r.realStats||!r.realStats.n){box.style.display="none";box.innerHTML="";return;}
   const s=r.realStats,f=x=>eur0(Math.round(x)),subj=Math.round(r.sqm);
   const perc=s.clean&&s.clean.length?Math.round(s.clean.filter(p=>p.ppm<=subj).length/s.clean.length*100):50;
@@ -4024,7 +4799,7 @@ function renderDvfStats(r){
    `<div style="font-weight:700;font-size:13px;margin:16px 0 4px;color:var(--ink)">Positionnement prix / surface</div>`+
    `<div class="hint" style="margin-bottom:8px">Chaque point = une vente r\u00e9cente. La croix = votre bien au <b>prix envisag\u00e9</b>. Les % se recalculent quand vous modifiez le prix d'achat.</div>`+
    `<div id="dvfScatter"></div>`+
-   `<div style="margin-top:13px;padding:11px 13px;background:var(--brand-tint);border-radius:10px;font-size:11.5px;color:var(--ink-soft);line-height:1.6"><b style="color:var(--ink)">S\u00e9lection des comparables</b><br>\u2022 M\u00eame type (<b>${typeLbl}</b>) ${state.dvfScope==="bbox"?`dans un <b>rayon ~${state.dvfRadiusKm||1} km</b> autour du bien \u2014 DVF/Cerema (g\u00e9olocalis\u00e9)`:(state.dvfScope==="epci"?`<b>commune + EPCI voisins</b> \u2014 DVF/Cerema (commune peu dense)`:`dans la <b>commune</b> ${r.city||""} \u2014 DVF/Cerema (pas de rayon en m\u00e8tres)`)}<br>\u2022 Stats ci-dessus : ventes \u00e0 <b>surface proche</b> de la v\u00f4tre (r\u00e9centes, pond\u00e9r\u00e9es)<br>${r.bandWidened?"\u2022 <b>Fen\u00eatre de surface \u00e9largie automatiquement</b> (peu de ventes \u00e0 surface proche)<br>":""}\u2022 Nuage : <b>toutes</b> les ventes r\u00e9centes du type<br>\u2022 Aberrations de prix/m\u00b2 exclues (IQR de Tukey)</div>`;
+   `<div style="margin-top:13px;padding:11px 13px;background:var(--brand-tint);border-radius:10px;font-size:11.5px;color:var(--ink-soft);line-height:1.6"><b style="color:var(--ink)">S\u00e9lection des comparables</b><br>\u2022 M\u00eame type (<b>${typeLbl}</b>) ${state.dvfScope==="bbox"?`dans un <b>rayon ~${state.dvfRadiusKm||1} km</b> autour du bien \u2014 DVF/Cerema (g\u00e9olocalis\u00e9)`:(state.dvfScope==="epci"?`<b>commune + EPCI voisins</b> \u2014 DVF/Cerema (commune peu dense)`:(state.dvfScope==="fallback"?`dans un <b>rayon ~1 km</b> autour du bien \u2014 <b>source DVF de secours</b> (Cerema indisponible, R38)`:`dans la <b>commune</b> ${r.city||""} \u2014 DVF/Cerema (pas de rayon en m\u00e8tres)`))}<br>\u2022 Stats ci-dessus : ventes \u00e0 <b>surface proche</b> de la v\u00f4tre (r\u00e9centes, pond\u00e9r\u00e9es)<br>${r.bandWidened?"\u2022 <b>Fen\u00eatre de surface \u00e9largie automatiquement</b> (peu de ventes \u00e0 surface proche)<br>":""}\u2022 Nuage : <b>toutes</b> les ventes r\u00e9centes du type<br>\u2022 Aberrations de prix/m\u00b2 exclues (IQR de Tukey)</div>`;
   renderScatter(r);
 }
 /* Distance geographique (vol d'oiseau) entre deux coords WGS84 */
@@ -5328,7 +6103,7 @@ async function provBPE(insee){
  *  clairement etiquete comme tel. Cache localStorage 30 j pour l'etape de decouverte.
  *  Echec silencieux (null) a chaque etape : aucune donnee inventee. */
 async function provCopro(insee){
-  if(!insee||state.type==="terrain")return null;
+  if(!insee||state.type==="terrain"||state.type==="garage")return null;   // R41
   try{
     const LS='estimo_rnic_disc_v1',LSTS='estimo_rnic_ts_v1';
     let disc=null;
@@ -6285,7 +7060,7 @@ function _applyPrudence(r){
 }
 function applyFinalDvfCap(r){
   r.priceBeforeCap=r.price;r.finalCap=0;
-  if(!r.real||!r.realStats||r.type==="terrain")return;
+  if(!r.real||!r.realStats||r.type==="terrain"||r.type==="garage")return;   // R41
   // Fix1 : appliquer le facteur VEFA au référentiel DVF du cap final
   // (quand natSeen=false, realStats.west reste contaminé par les VEFA non filtrées)
   const _vcFactor=r.vefaCorr?r.vefaCorr.factor:1;
@@ -6711,10 +7486,15 @@ async function fetchAllData(coord){
       if(med&&med.med>0){state._localApt={med:med.med,n:med.n,source:med.source,annee:med.annee};}
     }).catch(()=>{});
     state.dvfScope=res.scope||null;
+    state.dvfDegraded=!!res.degraded;   // R38b : source de secours -> statut explicite en aval
     state.dvfRadiusKm=res.radiusKm||null; // R13 : rayon reellement retenu (transparence)
     if(res.pts&&res.pts.length){
       out.realPts=res.pts;
+      out.dvfDegraded=!!res.degraded;   // R38b
       const surf=state.type==="terrain"?numv("terrain"):numv("surface");let band=res.pts;out.bandWidened=false;
+      /* R41 : le parking n'est pas evalue au m2 -- aucune bande de surface, aucun
+       * traitement statistique du bati. Le corpus brut est transmis tel quel. */
+      if(state.type==="garage"){out.realPts=res.pts;out.realStats={pts:res.pts,n:res.pts.length,clean:res.pts};out.realBase=res.pts.length?1:0;out.dvfDegraded=!!res.degraded;out.diag=res.pts.length?"":"aucune vente de parking";return{...out,enrichPromise,ctxProm};}
       if(surf>0){
         let b=res.pts.filter(p=>p.surf>=surf*0.55&&p.surf<=surf*1.7);
         if(b.length<25){const b2=res.pts.filter(p=>p.surf>=surf*0.40&&p.surf<=surf*2.30);if(b2.length>b.length+4){b=b2;out.bandWidened=true;}}
@@ -6722,8 +7502,38 @@ async function fetchAllData(coord){
       }
       out.vefaInfo={nNeuf:res.nNeuf||0,nTotal:res.nTotal||0,natSeen:!!res.natSeen};
       out.ptsVefa=res.ptsNeuf||[];
+      /* R37 : segmentation IRIS. Un seul appel reseau (cache 30 j), borne a 2,5 s :
+       * au-dela on renonce silencieusement plutot que de retarder l'estimation.
+       * Uniquement en scope bbox (en scope commune les ventes sont trop dispersees pour
+       * qu'un unique IRIS soit representatif) et hors terrain (mailles inadaptees au foncier). */
+      state.irisSeg=null;
+      if(state.dvfScope==="bbox"&&state.type!=="terrain"){
+        try{
+          const _shape=await _withTimeout(fetchIrisShape(state.coord),2500,null);
+          if(_shape)state.irisSeg=tagIrisMembership(band,_shape);
+        }catch(_){state.irisSeg=null;}
+        if(DEBUG){
+          const _s=state.irisSeg;
+          dbg(_s?("R37 segmentation IRIS "+(_s.nom||_s.code||"?")+" : "+_s.nIn+" ventes dans l'IRIS, "+_s.nOut+" hors IRIS ("+_s.nGeo+" geolocalisees) -> "+(_s.active?("ACTIVE, poids hors IRIS x"+IRIS_OUT_FACTOR):("INACTIVE, seuil "+IRIS_MIN_IN+" non atteint ou corpus mono-IRIS")))
+                 :"R37 segmentation IRIS : contour indisponible (commune mono-IRIS, champ geometrique absent ou reseau) -> ponderation inchangee");
+        }
+      }
+      out.irisSeg=state.irisSeg;
       out.realStats=dvfStats(band,surf>0?surf:null,+state.pieces||0);
       if(DEBUG&&out.realStats)dbg("Stats: west(global)="+out.realStats.west+" | medBandeSurf="+(out.realStats.westSurfStrict||"n/a")+" Padapt(P"+Math.round((out.realStats.westSurfPct||0.4)*100)+")="+(out.realStats.westSurfP40||"n/a")+" | disp="+(out.realStats.med>0?((out.realStats.q3-out.realStats.q1)/out.realStats.med).toFixed(2):"?")+" | "+(out.realStats.strictCount||0)+" ventes \u00b125% IQR-1x | westGRooms="+(out.realStats.westGRooms||"n/a")+")");
+      /* R40 : calibration des poids de similarite sur le corpus local. Purement locale
+       * (aucun appel reseau), executee une seule fois par estimation. Doit imperativement
+       * preceder estimationEngines, qui lit state.scoreCal. */
+      state.scoreCal=null;
+      try{state.scoreCal=calibrateScoreWeights(out.realStats.clean,surf);}catch(_){state.scoreCal=null;}
+      if(DEBUG){
+        const _c=state.scoreCal;
+        dbg(_c?("R40 calibration similarite : "+(_c.applied
+              ?("RETENUE wS="+_c.wS+" wR="+_c.wR+" sigma="+_c.sigma+" \u2014 MdAPE "+_c.mdapeDefault+" % \u2192 "+_c.mdape+" % (gain "+_c.gain+" %) sur "+_c.n+" cibles, "+_c.nGrid+" points de grille")
+              :("ECARTEE, gain < "+(R40_MIN_GAIN*100)+" % \u2014 defaut conserve (wS=0.55 wR=0.35 sigma=0.20), MdAPE "+_c.mdapeDefault+" % sur "+_c.n+" cibles")))
+             :"R40 calibration similarite : non tentee (corpus < "+R40_MIN_CORPUS+" ventes) \u2014 parametres par defaut");
+      }
+      out.scoreCal=state.scoreCal;
       out.engineData=estimationEngines(out.realStats.clean,surf,out.realStats);
       out.realBase=out.engineData.base||out.realStats.west||Math.round(out.realStats.med);
       // R13 : l'enrichissement DPE ne concerne que le bati (aucun DPE sur du foncier nu)
@@ -6845,6 +7655,25 @@ function computeVefaCorr(vefaInfo, tier, evo12){
 }
 function buildEstimation(data){
   const {realBase,realStats,realPts,engineData,bandWidened,vefaInfo}=data;
+  /* ============================================================================
+   * R41 - PARKING : sortie anticipee.
+   * La chaine ci-dessous (correction VEFA, backtest complet, arbitrage d'ancres,
+   * tendance DVF, decote diagnostics, rendement locatif) est entierement construite
+   * sur un prix au m2 de logement. Aucune de ces etapes n'a de sens pour un box, et
+   * plusieurs produiraient des NaN sur un corpus sans ppm. On appelle donc directement
+   * l'estimateur dedie, exactement comme le fait estimate() pour le terrain.
+   * ========================================================================== */
+  if(state.type==="garage"){
+    const r=estimate(realBase,realStats,null);
+    r.realPts=realPts||[];r.realStats=realStats;r.realCount=(realPts&&realPts.length)||0;
+    r.engines=[];r.engineBase=null;r.engineTop=[];r.ptsVefa=[];
+    r.dvfDegraded=!!data.dvfDegraded;r.scoreCal=null;r.bandWidened=false;
+    lastResult=r;
+    updateBadges(r);
+    const _cg=estimationConfidence(null,{dyn:r.dyn,nTotal:r.realCount,attrFilled:(numv("surface")>0?1:0)+(state.coord?1:0),attrTotal:2,baseConf:r.conf});
+    r.confScore=_cg.score;r.confFactors=_cg.factors;r.confLabel=_cg.label;
+    return{r,_conf:_cg,realBase:!!r.real,diag:(data.diag||"")};
+  }
   // ─── Correctif VEFA ───────────────────────────────────────────────────────────
   // Calcul du correctif avant estimate() pour que la base transmise soit nettoyée.
   const _ctx0=realBase?marketCtx(realBase):null;
@@ -6881,7 +7710,7 @@ function buildEstimation(data){
       vefaFactor:_isTerrainType?1:vefaCorr.factor,prudence:0,
       capHi:(state.dvfScope==="bbox"?1.15:1.20),arbitrate:true,terrain:_isTerrainType});}catch(_){_btf=null;}
   }
-  const r=estimate(_adjBase,realStats,_btf);r.backtestFull=_btf;r.anchorArb=(_btf&&_btf.n>=20&&realStats&&!_isTerrainType)?_arbitrateAnchor({rooms:realStats.westGRooms||0,nRooms:realStats.typedCount||0,surf:realStats.westSurfStrict||0,nSurf:realStats.strictCount||0,mix:_adjBase,nMix:realStats.n||0}):null;r.bandWidened=bandWidened;r.realPts=realPts;r.ptsVefa=data.ptsVefa||[];r.realStats=realStats;r.realCount=realStats?realStats.n:0;r.engines=engineData?engineData.engines:[];r.engineBase=engineData?engineData.base:realBase;r.engineTop=engineData?engineData.top:[];r.pxHedonic=r.price;r.vefaCorr=vefaCorr;r.sqmBaseRaw=realBase||0;
+  const r=estimate(_adjBase,realStats,_btf);r.backtestFull=_btf;r.dvfDegraded=!!data.dvfDegraded;r.scoreCal=data.scoreCal||null;r.anchorArb=(_btf&&_btf.n>=20&&realStats&&!_isTerrainType)?_arbitrateAnchor({rooms:realStats.westGRooms||0,nRooms:realStats.typedCount||0,surf:realStats.westSurfStrict||0,nSurf:realStats.strictCount||0,mix:_adjBase,nMix:realStats.n||0}):null;r.bandWidened=bandWidened;r.realPts=realPts;r.ptsVefa=data.ptsVefa||[];r.realStats=realStats;r.realCount=realStats?realStats.n:0;r.engines=engineData?engineData.engines:[];r.engineBase=engineData?engineData.base:realBase;r.engineTop=engineData?engineData.top:[];r.pxHedonic=r.price;r.vefaCorr=vefaCorr;r.sqmBaseRaw=realBase||0;
   // DIAGNOSTICS : decote liee aux pathologies detectees (amiante, elec, termites, assainissement...)
   var _dg=(typeof diagsTotal==="function")?diagsTotal():null;
   if(_dg&&_dg.impact<0){
@@ -7104,8 +7933,17 @@ function renderAllPanels(r,_conf,realBase,diag){
     const _dvfDates=(r.realPts||[]).map(p=>p.date).filter(Boolean).sort().reverse();
     const _dvfLast=_dvfDates[0]?String(_dvfDates[0]).slice(0,7):"";
     r.dvfLastDate=_dvfLast;
-    const _scopeLbl=state.dvfScope==="bbox"?"rayon ~"+(state.dvfRadiusKm||1)+" km":state.dvfScope==="epci"?"commune + EPCI":"commune";
-    sd.style.background="#7fe3d4";st.textContent=`Donn\u00e9es r\u00e9elles DVF \u00b7 ${r.realCount} ventes \u00b7 ${_scopeLbl}`+(_dvfLast?` \u00b7 derni\u00e8re vente ${_dvfLast}`:"");$("compTag").textContent="DVF \u00b7 r\u00e9el";
+    const _scopeLbl=state.dvfScope==="bbox"?"rayon ~"+(state.dvfRadiusKm||1)+" km":state.dvfScope==="epci"?"commune + EPCI":state.dvfScope==="fallback"?"rayon ~1 km \u00b7 source de secours":"commune";
+    if(r.dvfDegraded){
+      /* R38b : statut EXPLICITEMENT degrade \u2014 jamais confondu avec le badge "reel"
+       * ordinaire. La source primaire Cerema etant indisponible, l'utilisateur doit
+       * le savoir avant de faire confiance au chiffre au meme titre qu'un corpus normal. */
+      sd.style.background="#F2B705";
+      st.textContent=`Donn\u00e9es DVF \u00b7 source de secours \u00b7 ${r.realCount} ventes \u00b7 ${_scopeLbl}`+(_dvfLast?` \u00b7 derni\u00e8re vente ${_dvfLast}`:"")+" \u2014 Cerema indisponible, disponibilit\u00e9 de cette source non garantie";
+      $("compTag").textContent="DVF \u00b7 secours";
+    }else{
+      sd.style.background="#7fe3d4";st.textContent=`Donn\u00e9es r\u00e9elles DVF \u00b7 ${r.realCount} ventes \u00b7 ${_scopeLbl}`+(_dvfLast?` \u00b7 derni\u00e8re vente ${_dvfLast}`:"");$("compTag").textContent="DVF \u00b7 r\u00e9el";
+    }
   }
   else{sd.style.background="#E8742A";st.textContent="Bar\u00e8me r\u00e9gional \u00b7 sans DVF ("+diag+")";$("compTag").textContent="DVF indisponible";}
   countUp($("pcPrice"),r.price," \u20ac");
@@ -7151,7 +7989,12 @@ function setupAsyncCallbacks(r,enrichPromise,ctxProm){
   ctxProm.then(c=>{state.ctx2=c||{};if(lastResult===r){patchDynReal(r);
     const _lr=getRentSqm(r);if(r.sqmBase&&_lr!==r.dyn.loyerM2){r.dyn.loyerM2=_lr;r.dyn.rendementMarche=+(_lr*12/r.sqmBase*100).toFixed(1);}
     updateBadges(r);computeAll(r);renderInsee(r);renderMarket(r);renderContext(r);updateTaxeNote();if(typeof renderBenchmark==="function")renderBenchmark(r);if(r.type==="terrain"&&typeof renderCommuneScore==="function")renderCommuneScore(r);}}).catch(()=>{state.ctx2={};if(lastResult===r)renderContext(r);});
+  /* R42 : ces 5 panneaux ne se remplissent qu'a la resolution de ctxProm/enrichPromise
+   * (cf. les .then() ci-dessus). Avant R42, seuls 2 des 5 recevaient un squelette de
+   * chargement -- les 3 autres restaient visuellement vides, sans aucun signal (visuel
+   * ou pour lecteur d'ecran) qu'un chargement etait en cours. */
   setShimmer("enrichPanel");setShimmer("contextPanel");
+  setShimmer("marketStats");setShimmer("inseeStats");setShimmer("benchPanel");
 }
 /* Garde-fou : empeche une estimation de rester bloquee si une API publique ne repond pas.
  * Le bouton est TOUJOURS restaure (try/finally), et un timeout global borne l'attente. */
@@ -8212,7 +9055,11 @@ function renderProjection(r){
   vEl.innerHTML=`${txt}<div class="vsub">VAN ${van>=0?"positive":"n\u00e9gative"} de ${eur(van)} (le projet ${van>=0?"bat":"ne bat pas"} votre taux d'actualisation de ${(rate*100).toFixed(1).replace('.',',')} %). Cash-flow mensuel initial ${cf1/12>=0?"+":""}${eur(cf1/12)}, qui remonte apr\u00e8s la fin du cr\u00e9dit. Revente optimale ${optAtMax?"au-del\u00e0 de "+SMAX+" ans (horizon de l'analyse)":"vers l'an "+opt}.</div>`;
   renderDecision(r,{van:van,cf1m:cf1/12,gp:gp,bp:bp,apport:apport});
   renderScenarios(r);
-  renderReport(r);
+  /* R41b : reportCard/reportPdfCard sont masques pour le garage (updateTypeUI) car
+   * renderReport() n'est pas adaptee a ce type (table de libelles sans entree garage,
+   * pieces/DPE non pertinents). On evite ici de calculer un contenu qui resterait
+   * neanmoins present dans le DOM (innerHTML n'est pas filtre par un display:none). */
+  if(r.type!=="garage")renderReport(r);
   if(typeof renderSynth60==="function"){renderSynth60(r);updateCardSummaries(r);}
 }
 /* ===== Coeur de calcul pur reutilisable (memes formules que renderProjection) ===== */
@@ -8473,30 +9320,36 @@ function renderSynth60(r){
   const rows=[];
   const row=(ic,lbl,val,cls,target)=>rows.push({ic,lbl,val,cls,target});
   /* 1. Verdict (VAN) — deja calcule par computeAll */
+  /* R41b : la simulation VAN/credit/fiscalite locative n'a aucune base pour un box
+   * (aucun modele de loyer/parking dans l'outil) -- l'afficher produirait un chiffre
+   * fabrique et alarmant (ex. "VAN -34 010 €" sur un bien a 17 880 €). Masque, comme
+   * rentalCard/proKpiCard le sont deja pour ce type depuis R41. */
   const vEl=$("verdict");
-  if(vEl&&vEl.textContent.trim()&&vEl.textContent!=="\u2014"){
+  if(r.type!=="garage"&&vEl&&vEl.textContent.trim()&&vEl.textContent!=="\u2014"){
     const vTxt=vEl.childNodes[0]?String(vEl.childNodes[0].textContent||"").trim():"";
     const vCls=vEl.classList.contains("good")?"pos":vEl.classList.contains("bad")?"neg":"warn";
     const van=($("dVan")&&$("dVan").textContent!=="\u2014")?$("dVan").textContent:"";
     row("\u2696\ufe0f","Verdict (VAN \u00e0 la revente)",vTxt+(van?' <small>\u00b7 VAN '+van+'</small>':''),vCls,"dashCard");
   }
-  /* 2. Prix estime + fourchette */
-  row("\ud83c\udff7\ufe0f","Prix estim\u00e9",eur(r.price)+' <small>('+eur0(r.low)+'\u2013'+eur0(r.high)+' \u20ac \u00b7 '+eur0(r.sqm)+' \u20ac/m\u00b2)</small>',"","priceCard");
+  /* 2. Prix estime + fourchette. R41b : un box au prix UNITAIRE n'a pas de \u20ac/m\u00b2 --
+   * l'afficher (souvent "0 \u20ac/m\u00b2" faute de surface connue) laisserait croire au gratuit. */
+  row("\ud83c\udff7\ufe0f","Prix estim\u00e9",eur(r.price)+' <small>('+eur0(r.low)+'\u2013'+eur0(r.high)+' \u20ac'+(r.type==="garage"?'':' \u00b7 '+eur0(r.sqm)+' \u20ac/m\u00b2')+')</small>',"","priceCard");
   /* 3. Confiance */
   if(r.confScore!=null)row("\ud83c\udfaf","Confiance de l'estimation",r.confScore+"/100 <small>\u00b7 "+r.confLabel+"</small>",r.confScore>=70?"pos":r.confScore>=45?"warn":"neg","priceCard");
   /* 4. Negociation */
   try{const n=negotiation(r);
     if(n&&n.offre>0)row("\ud83e\udd1d","N\u00e9gociation",'Offre '+eur(n.offre)+' <small>\u2192 cible '+eur0(n.cible)+' \u20ac \u00b7 marge '+(n.marge*100).toFixed(0)+' %</small>',"","negoCard");
   }catch(_){}
-  /* 5. Rentabilite + cash-flow */
+  /* 5. Rentabilite + cash-flow — R41b : hors perimetre pour un box (cf. point 1) */
   const mB=$("mBrute"),mC=$("mCash");
-  if(mB&&mB.textContent!=="\u2014"){
+  if(r.type!=="garage"&&mB&&mB.textContent!=="\u2014"){
     const cf=(mC&&mC.textContent!=="\u2014")?mC.textContent:"";
     const cfNeg=cf.indexOf("\u2212")===0||cf.indexOf("-")===0;
     row("\ud83d\udcb6","Rendement brut / cash-flow",mB.textContent+(cf?' <small>\u00b7 CF '+cf+'/mois</small>':''),cf?(cfNeg?"neg":"pos"):"","rentalCard");
   }
-  /* 6. Acheter ou louer */
-  try{const o=(r.type!=="terrain")?ownVsRent(r):null;
+  /* 6. Acheter ou louer — modele pense pour une residence principale, non transposable
+   * a un box (R41b, meme raison qu'au point 1) */
+  try{const o=(r.type!=="terrain"&&r.type!=="garage")?ownVsRent(r):null;
     if(o)row("\ud83c\udfe0","Acheter ou louer ?",o.bascule?("Achat gagnant d\u00e8s <b>"+o.bascule+" ans</b>"):"Location plus avantageuse sur 30 ans","","ownVsRentCard");
   }catch(_){}
   /* 7. Risques */
