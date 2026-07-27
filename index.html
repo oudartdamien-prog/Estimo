@@ -3931,6 +3931,7 @@ function estimateTerrain(realBase,parcelSurf,city,cp,realStats,btf){
       _anchorLbl="ancre arbitr\u00e9e (pond\u00e9r\u00e9e par la pr\u00e9cision), prudence appliqu\u00e9e une seule fois en aval";
     }else{
       const _cands=[realBase];
+      let _rawMedFloorVal=0;   // R43 : plancher independant, declare ici pour rester en scope jusqu'au max() final
       if(realStats){
         if(realStats.westSurfP40>0)_cands.push(realStats.westSurfP40);
         if(realStats.westSurfStrict>0)_cands.push(realStats.westSurfStrict);
@@ -3967,6 +3968,36 @@ function estimateTerrain(realBase,parcelSurf,city,cp,realStats,btf){
               if(typeof DEBUG!=="undefined"&&DEBUG&&typeof dbg==="function")
                 dbg("Terrain R39b : \u00e9lasticit\u00e9 appliqu\u00e9e \u00e0 l'ancre globale AVANT le min : "+_westEff+" \u2192 "+_westEffT+" \u20ac/m\u00b2 (b_shrink="+_bShrPre+", "+Math.round(_el.medSurf)+"\u2192"+parcelSurf+" m\u00b2). realBase/P40/strict d\u00e9j\u00e0 \u00e0 la taille du sujet : aucune \u00e9lasticit\u00e9 aval.");
             }
+            /* ============================================================================
+             * R43 \u2014 PLANCHER IND\u00c9PENDANT RACCROCH\u00c9 \u00c0 LA M\u00c9DIANE BRUTE
+             * ------------------------------------------------------------------------------
+             * DEFAUT CORRIGE, remont\u00e9 par l'utilisateur puis v\u00e9rifi\u00e9 contre 3 sources
+             * ind\u00e9pendantes (m\u00e9diane brute DVF, agr\u00e9gateur Solvimo, estimation utilisateur)
+             * sur un cas r\u00e9el (Mont\u00e9limar, parcelle 786 m\u00b2) : la m\u00e9diane brute du corpus
+             * (206 \u20ac/m\u00b2) \u00e9tait D\u00c9J\u00c0 cr\u00e9dible \u2014 l\u00e9g\u00e8rement CONSERVATRICE face \u00e0 Solvimo
+             * (plancher 293 \u20ac/m\u00b2). Le probl\u00e8me est la COMPOSITION de deux m\u00e9canismes
+             * chacun l\u00e9gitime isol\u00e9ment : le blend west/m\u00e9diane (R39, -14 % ici) PUIS la
+             * d\u00e9cote de taille (R39b, -21 % ici) appliqu\u00e9e SUR ce blend d\u00e9j\u00e0 amput\u00e9, jamais
+             * sur la m\u00e9diane brute \u2014 cumul -32 % alors qu'aucune des deux n'est excessive
+             * seule.
+             *
+             * PREMI\u00c8RE VERSION (corrig\u00e9e ici) : ce plancher avait \u00e9t\u00e9 ajout\u00e9 comme simple
+             * candidat suppl\u00e9mentaire dans `_cands`, arbitr\u00e9 par la m\u00e9diane-des-ancres (R36).
+             * Test empirique sur le cas r\u00e9el : SANS EFFET \u2014 avec seulement 3 candidats dont
+             * 2 partagent d\u00e9j\u00e0 le m\u00eame biais (realBase\u2248west, westEffT=west d\u00e9cot\u00e9), le
+             * candidat cr\u00e9dible unique ne d\u00e9place pas assez la m\u00e9diane pour que le plancher
+             * R36 (m\u00e9diane\u00d70,92) le rattrape. Une voix diluee dans un vote a 3 ne suffit pas.
+             *
+             * CORRECTIF : plancher INDEPENDANT, combin\u00e9 par max() direct avec _minC/_floorC
+             * (pas dilu\u00e9 dans le pool m\u00e9dian). \u00c0 Mont\u00e9limar : 206 \u00d7 0,790 \u2248 163 \u20ac/m\u00b2,
+             * contre 140 avant correctif \u2014 dans la fourchette confirm\u00e9e par les 3 sources
+             * externes. Neutre par construction si m\u00e9diane brute \u2248 blend (corpus dense).
+             * ========================================================================== */
+            if(realStats.med>0){
+              _rawMedFloorVal=Math.round(realStats.med*_fPre);
+              if(typeof DEBUG!=="undefined"&&DEBUG&&typeof dbg==="function")
+                dbg("Terrain R43 : plancher ind\u00e9pendant m\u00e9diane brute\u00d7\u00e9lasticit\u00e9 = "+Math.round(realStats.med)+"\u00d7"+_fPre.toFixed(3)+" = "+_rawMedFloorVal+" \u20ac/m\u00b2 (max() direct avec le pool d'ancres, ne d\u00e9pend pas de la m\u00e9diane des candidats)");
+            }
           }
           _cands.push(_westEffT);
         }
@@ -3985,10 +4016,12 @@ function estimateTerrain(realBase,parcelSurf,city,cp,realStats,btf){
       const _srtC=[..._cands].sort((a,b)=>a-b);
       const _medC=_srtC.length%2?_srtC[_srtC.length>>1]:(_srtC[_srtC.length/2-1]+_srtC[_srtC.length/2])/2;
       const _floorC=Math.round(_medC*0.92);
-      landSqm=Math.max(_minC,_floorC);
-      if(typeof DEBUG!=="undefined"&&DEBUG&&typeof dbg==="function"&&landSqm>_minC)
+      landSqm=Math.max(_minC,_floorC,_rawMedFloorVal);
+      if(typeof DEBUG!=="undefined"&&DEBUG&&typeof dbg==="function"&&landSqm===_rawMedFloorVal&&_rawMedFloorVal>_minC&&_rawMedFloorVal>_floorC)
+        dbg("Terrain R43 : plancher ind\u00e9pendant retenu ("+_rawMedFloorVal+" \u20ac/m\u00b2) au lieu de min("+_cands.map(Math.round).join(",")+")="+Math.round(_minC)+" / m\u00e9diane\u00d70,92="+_floorC);
+      if(typeof DEBUG!=="undefined"&&DEBUG&&typeof dbg==="function"&&landSqm===_floorC&&_floorC>_minC)
         dbg("Terrain R36 biais d'ordre : min("+_cands.map(Math.round).join(",")+")="+Math.round(_minC)+" -> borne m\u00e9diane\u00d70,92="+_floorC+" \u20ac/m\u00b2 retenue");
-      _anchorLbl=(landSqm===_floorC&&_floorC>_minC)?"m\u00e9diane des ancres \u2212 8 % (biais d'ordre corrig\u00e9, R36)":landSqm===realBase?"base moteur DVF":(realStats&&landSqm===realStats.westSurfP40)?"percentile P"+Math.round((realStats.westSurfPct||0.4)*100)+" bande de surface":"m\u00e9diane DVF pond\u00e9r\u00e9e";
+      _anchorLbl=(landSqm===_rawMedFloorVal&&_rawMedFloorVal>_minC&&_rawMedFloorVal>_floorC)?"m\u00e9diane brute du secteur, ajust\u00e9e taille (R43)":(landSqm===_floorC&&_floorC>_minC)?"m\u00e9diane des ancres \u2212 8 % (biais d'ordre corrig\u00e9, R36)":landSqm===realBase?"base moteur DVF":(realStats&&landSqm===realStats.westSurfP40)?"percentile P"+Math.round((realStats.westSurfPct||0.4)*100)+" bande de surface":"m\u00e9diane DVF pond\u00e9r\u00e9e";
     }
     /* Correction de d\u00e9gressivit\u00e9 : si la parcelle du sujet est PLUS GRANDE que la parcelle
      * m\u00e9diane des comparables, son prix au m\u00b2 doit \u00eatre revu \u00e0 la baisse selon l'\u00e9lasticit\u00e9
