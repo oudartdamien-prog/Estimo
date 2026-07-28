@@ -83,6 +83,11 @@
   .seg button{flex:1 1 auto;min-width:fit-content;font-family:var(--body);font-size:13.5px;font-weight:600;color:var(--ink-soft);background:var(--surface);border:1.5px solid var(--line);padding:10px 12px;border-radius:var(--r-sm);cursor:pointer;transition:.12s}
   .seg button:hover{border-color:#c9d4de}
   .seg button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+  @media(prefers-color-scheme:dark){
+    /* --ink est clair en dark (#E8F0F8) : texte blanc dessus = invisible.
+       On bascule sur brand-dark (teal #0FB39E) pour les états actifs. */
+    .seg button.on,.toc-chip.on{background:var(--brand-dark);border-color:var(--brand-dark);color:#fff}
+  }
 
   .dpe-seg{display:flex;gap:5px}
   .dpe-seg button{flex:1;font-family:var(--display);font-weight:800;font-size:15px;color:#fff;border:none;border-radius:8px;padding:11px 0;cursor:pointer;opacity:.45;transition:.12s}
@@ -96,7 +101,7 @@
 
   /* Accordion */
   details.acc{border:1.5px solid var(--line);border-radius:var(--r-sm);margin-top:14px;overflow:hidden}
-  details.acc>summary{list-style:none;cursor:pointer;padding:13px 15px;font-family:var(--display);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:space-between;background:#fbfcfd}
+  details.acc>summary{list-style:none;cursor:pointer;padding:13px 15px;font-family:var(--display);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:space-between;background:var(--surface)}
   details.acc>summary::-webkit-details-marker{display:none}
   details.acc>summary .chev{transition:.18s;color:var(--brand)}
   details.acc[open]>summary .chev{transform:rotate(90deg)}
@@ -110,7 +115,7 @@
   .stat:hover{background:var(--bg)}
   .stat[title]:active{background:var(--brand-tint)}
   @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-  .card-shimmer{border-radius:7px;background:linear-gradient(90deg,var(--bg) 25%,#dde8f0 50%,var(--bg) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;margin:6px 0}
+  .card-shimmer{border-radius:7px;background:linear-gradient(90deg,var(--surface) 25%,var(--surface2) 50%,var(--surface) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;margin:6px 0}
   .wprog{margin:2px 0 18px}
   .wprog-bar{height:6px;background:var(--line);border-radius:99px;overflow:hidden}
   .wprog-bar span{display:block;height:100%;width:33.33%;background:linear-gradient(90deg,var(--brand),var(--brand-dark));border-radius:99px;transition:width .35s cubic-bezier(.4,0,.2,1)}
@@ -295,7 +300,7 @@
 /* FIX3 : une carte marquee "invest-only" DOIT rester visible en mode investisseur.
    Specificite superieure (2 classes) a la regle ci-dessus. */
 #results.invest .expert-only.invest-only{display:block!important}
-#decisionCard{background:linear-gradient(180deg,#fff,#fbfcfd);border:1px solid var(--line)}
+#decisionCard{background:var(--surface);border:1px solid var(--line)}
 .dash-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:6px}
 @media(max-width:520px){.dash-grid{grid-template-columns:1fr 1fr}}
 .dtile{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:11px}
@@ -2277,7 +2282,7 @@ function renderEnrich(r){
   if(!air&&!sch&&!osm){el.innerHTML='<div class="hint">Donn\u00e9es de proximit\u00e9 momentan\u00e9ment indisponibles (sources publiques surcharg\u00e9es). R\u00e9essayez dans un instant.</div>';return;}
   const attr=enrichScore(e);
   if(attr!=null){const ac=attr>=66?"var(--good)":attr>=40?"var(--warn)":"var(--bad)";
-    html+=`<div style="margin-top:12px;padding:11px 13px;background:#eef4f7;border-radius:10px;font-size:12.5px;line-height:1.5"><div style="display:flex;justify-content:space-between;align-items:center"><b>Attractivit\u00e9 locale</b><span class="num" style="font-weight:800;color:${ac}">${attr}/100</span></div><div style="margin-top:4px;color:var(--ink-soft)">${attr>=66?"Cadre de vie favorable : bons services de proximit\u00e9 et air plut\u00f4t sain.":attr>=40?"Cadre de vie correct ; quelques points \u00e0 v\u00e9rifier sur place.":"Desserte ou environnement limit\u00e9s : \u00e0 confronter \u00e0 une visite."}</div></div>`;}
+    html+=`<div style="margin-top:12px;padding:11px 13px;background:var(--surface2);border-radius:10px;font-size:12.5px;line-height:1.5"><div style="display:flex;justify-content:space-between;align-items:center"><b>Attractivit\u00e9 locale</b><span class="num" style="font-weight:800;color:${ac}">${attr}/100</span></div><div style="margin-top:4px;color:var(--ink-soft)">${attr>=66?"Cadre de vie favorable : bons services de proximit\u00e9 et air plut\u00f4t sain.":attr>=40?"Cadre de vie correct ; quelques points \u00e0 v\u00e9rifier sur place.":"Desserte ou environnement limit\u00e9s : \u00e0 confronter \u00e0 une visite."}</div></div>`;}
   html+=`<div class="hint" style="margin-top:8px">Sources : Open-Meteo (air), Annuaire de l'\u00c9ducation nationale (\u00e9coles), OpenStreetMap (transports/commerces)${e.iso?", isochrone IGN G\u00e9oplateforme (accessibilit\u00e9 voiture)":""}. Comptages dans un rayon proche, indicatifs.</div>`;
   // POINT5 : explication chiffree du score de micro-localisation
   const _esd=enrichScoreDetail(e);
@@ -4875,7 +4880,7 @@ function renderMarket(r){const d=r.dyn;const sign=x=>(x>=0?"+":"")+x;
     `<div class="stat" title="${d.trendReal?'Croissance annuelle moyenne liss\u00e9e des prix m\u00e9dians DVF sur '+d.evoSpan+' ans, corrig\u00e9e de l\u2019inflation (INSEE IPC). Mesure la vraie appr\u00e9ciation du march\u00e9 local en \u20ac constants.':'Variation du prix /m\u00b2 sur les 12 derniers mois (nominal, non corrig\u00e9 de l\u2019inflation).'}"><span class="sl">${d.trendReal?'Tendance prix /an (liss\u00e9e) <span style="color:var(--brand-dark);font-weight:700;font-size:9px">r\u00e9el</span>':'\u00c9volution prix 12 mois <span style="color:var(--ink-soft);font-size:9px">simul\u00e9</span>'}</span><span class="sv num ${cls}">${arr} ${Math.abs(d.evo12)} %</span></div>`+
     `<div class="stat" title="${d.trendReal?'\u00c9volution cumul\u00e9e du prix m\u00e9dian DVF sur '+d.evoSpan+' ans en \u20ac constants (corrig\u00e9e inflation). Ex : +6 % = le bien a gagn\u00e9 6 % de pouvoir d\u2019achat sur la p\u00e9riode.':'\u00c9volution cumul\u00e9e du prix /m\u00b2 sur 5 ans (nominal).'}"><span class="sl">\u00c9volution sur ${d.trendReal?d.evoSpan:5} ans${d.trendReal?' <span style="color:var(--brand-dark);font-weight:700;font-size:9px">r\u00e9el</span>':'<span style="color:var(--ink-soft);font-size:9px">simul\u00e9</span>'}</span><span class="sv num">${sign(d.evo5)} %</span></div>`+
     `<div class="stat" title="${d.trendReal?'Tendance annuelle liss\u00e9e calcul\u00e9e directement \u00e0 partir des transactions DVF (CAGR des m\u00e9dianes), en \u20ac courants. Diff\u00e8re de la tendance r\u00e9elle ci-dessus car elle inclut l\u2019inflation.':'Variation de l\u2019indice Notaires-INSEE sur 12 mois (r\u00e9f\u00e9rence nationale/d\u00e9partementale).'}"><span class="sl">${d.trendReal?"Tendance DVF (/an, liss\u00e9e)":"Tendance estim\u00e9e (/an) <span style=\"color:var(--ink-soft);font-size:9px\">simul\u00e9</span>"}</span><span class="sv num ${ncls}">${sign(d.notairesEvo)} %</span></div>`+
-    (d.trendReal?`<div style="margin:6px 0 2px;padding:8px 10px;background:#f4f8fb;border-radius:8px;font-size:10.5px;line-height:1.55;color:var(--ink-soft)"><b style="color:var(--ink)">Comprendre ces 3 indicateurs :</b> <b>Tendance r\u00e9elle</b> = croissance annuelle moyenne des prix DVF, corrig\u00e9e de l\u2019inflation (pouvoir d\u2019achat r\u00e9el). <b>\u00c9volution ${d.evoSpan} ans</b> = variation cumul\u00e9e r\u00e9elle sur la p\u00e9riode. <b>Tendance DVF nominale</b> = m\u00eame calcul mais en \u20ac courants (inclut l\u2019inflation). Si tendance r\u00e9elle \u2248 0 et nominale > 0, les prix suivent l\u2019inflation sans r\u00e9elle appr\u00e9ciation.</div>`:'')+
+    (d.trendReal?`<div style="margin:6px 0 2px;padding:8px 10px;background:var(--surface2);border-radius:8px;font-size:10.5px;line-height:1.55;color:var(--ink-soft)"><b style="color:var(--ink)">Comprendre ces 3 indicateurs :</b> <b>Tendance r\u00e9elle</b> = croissance annuelle moyenne des prix DVF, corrig\u00e9e de l\u2019inflation (pouvoir d\u2019achat r\u00e9el). <b>\u00c9volution ${d.evoSpan} ans</b> = variation cumul\u00e9e r\u00e9elle sur la p\u00e9riode. <b>Tendance DVF nominale</b> = m\u00eame calcul mais en \u20ac courants (inclut l\u2019inflation). Si tendance r\u00e9elle \u2248 0 et nominale > 0, les prix suivent l\u2019inflation sans r\u00e9elle appr\u00e9ciation.</div>`:'')+
     `<div class="stat"><span class="sl">Loyer de march\u00e9${d.loyerReal?(' <span style="color:var(--good);font-weight:700;font-size:9px">\u2713 Carte des loyers DHUP'+(d.loyerAnnee?' '+d.loyerAnnee:'')+'</span>'):d.rentReal?' <span style="color:var(--brand-dark);font-weight:700;font-size:9px">ancr\u00e9 DVF</span>':''}</span><span class="sv num">${d.loyerM2.toFixed(1).replace('.',',')} \u20ac/m\u00b2/mois${d.loyerReal&&d.loyerNbObs?' <span style="color:var(--ink-soft);font-size:9px">('+ d.loyerNbObs+' obs.)':' </span>'}</span></div>`+
     `<div class="stat"><span class="sl">Rendement locatif brut de march\u00e9</span><span class="sv num">${d.rendementMarche.toFixed(1).replace('.',',')} %</span></div>`+
     `<div class="stat"><span class="sl">Stock d'annonces en vente</span><span class="sv num">${d.liquiditeReal?eur0(d.stockAnnonces)+'<span style="color:var(--ink-soft);font-size:9px;margin-left:3px">mod\u00e9lis\u00e9 (0,3 % du parc)</span>':'\u2014 <span style="color:var(--ink-soft);font-weight:400;font-size:9px">n.d.</span>'}</span></div>`+
@@ -8810,9 +8815,12 @@ function renderAllPanels(r,_conf,realBase,diag){
 }
 function setupAsyncCallbacks(r,enrichPromise,ctxProm){
   enrichPromise.then(e=>{state.enrich=e;if(lastResult===r){applyGeoDyn(r);renderLocStats(r);renderEnrich(r);renderMap(r);}}).catch(()=>{state.enrich={};if(lastResult===r){renderEnrich(r);renderMap(r);}});
-  ctxProm.then(c=>{state.ctx2=c||{};if(lastResult===r){patchDynReal(r);
-    const _lr=getRentSqm(r);if(r.sqmBase&&_lr!==r.dyn.loyerM2){r.dyn.loyerM2=_lr;r.dyn.rendementMarche=+(_lr*12/r.sqmBase*100).toFixed(1);}
-    updateBadges(r);computeAll(r);renderInsee(r);renderMarket(r);renderContext(r);updateTaxeNote();if(typeof renderBenchmark==="function")renderBenchmark(r);if(r.type==="terrain"&&typeof renderCommuneScore==="function")renderCommuneScore(r);}}).catch(()=>{state.ctx2={};if(lastResult===r)renderContext(r);});
+  ctxProm.then(c=>{state.ctx2=c||{};if(lastResult===r){
+    try{patchDynReal(r);const _lr=getRentSqm(r);if(r.sqmBase&&_lr!==r.dyn.loyerM2){r.dyn.loyerM2=_lr;r.dyn.rendementMarche=+(_lr*12/r.sqmBase*100).toFixed(1);}
+    updateBadges(r);computeAll(r);renderInsee(r);renderMarket(r);renderContext(r);updateTaxeNote();}catch(_ce){if(DEBUG)dbg("ctx.then: "+_ce);}
+    try{if(typeof renderBenchmark==="function")renderBenchmark(r);}catch(_be){if(DEBUG)dbg("renderBenchmark: "+_be);}
+    try{if(r.type==="terrain"&&typeof renderCommuneScore==="function")renderCommuneScore(r);}catch(_){}
+  }}).catch(()=>{state.ctx2={};if(lastResult===r){try{renderContext(r);}catch(_){}try{if(typeof renderBenchmark==="function")renderBenchmark(r);}catch(_){}}});
   /* R42 : ces 5 panneaux ne se remplissent qu'a la resolution de ctxProm/enrichPromise
    * (cf. les .then() ci-dessus). Avant R42, seuls 2 des 5 recevaient un squelette de
    * chargement -- les 3 autres restaient visuellement vides, sans aucun signal (visuel
@@ -9541,7 +9549,7 @@ function chartSVG(opts){const W=340,H=190,pl=46,pr=10,pt=12,pb=24,iw=W-pl-pr,ih=
   s+=`<text x="${pl-6}" y="${y0+3}" text-anchor="end" font-size="9" fill="#8a99a8">0</text>`;
   (opts.bars||[]).forEach(bar=>{const bw=Math.max(3,iw/n*0.5);bar.values.forEach((v,i)=>{const xx=x(i)-bw/2,yy=v>=0?y(v):y0,hh=Math.abs(y(v)-y0);s+=`<rect x="${xx}" y="${yy}" width="${bw}" height="${hh}" rx="2" fill="${bar.color}" opacity="0.85"/>`;});});
   (opts.lines||[]).forEach(ln=>{let d="";ln.values.forEach((v,i)=>{d+=(i?"L":"M")+x(i).toFixed(1)+" "+y(v).toFixed(1)+" ";});s+=`<path d="${d}" fill="none" stroke="${ln.color}" stroke-width="2.5" stroke-linejoin="round"/>`;ln.values.forEach((v,i)=>{s+=`<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="2.4" fill="${ln.color}"/>`;});});
-  (opts.markers||[]).forEach(mk=>{if(mk.i==null||mk.i<0||mk.i>=n)return;const xm=x(mk.i);s+=`<line x1="${xm.toFixed(1)}" y1="${pt}" x2="${xm.toFixed(1)}" y2="${pt+ih}" stroke="${mk.color||'#0F2A43'}" stroke-width="1.2" stroke-dasharray="4 3"/>`;const tx=Math.min(Math.max(xm,pl+18),W-pr-18);s+=`<text x="${tx.toFixed(1)}" y="${mk.pos==='bottom'?(pt+ih-3):(pt+8)}" text-anchor="middle" font-size="8" font-weight="700" fill="${mk.color||'#0F2A43'}">${mk.label}</text>`;});
+  (opts.markers||[]).forEach(mk=>{if(mk.i==null||mk.i<0||mk.i>=n)return;const xm=x(mk.i);s+=`<line x1="${xm.toFixed(1)}" y1="${pt}" x2="${xm.toFixed(1)}" y2="${pt+ih}" stroke="${mk.color||'currentColor'}" stroke-width="1.2" stroke-dasharray="4 3"/>`;const tx=Math.min(Math.max(xm,pl+18),W-pr-18);s+=`<text x="${tx.toFixed(1)}" y="${mk.pos==='bottom'?(pt+ih-3):(pt+8)}" text-anchor="middle" font-size="8" font-weight="700" fill="${mk.color||'currentColor'}">${mk.label}</text>`;});
   const xi=[0,Math.floor((n-1)/2),n-1].filter((v,i,a)=>a.indexOf(v)===i);
   xi.forEach(i=>{s+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="9" fill="#8a99a8">${opts.labels[i]}</text>`;});
   return s+"</svg>";
@@ -9553,10 +9561,10 @@ function waterfallSVG(items,opts){const W=340,Ht=214,pl=8,pr=8,pt=10,pb=52,iw=W-
   const n=items.length+1,bw=iw/n*0.6,cx=i=>pl+iw*(i+0.5)/n,y=v=>pt+ih*(mx-v)/(mx-mn),fmt=opts.fmt||(v=>Math.round(v)),y0=y(0);
   let s=`<svg viewBox="0 0 ${W} ${Ht}" width="100%" style="display:block">`;
   s+=`<line x1="${pl}" y1="${y0}" x2="${W-pr}" y2="${y0}" stroke="#cfd8e0" stroke-dasharray="3 3"/>`;
-  steps.forEach((st,i)=>{const top=y(Math.max(st.start,st.end)),h=Math.max(1,Math.abs(y(st.start)-y(st.end))),col=st.v>=0?"#0FB39E":"#E0402E";s+=`<rect x="${(cx(i)-bw/2).toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="2" fill="${col}" opacity="0.9"/>`;if(i<steps.length-1)s+=`<line x1="${(cx(i)+bw/2).toFixed(1)}" y1="${y(st.end).toFixed(1)}" x2="${(cx(i+1)-bw/2).toFixed(1)}" y2="${y(st.end).toFixed(1)}" stroke="#c2ccd6"/>`;s+=`<text x="${cx(i).toFixed(1)}" y="${(y(Math.max(st.start,st.end))-3).toFixed(1)}" text-anchor="middle" font-size="7.5" fill="#6b7a89">${fmt(st.v)}</text>`;});
-  const ti=steps.length,ttop=y(Math.max(0,total)),th=Math.max(1,Math.abs(y(0)-y(total)));s+=`<rect x="${(cx(ti)-bw/2).toFixed(1)}" y="${ttop.toFixed(1)}" width="${bw.toFixed(1)}" height="${th.toFixed(1)}" rx="2" fill="#0F2A43"/>`;
-  s+=`<text x="${cx(ti).toFixed(1)}" y="${(ttop-3).toFixed(1)}" text-anchor="middle" font-size="8" font-weight="700" fill="#0F2A43">${fmt(total)}</text>`;
-  [...items.map(it=>it[0]),opts.totalLabel||"Solde"].forEach((l,i)=>{s+=`<text x="${cx(i).toFixed(1)}" y="${Ht-30}" text-anchor="end" font-size="8" fill="#6b7a89" transform="rotate(-42 ${cx(i).toFixed(1)} ${Ht-30})">${l}</text>`;});
+  steps.forEach((st,i)=>{const top=y(Math.max(st.start,st.end)),h=Math.max(1,Math.abs(y(st.start)-y(st.end))),col=st.v>=0?"#0FB39E":"#E0402E";s+=`<rect x="${(cx(i)-bw/2).toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="2" fill="${col}" opacity="0.9"/>`;if(i<steps.length-1)s+=`<line x1="${(cx(i)+bw/2).toFixed(1)}" y1="${y(st.end).toFixed(1)}" x2="${(cx(i+1)-bw/2).toFixed(1)}" y2="${y(st.end).toFixed(1)}" style="stroke:var(--line)"/>`;s+=`<text x="${cx(i).toFixed(1)}" y="${(y(Math.max(st.start,st.end))-3).toFixed(1)}" text-anchor="middle" font-size="7.5" style="fill:var(--ink-soft)">${fmt(st.v)}</text>`;});
+  const ti=steps.length,ttop=y(Math.max(0,total)),th=Math.max(1,Math.abs(y(0)-y(total)));s+=`<rect x="${(cx(ti)-bw/2).toFixed(1)}" y="${ttop.toFixed(1)}" width="${bw.toFixed(1)}" height="${th.toFixed(1)}" rx="2" style="fill:var(--ink)"/>`;
+  s+=`<text x="${cx(ti).toFixed(1)}" y="${(ttop-3).toFixed(1)}" text-anchor="middle" font-size="8" font-weight="700" style="fill:var(--ink)">${fmt(total)}</text>`;
+  [...items.map(it=>it[0]),opts.totalLabel||"Solde"].forEach((l,i)=>{s+=`<text x="${cx(i).toFixed(1)}" y="${Ht-30}" text-anchor="end" font-size="8" style="fill:var(--ink-soft)" transform="rotate(-42 ${cx(i).toFixed(1)} ${Ht-30})">${l}</text>`;});
   return s+"</svg>";
 }
 /* ===== Vague 7 : valorisation des travaux (cout, duree, plus-value, ROI par poste) ===== */
@@ -9579,7 +9587,7 @@ function renderWorks(){
   var est=function(p){return Math.round(p.c(S)/100)*100;};
   var costOf=function(p){var w=worksSel[p.id];return (w&&w.cost!=null)?w.cost:est(p);};
   var list=WORKS_POSTES.map(function(p){var w=worksSel[p.id]||{},on=!!w.on,e=est(p),cv=costOf(p);
-    return '<div class="works-item" data-id="'+p.id+'" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1.5px solid '+(on?'var(--brand-dark)':'var(--line)')+';border-radius:10px;background:'+(on?'#eef7f5':'var(--bg)')+'"><input type="checkbox" class="wchk" '+(on?'checked':'')+' style="accent-color:var(--brand-dark);width:17px;height:17px;flex:none;cursor:pointer"><span style="flex:1;font-size:12px;color:var(--ink);line-height:1.3">'+p.lbl+'<br><span style="font-size:9.5px;color:var(--ink-soft)">estim. '+eur0(e)+'</span></span><span style="display:flex;align-items:center;gap:3px"><input type="number" class="wcost" min="0" value="'+cv+'" style="width:78px;padding:5px 6px;border:1px solid var(--line);border-radius:7px;font-size:12px;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)"><span style="font-size:11px;color:var(--ink-soft)">\u20ac</span></span></div>';}).join("");
+    return '<div class="works-item" data-id="'+p.id+'" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1.5px solid '+(on?'var(--brand-dark)':'var(--line)')+';border-radius:10px;background:'+(on?'var(--brand-tint)':'var(--bg)')+'"><input type="checkbox" class="wchk" '+(on?'checked':'')+' style="accent-color:var(--brand-dark);width:17px;height:17px;flex:none;cursor:pointer"><span style="flex:1;font-size:12px;color:var(--ink);line-height:1.3">'+p.lbl+'<br><span style="font-size:9.5px;color:var(--ink-soft)">estim. '+eur0(e)+'</span></span><span style="display:flex;align-items:center;gap:3px"><input type="number" class="wcost" min="0" value="'+cv+'" style="width:78px;padding:5px 6px;border:1px solid var(--line);border-radius:7px;font-size:12px;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)"><span style="font-size:11px;color:var(--ink-soft)">\u20ac</span></span></div>';}).join("");
   var tot=function(){var cost=0,val=0,dur=0;WORKS_POSTES.forEach(function(p){var w=worksSel[p.id];if(w&&w.on){var c=costOf(p);cost+=c;val+=c*p.rec;dur+=p.d;}});return{cost:cost,val:val,duree:cost>0?Math.round(1+dur*0.6):0};};
   var sumHtml=function(){var t=tot(),pv=t.val-t.cost,roi=t.cost>0?pv/t.cost*100:0;
     if(t.cost<=0)return '<div class="hint" style="margin-top:12px">Cochez les postes pr\u00e9vus pour estimer budget, dur\u00e9e, plus-value et ROI. Chaque montant estim\u00e9 reste librement ajustable.</div>';
@@ -10147,7 +10155,7 @@ function renderDecision(r,m){
    `</div>`+
    `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin:14px 0 8px">${cell("Valeur march\u00e9",eur0(est))}${cell("Offre conseill\u00e9e",eur0(prixCible),"var(--good)")}${cell("Ne pas d\u00e9passer",eur0(prixMax))}</div>`+
    `<div style="margin-top:12px">${block("Forces",F,"var(--good)")}${block("Points de vigilance",W,"var(--warn)")}${block("Risques",R,"var(--bad)")}</div>`+
-   `<div style="margin-top:4px;padding:11px 13px;background:#eef4f7;border-radius:10px;font-size:12.5px;line-height:1.55"><b>Recommandation</b><br>${reco.join("<br>")}</div>`;
+   `<div style="margin-top:4px;padding:11px 13px;background:var(--surface2);border-radius:10px;font-size:12.5px;line-height:1.55"><b>Recommandation</b><br>${reco.join("<br>")}</div>`;
 }
 
 document.querySelectorAll(".card-head").forEach(h=>{
