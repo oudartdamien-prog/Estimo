@@ -12,16 +12,38 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
 <style>
   :root{
+    /* ── Couleurs sémantiques (thème clair, valeurs identiques aux précédentes) ── */
     --bg:#F6F8FA;--surface:#FFFFFF;--ink:#0F2A43;--ink-soft:#5B7186;
     --line:#E5EAF0;--brand:#0FB39E;--brand-dark:#0A8C7D;--brand-tint:#E6F7F4;
     --good:#15A66A;--warn:#E8A33D;--bad:#E0533D;--bad-tint:#FBE9E5;--warn-tint:#FBF1DE;
     --shadow:0 1px 2px rgba(15,42,67,.06),0 8px 24px rgba(15,42,67,.06);
     --r:16px;--r-sm:10px;
     --display:'Plus Jakarta Sans',system-ui,sans-serif;--body:'Inter',system-ui,sans-serif;
+    /* ── Variables supplémentaires pour dark mode ── */
+    --surface2:#F0F4F7;--ink-xsoft:#8B9FB5;--focus-ring:var(--brand-tint);
+    --price-bg-start:#11314e;--price-bg-end:#0F2A43;
+    --on-dark:#fff;--on-brand:#fff;--on-ink:#fff;
+    color-scheme:light dark;
+  }
+  /* ===== R46 : DARK MODE via prefers-color-scheme =====
+   * On redéfinit UNIQUEMENT les variables :root. Toutes les règles CSS existantes
+   * utilisent déjà ces variables → aucune règle dupliquée. Exceptions hardcodées
+   * (background:#fff, color:#fff sur des textes blancs volontaires sur fond sombre)
+   * sont inchangées : elles sont sémantiquement correctes dans les deux thèmes. */
+  @media(prefers-color-scheme:dark){
+    :root{
+      --bg:#0D1B2A;--surface:#162535;--ink:#E8F0F8;--ink-soft:#8BABC4;
+      --line:#253F57;--brand:#14C9B1;--brand-dark:#0FB39E;--brand-tint:rgba(20,201,177,.18);
+      --good:#25C27A;--warn:#F0B048;--bad:#F06050;--bad-tint:rgba(240,96,80,.18);--warn-tint:rgba(240,176,72,.18);
+      --shadow:0 1px 3px rgba(0,0,0,.35),0 8px 28px rgba(0,0,0,.35);
+      --surface2:#1C3148;--ink-xsoft:#567A96;--focus-ring:rgba(20,201,177,.35);
+      --price-bg-start:#0A1E2E;--price-bg-end:#0D1B2A;
+      color-scheme:dark;
+    }
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
-  body{font-family:var(--body);background:var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased;padding-bottom:env(safe-area-inset-bottom)}
+  body{font-family:var(--body);background:var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased;padding-bottom:env(safe-area-inset-bottom);color-scheme:light dark}
   .num{font-variant-numeric:tabular-nums}
 
   .appbar{position:sticky;top:0;z-index:50;background:var(--ink);color:#fff;padding:14px 18px;padding-top:calc(14px + env(safe-area-inset-top));display:flex;align-items:center;gap:11px}
@@ -40,7 +62,7 @@
   .field{margin-bottom:15px}.field:last-child{margin-bottom:0}
   label.lbl{display:block;font-size:13px;font-weight:600;color:var(--ink);margin-bottom:7px}
   label.lbl .opt{font-weight:500;color:var(--ink-soft)}
-  .input,select.input{width:100%;font-family:var(--body);font-size:15px;color:var(--ink);background:#fff;border:1.5px solid var(--line);border-radius:var(--r-sm);padding:12px 13px;transition:border-color .15s,box-shadow .15s}
+  .input,select.input{width:100%;font-family:var(--body);font-size:15px;color:var(--ink);background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r-sm);padding:12px 13px;transition:border-color .15s,box-shadow .15s}
   .input:focus,select.input:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-tint)}
   .input::placeholder{color:#9aabb9}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -50,7 +72,7 @@
   .with-unit .input{padding-right:38px}
 
   .ac-wrap{position:relative}
-  .ac-list{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:30;background:#fff;border:1px solid var(--line);border-radius:var(--r-sm);box-shadow:var(--shadow);overflow:hidden;display:none}
+  .ac-list{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:30;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);box-shadow:var(--shadow);overflow:hidden;display:none}
   .ac-list.open{display:block}
   .ac-item{padding:11px 13px;font-size:14px;cursor:pointer;border-bottom:1px solid var(--line)}
   .ac-item:last-child{border-bottom:none}
@@ -58,7 +80,7 @@
   .ac-item .ac-sub{display:block;font-size:12px;color:var(--ink-soft);margin-top:1px}
 
   .seg{display:flex;gap:6px;flex-wrap:wrap}
-  .seg button{flex:1 1 auto;min-width:fit-content;font-family:var(--body);font-size:13.5px;font-weight:600;color:var(--ink-soft);background:#fff;border:1.5px solid var(--line);padding:10px 12px;border-radius:var(--r-sm);cursor:pointer;transition:.12s}
+  .seg button{flex:1 1 auto;min-width:fit-content;font-family:var(--body);font-size:13.5px;font-weight:600;color:var(--ink-soft);background:var(--surface);border:1.5px solid var(--line);padding:10px 12px;border-radius:var(--r-sm);cursor:pointer;transition:.12s}
   .seg button:hover{border-color:#c9d4de}
   .seg button.on{background:var(--ink);border-color:var(--ink);color:#fff}
 
@@ -94,7 +116,7 @@
   .wprog-bar span{display:block;height:100%;width:33.33%;background:linear-gradient(90deg,var(--brand),var(--brand-dark));border-radius:99px;transition:width .35s cubic-bezier(.4,0,.2,1)}
   .wprog-txt{font-size:12px;color:var(--ink-soft);margin-top:7px;font-weight:700}
   .wnav{display:flex;gap:10px;margin:4px 0 0}
-  .wnav button{flex:1;padding:14px;border-radius:14px;border:1.5px solid var(--line);background:#fff;color:var(--ink);font-family:var(--display);font-weight:700;font-size:15px;cursor:pointer;transition:transform .12s,background .15s}
+  .wnav button{flex:1;padding:14px;border-radius:14px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);font-family:var(--display);font-weight:700;font-size:15px;cursor:pointer;transition:transform .12s,background .15s}
   .wnav #wNext{flex:2;background:var(--brand-dark);color:#fff;border-color:var(--brand-dark)}
   .wnav button:active{transform:scale(.98)}
   .autofill-note{margin-top:10px;padding:10px 12px;background:#eaf5ee;border:1px solid #cfe9d8;border-radius:10px;font-size:12.5px;line-height:1.5;color:#1f6b3f}
@@ -140,9 +162,9 @@
   /* Mes biens (sauvegarde locale) */
   .saved-row{display:flex;gap:8px;align-items:center;margin-top:10px}
   .saved-row:first-of-type{margin-top:2px}
-  .saved-select{flex:1;min-width:0;font-family:var(--body);font-size:13.5px;color:var(--ink);background:#fff;border:1.5px solid var(--line);border-radius:var(--r-sm);padding:11px 10px}
+  .saved-select{flex:1;min-width:0;font-family:var(--body);font-size:13.5px;color:var(--ink);background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r-sm);padding:11px 10px}
   .saved-select:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-tint)}
-  .btn-sm{font-family:var(--body);font-weight:700;font-size:13px;border-radius:var(--r-sm);padding:11px 14px;cursor:pointer;border:1.5px solid var(--line);background:#fff;color:var(--ink);white-space:nowrap;transition:.12s}
+  .btn-sm{font-family:var(--body);font-weight:700;font-size:13px;border-radius:var(--r-sm);padding:11px 14px;cursor:pointer;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);white-space:nowrap;transition:.12s}
   .btn-sm:active{transform:translateY(1px)}
   .btn-sm.primary{background:var(--brand);border-color:var(--brand);color:#fff}
   .btn-sm.danger{color:var(--bad);border-color:var(--bad-tint);background:var(--bad-tint)}
@@ -153,7 +175,7 @@
   #results{display:none}#results.show{display:flex;flex-direction:column;animation:fade .4s ease}
   @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
-  .price-card{background:linear-gradient(160deg,#11314e,#0F2A43);color:#fff;border:none}
+  .price-card{background:linear-gradient(160deg,var(--price-bg-start),var(--price-bg-end));color:var(--on-dark);border:none}
   .pc-eyebrow{font-size:12px;letter-spacing:.4px;text-transform:uppercase;color:#8fb9b0;font-weight:600;margin-bottom:6px}
   .pc-price{font-family:var(--display);font-weight:800;font-size:40px;letter-spacing:-1px;line-height:1}
   .pc-margin{display:inline-block;font-size:13px;color:#cfe0e9;margin-top:8px}
@@ -248,13 +270,13 @@
     .row3{grid-template-columns:1fr 1fr}
   }
   @media(prefers-reduced-motion:reduce){#results.show{animation:none}.cta:hover,.cta:active{transform:none}}
-.bchips button{flex:1;min-width:64px;padding:9px 6px;border:1px solid var(--line);background:#fff;border-radius:10px;font:600 13px/1 var(--body);color:var(--ink);cursor:pointer;transition:.15s}
+.bchips button{flex:1;min-width:64px;padding:9px 6px;border:1px solid var(--line);background:var(--surface);border-radius:10px;font:600 13px/1 var(--body);color:var(--ink);cursor:pointer;transition:.15s}
 .bchips button:hover{border-color:var(--brand);color:var(--brand)}
 .bchips button:active{transform:scale(.97)}
 .chart-wrap{margin-top:14px}
 .chart-wrap h4{font:700 14px/1.2 var(--body);margin:0 0 2px}
 .chart-wrap .csub{font-size:12px;color:var(--ink-soft);margin-bottom:8px}
-.cinterp{margin-top:9px;padding:9px 12px;background:#f4f8fb;border-left:3px solid var(--brand);border-radius:0 8px 8px 0;font-size:12.5px;line-height:1.55;color:var(--ink)}
+.cinterp{margin-top:9px;padding:9px 12px;background:var(--surface2);border-left:3px solid var(--brand);border-radius:0 8px 8px 0;font-size:12.5px;line-height:1.55;color:var(--ink)}
 .chart-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink-soft);margin-top:6px}
 .chart-legend span{display:inline-flex;align-items:center;gap:5px}
 .chart-legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
@@ -308,7 +330,7 @@
 .terrain-section{padding:12px 14px;background:var(--bg);border-radius:11px}
 .terrain-section-lbl{font-size:11px;font-weight:800;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px}
 .terrain-viab-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px}
-.viab-chk{display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid var(--line);border-radius:9px;padding:8px 11px;font-size:13px;font-weight:600;color:var(--ink-soft);cursor:pointer;transition:.12s;user-select:none}
+.viab-chk{display:flex;align-items:center;gap:8px;background:var(--surface);border:1.5px solid var(--line);border-radius:9px;padding:8px 11px;font-size:13px;font-weight:600;color:var(--ink-soft);cursor:pointer;transition:.12s;user-select:none}
 .viab-chk:has(input:checked){border-color:var(--brand);background:var(--brand-tint);color:var(--brand-dark)}
 .terrain-charac-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 @media(max-width:400px){.terrain-charac-row{grid-template-columns:1fr 1fr}}
@@ -367,10 +389,10 @@
 .lots-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .lots-header-title{font-size:12px;font-weight:800;color:var(--brand-dark);text-transform:uppercase;letter-spacing:.3px}
 .lot-row{display:flex;gap:6px;align-items:flex-end;padding:8px 10px;background:var(--bg);border-radius:10px;margin-bottom:6px;flex-wrap:wrap}
-.lot-row:nth-child(even){background:#f0f4f7}
+.lot-row:nth-child(even){background:var(--surface2)}
 .lot-field{display:flex;flex-direction:column;gap:3px}
 .lot-field-lbl{font-size:10px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.2px}
-.lot-field select,.lot-field input{font-family:var(--body);font-size:13px;padding:6px 8px;border:1.5px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+.lot-field select,.lot-field input{font-family:var(--body);font-size:13px;padding:6px 8px;border:1.5px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}
 .lot-field input{width:70px;text-align:right}
 .lot-field select{min-width:65px}
 .lot-del{border:none;background:none;color:var(--bad);cursor:pointer;font-size:16px;padding:4px 6px;border-radius:6px;line-height:1}
@@ -423,14 +445,41 @@
 .dpe-seg button:focus-visible,.bchips button:focus-visible,
 .chk:focus-visible,.toc-chip:focus-visible,.synth-row:focus-visible,
 details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible{
-  outline:none;box-shadow:0 0 0 3px var(--brand-tint);border-color:var(--brand)!important}
-.skip-link{position:absolute;top:-100px;left:12px;z-index:999;background:var(--ink);color:#fff;
+  outline:2px solid var(--brand);outline-offset:2px;box-shadow:0 0 0 4px var(--focus-ring);border-color:var(--brand)!important}
+/* Focus sur les inputs natifs (clavier) */
+.input:focus-visible,select.input:focus-visible,
+.saved-select:focus-visible,.lot-field input:focus-visible,.lot-field select:focus-visible{
+  outline:2px solid var(--brand);outline-offset:1px;box-shadow:0 0 0 4px var(--focus-ring)}
+.skip-link{position:absolute;top:-100px;left:12px;z-index:999;background:var(--brand-dark);color:var(--on-brand);
   padding:10px 16px;border-radius:var(--r-sm);font-weight:700;font-size:14px;
-  text-decoration:none;transition:top .15s}
+  text-decoration:none;transition:top .15s;outline:none}
 .skip-link:focus{top:8px}
 
 
 
+/* ===== R48 : ONBOARDING 1er lancement ===== */
+.ob-overlay{position:fixed;inset:0;z-index:200;background:rgba(10,20,33,.72);display:flex;align-items:flex-end;justify-content:center;padding:0 0 env(safe-area-inset-bottom)}
+@media(min-width:600px){.ob-overlay{align-items:center}}
+.ob-modal{background:var(--surface);border-radius:20px 20px 0 0;max-width:480px;width:100%;padding:28px 22px 22px;box-shadow:0 -8px 40px rgba(0,0,0,.22);position:relative;animation:ob-up .32s cubic-bezier(.32,1.14,.5,1) both}
+@media(min-width:600px){.ob-modal{border-radius:20px;animation:ob-in .28s ease both}}
+@keyframes ob-up{from{transform:translateY(100%)}to{transform:none}}
+@keyframes ob-in{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:none}}
+.ob-close{position:absolute;top:14px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:var(--ink-soft);padding:4px;line-height:1;border-radius:7px}
+.ob-close:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.ob-steps{display:flex;gap:5px;justify-content:center;margin-bottom:18px}
+.ob-dot{width:7px;height:7px;border-radius:50%;background:var(--line);transition:.2s}
+.ob-dot.on{background:var(--brand);width:20px;border-radius:4px}
+.ob-icon{font-size:36px;text-align:center;margin-bottom:10px}
+.ob-title{font-family:var(--display);font-weight:800;font-size:19px;color:var(--ink);text-align:center;margin-bottom:7px;line-height:1.25}
+.ob-body{font-size:14px;color:var(--ink-soft);line-height:1.6;text-align:center;margin-bottom:20px}
+.ob-body b{color:var(--ink)}
+.ob-nav{display:flex;gap:10px}
+.ob-skip{flex:0 0 auto;background:none;border:none;font-size:13px;color:var(--ink-soft);cursor:pointer;padding:0 4px}
+.ob-next{flex:1;background:var(--brand-dark);color:#fff;border:none;border-radius:var(--r-sm);padding:14px;font-family:var(--display);font-weight:700;font-size:15px;cursor:pointer;transition:.15s}
+.ob-next:active{opacity:.85}
+/* État vide réseau */
+.net-err-banner{display:none;margin:10px 0;padding:12px 14px;background:var(--warn-tint);border:1px solid var(--warn);border-radius:var(--r-sm);font-size:13px;color:var(--ink);line-height:1.55}
+.net-err-banner.show{display:block}
 @media(max-width:380px){
   .synth-ic{width:26px;height:26px;font-size:13px;border-radius:7px}
   .synth-val{font-size:13px}
@@ -448,6 +497,20 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
 </header>
 
 <a href="#estimo-main" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;z-index:9999" class="skip-link" onfocus="this.style.left='50%';this.style.transform='translateX(-50%)';this.style.width='auto';this.style.height='auto';this.style.padding='10px 20px';this.style.background='var(--brand)';this.style.color='#fff';this.style.borderRadius='8px';this.style.top='8px'" onblur="this.style='position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden'">Aller au contenu principal</a>
+<!-- ===== R48 : ONBOARDING MODAL ===== -->
+<div id="obOverlay" class="ob-overlay" role="dialog" aria-modal="true" aria-labelledby="obTitle" style="display:none">
+  <div class="ob-modal">
+    <button class="ob-close" id="obClose" aria-label="Fermer le guide de démarrage">&#10005;</button>
+    <div class="ob-steps" id="obDots"></div>
+    <div class="ob-icon" id="obIcon"></div>
+    <div class="ob-title" id="obTitle"></div>
+    <div class="ob-body" id="obBody"></div>
+    <div class="ob-nav">
+      <button class="ob-skip" id="obSkip" type="button">Passer</button>
+      <button class="ob-next" id="obNext" type="button">Suivant &#8594;</button>
+    </div>
+  </div>
+</div>
 <main class="container" id="estimo-main" role="main">
 
 
@@ -563,6 +626,7 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
             <div><div class="with-unit"><input class="input num" id="floorTotal" type="number" min="0" placeholder="6" /><span class="unit">&#233;t.</span></div><div class="hint" style="margin-top:5px">Total immeuble</div></div>
             <div><label class="chk" id="chkAsc" style="height:46px;justify-content:center"><input type="checkbox" id="asc" />Ascenseur</label></div>
           </div>
+          <div id="bdnbFloorNote" style="display:none;font-size:11.5px;color:var(--ink-soft);margin-top:5px;padding:5px 9px;background:var(--bg);border-radius:7px;line-height:1.5"></div>
         </div>
 
         <div class="field">
@@ -705,6 +769,7 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
     <div class="hint" id="wEarlyHint" style="display:none;margin-top:8px"></div>
     <button class="cta" id="btnEstim">Estimer le bien</button>
     <div class="err" id="formErr" role="alert" aria-live="assertive"></div>
+    <div class="net-err-banner" id="netErrBanner" role="status"></div>
     <div class="hint">
       <svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#5B7186" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#5B7186" stroke-width="2" stroke-linecap="round"/></svg>
       Prix, comparables et statistiques&#160;: <b>DVF r&#233;el (Cerema)</b>. Population et g&#233;orisques&#160;: <b>r&#233;els</b>. Revenus et ch&#244;mage&#160;: <b>Filosofi (quand disponible)</b>. Tendances de prix&#160;: <b>DVF r&#233;el</b>. Taux de cr&#233;dit&#160;: <b>hypoth&#232;se modifiable</b>.
@@ -1063,7 +1128,7 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
       <div class="hint" id="waccDetail" style="margin:2px 0 4px"></div>
       <div class="chart-wrap"><h4>Cash-flow d'exploitation</h4><div class="csub">Par an (barres) et cumul&#233; (ligne), hors revente</div><div id="chartCF"></div><div id="cfDetail"></div><div class="chart-legend"><span><i style="background:#0FB39E"></i>CF annuel</span><span><i style="background:#0F2A43"></i>CF cumul&#233;</span></div><div class="cinterp" id="iCF"></div></div>
       <details class="acc"><summary><span>Cash-flow actualis&#233; (avanc&#233;)</span><span class="chev">&#9656;</span></summary><div class="acc-body"><div class="csub">M&#234;mes flux que ci-dessus mais actualis&#233;s (ramen&#233;s &#224; aujourd'hui) ; la ligne cumule la VAN. Apport en ann&#233;e 0, revente en derni&#232;re ann&#233;e.</div><div id="chartDCF"></div><div class="chart-legend"><span><i style="background:#7FB0E0"></i>Flux actualis&#233;</span><span><i style="background:#0F2A43"></i>VAN cumul&#233;e</span></div></div></details>
-      <div class="chart-wrap"><h4>VAN selon l'ann&#233;e de revente</h4><div class="csub">Revendre cette ann&#233;e-l&#224; &#8658; quelle VAN ? <b style="color:#0a7a5c">Barre verte</b> = ann&#233;e o&#249; la VAN devient positive (seuil de rentabilit&#233;) ; sommet = dur&#233;e optimale</div><div id="chartVanYear"></div><div class="chart-legend"><span><i style="background:#7A5AF8"></i>VAN si revente l'ann&#233;e N</span><span><i style="background:#0a7a5c"></i>Seuil VAN positive</span></div><div class="cinterp" id="iVan"></div></div><div class="csub">Valeur du bien vs capital restant d&#251;</div><div id="chartEq"></div><div class="chart-legend"><span><i style="background:#0FB39E"></i>Valeur du bien</span><span><i style="background:#E0402E"></i>Capital restant d&#251;</span></div><div class="cinterp" id="iEq"></div></div>
+      <div class="chart-wrap"><h4>VAN selon l'ann&#233;e de revente</h4><div class="csub">Revendre cette ann&#233;e-l&#224; &#8658; quelle VAN ? <b style="color:#0a7a5c">Barre verte</b> = ann&#233;e o&#249; la VAN devient positive (seuil de rentabilit&#233;) ; sommet = dur&#233;e optimale</div><div id="chartVanYear"></div><div class="chart-legend"><span><i style="background:#7A5AF8"></i>VAN si revente l'ann&#233;e N</span><span><i style="background:#0a7a5c"></i>Seuil VAN positive</span></div><div class="cinterp" id="iVan"></div></div><div class="chart-wrap"><div class="csub">Valeur du bien vs capital restant d&#251;</div><div id="chartEq"></div><div class="chart-legend"><span><i style="background:#0FB39E"></i>Valeur du bien</span><span><i style="background:#E0402E"></i>Capital restant d&#251;</span></div><div class="cinterp" id="iEq"></div></div>
       <div class="hint" style="display:flex;gap:6px;align-items:flex-start;margin-top:10px"><svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#5B7186" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#5B7186" stroke-width="2" stroke-linecap="round"/></svg>Hypoth&#232;ses : cash-flow d'exploitation suppos&#233; stable, revalorisation annuelle constante, fiscalit&#233; de l'ann&#233;e 1 reconduite. La VAN > 0 signifie que le projet bat votre co&#251;t du capital. Mod&#232;le indicatif.</div>
     </section>
 
@@ -1073,12 +1138,35 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
     </section>
 
 
-    <footer class="disc">Estimo &#8212; estimation indicative &#224; but informatif, ne constitue pas une expertise immobili&#232;re.<br/>Marge d'erreur affich&#233;e selon la qualit&#233; des donn&#233;es et la pr&#233;cision des informations saisies. Calendrier DPE selon la loi Climat et R&#233;silience (dates indicatives).</footer>
+    <section class="card" id="glossCard" style="display:none;order:99">
+      <details class="acc" id="glossDetails">
+        <summary style="padding:14px 18px"><span style="font-weight:800;font-size:14px">&#128218; Glossaire des termes cl&#233;s</span><span class="chev">&#9656;</span></summary>
+        <div class="acc-body" id="glossBody" style="padding:14px 18px"></div>
+      </details>
+    </section>
+    <footer class="disc">Estimo &#8212; estimation indicative &#224; but informatif, ne constitue pas une expertise immobili&#232;re.<br/>Marge d'erreur affich&#233;e selon la qualit&#233; des donn&#233;es et la pr&#233;cision des informations saisies. Calendrier DPE selon la loi Climat et R&#233;silience (dates indicatives).<br/><span id="versionTag" style="opacity:.65"></span></footer>
   </div>
 </main>
 
 <script>
 "use strict";
+/* ============================================================================
+ * ESTIMO v1.0.0 - GEL DE VERSION (R49, juillet 2026)
+ * ----------------------------------------------------------------------------
+ * Application autonome d'estimation immobiliere francaise - 100 % donnees
+ * publiques gratuites (DVF/Cerema, BAN, ADEME, Georisques, INSEE, BDNB...).
+ * Rounds livres : R1-R41 (historique) + vague finale R42-R49 :
+ *   R42 immeuble de rapport (valeur en bloc calibree)
+ *   R43 indice Notaires-INSEE (actualisation temporelle officielle)
+ *   R44 recette nationale (backtest 14 communes a la demande)
+ *   R45 auto-remplissage maximal (DPE score, parcelle, BDNB etage/ascenseur)
+ *   R46 dark mode + accessibilite AA (focus, contrastes)
+ *   R47 synthese narrative + glossaire + confiance unifiee
+ *   R48 onboarding 1er lancement + etats vides pedagogiques
+ *   R49 gel v1.0 : equilibre HTML repare, suite de non-regression, version tag
+ * ========================================================================== */
+const ESTIMO_VERSION="1.0.0";
+const ESTIMO_BUILD="2026-07-R49";
 /* ===== Donn\u00e9es de r\u00e9f\u00e9rence (D\u00c9MO) ===== */
 /* Tables de prix moyen/m2 (observatoires notariaux, ordre de grandeur ~debut 2025).
    Utilisees uniquement comme graine de simulation pour computeDynamics() (contexte
@@ -1107,6 +1195,7 @@ const SOURCE_REGISTRY=[
   {key:"pinel",          label:"Taux Pinel 2024 (fin dispositif)",   source:"CGI art.\u00a0199 novovicies",      updated:"2024-01", maxAge:12, url:"https://www.legifrance.gouv.fr"},
   {key:"ces_plu",        label:"CES PLU par zone (CES_PLU)",         source:"Code urbanisme (PLU types)",   updated:"2024-01", maxAge:36, url:"https://www.legifrance.gouv.fr"},
   {key:"philosophie",    label:"Hypoth\u00e8ses financi\u00e8res (HYP.*)",      source:"INSEE / BDF 2024",             updated:"2024-01", maxAge:18, url:"https://www.banque-france.fr"},
+  {key:"idx_notaires",   label:"Indice Notaires-INSEE (IDX_NOTAIRES)",source:"INSEE Informations Rapides",  updated:"2026-07", maxAge:6,  url:"https://www.insee.fr/fr/statistiques/series/102770558"},
 ];
 function checkSourcesFreshness(){
   const now=new Date();
@@ -1259,8 +1348,11 @@ function _clearIrrelevantFields(){
 }
 /* POINT1 : reinitialisation complete du formulaire */
 function resetForm(){
+  /* Un seul garde-fou : si des modifications non sauvegardées existent, on demande
+   * confirmation. Si le formulaire est vierge ou deja sauvegarde, la reinitialisation
+   * est immediate — l'ancienne double-confirmation (confirm() supplementaire toujours
+   * affichee) etait redondante et penible sur mobile. */
   if(!_confirmDiscard())return;
-  if(!confirm("Effacer tous les champs et repartir de z\u00e9ro ?\nLes biens sauvegard\u00e9s ne sont pas affect\u00e9s."))return;
   // Vider tous les champs texte/number
   SAVED_VALUE_IDS.forEach(function(id){
     const e=$(id);if(!e)return;
@@ -1286,6 +1378,7 @@ function resetForm(){
   lastResult=null;
   // Restaurer les valeurs par defaut des segments cles
   state.type="appartement";state.neuf="ancien";state.pieces=3;
+  state._floorTouched=false;state._ascTouched=false;   /* R45 */
   state.dpe="D";state.ges="D";state.loc="nue";state.statut="particulier";state.profil="equilibre";
   // Remettre les valeurs par defaut des champs numeriques
   const defaults={tmi:"30",iDuree:"20",iTaux:"3.4",iAssur:"0.34",iDossier:"1000",
@@ -1300,6 +1393,7 @@ function resetForm(){
   // Reset de l'etat d'estimation : si resetForm est appele pendant une estimation en cours
   // (bien sauvegarde en chargement), _estimRunning et btn.disabled restaient bloques = clic sans effet.
   _estimRunning=false;
+  _estimGeneration++;   // Fix-Race : invalide toute estimation async encore en vol (cf. showResults)
   const _rb=$("btnEstim");
   if(_rb){_rb.disabled=false;_rb.style.background="";_rb.style.color="";delete _rb.dataset.origText;}
   // Rafraichir l'UI
@@ -1366,21 +1460,45 @@ async function autoFillFromAddress(coord){
   state._energyTouched=false;
   const nb=$("autofillNote");if(nb)nb.style.display="none";
   const cn=$("cadastreNote");if(cn)cn.style.display="none";
-  const [rAlt,rAdeme,rCad]=await Promise.allSettled([
+  const [rAlt,rAdeme,rCad,rBdnb]=await Promise.allSettled([
     dvfFetch("https://api.open-meteo.com/v1/elevation?latitude="+coord.lat+"&longitude="+coord.lon),
     (async()=>{
       const sel=encodeURIComponent("etiquette_dpe,etiquette_ges,annee_construction,type_batiment,date_etablissement_dpe,surface_habitable_logement,adresse_ban,type_energie_principale_logement");
-      const url="https://data.ademe.fr/data-fair/api/v1/datasets/dpe-v2-logements-existants/lines?geo_distance="+coord.lon+","+coord.lat+",400m&size=1&sort=-date_etablissement_dpe&select="+sel;
+      /* R45 : passe de 1 à 5 résultats et sélectionne par score d'adresse.
+       * La sélection sur distance seule retourne parfois le DPE d'un voisin.
+       * Critères (heuristiques uniquement, aucun score officiel n'existe) :
+       *   - concordance de l'adresse BAN (comparaison insensible à la casse)
+       *   - DPE le plus récent (sort=-date_etablissement_dpe) servant de tie-break
+       * Aucun DPE : retourne null (comportement inchangé). */
+      const url="https://data.ademe.fr/data-fair/api/v1/datasets/dpe-v2-logements-existants/lines?geo_distance="+coord.lon+","+coord.lat+",400m&size=5&sort=-date_etablissement_dpe&select="+sel;
       const d=await dvfFetch(url);
-      if(DEBUG&&d&&d.raw)dbg("ADEME brut:\n"+d.raw.slice(0,280));
-      const rows=(d&&d.json&&(d.json.results||d.json.data))||[];return rows[0]||null;
+      if(DEBUG&&d&&d.raw)dbg("ADEME DPE brut (top-5):\n"+d.raw.slice(0,400));
+      const rows=(d&&d.json&&(d.json.results||d.json.data))||[];
+      if(!rows.length)return null;
+      /* Correspondance adresse : normalisation minuscule + retrait de la ponctuation. */
+      const normAddr=s=>String(s||"").toLowerCase().replace(/[,.\-]/g," ").replace(/\s+/g," ").trim();
+      const refAddr=normAddr(coord.label||"");
+      let best=rows[0];
+      if(refAddr&&rows.length>1){
+        const scored=rows.map(r=>{
+          const ra=normAddr(r.adresse_ban||"");
+          let sc=0;
+          if(ra&&refAddr){const wRef=refAddr.split(" "),wR=ra.split(" ");sc=wRef.filter(w=>w.length>2&&wR.includes(w)).length;}
+          return{r,sc};
+        }).sort((a,b)=>b.sc-a.sc);
+        if(scored[0].sc>0)best=scored[0].r;
+      }
+      return best;
     })(),
-    provCadastre(coord)
+    provCadastre(coord),
+    (state.type==="appartement"?provBDNB(coord):Promise.resolve(null))  /* R45 : hors appt -> skipped */
   ]);
   try{const al=rAlt.value;if(al&&al.json&&al.json.elevation&&al.json.elevation.length){coord.alt=Math.round(al.json.elevation[0]);const lc=$("locCoord");if(lc&&state.coord===coord&&lc.textContent&&lc.textContent.indexOf("alt.")<0&&/\d/.test(lc.textContent))lc.textContent=lc.textContent.replace(" \u00b7 carte"," \u00b7 alt. "+coord.alt+" m \u00b7 carte");}}catch(_){}
   if(rAdeme.status==="fulfilled"&&rAdeme.value)autofillApply(rAdeme.value);
   else if(DEBUG)dbg("ADEME DPE: aucun r\u00e9sultat \u00e0 400m");
   if(rCad.status==="fulfilled"&&rCad.value)autofillCadastre(rCad.value);
+  /* R45 : BDNB → étage immeuble + ascenseur (appartement uniquement) */
+  if(rBdnb.status==="fulfilled"&&rBdnb.value)autofillBdnb(rBdnb.value);
 }
 /* Deduit le bucket #epoque a partir d'une annee de construction. Factorise (R12) : utilise par
  * l'autofill ADEME (autofillApply) ET par le recoupement BDNB affiche dans le panneau contexte. */
@@ -1512,8 +1630,189 @@ const NET_LABELS={
 function _netLabel(h){return NET_LABELS[h]||h;}
 
 /** Fiche de qualite des donnees : HTML, ou "" si aucun appel n'a eu lieu. */
+/* ============================================================================
+ * R44 - RECETTE NATIONALE : BACKTEST MULTI-COMMUNES A LA DEMANDE
+ * ----------------------------------------------------------------------------
+ * OBJET. Mesurer l'erreur du moteur (MdAPE, biais signe, P80) sur un panel FIXE
+ * de communes heterogenes - metropoles, villes moyennes, periurbain, littoral,
+ * montagne, marches detendus - et par TYPE de bien, avec les briques de
+ * production REELLES (parsePts*, dvfStats, estimationEngines, backtestFull) :
+ * aucune chaine parallele, donc aucune divergence possible entre la mesure et
+ * ce que produit l'outil.
+ *
+ * PRINCIPES.
+ *  - JAMAIS execute automatiquement : lancement explicite (bouton du panneau
+ *    "Qualite des donnees" ou runNationalBacktest() en console). ~1-3 min,
+ *    requetes espacees de 400 ms (courtoisie API Cerema).
+ *  - AUCUN resultat pre-embarque : seuls des chiffres MESURES sur cet appareil
+ *    sont affiches (date memorisee en localStorage, cle estimo_bench_v1).
+ *  - Etat global neutralise pendant le run (scoreCal / irisSeg sauvegardes puis
+ *    restaures) : la recette ne depend pas de la derniere estimation UI et ne
+ *    la perturbe pas. Le harnais ne touche NI au formulaire NI a state.coord.
+ *  - Alsace-Moselle exclue par construction du panel (Livre foncier : DVF n'y
+ *    publie pas les mutations).
+ * METRIQUE. Par commune x type : backtestFull (leave-one-out, chaines vendeur/
+ * acquereur de production, vefaFactor=1 : moteur brut). Agregat national par
+ * type = MEDIANE des MdAPE communaux + biais signe median (chaine acquereur,
+ * cible attendue -8 a -3 %). Parking : LOO dedie sur l'ancrage min(mediane
+ * ponderee recence ; P40) d'estimateGarage, l'unite n'ayant pas de ppm fiable.
+ * ========================================================================== */
+const BENCH_COMMUNES=[
+  {q:"Place Leon Blum 75011 Paris",lbl:"Paris 11e",types:["appartement","garage"]},
+  {q:"Hotel de Ville Boulogne-Billancourt",lbl:"Boulogne-Billancourt (92)",types:["appartement"]},
+  {q:"Place du Marche Notre-Dame Versailles",lbl:"Versailles (78)",types:["appartement","maison"]},
+  {q:"Place Guichard 69003 Lyon",lbl:"Lyon 3e",types:["appartement","garage"]},
+  {q:"380 Avenue du Prado 13008 Marseille",lbl:"Marseille 8e",types:["appartement"]},
+  {q:"Place Pey-Berland Bordeaux",lbl:"Bordeaux (33)",types:["appartement","maison"]},
+  {q:"Place du Commerce Nantes",lbl:"Nantes (44)",types:["appartement","maison"]},
+  {q:"Place du Marche Montelimar",lbl:"Montelimar (26)",types:["appartement","maison","terrain"]},
+  {q:"Hotel de Ville Angouleme",lbl:"Angouleme (16)",types:["maison","appartement"]},
+  {q:"Gare de Saint-Malo",lbl:"Saint-Malo (35)",types:["appartement","maison"]},
+  {q:"Mairie Annecy",lbl:"Annecy (74)",types:["appartement"]},
+  {q:"Place de Catalogne Perpignan",lbl:"Perpignan (66)",types:["maison","terrain"]},
+  {q:"Mairie Chateauroux",lbl:"Chateauroux (36)",types:["maison","terrain"]},
+  {q:"Place des Heros Arras",lbl:"Arras (62)",types:["maison"]}
+];
+/* Rayons (degres) alignes sur les crans de production : bati dense 0,0099 (~1,1 km),
+ * maison 0,0225 (~2,5 km), foncier 0,0450 (~5 km) - cf. _radii de fetchDvf. */
+const BENCH_RADII={appartement:0.0099,garage:0.0099,maison:0.0225,terrain:0.0450};
+const BENCH_LS_KEY="estimo_bench_v1";
+let _benchRunning=false;
+
+/** Geocodage BAN autonome (aucune ecriture dans state ni dans le formulaire). */
+async function _benchGeo(q){
+  try{
+    const r=await fetchT("https://api-adresse.data.gouv.fr/search/?limit=1&q="+encodeURIComponent(q),8000);
+    const d=await r.json();const f=(d.features||[])[0];
+    if(!f)return null;
+    return{lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0],insee:f.properties.citycode||null};
+  }catch(_){return null;}
+}
+/** LOO parking : rejoue l'ancrage d'estimateGarage (mediane ponderee recence 0,82^age
+ *  vs P40, la plus basse retenue) sur chacune des cibles les plus recentes. */
+function _benchGarageLoo(pts){
+  const ok=(pts||[]).filter(p=>p.price>0);
+  if(ok.length<20)return null;
+  const year=new Date().getFullYear();
+  const age=p=>Math.max(0,year-(p.date?+String(p.date).slice(0,4):year));
+  const targets=[...ok].sort((a,b)=>age(a)-age(b)).slice(0,40);
+  const errs=[];
+  targets.forEach(t=>{
+    const corpus=ok.filter(p=>p!==t);
+    if(corpus.length<15)return;
+    const sorted=[...corpus].sort((a,b)=>a.price-b.price);
+    let wsum=0;sorted.forEach(p=>{wsum+=Math.pow(0.82,age(p));});
+    let acc=0,west=sorted[sorted.length>>1].price;
+    for(const p of sorted){acc+=Math.pow(0.82,age(p));if(acc>=wsum/2){west=p.price;break;}}
+    const p40=quantile(sorted.map(p=>p.price),0.40);
+    const est=Math.min(west,p40);
+    if(est>0)errs.push((est-t.price)/t.price);
+  });
+  if(errs.length<15)return null;
+  const abs=errs.map(Math.abs).sort((a,b)=>a-b),sgn=errs.slice().sort((a,b)=>a-b);
+  const q=(arr,f)=>arr[Math.min(arr.length-1,Math.floor(f*arr.length))];
+  return{n:errs.length,buyer:{mdape:+(q(abs,0.5)*100).toFixed(1),p80:+(q(abs,0.8)*100).toFixed(1),mpe:+(q(sgn,0.5)*100).toFixed(1)}};
+}
+/** Lance la recette nationale. opts.onProgress(txt) optionnel. Retourne l'objet
+ *  resultat (aussi memorise en localStorage et journalise en console). */
+async function runNationalBacktest(opts){
+  if(_benchRunning){console.warn("Recette deja en cours");return null;}
+  _benchRunning=true;
+  const prog=(opts&&opts.onProgress)||function(t){const el=document.getElementById("benchProg");if(el)el.textContent=t;};
+  const pause=ms=>new Promise(res=>setTimeout(res,ms));
+  /* Neutralisation de l'etat de la derniere estimation UI (restaure en fin) */
+  const _savCal=state.scoreCal,_savIris=state.irisSeg;
+  state.scoreCal=null;state.irisSeg=null;
+  const rows=[];const t0=Date.now();
+  try{
+    for(let ci=0;ci<BENCH_COMMUNES.length;ci++){
+      const c=BENCH_COMMUNES[ci];
+      prog("Recette "+(ci+1)+"/"+BENCH_COMMUNES.length+" : "+c.lbl+"\u2026");
+      const geo=await _benchGeo(c.q);
+      if(!geo){rows.push({commune:c.lbl,error:"geocodage"});continue;}
+      const dep=geo.insee?String(geo.insee).slice(0,2):null;
+      for(const type of c.types){
+        const rad=BENCH_RADII[type]||0.0099;
+        const bbox=[(geo.lon-rad).toFixed(5),(geo.lat-rad).toFixed(5),(geo.lon+rad).toFixed(5),(geo.lat+rad).toFixed(5)].join(",");
+        const url=DVF_BASE.replace("/mutations/","/geomutations/")+"?in_bbox="+bbox+"&page_size=500";
+        let arr=[];
+        try{
+          const r1=await dvfFetch(url);
+          if(r1&&r1.json){
+            arr=extractArr(r1.json);
+            if((r1.json.count||0)>500){await pause(400);const r2=await dvfFetch(url+"&page=2");if(r2&&r2.json)arr=arr.concat(extractArr(r2.json));}
+          }
+        }catch(_){}
+        if(!arr.length){rows.push({commune:c.lbl,type,error:"reseau/vide"});await pause(400);continue;}
+        let row={commune:c.lbl,type,nMut:arr.length};
+        try{
+          if(type==="terrain"){
+            const pts=parsePtsTerrain(arr,dep);
+            const bt=pts&&pts.length?backtestFull(pts,{vefaFactor:1,prudence:0,capHi:1.15,arbitrate:true,terrain:true}):null;
+            row=bt?Object.assign(row,{n:bt.n,mdape:bt.buyer.mdape,mpe:bt.buyer.mpe,p80:bt.buyer.p80,nPts:pts.length}):Object.assign(row,{error:"corpus insuffisant ("+(pts?pts.length:0)+" ventes)"});
+          }else if(type==="garage"){
+            const pts=parsePtsGarage(arr);
+            const bt=_benchGarageLoo(pts);
+            row=bt?Object.assign(row,{n:bt.n,mdape:bt.buyer.mdape,mpe:bt.buyer.mpe,p80:bt.buyer.p80,nPts:pts.length}):Object.assign(row,{error:"corpus insuffisant ("+(pts?pts.length:0)+" ventes)"});
+          }else{
+            const parsed=parsePts(arr,type);
+            const bt=parsed.pts&&parsed.pts.length?backtestFull(parsed.pts,{vefaFactor:1,prudence:0,capHi:1.15,arbitrate:true}):null;
+            row=bt?Object.assign(row,{n:bt.n,mdape:bt.buyer.mdape,mpe:bt.buyer.mpe,p80:bt.buyer.p80,nPts:parsed.pts.length}):Object.assign(row,{error:"corpus insuffisant ("+(parsed.pts?parsed.pts.length:0)+" ventes)"});
+          }
+        }catch(e){row.error="exception: "+e;}
+        rows.push(row);
+        await pause(400);
+      }
+    }
+  }finally{
+    state.scoreCal=_savCal;state.irisSeg=_savIris;
+    _benchRunning=false;
+  }
+  /* Agregation nationale par type : MEDIANE des metriques communales */
+  const perType={};
+  ["appartement","maison","terrain","garage"].forEach(tp=>{
+    const ok=rows.filter(r=>r.type===tp&&r.mdape!=null);
+    if(!ok.length)return;
+    perType[tp]={nCommunes:ok.length,nCibles:ok.reduce((s,r)=>s+(r.n||0),0),
+      mdape:+median(ok.map(r=>r.mdape)).toFixed(1),
+      mpe:+median(ok.map(r=>r.mpe)).toFixed(1),
+      p80:+median(ok.map(r=>r.p80)).toFixed(1)};
+  });
+  const res={date:new Date().toISOString(),ms:Date.now()-t0,
+    nCommunes:BENCH_COMMUNES.length,rows,perType,
+    engine:"backtestFull LOO, chaine acquereur, vefaFactor=1"};
+  try{localStorage.setItem(BENCH_LS_KEY,JSON.stringify(res));}catch(_){}
+  try{console.log("=== RECETTE NATIONALE ESTIMO ===");console.table(rows);console.table(perType);}catch(_){}
+  prog("Recette terminee ("+Math.round(res.ms/1000)+" s) \u2014 relancez une estimation pour voir la synth\u00e8se ci-dessous.");
+  if(typeof lastResult!=="undefined"&&lastResult){try{renderPriceFormation(lastResult);}catch(_){}}
+  return res;
+}
+/** Bloc HTML "recette nationale" du panneau Qualite des donnees. */
+function _benchPanelHtml(){
+  let saved=null;
+  try{saved=JSON.parse(localStorage.getItem(BENCH_LS_KEY)||"null");}catch(_){}
+  const btn='<button type="button" class="btn-sm" '+
+    'onclick="runNationalBacktest()">'+(saved?"Relancer":"Lancer")+' la recette nationale (~2 min)</button>'+
+    '<span id="benchProg" style="font-size:10.5px;color:var(--ink-soft);margin-left:8px"></span>';
+  if(!saved||!saved.perType)
+    return '<div style="margin-top:10px;padding:10px 11px;background:var(--bg);border-radius:9px">'+
+      '<div style="font-size:12px;font-weight:800;color:var(--ink);margin-bottom:5px">Recette nationale du moteur</div>'+
+      '<div style="font-size:11px;color:var(--ink-soft);margin-bottom:7px">Aucune mesure sur cet appareil. La recette rejoue le backtest de production (leave-one-out) sur '+BENCH_COMMUNES.length+' communes t\u00e9moins h\u00e9t\u00e9rog\u00e8nes et mesure l\u2019erreur r\u00e9elle par type de bien. Aucun chiffre n\u2019est affich\u00e9 tant qu\u2019il n\u2019a pas \u00e9t\u00e9 mesur\u00e9.</div>'+btn+'</div>';
+  const lbl={appartement:"Appartements",maison:"Maisons",terrain:"Terrains",garage:"Parkings"};
+  const d=new Date(saved.date);
+  const li=Object.keys(saved.perType).map(tp=>{const s=saved.perType[tp];
+    const biasOk=s.mpe>=-8&&s.mpe<=(tp==="terrain"||tp==="garage"?0:-0);
+    return '<div style="display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:1px solid var(--line)">'+
+      '<span style="font-size:11.5px;color:var(--ink)">'+lbl[tp]+' <span style="color:var(--ink-soft)">('+s.nCommunes+' communes, '+s.nCibles+' cibles)</span></span>'+
+      '<span class="num" style="font-size:11.5px;font-weight:800;color:var(--ink)">MdAPE \u00b1'+s.mdape+' % \u00b7 P80 \u00b1'+s.p80+' % \u00b7 biais <b style="color:'+(biasOk?"var(--good)":"var(--warn)")+'">'+(s.mpe>0?"+":"")+s.mpe+' %</b></span></div>';
+  }).join("");
+  const errs=(saved.rows||[]).filter(r=>r.error).length;
+  return '<div style="margin-top:10px;padding:10px 11px;background:var(--bg);border-radius:9px">'+
+    '<div style="font-size:12px;font-weight:800;color:var(--ink);margin-bottom:5px">Recette nationale du moteur \u00b7 mesur\u00e9e le '+d.toLocaleDateString("fr-FR")+'</div>'+li+
+    '<div style="font-size:10.5px;color:var(--ink-soft);margin:7px 0">Leave-one-out sur ventes DVF r\u00e9elles, cha\u00eene acqu\u00e9reur de production (moteur brut, hors h\u00e9doniques et correction VEFA). Le biais signe doit rester n\u00e9gatif et ma\u00eetris\u00e9 (posture acqu\u00e9reur).'+(errs?' \u00b7 '+errs+' mesure(s) en \u00e9chec (r\u00e9seau ou corpus insuffisant), non comptabilis\u00e9e(s).':'')+'</div>'+btn+'</div>';
+}
 function dataQualityPanel(){
-  if(!_netLog.size)return "";
+  if(!_netLog.size)return _benchPanelHtml();   /* R44 : la recette reste visible meme sans journal reseau */
   const rows=[..._netLog.values()].sort((a,b)=>b.n-a.n);
   const jour=ms=>ms==null?"":(ms<3600000?"< 1 h":ms<86400000?Math.round(ms/3600000)+" h":Math.round(ms/86400000)+" j");
   let nD=0,nP=0,nC=0,nF=0;
@@ -1533,7 +1832,7 @@ function dataQualityPanel(){
       '<span style="font-size:11px;color:'+col+';font-weight:700;white-space:nowrap">'+st+'</span>'+
       '<span style="font-size:10.5px;color:var(--ink-soft);white-space:nowrap">'+det.join(" \u00b7 ")+'</span></div>';
   }).join("");
-  return '<div style="margin-top:10px;padding:10px 11px;background:var(--bg);border-radius:9px">'+
+  return _benchPanelHtml()+'<div style="margin-top:10px;padding:10px 11px;background:var(--bg);border-radius:9px">'+
     '<div style="font-size:12px;font-weight:800;color:var(--ink);margin-bottom:6px">Qualit\u00e9 des donn\u00e9es \u00b7 '+rows.length+' sources interrog\u00e9es</div>'+
     '<div style="font-size:11px;color:var(--ink-soft);margin-bottom:7px">'+nD+' en direct \u00b7 '+nP+' via proxy \u00b7 '+nC+' depuis le cache \u00b7 '+nF+' en \u00e9chec</div>'+
     li+
@@ -2216,7 +2515,7 @@ async function fetchDvfFallback(coord,type){
     const res=parsePts(arr,type);
     if(!res.pts||res.pts.length<8)return null;
     if(DEBUG)dbg("R38 repli DVF secondaire (api.cquest.org) : "+res.pts.length+" ventes exploitables sur "+arr.length+" mutations brutes \u2014 source non garantie (preuve de concept), statut degrade");
-    return{pts:res.pts,ptsNeuf:res.ptsNeuf||[],nNeuf:res.nNeuf,nTotal:res.nTotal,natSeen:res.natSeen,
+    return{pts:res.pts,ptsNeuf:res.ptsNeuf||[],ptsBloc:res.ptsBloc||[],nNeuf:res.nNeuf,nTotal:res.nTotal,natSeen:res.natSeen,
       status:"ok",scope:"fallback",degraded:true,radiusKm:coord.lat!=null?1:null};
   }catch(_){return null;}
 }
@@ -2228,6 +2527,7 @@ const R39_MIN_N=40;                              // taille minimale pour une bor
 
 function parsePts(arr,type){
   const want=type==="maison"?"maison":"appartement",ptsNeuf=[];
+  const ptsBloc=[]; /* R42 : ventes en bloc (>=2 logements) - corpus de CALIBRAGE de la decote bloc, jamais mele au corpus mono-lot */
   let natSeen=false; // true si le champ libnatmut/natmut est présent dans la réponse API
   /* R36 : compteurs pour calage/production (aucun impact sur le corpus, log uniquement) */
   let nCtbAbsent=0, nFallbackExcl=0, nFallbackKept=0, nFallbackBlind=0;
@@ -2244,7 +2544,31 @@ function parsePts(arr,type){
     //   1214 / 1114 = usage exclusivement professionnel -> exclu du corpus habitation
     const _ctb=String(recVal(o,["codtypbien"])||"");
     if(_ctb){
-      if(want==="appartement"&&_ctb.slice(0,3)!=="121")return;   // exclut lots multiples (122x)
+      if(want==="appartement"&&_ctb.slice(0,3)!=="121"){
+        /* ===== R42 : COLLECTE DES VENTES EN BLOC (calibrage de la decote immeuble) =====
+         * Prefixe "12" = typologie APPARTEMENT (nomenclature Cerema DV3F, deja exploitee
+         * dans ce fichier) ; hors "121" (UN appartement), la mutation porte PLUSIEURS
+         * appartements. Ces ventes restent EXCLUES du corpus mono-lot (comportement
+         * strictement inchange) mais leur ppm agrege (valeurfonc / sbatapt) est conserve
+         * A PART : c'est precisement le prix de marche "en bloc" observe localement, qui
+         * permet de MESURER la decote bloc au lieu de l'inventer. Garde-fous :
+         *  - mutation mixte ecartee quand une surface batie TOTALE (sbati et alias, champs
+         *    deja utilises plus haut) revele d'autres locaux significatifs (commerce...) :
+         *    le ppm ne serait pas attribuable aux seuls logements ;
+         *  - surface cumulee >= 30 m2 (2 logements ne font jamais moins) ;
+         *  - sanite ppm absolue identique au reste du fichier (PPM_SANITY). */
+        if(_ctb.slice(0,2)==="12"){
+          const _ppmB=v/s;
+          const _sTot=Number(recVal(o,["sbati","surface_reelle_bati","surface_bati"]))||0;
+          const _mixte=_sTot>0&&s>0&&(s/_sTot)<0.80;
+          if(!_mixte&&s>=30&&_ppmB>=PPM_SANITY_LO&&_ppmB<=PPM_SANITY_HI){
+            let _nb=null;
+            if(Object.prototype.hasOwnProperty.call(o,"nblocapt")){const _x=Number(o.nblocapt);if(isFinite(_x)&&_x>=2)_nb=_x;}
+            ptsBloc.push({ppm:_ppmB,surf:s,price:v,nLots:_nb,date:recVal(o,["datemut","date_mutation"])});
+          }
+        }
+        return;   // exclut lots multiples (122x) du corpus mono-lot - inchange
+      }
       if(want==="maison"&&_ctb.slice(0,3)!=="111")return;        // exclut maisons multiples (112)
       if(_ctb.slice(0,4)==="1214"||_ctb.slice(0,4)==="1114")return;
     }else{
@@ -2279,7 +2603,17 @@ function parsePts(arr,type){
         for(let k=1;k<=5;k++){if(Object.prototype.hasOwnProperty.call(o,pref+k+"pp")){anyKey=true;tot+=Number(o[pref+k+"pp"])||0;}}
         if(anyKey){_lot=tot;_lotSrc="pp";}
       }
-      if(_lot!==null&&_lot>1){nFallbackExcl++;return;}   // mutation multi-lots avérée -> exclue
+      if(_lot!==null&&_lot>1){   // mutation multi-lots averee -> exclue du corpus mono-lot (inchange)
+        nFallbackExcl++;
+        /* R42 : meme collecte de calibrage que la branche codtypbien - bloc avere ici
+         * par nblocapt ou par les compteurs typologiques (nombre de lots connu). */
+        if(want==="appartement"){
+          const _ppmB=v/s;
+          if(s>=30&&_ppmB>=PPM_SANITY_LO&&_ppmB<=PPM_SANITY_HI)
+            ptsBloc.push({ppm:_ppmB,surf:s,price:v,nLots:_lot,date:recVal(o,["datemut","date_mutation"])});
+        }
+        return;
+      }
       if(_lot!==null&&_lot<=1)nFallbackKept++;            // mono-lot confirmé par repli
       else nFallbackBlind++;                              // aucune source exploitable -> conservé (inchangé)
     }
@@ -2371,8 +2705,9 @@ function parsePts(arr,type){
     const _excl=cands.length-pts.length;
     dbg("R39 bornes ppm "+(_adaptive?"ADAPTATIVES":"fixes (corpus "+cands.length+" < "+R39_MIN_N+")")+" : ["+Math.round(_loB)+" ; "+Math.round(_hiB)+"] \u20ac/m\u00b2 sur "+cands.length+" candidats -> "+pts.length+" retenus"+(_excl>0?" ("+_excl+" exclus)":""));
     if(nCtbAbsent>0)dbg("R36 filet multi-lots (codtypbien absent, "+nCtbAbsent+" mutations) : "+nFallbackExcl+" exclues (multi-lots detectees), "+nFallbackKept+" mono-lot confirme, "+nFallbackBlind+" conservees sans source exploitable (comportement inchange)");
+    if(ptsBloc.length)dbg("R42 ventes en bloc collectees : "+ptsBloc.length+" (calibrage de la decote immeuble, hors corpus mono-lot)");
   }
-  return {pts, ptsNeuf, nNeuf:ptsNeuf.length, nTotal:pts.length+ptsNeuf.length, natSeen, nCtbAbsent, nFallbackExcl, ppmBounds:{lo:Math.round(_loB),hi:Math.round(_hiB),adaptive:_adaptive}};
+  return {pts, ptsNeuf, ptsBloc, nNeuf:ptsNeuf.length, nTotal:pts.length+ptsNeuf.length, natSeen, nCtbAbsent, nFallbackExcl, ppmBounds:{lo:Math.round(_loB),hi:Math.round(_hiB),adaptive:_adaptive}};
 }
 /* ============================================================================
  * R41 - CORPUS PARKING / BOX (garage)
@@ -3068,7 +3403,7 @@ async function fetchDvf(coord,type){
           const _nar=_narrowBbox(_gres.pts,coord,_radKm);
           const _fPts=_nar?_nar.pts:_gres.pts,_fRad=_nar?_nar.radiusKm:_radKm;
           if(DEBUG&&_nar)dbg("DVF R19 affinage local : rayon "+_radKm+" km -> "+_fRad+" km ("+_gres.pts.length+" -> "+_fPts.length+" ventes, aucun appel reseau)");
-          return _storeAndReturn({pts:_fPts,ptsNeuf:_gres.ptsNeuf||[],nNeuf:_gres.nNeuf,nTotal:_gres.nTotal,natSeen:_gres.natSeen,status:"ok",scope:"bbox",radiusKm:_fRad,narrowed:!!_nar,nBeforeNarrow:_gres.pts.length});
+          return _storeAndReturn({pts:_fPts,ptsNeuf:_gres.ptsNeuf||[],ptsBloc:_gres.ptsBloc||[],nNeuf:_gres.nNeuf,nTotal:_gres.nTotal,natSeen:_gres.natSeen,status:"ok",scope:"bbox",radiusKm:_fRad,narrowed:!!_nar,nBeforeNarrow:_gres.pts.length});
         }
         if(DEBUG)dbg("DVF bbox r="+_radKm+" km : <"+_minPts+" ventes exploitables malgre reponse valide"+(_ri<_radii.length-1?" -> elargissement du rayon":" -> repli commune (zone reellement peu dense)"));
         break;
@@ -3115,7 +3450,7 @@ async function fetchDvf(coord,type){
   }else arr=extractArr(r1.json);
   const _res=type==="terrain"?{pts:parsePtsTerrain(arr,_depOf(coord)),nNeuf:0,nTotal:0,natSeen:false}:type==="garage"?{pts:parsePtsGarage(arr),nNeuf:0,nTotal:0,natSeen:false}:parsePts(arr,type);
   if(DEBUG)dbg("Ventes "+type+" anciennes exploitables: "+_res.pts.length+(_res.nNeuf>0?" ("+_res.nNeuf+" VEFA exclus)":""));
-  const _commRes=_res.pts.length>0?{pts:_res.pts,ptsNeuf:_res.ptsNeuf||[],nNeuf:_res.nNeuf,nTotal:_res.nTotal,natSeen:_res.natSeen,status:"ok",scope:"commune"}:{pts:null,status:"no-data"};
+  const _commRes=_res.pts.length>0?{pts:_res.pts,ptsNeuf:_res.ptsNeuf||[],ptsBloc:_res.ptsBloc||[],nNeuf:_res.nNeuf,nTotal:_res.nTotal,natSeen:_res.natSeen,status:"ok",scope:"commune"}:{pts:null,status:"no-data"};
   return _storeAndReturn(_commRes);
 }
 
@@ -5456,11 +5791,28 @@ function priceFormation(r){
   const pxHed=r.pxHedonic!=null?r.pxHedonic:Math.round((r.sqmAdj||0)*surf+odVal),capDelta=Math.round(pxHed-(Math.round((r.sqmAdj||0)*surf)+odVal));
   const ix=r.indexAdj||{tot:0,qA:0,eA:0,rA:0},baseI=r.basePrice||pxHed,idxDelta=Math.round(baseI-pxHed);
   const dyn=r.dynAdj||{adj:0},dynDelta=Math.round(baseI*dyn.adj),afterDyn=Math.round(baseI*(1+dyn.adj));
-  const geo=r.geoAdj||{adj:0},geoDelta=Math.round(((r.priceBeforeCap!=null?r.priceBeforeCap:r.price)||afterDyn)-afterDyn);
+  const geo=r.geoAdj||{adj:0},geoDelta=Math.round(((r.priceBeforeCap!=null?r.priceBeforeCap:(r.priceBeforeImm!=null?r.priceBeforeImm:r.price))||afterDyn)-afterDyn); /* R42 : sans priceBeforeCap, la reference reste le prix de chaine */
   const pct=v=>L0?+(v/L0*100).toFixed(1):0,lines=[];
   const _vNote=(r.vefaCorr&&r.vefaCorr.corrPct>0)?" · corr. VEFA −"+r.vefaCorr.corrPct+" %":"";
   lines.push({k:"base",label:"Valeur de march\u00e9 de base",eur:L0,pct:100,note:eur0(r.sqmBase||0)+" \u20ac/m\u00b2 (multi-mod\u00e8les"+_vNote+") \u00d7 "+surf+" m\u00b2"});
   if(charac)lines.push({k:"carac",label:"Caract\u00e9ristiques du bien",eur:charac,pct:pct(charac),note:"\u00c9tat, DPE, \u00e9tage, exposition, standing\u2026 (effets contextuels)",sub:(r.rows||[]).filter(x=>x[1]&&Math.abs(x[1])>=0.005).map(x=>[x[0],(x[1]>0?"+":"")+(x[1]*100).toFixed(1)+" %"])});
+  /* R42 : la transformation immeuble est tracee comme une etape a part entiere.
+   * Le delta = valeur en bloc retenue - prix de la chaine appartement ; les lignes
+   * en amont reconstruisent la chaine, celle-ci puis diagnostics completent le total. */
+  if(r.immeuble&&r.priceBeforeImm!=null){
+    const _im=r.immeuble,_iE=_im.retained-r.priceBeforeImm;
+    const _sub=[];
+    _sub.push(["Structure",_im.nLots+" lots \u00b7 "+_im.surfLots+" m\u00b2 \u00b7 lot moyen "+_im.avg+" m\u00b2"]);
+    if(_im.elast)_sub.push(["\u00c9lasticit\u00e9 surface","b="+_im.elast.bShrink+" ("+_im.elast.n+" ventes)"]);
+    if(_im.discount)_sub.push(["D\u00e9cote bloc","\u2212"+(_im.discount.d*100).toFixed(1)+" % ("+_im.discount.n+" ventes bloc)"]);
+    else _sub.push(["D\u00e9cote bloc","non mesurable \u2192 born\u00e9e par la valeur en bloc"]);
+    if(_im.vRev!=null)_sub.push(["Par le revenu",eur0(_im.vRev)+" \u20ac ("+eur0(_im.rentM)+" \u20ac/mois \u00d7 multiple march\u00e9)"]);
+    const _note=(_im.mode==="revenu"
+      ?"Loyers en place sous le march\u00e9 \u2192 la valeur par le revenu, plus basse, est retenue"+(_im.floored?" (plancher de dispersion appliqu\u00e9)":"")
+      :"Valeur sommative des lots retenue ("+(_im.dMode==="calibree"?"d\u00e9cote bloc mesur\u00e9e sur les ventes en bloc locales":_im.dMode==="mesuree nulle"?"march\u00e9 local sans d\u00e9cote bloc mesurable":"d\u00e9cote bloc inconnue \u2192 min() prudent avec la valeur en bloc")+")")
+      +(_im.surfGap>0.10?" \u00b7 \u26a0\ufe0f surface des lots ("+_im.surfLots+" m\u00b2) \u2260 surface saisie ("+Math.round(r.surface)+" m\u00b2) : la valeur porte sur les lots d\u00e9clar\u00e9s":"");
+    lines.push({k:"imm",label:"Immeuble de rapport \u2014 valeur en bloc ("+_im.nLots+" lots)",eur:_iE,pct:pct(_iE),note:_note,sub:_sub});
+  }
   // DIAGNOSTICS : afficher la decote dans la formation du prix
   if(r.diagImpact&&r.diagImpact<0&&r.priceBeforeDiag){
     const _dEur=r.price-r.priceBeforeDiag;
@@ -5493,7 +5845,7 @@ function priceFormation(r){
   if(r.tempo){
     const _tE=r.tempo.after-r.tempo.before;
     lines.push({k:"tempo",label:"Actualisation \u00e0 aujourd\u2019hui",eur:_tE,pct:pct(_tE),
-      note:"Ventes DVF m\u00e9dianes de "+Math.floor(r.tempo.medianYear)+" \u00b7 "+r.tempo.years.toFixed(1).replace(".",",")+" an(s) \u00e9coul\u00e9(s) \u00b7 tendance locale "+(r.tempo.evoPerYear>=0?"+":"")+String(r.tempo.evoPerYear).replace(".",",")+" %/an"+(r.tempo.capped?" \u00b7 plafonn\u00e9e":"")});
+      note:"Ventes DVF m\u00e9dianes de "+Math.floor(r.tempo.medianYear)+" \u00b7 "+r.tempo.years.toFixed(1).replace(".",",")+" an(s) \u00e9coul\u00e9(s) \u00b7 tendance "+(r.tempo.source==="notaires"?"indice Notaires-INSEE ":r.tempo.source==="hybride"?"locale + Notaires-INSEE ":"locale ")+(r.tempo.evoPerYear>=0?"+":"")+String(r.tempo.evoPerYear).replace(".",",")+" %/an"+(r.tempo.capped?" \u00b7 plafonn\u00e9e":"")});
   }
   lines.push({k:"final",label:"Estimation finale",eur:r.price,pct:pct(r.price),final:true,note:eur0(r.sqm||0)+" \u20ac/m\u00b2"});
   return lines;
@@ -5642,6 +5994,58 @@ function autofillCadastre(data){
     note.style.display="";
   }else note.style.display="none";
 }
+/* R45 : pré-remplissage étage/ascenseur depuis la BDNB (nb_niveaux).
+ * Règles de non-régression strictes :
+ *  - ne s'exécute que pour un APPARTEMENT ;
+ *  - JAMAIS si l'utilisateur a déjà saisi floorTotal (flag _floorTouched) ;
+ *  - floorTotal = nb_niveaux − 1 (nb_niveaux compte le RdC = niveau 1) ;
+ *  - ascenseur suggéré (pré-coché) si nb_niveaux >= 4 (R+3 ou plus) ET asc non
+ *    encore touché par l'utilisateur ; aucune décoction si nb_niveaux < 4 ;
+ *  - note informative sous le champ, toujours visible après autofill BDNB ;
+ *  - le flag _floorTouched n'est posé QUE par l'input direct de l'utilisateur
+ *    (listener ci-dessous), JAMAIS par cet autofill. */
+function autofillBdnb(data){
+  if(!data||state.type!=="appartement")return;
+  const nb=data.nbNiveaux;
+  const note=$("bdnbFloorNote");
+  if(!nb||!(nb>=1)){if(note)note.style.display="none";return;}
+  const etagesImm=nb-1;   // nb_niveaux inclut le RdC
+  const el=$("floorTotal");
+  const asc=$("asc");
+  const infos=[];
+  if(el&&!state._floorTouched&&(!el.value||+el.value===0)){
+    window._afApplying=true;
+    el.value=etagesImm;
+    window._afApplying=false;
+    infos.push("<b>"+nb+" niveaux</b> (R+"+etagesImm+" max)");
+  }else if(el&&el.value){
+    infos.push("immeuble "+nb+" niveaux (champ non modifié : déjà renseigné)");
+  }else{
+    infos.push("immeuble "+nb+" niveaux");
+  }
+  /* Ascenseur : obligatoire à partir de R+3 (4 niveaux) selon art. R111-5 CCH.
+   * On ne DÉCOCHE jamais (seul l'utilisateur peut décocher). */
+  if(asc&&nb>=4&&!asc.checked&&!state._ascTouched){
+    window._afApplying=true;
+    asc.checked=true;
+    window._afApplying=false;
+    infos.push("ascenseur pré-coché (immeuble ≥ R+3)");
+  }
+  if(note&&infos.length){
+    note.innerHTML="\uD83C\uDFD7\uFE0F BDNB CSTB : "+infos.join(" · ")+". Vérifiez et corrigez si besoin.";
+    note.style.display="";
+    if(DEBUG)dbg("autofillBdnb: "+infos.join(", "));
+  }
+}
+/* Listener _floorTouched / _ascTouched : ne jamais écraser une saisie volontaire */
+(function(){
+  ["floorExact","floorTotal"].forEach(function(id){
+    const el=document.getElementById(id);
+    if(el)el.addEventListener("change",function(){if(!window._afApplying)state._floorTouched=true;});
+  });
+  const ascEl=document.getElementById("asc");
+  if(ascEl)ascEl.addEventListener("change",function(){if(!window._afApplying)state._ascTouched=true;});
+})();
 async function provPlu(coord){
   try{
     if(!coord)return null;
@@ -6287,14 +6691,23 @@ async function provBDNB(coord){
     const bgId=bgRow&&bgRow.batiment_groupe_id;
     if(!bgId)return{rnbId,coverRatio,anneeConstruction:null,matMur:null};
 
-    const ffoUrl="https://api.bdnb.io/v1/bdnb/donnees/batiment_groupe_ffo_bat?select=annee_construction,mat_mur_txt&limit=1&batiment_groupe_id=eq."+encodeURIComponent(bgId);
+    /* R45 : nb_niveaux = nombre de niveaux du bâtiment (Fichiers Fonciers DGFiP).
+     * Champ vérifié sur le schéma BDNB officiel (bdnb.io/schema, table
+     * batiment_groupe_ffo_bat, colonne nb_niveau). Couverture ~85 % du bâti.
+     * Sert à pré-remplir floorTotal et à suggérer l'ascenseur (règle HABITARENO :
+     * ascenseur obligatoire à partir de R+3, soit 4 niveaux en comptant le RdC).
+     * Garde-fous : nb_niveau borne [1 ; 30] et arrondi ; aucune écriture si l'
+     * utilisateur a déjà saisi une valeur (flag _floorTouched). */
+    const ffoUrl="https://api.bdnb.io/v1/bdnb/donnees/batiment_groupe_ffo_bat?select=annee_construction,mat_mur_txt,nb_niveau&limit=1&batiment_groupe_id=eq."+encodeURIComponent(bgId);
     const rFfo=await dvfFetch(ffoUrl);
     const ffoRow=rFfo&&rFfo.json&&rFfo.json[0];
     const anRaw=ffoRow&&ffoRow.annee_construction?parseInt(ffoRow.annee_construction,10):null;
     const an=(anRaw&&anRaw>1700&&anRaw<=new Date().getFullYear())?anRaw:null;
+    const nbNivRaw=ffoRow&&ffoRow.nb_niveau!=null?parseInt(ffoRow.nb_niveau,10):null;
+    const nbNiv=(nbNivRaw&&nbNivRaw>=1&&nbNivRaw<=30)?nbNivRaw:null;
 
-    if(coverRatio==null&&an==null&&!(ffoRow&&ffoRow.mat_mur_txt))return null;
-    return{rnbId,coverRatio,anneeConstruction:an,matMur:(ffoRow&&ffoRow.mat_mur_txt)||null};
+    if(coverRatio==null&&an==null&&!(ffoRow&&ffoRow.mat_mur_txt)&&nbNiv==null)return null;
+    return{rnbId,coverRatio,anneeConstruction:an,matMur:(ffoRow&&ffoRow.mat_mur_txt)||null,nbNiveaux:nbNiv};
   }catch(_){return null;}
 }
 /* ===== R14 : indices de cout des travaux (IPEA renovation / ICC neuf) =====
@@ -7000,6 +7413,78 @@ const TEMPO_MAX_ADJ=0.15;     // borne dure de l'actualisation cumulee (+/-15 %)
 const TEMPO_MIN_PTS=10;       // en deca, la tendance locale n'est pas fiable
 let TEMPO_ENABLED=true;       // desactivable (bouton), pour comparer avant/apres
 
+/* ============================================================================
+ * R43 - INDICE OFFICIEL NOTAIRES-INSEE (prior temporel national)
+ * ----------------------------------------------------------------------------
+ * DEFAUT CORRIGE. L'actualisation temporelle reposait exclusivement sur la
+ * tendance LOCALE (dvfTrend). A faible corpus, le shrinkage R32 retracte cette
+ * pente vers 0, et sous 10 ventes / 2 annees il n'y a AUCUNE actualisation :
+ * un corpus 2022-2023 restait alors evalue aux prix d'avant la correction de
+ * 2023-2024 (jusqu'a -5 % / an au niveau national), soit une SUREVALUATION
+ * structurelle exactement la ou l'outil doit etre le plus prudent.
+ *
+ * SOURCE. Glissements ANNUELS trimestriels des indices Notaires-INSEE des prix
+ * des logements anciens, France hors Mayotte, publies par l'INSEE (Informations
+ * Rapides, donnees CVS ; valeurs relevees sur les publications officielles
+ * successives, derniere integree : T1 2026 du 28/05/2026). Serie ensemble (e),
+ * et declinaisons appartements (a) / maisons (m) quand publiees ; a defaut la
+ * fonction retombe sur l'ensemble. CONSTANTE VERSIONNEE : mise a jour manuelle
+ * trimestrielle, suivie par SOURCE_REGISTRY (cle idx_notaires, alerte a 6 mois).
+ *
+ * METHODE. gAt(t) interpole lineairement le glissement annuel entre les
+ * trimestres publies (tenue A PLAT au-dela des bornes : jamais d'extrapolation
+ * de tendance, choix conservateur). notairesEvo chaine ces glissements par pas
+ * d'un an de la date d'arrivee vers la date de depart (pas partiel au prorata
+ * en exposant), puis annualise. Domaine couvert : departs >= 2022-T1, ce qui
+ * couvre tout l'usage reel (TEMPO_MAX_YEARS=4 borne l'age recale). */
+const IDX_NOTAIRES={
+  updated:"2026-07",
+  /* cle = annee + quart de fin du glissement annuel ; valeurs en % sur un an */
+  g:{
+    "2023.125":{e:2.7},              "2023.375":{e:0.5},
+    "2023.625":{e:-1.8,a:-2.0,m:-1.6},"2023.875":{e:-3.9},
+    "2024.125":{e:-5.2,a:-5.5,m:-4.9},"2024.375":{e:-4.9,a:-5.0,m:-4.9},
+    "2024.625":{e:-3.9,a:-3.8,m:-3.9},"2024.875":{e:-2.1,a:-1.8,m:-2.3},
+    "2025.625":{e:0.6},              "2025.875":{e:1.0},
+    "2026.125":{e:0.1,a:0.6,m:-0.2}
+  }
+};
+/** Glissement annuel (%) a la date fractionnaire t, pour la serie du type demande.
+ *  Interpolation lineaire entre trimestres publies, tenue a plat hors bornes. */
+function _notairesGAt(t,type){
+  const key=type==="appartement"?"a":type==="maison"?"m":"e";
+  const ks=Object.keys(IDX_NOTAIRES.g).map(Number).sort((x,y)=>x-y);
+  if(!ks.length)return null;
+  const val=k=>{const o=IDX_NOTAIRES.g[String(k)];return(o[key]!=null?o[key]:o.e);};
+  if(t<=ks[0])return val(ks[0]);
+  if(t>=ks[ks.length-1])return val(ks[ks.length-1]);
+  for(let i=1;i<ks.length;i++){
+    if(t<=ks[i]){
+      const a=ks[i-1],b=ks[i],w=(t-a)/(b-a);
+      return val(a)*(1-w)+val(b)*w;
+    }
+  }
+  return val(ks[ks.length-1]);
+}
+/** Evolution ANNUALISEE (%/an) de l'indice officiel entre fromFrac et toFrac
+ *  (annees fractionnaires). Chainage des glissements annuels de l'arrivee vers
+ *  le depart, dernier pas partiel au prorata (exposant). null si fenetre nulle. */
+function notairesEvo(fromFrac,toFrac,type){
+  if(!(toFrac>fromFrac))return null;
+  let tot=1,t=toFrac,guard=0;
+  while(t-1>=fromFrac-1e-9&&guard++<12){
+    const g=_notairesGAt(t,type);if(g==null)return null;
+    tot*=(1+g/100);t-=1;
+  }
+  const frac=t-fromFrac;
+  if(frac>1e-3){
+    const g=_notairesGAt(t,type);if(g==null)return null;
+    tot*=Math.pow(1+g/100,frac);
+  }
+  const yrs=toFrac-fromFrac;
+  return +(((Math.pow(tot,1/yrs))-1)*100).toFixed(2);
+}
+
 /** Age EFFECTIF du corpus tel qu'il pese reellement dans la base de prix.
  *
  *  Correctif important : dvfStats ne calcule pas une mediane simple mais une
@@ -7046,9 +7531,37 @@ function _applyTemporal(r,pts){
   const age=_corpusAgeYears(pts);
   if(!age||!(age.years>0.25))return;          // corpus recent : rien a recaler
   const tr=(r&&r._dvfTrend)||dvfTrend(pts); // R34 : réutilise le calcul de showResults si disponible
-  if(!tr||tr.evo12==null)return;              // pas de tendance locale mesurable
+  /* ===== R43 : HYBRIDATION AVEC L'INDICE OFFICIEL NOTAIRES-INSEE =============
+   * Trois regimes, du plus informe au moins informe :
+   *  1) tendance locale mesurable (tr non null) : la part du signal local que le
+   *     shrinkage R32 retracte n'est plus reallouee a ZERO ("pas d'info = pas
+   *     d'evolution", prior naif) mais au glissement OFFICIEL national de la
+   *     meme periode : evo = evoLocale_retractee + (1 - shrink) x evoNat.
+   *     A fort t-stat (shrink -> 1), comportement STRICTEMENT identique a R32.
+   *  2) tendance locale non mesurable (corpus mince) : l'indice officiel seul
+   *     remplace l'absence totale d'actualisation - c'est la le gain principal
+   *     (fin de la surevaluation des corpus anciens en zone peu dense).
+   *  3) indice indisponible (type terrain/garage, serie vide) : comportement
+   *     R30/R32 strictement inchange.
+   * L'indice ne s'applique qu'au BATI logement (appartement/maison) : le foncier
+   * suit un cycle distinct, hors champ de la serie Notaires-INSEE. */
+  const _nowFrac=(function(){const d=new Date();return d.getFullYear()+(d.getMonth()+0.5)/12;})();
+  const _natE=(state.type==="appartement"||state.type==="maison")
+    ?notairesEvo(_nowFrac-age.years,_nowFrac,state.type):null;
+  let _evoUsed,_tempoSrc,_evoLoc=null;
+  if(tr&&tr.evo12!=null){
+    _evoLoc=tr.evo12;
+    if(_natE!=null&&tr.shrinkFactor!=null&&tr.shrinkFactor<0.999){
+      _evoUsed=+(tr.evo12+(1-tr.shrinkFactor)*_natE).toFixed(1);
+      _evoUsed=Math.max(-8,Math.min(8,_evoUsed));   // meme borne anti-artefact que dvfTrend
+      _tempoSrc="hybride";
+    }else{_evoUsed=tr.evo12;_tempoSrc="locale";}
+  }else if(_natE!=null){
+    _evoUsed=Math.max(-8,Math.min(8,_natE));
+    _tempoSrc="notaires";
+  }else return;                               // pas de tendance locale mesurable (inchange)
   const yrs=Math.min(TEMPO_MAX_YEARS,age.years);
-  let f=Math.pow(1+tr.evo12/100,yrs)-1;
+  let f=Math.pow(1+_evoUsed/100,yrs)-1;
   f=Math.max(-TEMPO_MAX_ADJ,Math.min(TEMPO_MAX_ADJ,f));
   if(Math.abs(f)<0.005)return;                // effet negligeable : on n'alourdit pas l'affichage
   const before=r.price;
@@ -7056,11 +7569,12 @@ function _applyTemporal(r,pts){
   r.sqm=Math.round(r.price/(r.surface||1));
   r.low=r.price*(1-r.spread);r.high=r.price*(1+r.spread);
   if(typeof DEBUG!=="undefined"&&DEBUG&&typeof dbg==="function")
-    dbg("R30 actualisation : age effectif "+age.years.toFixed(2)+" an (mediane brute "+
-        age.rawYears.toFixed(2)+" an) | tendance "+tr.evo12+" %/an | facteur "+
+    dbg("R30/R43 actualisation ("+_tempoSrc+") : age effectif "+age.years.toFixed(2)+" an (mediane brute "+
+        age.rawYears.toFixed(2)+" an) | tendance "+_evoUsed+" %/an (locale "+(_evoLoc!=null?_evoLoc:"n.d.")+", Notaires-INSEE "+(_natE!=null?_natE:"n.d.")+") | facteur "+
         (f>=0?"+":"")+(f*100).toFixed(1)+" % | "+before+" -> "+Math.round(before*(1+f))+" EUR");
   r.tempo={adj:f,years:+yrs.toFixed(1),medianYear:age.medianYear,
-           evoPerYear:tr.evo12,n:age.n,before:before,after:r.price,
+           evoPerYear:_evoUsed,evoLocal:_evoLoc,evoNat:_natE,source:_tempoSrc,
+           n:age.n,before:before,after:r.price,
            capped:Math.abs(f)>=TEMPO_MAX_ADJ-1e-9||age.years>TEMPO_MAX_YEARS};
 }
 /** Active/desactive l'actualisation temporelle et relance l'estimation.
@@ -7476,13 +7990,135 @@ function updateBadges(r){
   const tR=d.trendReal,lR=d.liquiditeReal,sdR=d.subDemandeReal;
   setBadge('dynTag',tR&&lR&&sdR?'DVF & Filosofi r\u00e9els':tR&&lR?'DVF r\u00e9el \u00b7 demande Filosofi':tR?'tendance DVF r\u00e9elle':lR?'liquidit\u00e9 DVF r\u00e9elle':'observatoire \u00b7 estimation',!!(tR||lR||sdR));
 }
+/* ============================================================================
+ * R47 - SYNTHESE NARRATIVE + GLOSSAIRE + CONFIANCE UNIFIEE
+ * ----------------------------------------------------------------------------
+ * 1) SYNTHESE NARRATIVE : "pourquoi ce prix" en 5-8 phrases, langage clair,
+ *    generee depuis les donnees calculees (pas de LLM, pas d'appel reseau).
+ *    Regles : jamais de coefficient invente, jamais d'affirmation sans donnee,
+ *    degradation gracieuse si donnee absente (phrase omise, pas d'approximation).
+ * 2) GLOSSAIRE : termes techniques rencontres dans les resultats, rendu
+ *    a la demande (details/summary natif, ferme par defaut). Termes statiques,
+ *    independants des donnees (aucun risque de biais de confiance). Posture
+ *    pedagogique : definition courte + exemple metier.
+ * 3) CONFIANCE UNIFIEE : r.confScore est deja calcule et stocke. Ce round en
+ *    ameliore l'AFFICHAGE : barre de progression coloree + libelle + detail dans
+ *    la narrative. Aucune modification de la formule (non-regression garantie).
+ * ========================================================================== */
+const R47_GLOSSARY=[
+  {t:"DVF",d:"Demandes de Valeurs Fonci\u00e8res",x:"Base officielle de toutes les ventes immobili\u00e8res enregistr\u00e9es par les notaires. Source de r\u00e9f\u00e9rence d'Estimo pour \u00e9tablir le prix."},
+  {t:"Prix m\u00e9dian",d:"Valeur centrale du march\u00e9",x:"50\u00a0% des ventes sont en dessous, 50\u00a0% au-dessus. Plus robuste que la moyenne car insensible aux biens atypiques tr\u00e8s chers ou tr\u00e8s bon march\u00e9."},
+  {t:"PPM (prix/m\u00b2)",d:"Prix au m\u00e8tre carr\u00e9 habitable",x:"Permet de comparer des biens de tailles diff\u00e9rentes. Attention\u00a0: la surface habitable (Carrez pour les copropri\u00e9t\u00e9s) peut diff\u00e9rer de la surface des plans."},
+  {t:"VEFA",d:"Vente en l'\u00c9tat Futur d'Ach\u00e8vement",x:"Vente \u00e0 la plan (logement neuf non encore construit). Les prix VEFA sont 20\u200040\u00a0% plus \u00e9lev\u00e9s que l'ancien\u00a0; Estimo les filtre pour ne pas biaiser sa r\u00e9f\u00e9rence."},
+  {t:"DPE",d:"Diagnostic de Performance \u00c9nerg\u00e9tique",x:"Note de A (tr\u00e8s \u00e9conome) \u00e0 G (passoire). Impacte la valeur du bien (\u00ab valeur verte \u00bb) et d\u00e9termine l'\u00e9ligibilit\u00e9 \u00e0 la location."},
+  {t:"MdAPE",d:"Median Absolute Percentage Error",x:"Erreur m\u00e9diane absolue du mod\u00e8le en pourcentage. Un MdAPE de 10\u00a0% signifie que la moiti\u00e9 des estimations sont \u00e0 moins de 10\u00a0% du prix r\u00e9el."},
+  {t:"James-Stein",d:"R\u00e9tr\u00e9cissement statistique anti-surapprentissage",x:"Technique qui att\u00e9nue les coefficients calcul\u00e9s sur peu de donn\u00e9es vers une valeur centrale. \u00c9vite d'accorder trop de poids \u00e0 un signal bruit\u00e9."},
+  {t:"LOO (leave-one-out)",d:"Backtest par exclusion",x:"M\u00e9thode de validation\u00a0: on retire chaque vente du corpus, on l'estime \u00e0 partir des autres, et on mesure l'\u00e9cart. Donne une erreur repr\u00e9sentative sans donn\u00e9es externes."},
+  {t:"VAN",d:"Valeur Actuelle Nette",x:"Richesse cr\u00e9\u00e9e (ou d\u00e9truite) par l'investissement en euros d'aujourd'hui, apr\u00e8s prise en compte du loyer, des charges, de la fiscalit\u00e9, du cr\u00e9dit et de la revente. VAN > 0\u00a0: le projet bat votre taux de rendement cible."},
+  {t:"TRI",d:"Taux de Rendement Interne",x:"Taux d'actualisation qui annule la VAN. Si le TRI d\u00e9passe votre co\u00fbt du capital, l'investissement est cr\u00e9ateur de valeur."},
+  {t:"DMTO",d:"Droits de Mutation \u00e0 Titre On\u00e9reux",x:"Anciennement \u00ab frais de notaire \u00bb\u00a0: env. 8\u00a0% en ancien. Inclut la taxe de publicit\u00e9 fonci\u00e8re, les droits d'enregistrement et les \u00e9moluments du notaire."},
+  {t:"Spread (fourchette)",d:"\u00c9cart de la fourchette d'estimation",x:"Un spread de \u00b115\u00a0% signifie que la fourchette de confiance \u00e0 80\u00a0% s'\u00e9tend de \u2212\u202f15\u00a0% \u00e0 +\u202f15\u00a0% autour du prix central."},
+  {t:"IRIS",d:"\u00celotre Regroupant l'Information Statistique",x:"Maille g\u00e9ographique infracommuncale d'environ 2\u00a0000 habitants (INSEE). Estimo l'utilise pour pond\u00e9rer davantage les ventes situ\u00e9es dans le m\u00eame IRIS que le bien \u00e0 estimer."},
+  {t:"Rendement brut",d:"Loyer annuel / prix d'achat",x:"Indicateur de premier niveau. Ne tient pas compte des charges, de la fiscalit\u00e9 ni des p\u00e9riodes de vacance. Le rendement net est nettement plus bas (g\u00e9n\u00e9ralement 60\u201070\u00a0% du brut en LMNP)."},
+  {t:"Zone ABC",d:"Zonage g\u00e9ographique (tension locative)",x:"A bis\u00a0: Paris intramuros\u00a0; A\u00a0: grandes agglom\u00e9rations\u00a0; B1\u00a0: villes moyennes tendues\u00a0; B2/C\u00a0: marchés d\u00e9tendus. D\u00e9termine l'\u00e9ligibilit\u00e9 \u00e0 Pinel, Loc'Avantages, PTZ, etc."}
+];
+function renderGlossary(){
+  const el=document.getElementById("glossCard"),body=document.getElementById("glossBody");
+  if(!el||!body)return;
+  body.innerHTML=R47_GLOSSARY.map(g=>`<div style="padding:8px 0;border-bottom:1px solid var(--line)">
+    <div style="font-size:13px;font-weight:800;color:var(--ink)">${g.t} <span style="font-weight:500;color:var(--ink-soft)">\u2014 ${g.d}</span></div>
+    <div style="font-size:12px;color:var(--ink-soft);line-height:1.55;margin-top:2px">${g.x}</div>
+  </div>`).join("");
+  el.style.display="";
+}
+/** Narrative "pourquoi ce prix" — 5-8 phrases, langage clair.
+ *  Construite par assemblage conditionnel depuis les donnees calculees.
+ *  Invariants : aucune donnee inventee, degradation gracieuse si absente. */
+function buildNarrative(r){
+  if(!r||!r.price)return null;
+  const P=[];const eur0=v=>Math.round(v).toLocaleString("fr-FR");
+  const pct=v=>(v>=0?"+":"")+v.toFixed(1).replace(".",",")+" %";
+  // 1. Ancrage marche
+  const nPts=r.realCount||0;
+  const sqmRef=r.sqmBase||r.sqm||0;
+  const city=r.city||(typeof $()==="function"&&$("ville")&&$("ville").value)||"";
+  if(sqmRef>0&&nPts>0)
+    P.push(`Le march\u00e9 local (${nPts}\u00a0ventes DVF comparables) affiche un prix de r\u00e9f\u00e9rence de\u00a0<b>${eur0(sqmRef)}\u00a0\u20ac/m\u00b2</b> \u00e0 surface proche.`);
+  else if(sqmRef>0)
+    P.push(`En l'absence de comparables directs, la r\u00e9f\u00e9rence de march\u00e9 retenue est de\u00a0<b>${eur0(sqmRef)}\u00a0\u20ac/m\u00b2</b> (bar\u00e8me r\u00e9gional).`);
+  // 2. Prix estime
+  const surf=r.surface||0;
+  if(surf>0)
+    P.push(`Pour\u00a0<b>${surf}\u00a0m\u00b2</b>, cela donne une valeur de base de\u00a0${eur0(sqmRef*surf)}\u00a0\u20ac, ajust\u00e9e ensuite par les caract\u00e9ristiques du bien pour aboutir \u00e0 l'estimation de\u00a0<b class="num">${eur0(r.price)}\u00a0\u20ac</b>.`);
+  // 3. Principaux ajustements
+  try{
+    const lines=(typeof priceFormation==="function")?priceFormation(r):[];
+    const adj=lines.filter(l=>l.k!=="base"&&!l.final&&Math.abs(l.eur||0)>500);
+    if(adj.length){
+      const top=adj.sort((a,b)=>Math.abs(b.eur)-Math.abs(a.eur)).slice(0,3);
+      P.push(`Ajustements principaux\u00a0: ${top.map(l=>`<em>${l.label}</em>\u00a0${l.eur>0?"+":"\u2212"}${eur0(Math.abs(l.eur))}\u00a0\u20ac`).join(", ")}.`);
+    }
+  }catch(_){}
+  // 4. Fourchette & confiance
+  if(r.low&&r.high&&r.confScore!=null){
+    const conf=r.confScore>=70?"\u00e9lev\u00e9e":r.confScore>=45?"moyenne":"limit\u00e9e";
+    P.push(`La fourchette \u00e0 80\u00a0% s\u00e9tend de\u00a0<b class="num">${eur0(r.low)}\u00a0\u20ac</b> \u00e0\u00a0<b class="num">${eur0(r.high)}\u00a0\u20ac</b>. Confiance\u00a0<b>${r.confScore}/100</b> (${conf})${r.backtest?" \u00b7 erreur mesur\u00e9e\u00a0\u00b1"+r.backtest.mdape+"\u00a0% sur "+r.backtest.n+" ventes":"."}`);
+  }
+  // 5. Correction temporelle
+  if(r.tempo&&Math.abs(r.tempo.adj||0)>0.005){
+    const sens=r.tempo.adj>0?"hausse":"baisse";
+    const src=r.tempo.source==="notaires"?"indice Notaires-INSEE":r.tempo.source==="hybride"?"indice local + Notaires-INSEE":"tendance locale";
+    P.push(`Actualisation\u00a0: les ventes de r\u00e9f\u00e9rence datent de ${r.tempo.medianYear?Math.floor(r.tempo.medianYear):"?"} ; l'estimation int\u00e8gre une ${sens} de\u00a0<b>${pct(r.tempo.evoPerYear||0)}/an</b> sur ${r.tempo.years} an(s) (${src}).`);
+  }
+  // 6. DPE
+  if(r.type!=="terrain"&&r.type!=="garage"){
+    const dpe=typeof state!=="undefined"?state.dpe:"";
+    if(dpe==="F"||dpe==="G")
+      P.push(`<b>Attention passoire thermique (DPE\u00a0${dpe})</b>\u00a0: location interdite progressivement, travaux \u00e9nerg\u00e9tiques \u00e0 anticiper — impact sur la valeur refl\u00e9t\u00e9 dans la d\u00e9cote DPE.`);
+    else if(dpe==="A"||dpe==="B")
+      P.push(`Bonne performance \u00e9nerg\u00e9tique (DPE\u00a0<b>${dpe}</b>)\u00a0: prime verte int\u00e9gr\u00e9e dans l'estimation.`);
+  }
+  // 7. Dynamique marche
+  try{
+    const dyn=r.dyn;
+    if(dyn&&dyn.score!=null&&dyn.factor!=null&&Math.abs(dyn.factor)>0.005){
+      const dir=dyn.factor>0?"dynamique":"atone";
+      P.push(`Le march\u00e9 local est ${dir} (indice\u00a0<b>${dyn.score}/100</b>), ce qui repr\u00e9sente un ajustement de\u00a0<b>${pct(dyn.factor*100)}</b> sur la valeur de base.`);
+    }
+  }catch(_){}
+  // 8. Immeuble (R42)
+  if(r.immeuble&&r.immeuble.nLots>=2)
+    P.push(`Mode immeuble de rapport (${r.immeuble.nLots}\u00a0lots)\u00a0: la valeur en bloc de\u00a0<b class="num">${eur0(r.immeuble.retained)}\u00a0\u20ac</b> int\u00e8gre${r.immeuble.discount&&r.immeuble.discount.d>0?" une d\u00e9cote bloc de\u00a0"+(r.immeuble.discount.d*100).toFixed(1)+"\u00a0%" :" la valeur sommative des lots"} (mode\u00a0: ${r.immeuble.dMode}).`);
+  return P.length?P:null;
+}
 function renderExplain(r){
   const el=$("pcExplain");if(!el||!r)return;
   if(!r.real){el.style.display="none";return;}
   const map={carac:"caract\u00e9ristiques du bien",ext:"ext\u00e9rieurs",cap:"recentrage sur le march\u00e9",idx:"qualit\u00e9/raret\u00e9",dyn:"tendance du march\u00e9",geo:"micro-localisation",capfinal:"garde-fou march\u00e9",prud:"principe de pr\u00e9caution"};
   const seuil=Math.max(500,(r.price||0)*0.002);
   const parts=priceFormation(r).filter(l=>map[l.k]&&Math.abs(l.eur)>=seuil).map(l=>map[l.k]+" "+(l.eur>0?"+":"\u2212")+eur0(Math.abs(l.eur))+" \u20ac");
-  el.innerHTML="<b>En clair :</b> march\u00e9 local \u00e0 "+eur0(r.sqmBase)+" \u20ac/m\u00b2 ("+(r.realCount||0)+" ventes r\u00e9elles)"+(parts.length?" \u00b7 "+parts.join(" \u00b7 "):"")+". <span style=\"color:var(--ink-soft);font-size:10px\">D\u00e9tail complet en Mode Expert \u2192 Fiabilit\u00e9 &amp; formation du prix.</span>";
+  // ── Indice de confiance unifié (barre de progression colorée) ──
+  const _cc=r.confScore>=70?"var(--good)":r.confScore>=45?"var(--warn)":"var(--bad)";
+  const _confBar=r.confScore!=null?`<div style="margin-bottom:9px">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+      <span style="font-size:11px;font-weight:700;color:var(--ink)">Indice de confiance de l'estimation</span>
+      <span class="num" style="font-size:13px;font-weight:800;color:${_cc}">${r.confScore}/100 · ${r.confLabel||""}</span>
+    </div>
+    <div style="height:6px;border-radius:4px;background:var(--line);overflow:hidden">
+      <div style="height:100%;width:${r.confScore}%;background:${_cc};transition:width .5s"></div>
+    </div>
+  </div>`:"";
+  // ── Ligne "En clair" ──
+  const _clairLine="<b>En clair :</b> march\u00e9 local \u00e0 "+eur0(r.sqmBase)+" \u20ac/m\u00b2 ("+(r.realCount||0)+" ventes r\u00e9elles)"+(parts.length?" \u00b7 "+parts.join(" \u00b7 "):"")+". <span style=\"color:var(--ink-soft);font-size:10px\">D\u00e9tail complet en Mode Expert \u2192 Fiabilit\u00e9 &amp; formation du prix.</span>";
+  // ── Narrative R47 ──
+  let _narHtml="";
+  try{
+    const _narParts=buildNarrative(r);
+    if(_narParts&&_narParts.length){
+      _narHtml=`<details style="margin-top:9px"><summary style="font-size:11.5px;font-weight:700;color:var(--brand-dark);cursor:pointer;list-style:none;display:flex;align-items:center;gap:5px"><span>&#128218; Pourquoi ce prix ? (${_narParts.length} points)</span></summary><div style="margin-top:8px;display:flex;flex-direction:column;gap:7px">${_narParts.map(s=>`<div style="font-size:12.5px;line-height:1.65;color:var(--ink);padding-left:10px;border-left:2px solid var(--brand-tint)">${s}</div>`).join("")}</div></details>`;
+    }
+  }catch(_){}
+  el.innerHTML=_confBar+"<div>"+_clairLine+"</div>"+_narHtml;
   el.style.display="";
   const bdN=$("bdNote");
   if(bdN){
@@ -7525,16 +8161,30 @@ async function fetchAllData(coord){
       out.realPts=res.pts;
       out.dvfDegraded=!!res.degraded;   // R38b
       const surf=state.type==="terrain"?numv("terrain"):numv("surface");let band=res.pts;out.bandWidened=false;
+      /* ===== R42 : reference de comparaison en mode IMMEUBLE (multi-lots) =====
+       * La bande de surface, les stats, la calibration R40 et les moteurs etaient
+       * centres sur la SURFACE TOTALE saisie (ex. 240 m2) : cette gamme est quasi
+       * vide en DVF -> elargissement systematique, ancre peu representative. La
+       * bonne reference d'un immeuble decoupe en lots est la surface MOYENNE des
+       * lots : les comparables pertinents sont les appartements de cette taille.
+       * La typologie (subjRooms) est neutralisee : un immeuble n'a pas de nombre
+       * de pieces unique. Hors mode immeuble : strictement AUCUN changement
+       * (bandSurf===surf, bandRooms===state.pieces). */
+      const _ml42=(typeof _mlActive==="function")?_mlActive():{on:false};
+      const bandSurf=(_ml42.on&&_ml42.avg>0)?Math.round(_ml42.avg):surf;
+      const bandRooms=_ml42.on?0:(+state.pieces||0);
+      if(DEBUG&&_ml42.on)dbg("R42 immeuble : bande de surface centree sur le lot moyen "+bandSurf+" m2 ("+_ml42.n+" lots, "+Math.round(_ml42.surfTot)+" m2 cumules)");
       /* R41 : le parking n'est pas evalue au m2 -- aucune bande de surface, aucun
        * traitement statistique du bati. Le corpus brut est transmis tel quel. */
       if(state.type==="garage"){out.realPts=res.pts;out.realStats={pts:res.pts,n:res.pts.length,clean:res.pts};out.realBase=res.pts.length?1:0;out.dvfDegraded=!!res.degraded;out.diag=res.pts.length?"":"aucune vente de parking";return{...out,enrichPromise,ctxProm};}
-      if(surf>0){
-        let b=res.pts.filter(p=>p.surf>=surf*0.55&&p.surf<=surf*1.7);
-        if(b.length<25){const b2=res.pts.filter(p=>p.surf>=surf*0.40&&p.surf<=surf*2.30);if(b2.length>b.length+4){b=b2;out.bandWidened=true;}}
+      if(bandSurf>0){
+        let b=res.pts.filter(p=>p.surf>=bandSurf*0.55&&p.surf<=bandSurf*1.7);
+        if(b.length<25){const b2=res.pts.filter(p=>p.surf>=bandSurf*0.40&&p.surf<=bandSurf*2.30);if(b2.length>b.length+4){b=b2;out.bandWidened=true;}}
         if(b.length>=10)band=b;else out.bandWidened=false;
       }
       out.vefaInfo={nNeuf:res.nNeuf||0,nTotal:res.nTotal||0,natSeen:!!res.natSeen};
       out.ptsVefa=res.ptsNeuf||[];
+      out.ptsBloc=res.ptsBloc||[];   /* R42 : corpus de calibrage de la decote bloc */
       /* R37 : segmentation IRIS. Un seul appel reseau (cache 30 j), borne a 2,5 s :
        * au-dela on renonce silencieusement plutot que de retarder l'estimation.
        * Uniquement en scope bbox (en scope commune les ventes sont trop dispersees pour
@@ -7552,13 +8202,13 @@ async function fetchAllData(coord){
         }
       }
       out.irisSeg=state.irisSeg;
-      out.realStats=dvfStats(band,surf>0?surf:null,+state.pieces||0);
+      out.realStats=dvfStats(band,bandSurf>0?bandSurf:null,bandRooms);
       if(DEBUG&&out.realStats)dbg("Stats: west(global)="+out.realStats.west+" | medBandeSurf="+(out.realStats.westSurfStrict||"n/a")+" Padapt(P"+Math.round((out.realStats.westSurfPct||0.4)*100)+")="+(out.realStats.westSurfP40||"n/a")+" | disp="+(out.realStats.med>0?((out.realStats.q3-out.realStats.q1)/out.realStats.med).toFixed(2):"?")+" | "+(out.realStats.strictCount||0)+" ventes \u00b125% IQR-1x | westGRooms="+(out.realStats.westGRooms||"n/a")+")");
       /* R40 : calibration des poids de similarite sur le corpus local. Purement locale
        * (aucun appel reseau), executee une seule fois par estimation. Doit imperativement
        * preceder estimationEngines, qui lit state.scoreCal. */
       state.scoreCal=null;
-      try{state.scoreCal=calibrateScoreWeights(out.realStats.clean,surf);}catch(_){state.scoreCal=null;}
+      try{state.scoreCal=calibrateScoreWeights(out.realStats.clean,bandSurf);}catch(_){state.scoreCal=null;}
       if(DEBUG){
         const _c=state.scoreCal;
         dbg(_c?("R40 calibration similarite : "+(_c.applied
@@ -7567,7 +8217,7 @@ async function fetchAllData(coord){
              :"R40 calibration similarite : non tentee (corpus < "+R40_MIN_CORPUS+" ventes) \u2014 parametres par defaut");
       }
       out.scoreCal=state.scoreCal;
-      out.engineData=estimationEngines(out.realStats.clean,surf,out.realStats);
+      out.engineData=estimationEngines(out.realStats.clean,bandSurf,out.realStats);
       out.realBase=out.engineData.base||out.realStats.west||Math.round(out.realStats.med);
       // R13 : l'enrichissement DPE ne concerne que le bati (aucun DPE sur du foncier nu)
       if(state.dvfScope==="bbox"&&state.type!=="terrain")try{await _withTimeout(enrichDvfDpe(out.realPts),4000,null);}catch(_){}
@@ -7575,7 +8225,9 @@ async function fetchAllData(coord){
     else if(res.status==="bbox-fail"||res.status==="no-conn"){
       // Fix15 : echec d'appel des donnees = pas d'estimation degradee. On previent et on invite a relancer.
       out.netFail=true;
-      out.diag="l'appel des donn\u00e9es de ventes (DVF) n'a pas fonctionn\u00e9 \u2014 r\u00e9essayez";
+      out.diag="l'appel des données de ventes (DVF) n'a pas fonctionné — réessayez";
+      /* R48 : message pédagogique dans la bannière (visible même sans résultats) */
+      showNetErrBanner("Impossible de joindre les données DVF (Cerema). Vérifiez votre connexion ou réessayez dans quelques secondes. Si le problème persiste, le barème régional sera utilisé comme référence.");
     }
     else out.diag=state.type==="terrain"?"aucune vente de terrain DVF exploitable dans le secteur \u2014 repli sur le bar\u00e8me foncier d\u00e9partemental":"aucune vente DVF comparable dans le secteur";
   }
@@ -7686,6 +8338,141 @@ function computeVefaCorr(vefaInfo, tier, evo12){
     evo12: evo12 || 0
   };
 }
+/* ============================================================================
+ * R42 - IMMEUBLE DE RAPPORT : VALEUR EN BLOC (multi-lots)
+ * ----------------------------------------------------------------------------
+ * DEFAUT CORRIGE. En mode multi-lots, la chaine evaluait l'immeuble comme UN
+ * grand appartement de la surface totale : ni l'effet de structure (les petits
+ * lots valent plus cher au m2), ni la decote bloc (un immeuble entier se
+ * negocie sous la somme de ses lots), ni les loyers en place n'intervenaient.
+ *
+ * METHODE (100 % donnees locales, aucun coefficient invente) :
+ *  1) VALEUR SOMMATIVE : somme lot par lot de surf_i x ppm_chaine x f(surf_i),
+ *     ou f est l'elasticite ppm~surface MESUREE sur le corpus local (regression
+ *     log-log + retrecissement James-Stein, pattern garageSizeAdj/R35). ppm_chaine
+ *     = prix/m2 issu de la chaine complete (ancrage, VEFA, prudence, temporel),
+ *     desormais calee sur la surface du LOT MOYEN (cf. bandSurf plus haut).
+ *  2) DECOTE BLOC : mesuree localement quand des ventes en bloc existent
+ *     (ptsBloc, collectees par parsePts) : d = 1 - med(ppm bloc)/med(ppm mono),
+ *     retrecie n/(n+6), bornee [0 ; 25 %] - jamais de surcote (posture acquereur).
+ *     Sans ventes bloc locales : la decote est INCONNUE -> on ne credite pas la
+ *     prime de decoupe et on retient min(valeur sommative ; ppm_chaine x surface
+ *     des lots), c'est-a-dire la cascade min() prudente historique du projet.
+ *  3) VALEUR PAR LE REVENU : loyers EN PLACE captalises au multiple du marche
+ *     local : vRev = loyer mensuel total x ppm_chaine / loyer_m2_DHUP (equivaut a
+ *     capitaliser au rendement brut de marche local, sans taux invente). Si les
+ *     baux sont sous le marche, vRev < sommative -> l'arbitrage protege l'acheteur,
+ *     avec plancher a sommative x (1 - spread) contre les artefacts de saisie.
+ * Isole de la chaine : appele une seule fois par buildEstimation, ne modifie que
+ * price/low/high/sqm et journalise tout dans r.immeuble (formation du prix).
+ * ========================================================================== */
+function _mlActive(){
+  try{
+    var t=$("multiLotToggle");
+    if(!t||!t.checked||state.type!=="appartement")return{on:false};
+    var lots=(state._lots||[]).filter(function(l){return(+l.surface||0)>0;});
+    if(lots.length<2)return{on:false};
+    var st=lots.reduce(function(s,l){return s+(+l.surface);},0);
+    if(!(st>0))return{on:false};
+    return{on:true,n:lots.length,lots:lots,surfTot:st,avg:st/lots.length};
+  }catch(_){return{on:false};}
+}
+function aptSizeElasticity(pts){
+  /* Elasticite log(ppm)~log(surface) du corpus local. Pattern garageSizeAdj :
+   * moindres carres + retrecissement James-Stein b^2/(b^2+se^2). Signe attendu
+   * NEGATIF (le ppm decroit avec la surface) ; tout autre signe = signal invalide
+   * -> null (aucun ajustement, degradation gracieuse). Borne a -0,45 (litterature
+   * hedoniques FR : jamais observee au-dela en valeur absolue sur l'ancien). */
+  if(!pts||pts.length<15)return null;
+  const ok=pts.filter(p=>p.surf>0&&p.ppm>0);
+  if(ok.length<15)return null;
+  const n=ok.length,x=ok.map(p=>Math.log(p.surf)),y=ok.map(p=>Math.log(p.ppm));
+  const avg=a=>a.reduce((t,v)=>t+v,0)/a.length;
+  const mx=avg(x),my=avg(y);
+  let sxx=0,sxy=0,syy=0;
+  for(let i=0;i<n;i++){const dx=x[i]-mx,dy=y[i]-my;sxx+=dx*dx;sxy+=dx*dy;syy+=dy*dy;}
+  if(!(sxx>0))return null;
+  const b=sxy/sxx,ssr=Math.max(0,syy-b*sxy),dof=n-2;
+  if(dof<5)return null;
+  const varB=(ssr/dof)/sxx;
+  if(!isFinite(varB)||varB<0)return null;
+  const se=Math.sqrt(varB);
+  const shrink=(b*b)>0?((b*b)/((b*b)+(se*se))):0;
+  let bS=b*shrink;
+  if(!(bS<0))return null;
+  bS=Math.max(-0.45,bS);
+  const meds=median(ok.map(p=>p.surf));
+  if(!(meds>0))return null;
+  return{b:+b.toFixed(3),bShrink:+bS.toFixed(3),shrink:+shrink.toFixed(2),n,medSurf:Math.round(meds)};
+}
+function blocDiscountCalib(ptsBloc,ptsMono){
+  /* Decote bloc = 1 - med(ppm ventes en bloc)/med(ppm mono-lot), mesuree sur le
+   * MEME secteur. Retrecissement n/(n+6) : 4 ventes -> 40 % de l'ecart brut,
+   * 12 ventes -> 67 %, asymptote 100 % (meme famille que R35/R41). Bornes [0;0,25] :
+   * jamais de surcote bloc (posture acquereur), jamais plus d'un quart (au-dela,
+   * l'ecart signale plus probablement une difference de qualite de parc qu'une
+   * vraie decote de liquidite). */
+  if(!ptsBloc||ptsBloc.length<4||!ptsMono||ptsMono.length<10)return null;
+  const pb=ptsBloc.map(p=>p.ppm).filter(v=>v>0),pm=ptsMono.map(p=>p.ppm).filter(v=>v>0);
+  if(pb.length<4||pm.length<10)return null;
+  const mB=median(pb),mM=median(pm);
+  if(!(mB>0&&mM>0))return null;
+  const raw=1-mB/mM,nB=pb.length,shrink=nB/(nB+6);
+  const d=Math.max(0,Math.min(0.25,raw*shrink));
+  return{d:+d.toFixed(4),raw:+raw.toFixed(4),n:nB,medBloc:Math.round(mB),medMono:Math.round(mM),shrink:+shrink.toFixed(2)};
+}
+function estimateImmeubleAdjust(r,realStats,ptsBloc){
+  const ml=_mlActive();
+  if(!ml.on)return r;
+  const chainPrice=r.price;
+  if(!(chainPrice>0)||!(r.surface>0))return r;
+  const ppmChain=chainPrice/r.surface;
+  const clean=(realStats&&realStats.clean)||[];
+  // 1) valeur sommative lot par lot
+  const el=aptSizeElasticity(clean);
+  let vSomm=0;
+  ml.lots.forEach(function(l){
+    const s=+l.surface;let f=1;
+    if(el){f=Math.pow(s/el.medSurf,el.bShrink);f=Math.max(0.75,Math.min(1.30,f));}
+    vSomm+=s*ppmChain*f;
+  });
+  const vBlocNaive=ppmChain*ml.surfTot;   // meme ppm applique uniformement a la surface des lots
+  // 2) decote bloc
+  const dc=blocDiscountCalib(ptsBloc,clean);
+  let base,dMode;
+  if(dc&&dc.d>0){base=vSomm*(1-dc.d);dMode="calibree";}
+  else if(dc){base=vSomm;dMode="mesuree nulle";}
+  else{base=Math.min(vSomm,vBlocNaive);dMode="non mesurable";}
+  // 3) valeur par le revenu
+  let vRev=null,rentM=0;
+  (state._lots||[]).forEach(function(l){rentM+=(+l.loyer||0);});
+  const loyM2=(state.ctx2&&state.ctx2.loyers&&state.ctx2.loyers.loyerM2)||0;
+  if(rentM>0&&loyM2>0)vRev=rentM*ppmChain/loyM2;
+  // 4) arbitrage conservateur
+  let retained=base,mode="sommative",floored=false;
+  if(vRev!=null&&vRev<base){
+    const fl=base*(1-(r.spread||0.15));
+    retained=Math.max(vRev,fl);floored=retained>vRev+1;mode="revenu";
+  }
+  retained=Math.round(retained);
+  if(!(retained>0))return r;
+  // 5) application (les champs de la chaine amont - sqmBase/sqmAdj/pxHedonic - sont
+  //    conserves : la formation du prix reconstruit d'abord la chaine, puis la
+  //    presente etape est tracee comme une ligne dediee via r.priceBeforeImm)
+  r.priceBeforeImm=chainPrice;
+  r.price=retained;
+  r.low=Math.round(retained*(1-(r.spread||0.15)));
+  r.high=Math.round(retained*(1+(r.spread||0.15)));
+  r.sqm=ml.surfTot>0?Math.round(retained/ml.surfTot):r.sqm;
+  r.immeuble={nLots:ml.n,surfLots:Math.round(ml.surfTot),avg:Math.round(ml.avg),
+    ppmChain:Math.round(ppmChain),elast:el,discount:dc,dMode:dMode,
+    vSomm:Math.round(vSomm),vBlocNaive:Math.round(vBlocNaive),
+    vRev:vRev!=null?Math.round(vRev):null,rentM:rentM,loyM2:loyM2||null,
+    retained:retained,mode:mode,floored:floored,chainPrice:chainPrice,
+    surfGap:+(Math.abs(ml.surfTot-r.surface)/r.surface).toFixed(3)};
+  if(DEBUG)dbg("R42 immeuble : sommative "+Math.round(vSomm)+" (elasticite "+(el?el.bShrink:"n.d.")+") | decote bloc "+(dc?(dc.d*100).toFixed(1)+" % ("+dc.n+" ventes bloc, "+dMode+")":dMode)+" | revenu "+(vRev!=null?Math.round(vRev):"n.d.")+" -> retenu "+retained+" ("+mode+")");
+  return r;
+}
 function buildEstimation(data){
   const {realBase,realStats,realPts,engineData,bandWidened,vefaInfo}=data;
   /* ============================================================================
@@ -7744,6 +8531,9 @@ function buildEstimation(data){
       capHi:(state.dvfScope==="bbox"?1.15:1.20),arbitrate:true,terrain:_isTerrainType});}catch(_){_btf=null;}
   }
   const r=estimate(_adjBase,realStats,_btf);r.backtestFull=_btf;r.dvfDegraded=!!data.dvfDegraded;r.scoreCal=data.scoreCal||null;r.anchorArb=(_btf&&_btf.n>=20&&realStats&&!_isTerrainType)?_arbitrateAnchor({rooms:realStats.westGRooms||0,nRooms:realStats.typedCount||0,surf:realStats.westSurfStrict||0,nSurf:realStats.strictCount||0,mix:_adjBase,nMix:realStats.n||0}):null;r.bandWidened=bandWidened;r.realPts=realPts;r.ptsVefa=data.ptsVefa||[];r.realStats=realStats;r.realCount=realStats?realStats.n:0;r.engines=engineData?engineData.engines:[];r.engineBase=engineData?engineData.base:realBase;r.engineTop=engineData?engineData.top:[];r.pxHedonic=r.price;r.vefaCorr=vefaCorr;r.sqmBaseRaw=realBase||0;
+  /* R42 : transformation immeuble de rapport (module dedie ci-dessus), appliquee
+   * AVANT la decote diagnostics pour que celle-ci porte sur la valeur en bloc. */
+  try{estimateImmeubleAdjust(r,realStats,data.ptsBloc||[]);}catch(_e42){if(DEBUG)dbg("R42 exception estimateImmeubleAdjust : "+_e42);}
   // DIAGNOSTICS : decote liee aux pathologies detectees (amiante, elec, termites, assainissement...)
   var _dg=(typeof diagsTotal==="function")?diagsTotal():null;
   if(_dg&&_dg.impact<0){
@@ -7998,6 +8788,7 @@ function renderAllPanels(r,_conf,realBase,diag){
   ct.textContent="Indice de confiance "+r.confScore+"/100 \u00b7 "+r.confLabel+_btTxt;
   renderConfBreak(_conf);
   renderExplain(r);
+  try{renderGlossary();}catch(_){} /* R47 */
   const fpn=$("finPriceNote");if(fpn)fpn.style.display="none"; // recalcule apres renseignement du loyer (voir renderRentalDefaults)
   renderInsee(r);renderMarket(r);renderLocStats(r);renderDvfStats(r);renderPriceHistory(r);genComparables(r);renderContext(r);
   // R1 : rendus logement uniquement — neutralisés en mode terrain
@@ -8032,11 +8823,18 @@ function setupAsyncCallbacks(r,enrichPromise,ctxProm){
 /* Garde-fou : empeche une estimation de rester bloquee si une API publique ne repond pas.
  * Le bouton est TOUJOURS restaure (try/finally), et un timeout global borne l'attente. */
 let _estimRunning=false;
+let _estimGeneration=0;   // Fix-Race : incremente a chaque estimation ET a chaque resetForm()
 const ESTIM_TIMEOUT_MS=30000; // timeout d'une tentative individuelle (chaque etape a deja son propre timeout)
 const ESTIM_DEADLINE_MS=45000; // budget total d'un clic : retries automatiques jusqu'a cette limite
 
 /* V5 — Contrôle de fraîcheur des sources au chargement (console uniquement) */
 (function(){
+  /* R49 : version affichée (footer + console) */
+  try{
+    const vt=document.getElementById("versionTag");
+    if(vt)vt.textContent="v"+ESTIMO_VERSION+" \u00b7 build "+ESTIMO_BUILD;
+    if(typeof console!=="undefined"&&console.info)console.info("[Estimo] v"+ESTIMO_VERSION+" ("+ESTIMO_BUILD+") \u2014 pr\u00eat.");
+  }catch(_){}
   try{
     const stale=checkSourcesFreshness();
     if(stale.length>0&&typeof console!=="undefined"&&console.warn)
@@ -8053,6 +8851,7 @@ function _withTimeout(promise,ms,fallback){
 
 async function showResults(){
   const err=$("formErr");
+  hideNetErrBanner(); /* R48 : efface la bannière de l'estimation précédente */
   const surface=state.type==="terrain"?numv("terrain"):numv("surface");
   if(!($("adresse").value||"").trim()){err.textContent="Saisissez l'adresse du bien, puis choisissez une suggestion.";err.classList.add("show");$("adresse").focus();return;}
   if(!surface||surface<=0){err.textContent="Renseignez une surface valide.";err.classList.add("show");return;}
@@ -8069,6 +8868,13 @@ async function showResults(){
   // Empecher les double-clics : une seule estimation a la fois
   if(_estimRunning)return;
   _estimRunning=true;
+  /* Fix-Race : chaque estimation porte un identifiant monotone. Si resetForm() est
+   * appele PENDANT l'operation async (cas : bien sauvegarde auto-lance, puis l'utilisateur
+   * clique "Nouveau bien" avant que la reponse reseau n'arrive), la generation courante
+   * est incrementee et l'estimation en cours detecte qu'elle a ete annulee avant de
+   * peindre les resultats. Sans ce garde-fou : les anciens resultats reapparaissaient
+   * et scrollaient en vue, cachant le formulaire vierge sous les yeux de l'utilisateur. */
+  const _myGen=(++_estimGeneration);
   err.classList.remove("show");
 
   const btn=$("btnEstim");
@@ -8123,6 +8929,11 @@ async function showResults(){
     }
 
     const {r,_conf,realBase,diag}=buildEstimation(data);
+    /* Fix-Race : verifier que l'estimation n'a pas ete annulee par resetForm() pendant
+     * les appels reseau. Si c'est le cas, les resultats ne sont JAMAIS peints (pas de
+     * classList.add("show"), pas de scrollIntoView). Le formulaire vierge, deja visible
+     * et scroll-top, reste l'etat actif. */
+    if(_myGen!==_estimGeneration)return;
     renderAllPanels(r,_conf,realBase,diag);
     setupAsyncCallbacks(r,data.enrichPromise,data.ctxProm);
     $("results").style.display="";$("results").classList.add("show");
@@ -8142,6 +8953,61 @@ async function showResults(){
     _estimRunning=false;
   }
 }
+/* ============================================================================
+ * R48 - ONBOARDING 1er LANCEMENT + ÉTATS VIDES PÉDAGOGIQUES
+ * ----------------------------------------------------------------------------
+ * Onboarding : s'affiche UNE SEULE fois (flag localStorage "estimo_ob_done").
+ *   3 étapes : (1) bienvenue + données publiques, (2) formulaire guidé,
+ *   (3) résultats expliqués. Clôture par "Commencer" ou bouton ×.
+ * État vide réseau : si DVF indisponible, la bannière #netErrBanner
+ *   explique la cause et suggère une action concrète (plus pédagogique que
+ *   le message d'erreur technique dans #formErr).
+ * ========================================================================== */
+const OB_KEY="estimo_ob_done";
+const OB_STEPS=[
+  {icon:"🏠",title:"Bienvenue sur Estimo",body:"<b>Estimo</b> estime la valeur de votre bien à partir des <b>ventes DVF réelles</b> (base officielle des notaires), enrichies de plus de <b>30 sources publiques gratuites</b>. Résultats en 15 secondes."},
+  {icon:"📋",title:"Remplissez le formulaire",body:"Saisissez l'<b>adresse complète</b> et choisissez une suggestion dans la liste. Le type de bien, la surface et le DPE sont les données les plus impactantes. Les autres champs sont optionnels mais améliorent la précision."},
+  {icon:"📊",title:"Lisez vos résultats",body:"L'estimation affiche un <b>prix central</b>, une <b>fourchette à 80 %</b> et un <b>indice de confiance /100</b>. En mode Expert, accédez à la formation du prix facteur par facteur, au backtest et aux indices complémentaires."}
+];
+let _obStep=0;
+function _obRender(){
+  const s=OB_STEPS[_obStep];
+  $("obIcon").textContent=s.icon;
+  $("obTitle").textContent=s.title;
+  $("obBody").innerHTML=s.body;
+  const last=_obStep===OB_STEPS.length-1;
+  $("obNext").textContent=last?"Commencer ✓":"Suivant →";
+  const dots=$("obDots");if(dots)dots.innerHTML=OB_STEPS.map((_,i)=>`<div class="ob-dot${i===_obStep?" on":""}" aria-hidden="true"></div>`).join("");
+}
+function _obClose(){
+  const ov=$("obOverlay");if(ov)ov.style.display="none";
+  try{localStorage.setItem(OB_KEY,"1");}catch(_){}
+  $("adresse")&&$("adresse").focus();
+}
+function _obNext(){
+  if(_obStep<OB_STEPS.length-1){_obStep++;_obRender();}
+  else _obClose();
+}
+(function _initOnboarding(){
+  let done=false;try{done=!!localStorage.getItem(OB_KEY);}catch(_){}
+  if(done)return;
+  _obRender();
+  const ov=$("obOverlay");if(ov)ov.style.display="";
+  const nb=$("obNext"),sk=$("obSkip"),cl=$("obClose");
+  if(nb)nb.addEventListener("click",_obNext);
+  if(sk)sk.addEventListener("click",_obClose);
+  if(cl)cl.addEventListener("click",_obClose);
+  // Fermeture par touche Escape
+  document.addEventListener("keydown",function _obKey(e){if(e.key==="Escape"&&$("obOverlay")&&$("obOverlay").style.display!=="none"){_obClose();document.removeEventListener("keydown",_obKey);}});
+  // Fermeture clic overlay (hors modal)
+  const ov2=$("obOverlay");if(ov2)ov2.addEventListener("click",function(e){if(e.target===ov2)_obClose();});
+})();
+/** Bannière pédagogique réseau (plus explicite que le message technique). */
+function showNetErrBanner(msg){
+  const b=$("netErrBanner");if(!b)return;
+  b.innerHTML="⚠️ "+msg;b.classList.add("show");
+}
+function hideNetErrBanner(){const b=$("netErrBanner");if(b)b.classList.remove("show");}
 $("btnEstim").addEventListener("click",function(){state._lastSavedSnap=JSON.stringify(snapshotForm());const b=$("btnEstim");if(b&&b.dataset.origText){b.textContent=b.dataset.origText;b.style.background="";b.style.color="";delete b.dataset.origText;}showResults();});
 if($("btnNewBien"))$("btnNewBien").addEventListener("click",resetForm);
 ["ovrEntretien","ovrPlacement"].forEach(function(id){const e=$(id);if(!e)return;const h=function(){if(lastResult&&typeof renderOwnVsRent==="function")renderOwnVsRent(lastResult);};e.addEventListener("input",h);e.addEventListener("change",h);});
