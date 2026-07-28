@@ -40,6 +40,15 @@
       --price-bg-start:#0A1E2E;--price-bg-end:#0D1B2A;
       color-scheme:dark;
     }
+    /* R49 : overrides couleurs codées en dur non adaptées au dark mode */
+    .verdict.good{background:rgba(37,194,122,.15);border-color:#25C27A;color:#25C27A}
+    .verdict.warn{background:rgba(240,176,72,.15);border-color:#F0B048;color:#F0B048}
+    .verdict.bad{background:rgba(240,96,80,.15);border-color:#F06050;color:#F06050}
+    .autofill-note{background:var(--surface2);border-color:rgba(20,201,177,.3);color:var(--brand)}
+    #regimeNote{color:var(--warn)!important}
+    #tmiNR.input{background:var(--surface2)!important;color:var(--ink)!important}
+    #results [style*="background:#fff"]{background:var(--surface)!important}
+    .real-tag{background:rgba(37,194,122,.2);color:#25C27A}
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
@@ -356,31 +365,31 @@
 .compare-table .ct-num{font-family:var(--num);font-weight:700;color:var(--ink)}
 .cmp-score-pill{display:inline-block;padding:2px 7px;border-radius:8px;font-size:11px;font-weight:700;color:#fff}
 .wtab{background:transparent;color:var(--ink-soft);transition:.12s}
-.wtab-on{background:#fff;color:var(--brand-dark);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.wtab-on{background:var(--surface);color:var(--brand-dark);box-shadow:0 1px 3px rgba(0,0,0,.08)}
 /* Mode expert travaux — interface pro */
 .wx-intro{margin-bottom:11px;padding:11px 13px;background:linear-gradient(180deg,var(--brand-tint),var(--bg));border:1px solid var(--line);border-left:3px solid var(--brand-dark);border-radius:11px;line-height:1.5;font-size:11.5px;color:var(--ink)}
 .wx-toolbar{display:flex;align-items:center;gap:8px;margin:2px 0 11px;flex-wrap:wrap}
 .wx-toolbar-lbl{flex:1;font-size:10px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.3px}
-.wx-tool-btn{font-family:var(--body);font-size:11px;font-weight:700;color:var(--brand-dark);background:#fff;border:1.5px solid var(--line);border-radius:8px;padding:6px 11px;cursor:pointer;transition:border-color .15s,background .15s}
+.wx-tool-btn{font-family:var(--body);font-size:11px;font-weight:700;color:var(--brand-dark);background:var(--surface);border:1.5px solid var(--line);border-radius:8px;padding:6px 11px;cursor:pointer;transition:border-color .15s,background .15s}
 .wx-tool-btn:hover{border-color:var(--brand-dark);background:var(--brand-tint)}
 .wx-cat{border:1.5px solid var(--line);border-radius:12px;margin-bottom:9px;overflow:hidden;transition:border-color .15s,box-shadow .15s}
 .wx-cat.wx-open{border-color:var(--brand-dark);box-shadow:0 1px 10px rgba(10,140,125,.09)}
 .wx-cat-head{display:flex;align-items:center;gap:9px;padding:11px 13px;background:var(--bg);cursor:pointer;user-select:none;transition:background .15s}
-.wx-cat-head:hover{background:#eef2f5}
+.wx-cat-head:hover{background:var(--surface2)}
 .wx-cat.wx-open .wx-cat-head{background:var(--brand-tint)}
-.wx-cat-ico{font-size:16px;line-height:1;width:24px;height:24px;display:flex;align-items:center;justify-content:center;background:#fff;border-radius:7px;flex:none;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.wx-cat-ico{font-size:16px;line-height:1;width:24px;height:24px;display:flex;align-items:center;justify-content:center;background:var(--surface);border-radius:7px;flex:none;box-shadow:0 1px 2px rgba(0,0,0,.05)}
 .wx-cat-title{flex:1;font-weight:700;font-size:12.5px;color:var(--ink);line-height:1.25}
-.wx-cat-count{font-family:var(--num);font-size:10px;font-weight:700;color:var(--ink-soft);background:#fff;border:1px solid var(--line);border-radius:20px;padding:1px 7px;flex:none}
+.wx-cat-count{font-family:var(--num);font-size:10px;font-weight:700;color:var(--ink-soft);background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:1px 7px;flex:none}
 .wx-cat-sum{font-family:var(--num);font-weight:800;font-size:12.5px;color:var(--brand-dark);flex:none}
 .wx-cat-chevron{color:var(--ink-soft);font-size:12px;flex:none;transition:transform .2s;display:inline-block}
 .wx-cat.wx-open .wx-cat-chevron{transform:rotate(180deg);color:var(--brand-dark)}
-.wx-cat-body{padding:11px 13px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:11px;background:#fff}
+.wx-cat-body{padding:11px 13px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:11px;background:var(--surface)}
 .wx-item{border-bottom:1px solid var(--line);padding:2px 0 11px;transition:background .12s}
 .wx-item:last-child{border-bottom:none;padding-bottom:2px}
 .wx-row{display:flex;gap:9px;align-items:flex-end;flex-wrap:wrap}
 .wx-f{display:flex;flex-direction:column;gap:3px;flex:1;min-width:78px}
 .wx-f-lbl{font-size:9.5px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.2px}
-.wx-f input,.wx-f select{font-family:var(--body);font-size:12.5px;padding:7px 9px;border:1.5px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);width:100%;transition:border-color .15s,box-shadow .15s}
+.wx-f input,.wx-f select{font-family:var(--body);font-size:12.5px;padding:7px 9px;border:1.5px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:100%;transition:border-color .15s,box-shadow .15s}
 .wx-f input:focus,.wx-f select:focus{outline:none;border-color:var(--brand-dark);box-shadow:0 0 0 3px rgba(10,140,125,.12)}
 .wx-f input{text-align:right;font-variant-numeric:tabular-nums}
 .wx-chip{display:inline-block;font-size:10px;color:var(--ink-soft);background:var(--bg);border:1px solid var(--line);border-radius:20px;padding:2px 9px;font-variant-numeric:tabular-nums}
@@ -425,9 +434,12 @@
 #tocBar{display:none;gap:6px;overflow-x:auto;padding:8px 12px 9px;position:sticky;z-index:45;top:58px;background:var(--bg);border-bottom:1px solid var(--line);scrollbar-width:none}
 #tocBar.show{display:flex}
 #tocBar::-webkit-scrollbar{display:none}
-.toc-chip{flex:none;font:600 12.5px/1 var(--body);color:var(--ink-soft);background:#fff;border:1.5px solid var(--line);border-radius:18px;padding:9px 14px;cursor:pointer;white-space:nowrap;transition:.12s;min-height:36px;display:flex;align-items:center}
-.toc-chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.toc-chip{flex:none;font:600 12.5px/1 var(--body);color:var(--ink-soft);background:var(--surface);border:1.5px solid var(--line);border-radius:18px;padding:9px 14px;cursor:pointer;white-space:nowrap;transition:.12s;min-height:36px;display:flex;align-items:center}
+.toc-chip.on{background:var(--brand-dark);border-color:var(--brand-dark);color:#fff}
 .toc-chip.toc-tool{color:var(--brand-dark);border-color:var(--brand)}
+.mode-lnk{background:none;border:none;padding:0;margin:0;font-family:var(--body);font-size:10.5px;color:var(--ink-soft);cursor:pointer;text-align:left;line-height:1.3;transition:color .12s;white-space:nowrap}
+.mode-lnk:hover{color:var(--brand-dark)}
+.mode-lnk.active{color:var(--brand-dark);font-weight:700}
 .card-kv{margin-left:auto;font:700 11.5px/1.3 var(--body);color:var(--brand-dark);white-space:nowrap;flex:none;background:var(--brand-tint);padding:3px 8px;border-radius:6px;max-width:140px;overflow:hidden;text-overflow:ellipsis}
 .card.is-collapsed .card-kv{color:var(--ink);background:var(--bg)}
 .synth-row{display:flex;align-items:center;gap:12px;padding:13px 6px;border-bottom:1px solid var(--line);cursor:pointer;border-radius:var(--r-sm);transition:background .1s}
@@ -789,7 +801,13 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
       <button data-m="invest" aria-pressed="false" aria-label="Mode Investisseur : locatif, fiscal, rentabilit&#233;">&#128188; Investisseur</button>
       <button data-m="expert" aria-pressed="false" aria-label="Mode Expert : tous les calculs et d&#233;tails statistiques">&#128300; Expert</button>
     </div>
-    <div style="font-size:10.5px;color:var(--ink-soft);margin-top:5px;line-height:1.3"><b>&#9889;</b>&nbsp;Prix&nbsp;&amp;&nbsp;risques &nbsp;&#183;&nbsp; <b>&#128188;</b>&nbsp;+&nbsp;Locatif&nbsp;&amp;&nbsp;fiscal &nbsp;&#183;&nbsp; <b>&#128300;</b>&nbsp;Tous les calculs</div>
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:5px" id="modeLegend">
+      <button type="button" class="mode-lnk active" id="mlSimple" onclick="document.querySelector('#segMode [data-m=simple]').click()"><b>&#9889;</b>&nbsp;Prix&nbsp;&amp;&nbsp;risques</button>
+      <span style="color:var(--line)">&#183;</span>
+      <button type="button" class="mode-lnk" id="mlInvest" onclick="document.querySelector('#segMode [data-m=invest]').click()"><b>&#128188;</b>&nbsp;+&nbsp;Locatif&nbsp;&amp;&nbsp;fiscal</button>
+      <span style="color:var(--line)">&#183;</span>
+      <button type="button" class="mode-lnk" id="mlExpert" onclick="document.querySelector('#segMode [data-m=expert]').click()"><b>&#128300;</b>&nbsp;Tous les calculs</button>
+    </div>
   </div>
   <!-- R&#201;SULTATS -->
   <div id="results" class="simple" role="region" aria-label="Résultats de l'estimation">
@@ -875,6 +893,7 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
     <section class="card" id="dashCard" style="order:5">
       <div class="card-head"><div class="step-no">&#128202;</div><div><h2>Synth&#232;se de l'investissement</h2><div class="sub">Lecture rapide &#8212; recalcul&#233;e en direct &#8212; verdict fond&#233; sur la VAN (voir aussi le Score d'acquisition en haut de page)</div></div></div>
       <div class="seg" id="segView" role="group" aria-label="Vue du tableau de bord" style="margin-bottom:14px"><button data-v="full" class="on">Vue compl&#232;te</button><button data-v="lean">Synth&#232;se (masquer le d&#233;tail)</button></div>
+      <div class="field" style="margin-bottom:12px;max-width:340px"><label class="lbl" for="discRate">Taux d'actualisation <span style="font-weight:500;color:var(--ink-soft)">(rendement attendu sur vos fonds propres &#8212; vide = auto)</span></label><div class="with-unit" style="max-width:160px"><input class="input num" id="discRate" type="number" step="0.1" placeholder="auto" /><span class="unit">%</span></div></div>
       <div id="verdict" class="verdict neu">&#8212;</div>
       <div class="dash-grid">
         <div class="dtile"><div class="dt-l">Prix vs march&#233;</div><div class="dt-v" id="dPrix">&#8212;</div></div>
@@ -909,7 +928,7 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
       <div class="card-head"><div class="step-no">4</div><div><h2>Biens comparables<span class="demo-tag" id="compTag">DVF</span></h2><div class="sub">Ventes similaires r&#233;centes</div></div></div>
       <div id="dvfStats" style="display:none;margin-bottom:6px"></div>
       <div id="compList"></div>
-      <button id="btnExportComps" style="margin-top:12px;width:100%;padding:11px;border:1.5px solid var(--line);background:#fff;color:var(--brand-dark);border-radius:var(--r-sm);font-weight:600;font-family:var(--body);font-size:13px;cursor:pointer">Exporter les comparables (CSV)</button>
+      <button id="btnExportComps" style="margin-top:12px;width:100%;padding:11px;border:1.5px solid var(--line);background:var(--surface);color:var(--brand-dark);border-radius:var(--r-sm);font-weight:600;font-family:var(--body);font-size:13px;cursor:pointer">Exporter les comparables (CSV)</button>
     </section>
 
     <section class="card secondary" id="locCard" style="order:10">
@@ -1105,7 +1124,7 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
       <div id="opScenarios" style="overflow-x:auto"></div>
       <div class="hint" style="margin-top:10px">Pessimiste : revente &#8722;10 %, travaux +15 %. Optimiste : revente +10 %, travaux &#8722;10 %. Pour cadrer le risque de l'op&#233;ration.</div>
 
-      <button id="btnFiche" style="margin-top:14px;width:100%;padding:13px;border:1.5px solid var(--brand-dark);background:#fff;color:var(--brand-dark);border-radius:var(--r-sm);font-weight:700;font-family:var(--body);font-size:14px;cursor:pointer">G&#233;n&#233;rer la fiche d'op&#233;ration (PDF)</button>
+      <button id="btnFiche" style="margin-top:14px;width:100%;padding:13px;border:1.5px solid var(--brand-dark);background:var(--surface);color:var(--brand-dark);border-radius:var(--r-sm);font-weight:700;font-family:var(--body);font-size:14px;cursor:pointer">G&#233;n&#233;rer la fiche d'op&#233;ration (PDF)</button>
     </section>
 
     <!-- DPE -->
@@ -1123,7 +1142,6 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
     <!-- PROJECTION -->
     <section class="card" id="projCard" style="order:7">
       <div class="card-head"><div class="step-no">8</div><div><h2>Projection & graphiques</h2><div class="sub">Cash-flows, actualisation, VAN et TRI jusqu'&#224; la revente</div></div></div>
-      <div class="field" style="margin-bottom:12px"><label class="lbl" for="discRate">Taux d'actualisation <span style="font-weight:500;color:var(--ink-soft)">(rendement attendu sur vos fonds propres &#8212; vide = auto)</span></label><div class="with-unit" style="max-width:160px"><input class="input num" id="discRate" type="number" step="0.1" placeholder="auto" /><span class="unit">%</span></div></div>
       <div class="kpis">
         <div class="kpi"><div class="kl">VAN (actualis&#233;e)</div><div class="kv" id="pjVan">&#8212;</div></div>
         <div class="kpi"><div class="kl">TRI</div><div class="kv" id="pjTri">&#8212;</div></div>
@@ -1131,8 +1149,8 @@ details.acc>summary:focus-visible,.viab-chk:focus-visible,.lot-del:focus-visible
       </div>
       <div class="kpis" style="grid-template-columns:1fr 1fr"><div class="kpi"><div class="kl">Point mort actualis&#233;</div><div class="kv" id="pjBep">&#8212;</div></div><div class="kpi"><div class="kl">Dur&#233;e de d&#233;tention optimale</div><div class="kv" id="pjOpt">&#8212;</div></div></div>
       <div class="hint" id="waccDetail" style="margin:2px 0 4px"></div>
-      <div class="chart-wrap"><h4>Cash-flow d'exploitation</h4><div class="csub">Par an (barres) et cumul&#233; (ligne), hors revente</div><div id="chartCF"></div><div id="cfDetail"></div><div class="chart-legend"><span><i style="background:#0FB39E"></i>CF annuel</span><span><i style="background:#0F2A43"></i>CF cumul&#233;</span></div><div class="cinterp" id="iCF"></div></div>
-      <details class="acc"><summary><span>Cash-flow actualis&#233; (avanc&#233;)</span><span class="chev">&#9656;</span></summary><div class="acc-body"><div class="csub">M&#234;mes flux que ci-dessus mais actualis&#233;s (ramen&#233;s &#224; aujourd'hui) ; la ligne cumule la VAN. Apport en ann&#233;e 0, revente en derni&#232;re ann&#233;e.</div><div id="chartDCF"></div><div class="chart-legend"><span><i style="background:#7FB0E0"></i>Flux actualis&#233;</span><span><i style="background:#0F2A43"></i>VAN cumul&#233;e</span></div></div></details>
+      <div class="chart-wrap"><h4>Cash-flow d'exploitation</h4><div class="csub">Par an (barres) et cumul&#233; (ligne), hors revente</div><div id="chartCF"></div><div id="cfDetail"></div><div class="chart-legend"><span><i style="background:#0FB39E"></i>CF annuel</span><span><i style="background:var(--ink)"></i>CF cumul&#233;</span></div><div class="cinterp" id="iCF"></div></div>
+      <details class="acc"><summary><span>Cash-flow actualis&#233; (avanc&#233;)</span><span class="chev">&#9656;</span></summary><div class="acc-body"><div class="csub">M&#234;mes flux que ci-dessus mais actualis&#233;s (ramen&#233;s &#224; aujourd'hui) ; la ligne cumule la VAN. Apport en ann&#233;e 0, revente en derni&#232;re ann&#233;e.</div><div id="chartDCF"></div><div class="chart-legend"><span><i style="background:#7FB0E0"></i>Flux actualis&#233;</span><span><i style="background:var(--ink)"></i>VAN cumul&#233;e</span></div></div></details>
       <div class="chart-wrap"><h4>VAN selon l'ann&#233;e de revente</h4><div class="csub">Revendre cette ann&#233;e-l&#224; &#8658; quelle VAN ? <b style="color:#0a7a5c">Barre verte</b> = ann&#233;e o&#249; la VAN devient positive (seuil de rentabilit&#233;) ; sommet = dur&#233;e optimale</div><div id="chartVanYear"></div><div class="chart-legend"><span><i style="background:#7A5AF8"></i>VAN si revente l'ann&#233;e N</span><span><i style="background:#0a7a5c"></i>Seuil VAN positive</span></div><div class="cinterp" id="iVan"></div></div><div class="chart-wrap"><div class="csub">Valeur du bien vs capital restant d&#251;</div><div id="chartEq"></div><div class="chart-legend"><span><i style="background:#0FB39E"></i>Valeur du bien</span><span><i style="background:#E0402E"></i>Capital restant d&#251;</span></div><div class="cinterp" id="iEq"></div></div>
       <div class="hint" style="display:flex;gap:6px;align-items:flex-start;margin-top:10px"><svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#5B7186" stroke-width="2"/><path d="M12 11v5M12 7.5v.5" stroke="#5B7186" stroke-width="2" stroke-linecap="round"/></svg>Hypoth&#232;ses : cash-flow d'exploitation suppos&#233; stable, revalorisation annuelle constante, fiscalit&#233; de l'ann&#233;e 1 reconduite. La VAN > 0 signifie que le projet bat votre co&#251;t du capital. Mod&#232;le indicatif.</div>
     </section>
@@ -1352,6 +1370,19 @@ function _clearIrrelevantFields(){
   if(t!=="appartement"){const cp=$("iCopro");if(cp)cp.value=0;}
 }
 /* POINT1 : reinitialisation complete du formulaire */
+/* R49 : expose toutes les étapes du wizard après une estimation réussie,
+ * so the user can freely edit any field. Undone by resetForm(). */
+function _expandAllWizSteps(){
+  document.querySelectorAll('.wstep').forEach(function(s){s.classList.add('on');});
+  const nav=document.getElementById('wNav');if(nav)nav.style.display='none';
+  const prog=document.querySelector('.wprog');if(prog)prog.style.display='none';
+  const hint=document.getElementById('wEarlyHint');if(hint)hint.style.display='none';
+}
+function _collapseWizSteps(){
+  const nav=document.getElementById('wNav');if(nav)nav.style.display='';
+  const prog=document.querySelector('.wprog');if(prog)prog.style.display='';
+  // __wizShow(false) repositionne les étapes correctement
+}
 function resetForm(){
   /* Un seul garde-fou : si des modifications non sauvegardées existent, on demande
    * confirmation. Si le formulaire est vierge ou deja sauvegarde, la reinitialisation
@@ -1406,6 +1437,7 @@ function resetForm(){
   if(typeof _renderIrlNote==="function")_renderIrlNote();
   // Remettre le wizard sur l'etape 0
   if(typeof window.__wizShow==="function"){window.__wizCur=0;window.__wizShow(false);}
+  _collapseWizSteps();
   // Remonter en haut
   window.scrollTo({top:0,behavior:"smooth"});
   const ad=$("adresse");if(ad)ad.focus();
@@ -8945,6 +8977,7 @@ async function showResults(){
     renderAllPanels(r,_conf,realBase,diag);
     setupAsyncCallbacks(r,data.enrichPromise,data.ctxProm);
     $("results").style.display="";$("results").classList.add("show");
+    _expandAllWizSteps();
     if(typeof buildToc==="function"){buildToc();applyDefaultCollapse();}
     try{
       $("results").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth",block:"start"});
@@ -9544,14 +9577,14 @@ function chartSVG(opts){const W=340,H=190,pl=46,pr=10,pt=12,pb=24,iw=W-pl-pr,ih=
   const n=opts.labels.length;const x=i=>pl+(n<=1?iw/2:iw*i/(n-1));const y=v=>pt+ih*(mx-v)/(mx-mn);const fmt=opts.fmt||(v=>Math.round(v));const y0=y(0);
   let s=`<svg role="img" aria-label="${opts.ariaLabel||opts.title||'Graphique'}" viewBox="0 0 ${W} ${H}" width="100%" style="display:block">`;
   s+=`<line x1="${pl}" y1="${pt}" x2="${pl}" y2="${pt+ih}" stroke="var(--line)"/>`;
-  s+=`<line x1="${pl}" y1="${y0}" x2="${W-pr}" y2="${y0}" stroke="#cfd8e0" stroke-dasharray="3 3"/>`;
-  s+=`<text x="${pl-6}" y="${pt+4}" text-anchor="end" font-size="9" fill="#8a99a8">${fmt(mx)}</text>`;
-  s+=`<text x="${pl-6}" y="${y0+3}" text-anchor="end" font-size="9" fill="#8a99a8">0</text>`;
+  s+=`<line x1="${pl}" y1="${y0}" x2="${W-pr}" y2="${y0}" stroke="var(--line)" stroke-dasharray="3 3"/>`;
+  s+=`<text x="${pl-6}" y="${pt+4}" text-anchor="end" font-size="9" fill="var(--ink-xsoft)">${fmt(mx)}</text>`;
+  s+=`<text x="${pl-6}" y="${y0+3}" text-anchor="end" font-size="9" fill="var(--ink-xsoft)">0</text>`;
   (opts.bars||[]).forEach(bar=>{const bw=Math.max(3,iw/n*0.5);bar.values.forEach((v,i)=>{const xx=x(i)-bw/2,yy=v>=0?y(v):y0,hh=Math.abs(y(v)-y0);s+=`<rect x="${xx}" y="${yy}" width="${bw}" height="${hh}" rx="2" fill="${bar.color}" opacity="0.85"/>`;});});
   (opts.lines||[]).forEach(ln=>{let d="";ln.values.forEach((v,i)=>{d+=(i?"L":"M")+x(i).toFixed(1)+" "+y(v).toFixed(1)+" ";});s+=`<path d="${d}" fill="none" stroke="${ln.color}" stroke-width="2.5" stroke-linejoin="round"/>`;ln.values.forEach((v,i)=>{s+=`<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="2.4" fill="${ln.color}"/>`;});});
   (opts.markers||[]).forEach(mk=>{if(mk.i==null||mk.i<0||mk.i>=n)return;const xm=x(mk.i);s+=`<line x1="${xm.toFixed(1)}" y1="${pt}" x2="${xm.toFixed(1)}" y2="${pt+ih}" stroke="${mk.color||'currentColor'}" stroke-width="1.2" stroke-dasharray="4 3"/>`;const tx=Math.min(Math.max(xm,pl+18),W-pr-18);s+=`<text x="${tx.toFixed(1)}" y="${mk.pos==='bottom'?(pt+ih-3):(pt+8)}" text-anchor="middle" font-size="8" font-weight="700" fill="${mk.color||'currentColor'}">${mk.label}</text>`;});
   const xi=[0,Math.floor((n-1)/2),n-1].filter((v,i,a)=>a.indexOf(v)===i);
-  xi.forEach(i=>{s+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="9" fill="#8a99a8">${opts.labels[i]}</text>`;});
+  xi.forEach(i=>{s+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle" font-size="9" fill="var(--ink-xsoft)">${opts.labels[i]}</text>`;});
   return s+"</svg>";
 }
 function irr(cf){const npv=r=>cf.reduce((s,c,t)=>s+c/Math.pow(1+r,t),0);let lo=-0.9,hi=1.0,fl=npv(lo),fh=npv(hi);if(fl*fh>0)return null;for(let i=0;i<80;i++){const m=(lo+hi)/2,fm=npv(m);if(Math.abs(fm)<1)return m;if(fl*fm<0){hi=m;fh=fm;}else{lo=m;fl=fm;}}return (lo+hi)/2;}
@@ -9560,7 +9593,7 @@ function waterfallSVG(items,opts){const W=340,Ht=214,pl=8,pr=8,pt=10,pb=52,iw=W-
   const allV=[0,total];steps.forEach(s=>{allV.push(s.start,s.end);});let mn=Math.min(...allV),mx=Math.max(...allV);if(mn===mx)mx=mn+1;const pad=(mx-mn)*0.1;mx+=pad;mn-=pad;
   const n=items.length+1,bw=iw/n*0.6,cx=i=>pl+iw*(i+0.5)/n,y=v=>pt+ih*(mx-v)/(mx-mn),fmt=opts.fmt||(v=>Math.round(v)),y0=y(0);
   let s=`<svg viewBox="0 0 ${W} ${Ht}" width="100%" style="display:block">`;
-  s+=`<line x1="${pl}" y1="${y0}" x2="${W-pr}" y2="${y0}" stroke="#cfd8e0" stroke-dasharray="3 3"/>`;
+  s+=`<line x1="${pl}" y1="${y0}" x2="${W-pr}" y2="${y0}" stroke="var(--line)" stroke-dasharray="3 3"/>`;
   steps.forEach((st,i)=>{const top=y(Math.max(st.start,st.end)),h=Math.max(1,Math.abs(y(st.start)-y(st.end))),col=st.v>=0?"#0FB39E":"#E0402E";s+=`<rect x="${(cx(i)-bw/2).toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="2" fill="${col}" opacity="0.9"/>`;if(i<steps.length-1)s+=`<line x1="${(cx(i)+bw/2).toFixed(1)}" y1="${y(st.end).toFixed(1)}" x2="${(cx(i+1)-bw/2).toFixed(1)}" y2="${y(st.end).toFixed(1)}" style="stroke:var(--line)"/>`;s+=`<text x="${cx(i).toFixed(1)}" y="${(y(Math.max(st.start,st.end))-3).toFixed(1)}" text-anchor="middle" font-size="7.5" style="fill:var(--ink-soft)">${fmt(st.v)}</text>`;});
   const ti=steps.length,ttop=y(Math.max(0,total)),th=Math.max(1,Math.abs(y(0)-y(total)));s+=`<rect x="${(cx(ti)-bw/2).toFixed(1)}" y="${ttop.toFixed(1)}" width="${bw.toFixed(1)}" height="${th.toFixed(1)}" rx="2" style="fill:var(--ink)"/>`;
   s+=`<text x="${cx(ti).toFixed(1)}" y="${(ttop-3).toFixed(1)}" text-anchor="middle" font-size="8" font-weight="700" style="fill:var(--ink)">${fmt(total)}</text>`;
@@ -9906,8 +9939,8 @@ function renderProjection(r){
        'Le CF devient positif apr\u00e8s la fin du cr\u00e9dit.')+
       '</td></tr></table>';
   }
-  $("chartCF").innerHTML=chartSVG({labels,bars:[{values:cfYear,color:"#0FB39E"}],lines:[{values:cfCum,color:"#0F2A43"}],fmt:v=>eur0(v),markers:cfPos>=0?[{i:cfPos,label:"CF+ an"+(cfPos+1),color:"#0a7a5c"}]:[]});
-  $("chartDCF").innerHTML=chartSVG({labels,bars:[{values:dCfYear,color:"#7FB0E0"}],lines:[{values:dCum,color:"#0F2A43"}],fmt:v=>eur0(v),markers:bep?[{i:bep-1,label:"Seuil an"+bep,color:"#0F2A43"}]:[]});
+  $("chartCF").innerHTML=chartSVG({labels,bars:[{values:cfYear,color:"#0FB39E"}],lines:[{values:cfCum,color:"var(--ink)"}],fmt:v=>eur0(v),markers:cfPos>=0?[{i:cfPos,label:"CF+ an"+(cfPos+1),color:"#0a7a5c"}]:[]});
+  $("chartDCF").innerHTML=chartSVG({labels,bars:[{values:dCfYear,color:"#7FB0E0"}],lines:[{values:dCum,color:"var(--ink)"}],fmt:v=>eur0(v),markers:bep?[{i:bep-1,label:"Seuil an"+bep,color:"var(--ink)"}]:[]});
   const vanMarks=[{i:opt-1,label:optAtMax?"VAN max (horizon)":"Optimal an"+opt,color:"#7A5AF8"}];
   if(vanPos&&vanPos!==opt)vanMarks.push({i:vanPos-1,label:"VAN>0 an"+vanPos,color:"#0a7a5c",pos:"bottom"});
   $("chartVanYear").innerHTML=chartSVG({labels:vyLabels,lines:[{values:vanArr,color:"#7A5AF8"}],fmt:v=>eur0(v),markers:vanMarks});
@@ -10171,7 +10204,10 @@ document.querySelectorAll(".card-head").forEach(h=>{
     'dpeCard','projCard'];
   if(!c.classList.contains('price-card')&&keep.indexOf(c.id)<0)c.classList.add('expert-only');
 });
-const segM=$("segMode");if(segM)segM.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{segM.querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on");const m=b.dataset.m,res=$("results");res.classList.remove("simple","invest","expert");if(m==="simple")res.classList.add("simple");else if(m==="invest")res.classList.add("invest");segM.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b?"true":"false"));}));
+const segM=$("segMode");if(segM)segM.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{segM.querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on");const m=b.dataset.m,res=$("results");res.classList.remove("simple","invest","expert");if(m==="simple")res.classList.add("simple");else if(m==="invest")res.classList.add("invest");segM.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b?"true":"false"));
+  // Sync .mode-lnk active state
+  const mmap={simple:"mlSimple",invest:"mlInvest",expert:"mlExpert"};
+  ["mlSimple","mlInvest","mlExpert"].forEach(id=>{const el=$(id);if(el)el.classList.toggle("active",mmap[m]===id);});}));
 /* ===== R2 : digestibilite — synthese 60 s, sommaire sticky, chiffres-cles, repli =====
  * Trois couches, aucune donnee retiree :
  *  1. renderSynth60(r)      : carte de synthese en tete, valeurs DEJA calculees, lignes cliquables
@@ -10515,7 +10551,8 @@ function openBienById(id){
   const rz=$("results");if(rz){rz.classList.remove("show");rz.style.display="";}
   state.activeSnapId=entry.id;restoreForm(entry.snap);refreshSavedSelect();
   // Fix1 : forcer le wizard sur la derniere etape pour que le bouton Estimer soit visible
-  if(typeof window.__wizShow==="function"){window.__wizCur=999;window.__wizShow(false);}
+  _collapseWizSteps();
+  if(typeof window.__wizShow==="function"){window.__wizCur=0;window.__wizShow(false);}
   showSavedHint("&#10003; <b>"+esc(entry.label)+"</b> chargé — estimation en cours…");
   setTimeout(()=>{if($("btnEstim"))$("btnEstim").click();},80);
 }
